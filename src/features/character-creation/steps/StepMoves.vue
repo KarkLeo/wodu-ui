@@ -9,11 +9,18 @@ const emit = defineEmits<{
   next: []
 }>()
 
-const REQUIRED_COUNT = 2 // Fighter выбирает 2 стартовых хода (плюс Фирменное оружие и В доспехах — автоматически)
+const REQUIRED_COUNT = 1 // Fighter выбирает 1 стартовый ход (плюс Фирменное оружие и В доспехах — автоматически)
 
-// Ходы, доступные для выбора в мастере (стартовые, не расовые)
+// Auto-granted to all Fighters; excluded from manual selection
+const AUTO_GRANTED = ['fighter_signature_weapon', 'fighter_armored']
+
+// Ходы, доступные для выбора в мастере (стартовые, не расовые, не даются автоматически)
 const selectableMoves = computed(() =>
-  fighter.moves.filter(m => m.type === 'starting' && !m.id.startsWith('fighter_race_'))
+  fighter.moves.filter(m =>
+    m.type === 'starting' &&
+    !m.id.startsWith('fighter_race_') &&
+    !AUTO_GRANTED.includes(m.id)
+  )
 )
 
 const selected = ref<string[]>([...props.draft.startingMoveIds])
