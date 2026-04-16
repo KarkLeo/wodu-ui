@@ -1,0 +1,163 @@
+<h2>Игровой экран — структура скролла</h2>
+<p class="subtitle">Роут: /character/:id — один вертикальный скролл, секции идут сверху вниз</p>
+
+<div class="mockup">
+  <div class="mockup-header">Мобильный вид (375px)</div>
+  <div class="mockup-body" style="background:#1a1208; color:#d4a853; font-family:serif; padding:0; max-width:375px; margin:0 auto;">
+
+    <!-- Header -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Воин · Уровень 3</div>
+        <div style="font-size:18px; font-weight:bold;">Thorin Axeborn</div>
+      </div>
+      <div style="font-size:9px; opacity:0.5; text-align:right;">
+        <div>d10 урон</div>
+        <div>Броня 3</div>
+      </div>
+    </div>
+
+    <!-- HP + XP block -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914;">
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Хиты</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-size:24px; font-weight:bold;">18</div>
+            <div style="opacity:0.4;">/</div>
+            <div style="font-size:16px; opacity:0.7;">25</div>
+          </div>
+          <div style="background:#2a1f0a; height:5px; border-radius:2px; overflow:hidden; margin-top:4px;">
+            <div style="background:#d4a853; height:100%; width:72%; opacity:0.8;"></div>
+          </div>
+        </div>
+        <div style="width:1px; background:#8b6914; opacity:0.3; align-self:stretch;"></div>
+        <div style="flex:1;">
+          <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Опыт</div>
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%; background:#d4a853;"></div>
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%; background:#d4a853;"></div>
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+            <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+          </div>
+          <div style="font-size:8px; opacity:0.4; margin-top:3px;">2 / 7 для уровня 4</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914;">
+      <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Характеристики</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px;">
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">СИЛ</div>
+          <div style="font-size:18px; font-weight:bold;">16</div>
+          <div style="font-size:10px; opacity:0.7;">+2</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">ЛОВ</div>
+          <div style="font-size:18px; font-weight:bold;">12</div>
+          <div style="font-size:10px; opacity:0.7;">+0</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">КОН</div>
+          <div style="font-size:18px; font-weight:bold;">15</div>
+          <div style="font-size:10px; opacity:0.7;">+1</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">ИНТ</div>
+          <div style="font-size:18px; font-weight:bold;">8</div>
+          <div style="font-size:10px; opacity:0.7;">-1</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">МДР</div>
+          <div style="font-size:18px; font-weight:bold;">10</div>
+          <div style="font-size:10px; opacity:0.7;">+0</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">ХАР</div>
+          <div style="font-size:18px; font-weight:bold;">13</div>
+          <div style="font-size:10px; opacity:0.7;">+1</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Moves -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914;">
+      <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Ходы</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="border:1px solid #8b6914; border-radius:2px; overflow:hidden;">
+          <div style="padding:8px 10px; background:#2a1f0a; font-size:12px; font-weight:bold;">Рубящий удар</div>
+          <div style="padding:6px 10px; font-size:10px; opacity:0.6; line-height:1.4;">Когда ты атакуешь врага в ближнем бою, брось+СИЛ. На 10+: нанеси урон по выбору врага...</div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; overflow:hidden;">
+          <div style="padding:8px 10px; font-size:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span>Воля к победе</span>
+            <span style="font-size:9px; opacity:0.4;">▼</span>
+          </div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; overflow:hidden;">
+          <div style="padding:8px 10px; font-size:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span>Мастер оружия</span>
+            <span style="font-size:9px; opacity:0.4;">▼</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Снаряжение</div>
+        <div style="font-size:9px; opacity:0.6;">Вес: 7 / 14</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; padding:5px 8px; border:1px solid #8b6914; border-radius:2px;">
+          <span>Двуручный меч</span><span style="opacity:0.5;">вес 2</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; padding:5px 8px; border:1px solid #8b6914; border-radius:2px;">
+          <span>Кольчуга (броня 1)</span><span style="opacity:0.5;">вес 1</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; padding:5px 8px; border:1px solid #8b6914; border-radius:2px; opacity:0.5;">
+          <span>Походный набор</span><span>вес 1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bonds + Debilities collapsed -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914; opacity:0.7;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:1px; opacity:0.5;">Связи</div>
+        <div style="font-size:9px; opacity:0.4;">▼</div>
+      </div>
+    </div>
+    <div style="padding:12px 14px; opacity:0.7;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:1px; opacity:0.5;">Состояния</div>
+        <div style="font-size:9px; opacity:0.4;">▼</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h3>Порядок секций</h3>
+  <ol style="font-size:13px; line-height:2; opacity:0.8; padding-left:20px;">
+    <li><strong>Шапка</strong> — имя, класс, уровень, кость урона, броня</li>
+    <li><strong>Хиты + XP</strong> — полоса HP с числами, кружки опыта</li>
+    <li><strong>Характеристики</strong> — 6 статов в сетке 3×2 с модификаторами</li>
+    <li><strong>Ходы</strong> — аккордеон: первый раскрыт, остальные свёрнуты</li>
+    <li><strong>Снаряжение</strong> — список с весом, счётчик нагрузки</li>
+    <li><strong>Связи</strong> — сворачиваемая секция</li>
+    <li><strong>Состояния</strong> — дебилити, сворачиваемая секция</li>
+  </ol>
+</div>
+
+<div class="section">
+  <h3>Кнопка «Повысить уровень»</h3>
+  <p style="font-size:13px; opacity:0.7;">Появляется под шапкой только когда все XP-кружки заполнены. Ведёт на <code>/character/:id/levelup</code>.</p>
+</div>

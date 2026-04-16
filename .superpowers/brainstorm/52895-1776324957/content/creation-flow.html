@@ -1,0 +1,99 @@
+<h2>Мастер создания персонажа</h2>
+<p class="subtitle">Шаги идут последовательно. Каждый шаг — отдельный экран. Прогресс сохраняется в localStorage при каждом шаге.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Роут: /character/new</div>
+  <div class="mockup-body" style="background:#1a1208; color:#d4a853; font-family:serif; padding:0;">
+
+    <!-- Progress bar -->
+    <div style="display:flex; border-bottom:1px solid #8b6914;">
+      <div style="flex:1; height:3px; background:#d4a853;"></div>
+      <div style="flex:1; height:3px; background:#d4a853;"></div>
+      <div style="flex:1; height:3px; background:#d4a853; opacity:0.3;"></div>
+      <div style="flex:1; height:3px; background:#d4a853; opacity:0.3;"></div>
+      <div style="flex:1; height:3px; background:#d4a853; opacity:0.3;"></div>
+    </div>
+
+    <div style="padding:16px;">
+      <!-- Step indicator -->
+      <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:2px; margin-bottom:4px;">Шаг 2 из 5</div>
+      <div style="font-size:16px; font-weight:bold; margin-bottom:16px; border-bottom:1px solid #8b6914; padding-bottom:8px;">Раса и Мировоззрение</div>
+
+      <!-- Race selection -->
+      <div style="font-size:10px; opacity:0.5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Раса</div>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+        <div style="border:1px solid #d4a853; padding:8px 12px; border-radius:2px; font-size:12px;">
+          <span style="font-weight:bold;">Человек</span>
+          <span style="font-size:10px; opacity:0.6; margin-left:8px;">+ход «Человеческое упорство»</span>
+        </div>
+        <div style="border:1px solid #8b6914; padding:8px 12px; border-radius:2px; font-size:12px; opacity:0.6;">
+          <span style="font-weight:bold;">Эльф</span>
+          <span style="font-size:10px; opacity:0.6; margin-left:8px;">+ход «Остроухий»</span>
+        </div>
+        <div style="border:1px solid #8b6914; padding:8px 12px; border-radius:2px; font-size:12px; opacity:0.6;">
+          <span style="font-weight:bold;">Дварф</span>
+          <span style="font-size:10px; opacity:0.6; margin-left:8px;">+ход «Дварфийский кулак»</span>
+        </div>
+      </div>
+
+      <!-- Alignment -->
+      <div style="font-size:10px; opacity:0.5; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Мировоззрение</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px;">
+        <div style="border:1px solid #8b6914; padding:6px 10px; font-size:11px; opacity:0.6;">Доброе</div>
+        <div style="border:1px solid #d4a853; padding:6px 10px; font-size:11px;">Нейтральное</div>
+        <div style="border:1px solid #8b6914; padding:6px 10px; font-size:11px; opacity:0.6;">Злое</div>
+      </div>
+
+      <!-- Navigation -->
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:11px; opacity:0.4;">← Назад</div>
+        <div style="background:#8b6914; color:#1a1208; padding:8px 20px; font-size:11px; font-weight:bold; border-radius:2px;">Далее →</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Шаги мастера</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border);">
+        <th style="text-align:left; padding:6px 8px; opacity:0.5;">#</th>
+        <th style="text-align:left; padding:6px 8px; opacity:0.5;">Шаг</th>
+        <th style="text-align:left; padding:6px 8px; opacity:0.5;">Что выбирается</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; opacity:0.5;">1</td>
+        <td style="padding:8px; font-weight:bold;">Имя и Внешность</td>
+        <td style="padding:8px; opacity:0.7;">Имя (ввод), внешность (выбор из списков: тело, глаза, волосы)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; opacity:0.5;">2</td>
+        <td style="padding:8px; font-weight:bold;">Раса и Мировоззрение</td>
+        <td style="padding:8px; opacity:0.7;">Раса (с описанием расового хода), мировоззрение (с описанием триггера XP)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; opacity:0.5;">3</td>
+        <td style="padding:8px; font-weight:bold;">Характеристики</td>
+        <td style="padding:8px; opacity:0.7;">Распределение 6 наборов чисел по характеристикам (drag или кнопки)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; opacity:0.5;">4</td>
+        <td style="padding:8px; font-weight:bold;">Стартовые ходы</td>
+        <td style="padding:8px; opacity:0.7;">Из списка доступных — выбрать нужное количество. Листаемый список с описанием каждого хода.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; opacity:0.5;">5</td>
+        <td style="padding:8px; font-weight:bold;">Снаряжение</td>
+        <td style="padding:8px; opacity:0.7;">Выбор из наборов снаряжения (Fighter: оружие, броня, доп. предметы)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h3>Завершение</h3>
+  <p style="opacity:0.7; font-size:13px;">После шага 5 → вычисляются HP (10 + КОН-мод), нагрузка (12 + СИЛ-мод), кость урона (d10). Статус меняется с <code>draft</code> на <code>active</code>. Редирект на <code>/character/:id</code>.</p>
+</div>
