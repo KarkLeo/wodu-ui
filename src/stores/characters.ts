@@ -19,7 +19,7 @@ export const useCharactersStore = defineStore('characters', {
       this.list.push(character)
       return character
     },
-    update(id: string, patch: Partial<Character>) {
+    update(id: string, patch: Partial<Omit<Character, 'id' | 'createdAt'>>) {
       const idx = this.list.findIndex((c) => c.id === id)
       if (idx !== -1) this.list[idx] = { ...this.list[idx], ...patch }
     },

@@ -25,6 +25,12 @@ describe('useCreationStore', () => {
     expect(store.step).toBe(4) // не больше 4
   })
 
+  it('prevStep() does not go below 1', () => {
+    const store = useCreationStore()
+    store.prevStep()
+    expect(store.step).toBe(1)
+  })
+
   it('reset() clears draft and step', () => {
     const store = useCreationStore()
     store.setDraft('abc')
