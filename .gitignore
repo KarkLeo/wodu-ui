@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Project-specific (non-source)
+.obsidian/
+.superpowers/
+mood/
+ref/
