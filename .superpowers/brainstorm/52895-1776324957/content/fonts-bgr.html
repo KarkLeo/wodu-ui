@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BGR locale — сравнение</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;700&family=IBM+Plex+Sans:wght@400;700&family=Geologica:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111;
+  color: #e0e0e0;
+  font-family: sans-serif;
+  padding: 20px 16px;
+}
+h1 { font-size: 17px; margin-bottom: 6px; color: #fff; }
+.subtitle { font-size: 12px; color: #777; margin-bottom: 24px; line-height: 1.6; }
+
+.font-block {
+  margin-bottom: 28px;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.font-header {
+  background: #1a1a1a;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #aaa;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.font-header strong { color: #fff; font-size: 14px; }
+.font-header .origin { font-size: 11px; color: #555; }
+
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.col {
+  padding: 14px;
+  background: #1a1208;
+}
+.col:first-child { border-right: 1px solid #2a2a2a; }
+.col-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #8b6914;
+  margin-bottom: 10px;
+}
+.specimen-letters {
+  font-size: 36px;
+  color: #d4a853;
+  letter-spacing: 4px;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.specimen-word {
+  font-size: 16px;
+  color: #a07830;
+  line-height: 1.6;
+}
+.specimen-word em { color: #d4a853; font-style: normal; }
+
+/* Default (Russian forms) */
+.col.default .specimen-letters,
+.col.default .specimen-word {
+  font-feature-settings: normal;
+}
+
+/* BGR locale override */
+.col.bgr .specimen-letters,
+.col.bgr .specimen-word {
+  font-feature-settings: "locl" 1;
+  font-language-override: "BGR";
+}
+
+/* Per-font families */
+.commissioner .specimen-letters,
+.commissioner .specimen-word { font-family: 'Commissioner', sans-serif; }
+
+.ibm .specimen-letters,
+.ibm .specimen-word { font-family: 'IBM Plex Sans', sans-serif; }
+
+.geologica .specimen-letters,
+.geologica .specimen-word { font-family: 'Geologica', sans-serif; }
+
+.noto .specimen-letters,
+.noto .specimen-word { font-family: 'Noto Sans', sans-serif; }
+
+.winner-badge {
+  background: #2a1f0a;
+  border: 1px solid #8b6914;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #d4a853;
+}
+
+/* Selector */
+.selector {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sel-btn {
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+.sel-btn:hover { border-color: #555; }
+.sel-btn.selected { border-color: #d4a853; }
+.sel-btn .sel-name { font-size: 14px; color: #fff; }
+.sel-btn .sel-preview { font-size: 20px; color: #d4a853; font-feature-settings: "locl" 1; font-language-override: "BGR"; }
+.sel-btn .sel-origin { font-size: 11px; color: #555; }
+
+.sel-commissioner .sel-preview { font-family: 'Commissioner', sans-serif; }
+.sel-ibm .sel-preview { font-family: 'IBM Plex Sans', sans-serif; }
+.sel-geologica .sel-preview { font-family: 'Geologica', sans-serif; }
+.sel-noto .sel-preview { font-family: 'Noto Sans', sans-serif; }
+
+.section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #444;
+  margin: 28px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e1e1e;
+}
+</style>
+<script>
+function pickFont(el) {
+  document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.recordChoice) window.recordChoice(el.dataset.choice, el.querySelector('.sel-name')?.textContent || el.dataset.choice);
+}
+</script>
+</head>
+<body>
+
+<h1>font-language-override: "BGR" — сравнение</h1>
+<p class="subtitle">
+  Слева — кириллица по умолчанию (русские формы).<br>
+  Справа — те же шрифты с <code style="color:#d4a853;">font-language-override:"BGR"</code>.<br>
+  Ключевые буквы: <strong style="color:#d4a853;">д г т и б в ж з</strong>
+</p>
+
+<!-- Commissioner -->
+<div class="font-block commissioner">
+  <div class="font-header">
+    <div><strong>Commissioner</strong> &nbsp;<span class="origin">Nikola Kostic, Сербия · Google Fonts</span></div>
+  </div>
+  <div class="compare-row">
+    <div class="col default">
+      <div class="col-label">Default (RU)</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+    <div class="col bgr">
+      <div class="col-label">BGR locale ✦</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+  </div>
+</div>
+
+<!-- IBM Plex Sans -->
+<div class="font-block ibm">
+  <div class="font-header">
+    <div><strong>IBM Plex Sans</strong> &nbsp;<span class="origin">IBM, США · Google Fonts</span></div>
+    <span class="winner-badge">↑ найбільший ефект</span>
+  </div>
+  <div class="compare-row">
+    <div class="col default">
+      <div class="col-label">Default (RU)</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+    <div class="col bgr">
+      <div class="col-label">BGR locale ✦</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+  </div>
+</div>
+
+<!-- Geologica -->
+<div class="font-block geologica">
+  <div class="font-header">
+    <div><strong>Geologica</strong> &nbsp;<span class="origin">Оле Шайфер, Германия · Google Fonts</span></div>
+  </div>
+  <div class="compare-row">
+    <div class="col default">
+      <div class="col-label">Default (RU)</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+    <div class="col bgr">
+      <div class="col-label">BGR locale ✦</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+  </div>
+</div>
+
+<!-- Noto Sans -->
+<div class="font-block noto">
+  <div class="font-header">
+    <div><strong>Noto Sans</strong> &nbsp;<span class="origin">Google · Google Fonts</span></div>
+  </div>
+  <div class="compare-row">
+    <div class="col default">
+      <div class="col-label">Default (RU)</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+    <div class="col bgr">
+      <div class="col-label">BGR locale ✦</div>
+      <div class="specimen-letters">д г т и б в</div>
+      <div class="specimen-word">Воїн · рівень · <em>добро</em><br>кидай+<em>силу</em>, завдай шкоду</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Выбери шрифт для проекта</div>
+
+<div class="selector">
+  <div class="sel-btn sel-commissioner" data-choice="commissioner" onclick="pickFont(this)">
+    <div>
+      <div class="sel-name">Commissioner</div>
+      <div class="sel-origin">Сербия · Google Fonts · бесплатный</div>
+    </div>
+    <div class="sel-preview">Воїн</div>
+  </div>
+  <div class="sel-btn sel-ibm" data-choice="ibm-plex-sans" onclick="pickFont(this)">
+    <div>
+      <div class="sel-name">IBM Plex Sans</div>
+      <div class="sel-origin">США · Google Fonts · бесплатный</div>
+    </div>
+    <div class="sel-preview">Воїн</div>
+  </div>
+  <div class="sel-btn sel-geologica" data-choice="geologica" onclick="pickFont(this)">
+    <div>
+      <div class="sel-name">Geologica</div>
+      <div class="sel-origin">Германия/Украина · Google Fonts · бесплатный</div>
+    </div>
+    <div class="sel-preview">Воїн</div>
+  </div>
+  <div class="sel-btn sel-noto" data-choice="noto-sans" onclick="pickFont(this)">
+    <div>
+      <div class="sel-name">Noto Sans</div>
+      <div class="sel-origin">Google · Google Fonts · бесплатный</div>
+    </div>
+    <div class="sel-preview">Воїн</div>
+  </div>
+</div>
+
+</body>
+</html>

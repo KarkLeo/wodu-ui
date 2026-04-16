@@ -1,0 +1,162 @@
+<h2>Игровой экран — гибридный лейаут v2</h2>
+<p class="subtitle">Верхняя часть скроллится. Табы: Ходы / Шмот / Связи — фиксируются при скролле вниз.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Мобильный вид — скролл вниз</div>
+  <div class="mockup-body" style="background:#1a1208; color:#d4a853; font-family:serif; padding:0; max-width:375px; margin:0 auto;">
+
+    <!-- Header -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Воин · Уровень 3</div>
+        <div style="font-size:18px; font-weight:bold;">Thorin Axeborn</div>
+      </div>
+      <div style="font-size:9px; opacity:0.5; text-align:right;">
+        <div>d10 урон</div>
+        <div>Броня 3</div>
+      </div>
+    </div>
+
+    <!-- HP + XP -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914; display:flex; gap:12px; align-items:center;">
+      <div style="flex:1;">
+        <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Хиты</div>
+        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+          <div style="font-size:24px; font-weight:bold;">18</div>
+          <div style="opacity:0.4; font-size:12px;">/ 25</div>
+        </div>
+        <div style="background:#2a1f0a; height:5px; border-radius:2px; overflow:hidden;">
+          <div style="background:#d4a853; height:100%; width:72%; opacity:0.8;"></div>
+        </div>
+      </div>
+      <div style="width:1px; background:#8b6914; opacity:0.3; align-self:stretch;"></div>
+      <div style="flex:1;">
+        <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Опыт</div>
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%; background:#d4a853;"></div>
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%; background:#d4a853;"></div>
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+          <div style="width:10px; height:10px; border:1px solid #d4a853; border-radius:50%;"></div>
+        </div>
+        <div style="font-size:8px; opacity:0.4; margin-top:3px;">2 / 7 для уровня 4</div>
+      </div>
+    </div>
+
+    <!-- Stats WITH debilities inline -->
+    <div style="padding:12px 14px; border-bottom:1px solid #8b6914;">
+      <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Характеристики</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px;">
+
+        <!-- СИЛ — нет дебилити -->
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px; position:relative;">
+          <div style="font-size:8px; opacity:0.5;">СИЛ</div>
+          <div style="font-size:18px; font-weight:bold;">16</div>
+          <div style="font-size:10px; opacity:0.7;">+2</div>
+        </div>
+
+        <!-- ЛОВ — активная дебилити «Нестабильный» -->
+        <div style="border:1px solid #c0392b; padding:6px; text-align:center; border-radius:2px; position:relative; background: rgba(192,57,43,0.08);">
+          <div style="font-size:8px; opacity:0.5;">ЛОВ</div>
+          <div style="font-size:18px; font-weight:bold; text-decoration:line-through; opacity:0.6;">12</div>
+          <div style="font-size:10px; color:#c0392b;">+0→-1</div>
+          <div style="font-size:7px; color:#c0392b; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;">нестабильный</div>
+        </div>
+
+        <!-- КОН -->
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">КОН</div>
+          <div style="font-size:18px; font-weight:bold;">15</div>
+          <div style="font-size:10px; opacity:0.7;">+1</div>
+        </div>
+
+        <!-- ИНТ -->
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">ИНТ</div>
+          <div style="font-size:18px; font-weight:bold;">8</div>
+          <div style="font-size:10px; opacity:0.7;">-1</div>
+        </div>
+
+        <!-- МДР -->
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">МДР</div>
+          <div style="font-size:18px; font-weight:bold;">10</div>
+          <div style="font-size:10px; opacity:0.7;">+0</div>
+        </div>
+
+        <!-- ХАР -->
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px;">
+          <div style="font-size:8px; opacity:0.5;">ХАР</div>
+          <div style="font-size:18px; font-weight:bold;">13</div>
+          <div style="font-size:10px; opacity:0.7;">+1</div>
+        </div>
+
+      </div>
+      <div style="font-size:9px; opacity:0.35; margin-top:6px; text-align:center; font-style:italic;">Нажми на характеристику чтобы отметить состояние</div>
+    </div>
+
+    <!-- TABS — sticky при скролле -->
+    <div style="border-bottom:1px solid #8b6914; display:flex; background:#0d0a04; position:sticky; top:0; z-index:10;">
+      <div style="flex:1; padding:10px 0; text-align:center; font-size:11px; color:#d4a853; border-bottom:2px solid #d4a853; font-weight:bold;">Ходы</div>
+      <div style="flex:1; padding:10px 0; text-align:center; font-size:11px; color:#8b6914; opacity:0.5;">Шмот</div>
+      <div style="flex:1; padding:10px 0; text-align:center; font-size:11px; color:#8b6914; opacity:0.5;">Связи</div>
+    </div>
+
+    <!-- Tab content: Moves -->
+    <div style="padding:12px 14px;">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="border:1px solid #8b6914; border-radius:2px; overflow:hidden;">
+          <div style="padding:8px 10px; background:#2a1f0a; font-size:12px; font-weight:bold;">Рубящий удар</div>
+          <div style="padding:6px 10px; font-size:10px; opacity:0.6; line-height:1.4;">Когда ты атакуешь врага в ближнем бою, брось+СИЛ. На 10+: нанеси урон, избегай его атаки — на выбор. На 7–9: нанеси урон, но и сам получаешь удар.</div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; overflow:hidden;">
+          <div style="padding:8px 10px; font-size:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span>Воля к победе</span><span style="font-size:9px; opacity:0.4;">▼</span>
+          </div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; overflow:hidden;">
+          <div style="padding:8px 10px; font-size:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span>Мастер оружия</span><span style="font-size:9px; opacity:0.4;">▼</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h3>Итоговая структура</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border);">
+        <th style="text-align:left; padding:6px 8px; opacity:0.5;">Блок</th>
+        <th style="text-align:left; padding:6px 8px; opacity:0.5;">Поведение</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; font-weight:bold;">Шапка</td>
+        <td style="padding:8px; opacity:0.7;">Скроллится вместе со страницей</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; font-weight:bold;">Хиты + XP</td>
+        <td style="padding:8px; opacity:0.7;">Скроллится</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; font-weight:bold;">Характеристики</td>
+        <td style="padding:8px; opacity:0.7;">Скроллится. Дебилити — inline в карточке стата, красная рамка + зачёркнутый модификатор</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; font-weight:bold;">Табы (Ходы / Шмот / Связи)</td>
+        <td style="padding:8px; opacity:0.7;">Прилипают к верху (sticky) когда доскроллил до них</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px; font-weight:bold;">Контент таба</td>
+        <td style="padding:8px; opacity:0.7;">Скроллится. Ходы — аккордеон. Шмот — список с весом. Связи — редактируемый текст.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

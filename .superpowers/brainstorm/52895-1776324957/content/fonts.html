@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Варианты шрифта</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;600;700&family=Geologica:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    color: #e0e0e0;
+    font-family: sans-serif;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+
+  h1 { font-size: 18px; margin-bottom: 6px; color: #fff; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #555; }
+  .card.selected { border-color: #d4a853; }
+  .card.selected .card-letter { background: #d4a853; color: #111; }
+
+  .card-top {
+    display: flex;
+    align-items: stretch;
+  }
+  .card-letter {
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #888;
+    background: #222;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+  .card-preview {
+    flex: 1;
+    background: #1a1208;
+    padding: 16px;
+    border-left: 1px solid #2a2a2a;
+  }
+
+  /* Kyiv Type — load from local CDN fallback, use system serif as placeholder */
+  .font-kyiv .card-preview {
+    font-family: 'Kyiv*Type Serif', 'PT Serif', Georgia, serif;
+  }
+  .font-commissioner .card-preview {
+    font-family: 'Commissioner', sans-serif;
+  }
+  .font-geologica .card-preview {
+    font-family: 'Geologica', sans-serif;
+  }
+
+  .preview-name {
+    font-size: 10px;
+    color: #8b6914;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .preview-char-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #d4a853;
+    margin-bottom: 10px;
+  }
+  .preview-stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .stat-box {
+    border: 1px solid #8b6914;
+    padding: 5px 8px;
+    text-align: center;
+  }
+  .stat-label { font-size: 9px; color: #8b6914; text-transform: uppercase; }
+  .stat-value { font-size: 18px; font-weight: 700; color: #d4a853; }
+  .stat-mod { font-size: 10px; color: #d4a853; opacity: 0.7; }
+
+  .preview-move-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #d4a853;
+    margin-bottom: 3px;
+  }
+  .preview-move-desc {
+    font-size: 11px;
+    color: #a07830;
+    line-height: 1.5;
+  }
+
+  .card-desc {
+    padding: 12px 16px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .card-desc h3 { font-size: 14px; color: #fff; margin-bottom: 4px; }
+  .card-desc p { font-size: 12px; color: #888; line-height: 1.5; }
+  .card-desc .tag {
+    display: inline-block;
+    font-size: 10px;
+    background: #2a2a2a;
+    color: #aaa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-top: 6px;
+    margin-right: 4px;
+  }
+</style>
+<script>
+  // Try to load Kyiv Type from Google Fonts CDN
+  const kyivLink = document.createElement('link');
+  kyivLink.rel = 'stylesheet';
+  kyivLink.href = 'https://fonts.googleapis.com/css2?family=Kyiv+Type+Serif:wght@400;700&display=swap';
+  document.head.appendChild(kyivLink);
+
+  function toggleSelect(el) {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const choice = el.dataset.choice;
+    if (window.recordChoice) window.recordChoice(choice, el.querySelector('h3')?.textContent || choice);
+  }
+</script>
+</head>
+<body>
+
+<h1>Выбор шрифта — неокирилица</h1>
+<p class="subtitle">Все три — современная неокирилица, авторы не из России. Одинаковый контент, разный характер.</p>
+
+<div class="cards">
+
+  <!-- A: Kyiv Type (Ukraine) -->
+  <div class="card font-kyiv" data-choice="kyiv-type" onclick="toggleSelect(this)">
+    <div class="card-top">
+      <div class="card-letter">A</div>
+      <div class="card-preview">
+        <div class="preview-name">Воин · Уровень 3</div>
+        <div class="preview-char-name">Торін Залізний</div>
+        <div class="preview-stats">
+          <div class="stat-box">
+            <div class="stat-label">Сил</div>
+            <div class="stat-value">16</div>
+            <div class="stat-mod">+2</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Лов</div>
+            <div class="stat-value">12</div>
+            <div class="stat-mod">+0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Кон</div>
+            <div class="stat-value">15</div>
+            <div class="stat-mod">+1</div>
+          </div>
+        </div>
+        <div class="preview-move-title">Рубаючий удар</div>
+        <div class="preview-move-desc">Коли атакуєш ворога в ближньому бою, кидай+СИЛ.</div>
+      </div>
+    </div>
+    <div class="card-desc">
+      <h3>A — Kyiv Type Serif</h3>
+      <p>Украинский шрифт, создан командой Type.Today совместно с Украиной. Реформированная кириллица с открытыми формами, сильный характер.</p>
+      <span class="tag">Украина</span>
+      <span class="tag">Serif</span>
+      <span class="tag">Бесплатный</span>
+    </div>
+  </div>
+
+  <!-- B: Commissioner (Serbia) -->
+  <div class="card font-commissioner" data-choice="commissioner" onclick="toggleSelect(this)">
+    <div class="card-top">
+      <div class="card-letter">B</div>
+      <div class="card-preview">
+        <div class="preview-name">Воин · Уровень 3</div>
+        <div class="preview-char-name">Торін Залізний</div>
+        <div class="preview-stats">
+          <div class="stat-box">
+            <div class="stat-label">Сил</div>
+            <div class="stat-value">16</div>
+            <div class="stat-mod">+2</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Лов</div>
+            <div class="stat-value">12</div>
+            <div class="stat-mod">+0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Кон</div>
+            <div class="stat-value">15</div>
+            <div class="stat-mod">+1</div>
+          </div>
+        </div>
+        <div class="preview-move-title">Рубаючий удар</div>
+        <div class="preview-move-desc">Коли атакуєш ворога в ближньому бою, кидай+СИЛ.</div>
+      </div>
+    </div>
+    <div class="card-desc">
+      <h3>B — Commissioner</h3>
+      <p>Никола Костич (Сербия), Google Fonts. Гуманистическая гротеска с переменной осью — от тонкого до жирного. Чистый, читаемый, современный.</p>
+      <span class="tag">Сербия</span>
+      <span class="tag">Sans-serif</span>
+      <span class="tag">Google Fonts</span>
+    </div>
+  </div>
+
+  <!-- C: Geologica (Fontwerk / international) -->
+  <div class="card font-geologica" data-choice="geologica" onclick="toggleSelect(this)">
+    <div class="card-top">
+      <div class="card-letter">C</div>
+      <div class="card-preview">
+        <div class="preview-name">Воин · Уровень 3</div>
+        <div class="preview-char-name">Торін Залізний</div>
+        <div class="preview-stats">
+          <div class="stat-box">
+            <div class="stat-label">Сил</div>
+            <div class="stat-value">16</div>
+            <div class="stat-mod">+2</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Лов</div>
+            <div class="stat-value">12</div>
+            <div class="stat-mod">+0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Кон</div>
+            <div class="stat-value">15</div>
+            <div class="stat-mod">+1</div>
+          </div>
+        </div>
+        <div class="preview-move-title">Рубаючий удар</div>
+        <div class="preview-move-desc">Коли атакуєш ворога в ближньому бою, кидай+СИЛ.</div>
+      </div>
+    </div>
+    <div class="card-desc">
+      <h3>C — Geologica</h3>
+      <p>Оле Шайфер (Германия) при участии украинских и болгарских специалистов по кириллице. Геометрическая гротеска, уверенная, техничная.</p>
+      <span class="tag">Германия/Украина</span>
+      <span class="tag">Sans-serif</span>
+      <span class="tag">Google Fonts</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

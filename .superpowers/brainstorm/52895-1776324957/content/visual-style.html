@@ -1,0 +1,96 @@
+<h2>Визуальный стиль</h2>
+<p class="subtitle">Какое настроение должен передавать интерфейс? Выбери один вариант.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="dark-parchment" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1208; padding:16px; font-family:serif;">
+      <div style="border:2px solid #8b6914; border-radius:4px; padding:12px; color:#d4a853;">
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; opacity:0.7; margin-bottom:6px">Имя персонажа</div>
+        <div style="font-size:20px; font-weight:bold; margin-bottom:8px">Thorin Axeborn</div>
+        <div style="display:flex; gap:12px; margin-bottom:10px">
+          <div style="text-align:center; border:1px solid #8b6914; padding:6px 10px; border-radius:3px">
+            <div style="font-size:9px; opacity:0.6">СИЛ</div>
+            <div style="font-size:18px; font-weight:bold">16</div>
+          </div>
+          <div style="text-align:center; border:1px solid #8b6914; padding:6px 10px; border-radius:3px">
+            <div style="font-size:9px; opacity:0.6">ЛОВ</div>
+            <div style="font-size:18px; font-weight:bold">12</div>
+          </div>
+          <div style="text-align:center; border:1px solid #8b6914; padding:6px 10px; border-radius:3px">
+            <div style="font-size:9px; opacity:0.6">МДР</div>
+            <div style="font-size:18px; font-weight:bold">10</div>
+          </div>
+        </div>
+        <div style="height:1px; background:#8b6914; opacity:0.4; margin-bottom:8px"></div>
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; opacity:0.5; margin-bottom:4px">Хиты</div>
+        <div style="background:#8b6914; height:6px; border-radius:3px; opacity:0.7; width:65%"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Тёмный пергамент</h3>
+      <p>Золото на тёмно-коричневом. Старинные рамки, засечный шрифт. Атмосфера реликвии — будто настоящий лист из книги заклинаний.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="ink-paper" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f5f0e8; padding:16px; font-family:serif;">
+      <div style="border:2px solid #2c1810; border-radius:2px; padding:12px; color:#2c1810;">
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; opacity:0.5; margin-bottom:6px">Имя персонажа</div>
+        <div style="font-size:20px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #2c1810; padding-bottom:6px">Thorin Axeborn</div>
+        <div style="display:flex; gap:12px; margin-bottom:10px">
+          <div style="text-align:center; border:2px solid #2c1810; padding:6px 10px;">
+            <div style="font-size:9px; opacity:0.5">СИЛ</div>
+            <div style="font-size:18px; font-weight:bold">16</div>
+          </div>
+          <div style="text-align:center; border:2px solid #2c1810; padding:6px 10px;">
+            <div style="font-size:9px; opacity:0.5">ЛОВ</div>
+            <div style="font-size:18px; font-weight:bold">12</div>
+          </div>
+          <div style="text-align:center; border:2px solid #2c1810; padding:6px 10px;">
+            <div style="font-size:9px; opacity:0.5">МДР</div>
+            <div style="font-size:18px; font-weight:bold">10</div>
+          </div>
+        </div>
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; opacity:0.4; margin-bottom:4px">Хиты</div>
+        <div style="background:#2c1810; height:5px; width:65%; opacity:0.6"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Чернила на бумаге</h3>
+      <p>Тёмно-коричневый на кремовом. Имитация карандашного заполнения физического листа. Читаемо, аутентично, близко к оригиналу.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="dark-minimal" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117; padding:16px; font-family:system-ui, sans-serif;">
+      <div style="border:1px solid #2a2d3a; border-radius:8px; padding:12px; color:#e2e8f0;">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:2px; color:#64748b; margin-bottom:4px">Персонаж</div>
+        <div style="font-size:20px; font-weight:700; margin-bottom:10px; color:#f8fafc">Thorin Axeborn</div>
+        <div style="display:flex; gap:8px; margin-bottom:10px">
+          <div style="text-align:center; background:#1e2130; padding:8px 12px; border-radius:6px; flex:1">
+            <div style="font-size:9px; color:#64748b; margin-bottom:2px">СИЛ</div>
+            <div style="font-size:18px; font-weight:700; color:#60a5fa">16</div>
+          </div>
+          <div style="text-align:center; background:#1e2130; padding:8px 12px; border-radius:6px; flex:1">
+            <div style="font-size:9px; color:#64748b; margin-bottom:2px">ЛОВ</div>
+            <div style="font-size:18px; font-weight:700; color:#60a5fa">12</div>
+          </div>
+          <div style="text-align:center; background:#1e2130; padding:8px 12px; border-radius:6px; flex:1">
+            <div style="font-size:9px; color:#64748b; margin-bottom:2px">МДР</div>
+            <div style="font-size:18px; font-weight:700; color:#60a5fa">10</div>
+          </div>
+        </div>
+        <div style="font-size:9px; color:#64748b; margin-bottom:4px; text-transform:uppercase; letter-spacing:1px">Хиты</div>
+        <div style="background:#1e2130; height:6px; border-radius:3px; overflow:hidden">
+          <div style="background:#22d3ee; height:100%; width:65%; border-radius:3px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Тёмный минимализм</h3>
+      <p>Современный dark mode. Без средневековых мотивов, но тёмный и атмосферный. Максимально удобен на телефоне ночью у стола.</p>
+    </div>
+  </div>
+
+</div>

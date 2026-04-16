@@ -1,0 +1,93 @@
+<h2>Повышение уровня</h2>
+<p class="subtitle">Роут: /character/:id/levelup — открывается когда все XP заполнены</p>
+
+<div class="mockup">
+  <div class="mockup-header">Экран Level Up</div>
+  <div class="mockup-body" style="background:#1a1208; color:#d4a853; font-family:serif; padding:0; max-width:375px; margin:0 auto;">
+
+    <!-- Header -->
+    <div style="padding:14px; border-bottom:1px solid #8b6914; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Повышение уровня</div>
+        <div style="font-size:18px; font-weight:bold;">Уровень 3 → 4</div>
+      </div>
+      <div style="font-size:11px; opacity:0.4;">Thorin</div>
+    </div>
+
+    <!-- Step 1: Stat bump -->
+    <div style="padding:14px; border-bottom:1px solid #8b6914;">
+      <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Шаг 1 из 2 — Характеристика</div>
+      <div style="font-size:12px; opacity:0.7; margin-bottom:10px; line-height:1.4;">Повысь одну характеристику на 1. Если она стала 16+ — повысь также максимальные хиты.</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px;">
+        <div style="border:2px solid #d4a853; padding:6px; text-align:center; border-radius:2px; background:#2a1f0a;">
+          <div style="font-size:8px; opacity:0.5;">СИЛ</div>
+          <div style="font-size:16px; font-weight:bold;">16</div>
+          <div style="font-size:9px; color:#d4a853;">→ 17</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px; opacity:0.6;">
+          <div style="font-size:8px; opacity:0.5;">ЛОВ</div>
+          <div style="font-size:16px; font-weight:bold;">12</div>
+          <div style="font-size:9px; opacity:0.4;">→ 13</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px; opacity:0.6;">
+          <div style="font-size:8px; opacity:0.5;">КОН</div>
+          <div style="font-size:16px; font-weight:bold;">15</div>
+          <div style="font-size:9px; opacity:0.4;">→ 16</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px; opacity:0.6;">
+          <div style="font-size:8px; opacity:0.5;">ИНТ</div>
+          <div style="font-size:16px; font-weight:bold;">8</div>
+          <div style="font-size:9px; opacity:0.4;">→ 9</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px; opacity:0.6;">
+          <div style="font-size:8px; opacity:0.5;">МДР</div>
+          <div style="font-size:16px; font-weight:bold;">10</div>
+          <div style="font-size:9px; opacity:0.4;">→ 11</div>
+        </div>
+        <div style="border:1px solid #8b6914; padding:6px; text-align:center; border-radius:2px; opacity:0.6;">
+          <div style="font-size:8px; opacity:0.5;">ХАР</div>
+          <div style="font-size:16px; font-weight:bold;">13</div>
+          <div style="font-size:9px; opacity:0.4;">→ 14</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end;">
+        <div style="background:#8b6914; color:#1a1208; padding:8px 20px; font-size:11px; font-weight:bold; border-radius:2px; opacity:0.5;">Далее →</div>
+      </div>
+    </div>
+
+    <!-- Step 2: Move selection -->
+    <div style="padding:14px; opacity:0.5;">
+      <div style="font-size:9px; opacity:0.4; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Шаг 2 из 2 — Новый ход</div>
+      <div style="font-size:12px; opacity:0.7; margin-bottom:8px;">Выбери один доступный ход уровня 2–5</div>
+      <div style="display:flex; flex-direction:column; gap:5px;">
+        <div style="border:1px solid #8b6914; border-radius:2px; padding:8px 10px;">
+          <div style="font-size:12px; font-weight:bold; margin-bottom:3px;">Боевой натиск</div>
+          <div style="font-size:10px; opacity:0.6; line-height:1.3;">Когда ты наносишь урон, можешь вместо урона отбросить противника.</div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; padding:8px 10px;">
+          <div style="font-size:12px; font-weight:bold; margin-bottom:3px;">Стойкий</div>
+          <div style="font-size:10px; opacity:0.6; line-height:1.3;">Когда ты получаешь урон, игнорируй 1 единицу брони.</div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; padding:8px 10px; opacity:0.4;">
+          <div style="font-size:12px; font-weight:bold; margin-bottom:3px; display:flex; justify-content:space-between;">
+            <span>Улучшенный удар</span>
+            <span style="font-size:9px; color:#c0392b;">требует: Рубящий удар</span>
+          </div>
+          <div style="font-size:10px; opacity:0.6; line-height:1.3;">Улучшает ход «Рубящий удар»...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h3>Механика</h3>
+  <ol style="font-size:13px; line-height:2; opacity:0.8; padding-left:20px;">
+    <li>Игрок заполняет XP-кружки → появляется кнопка «Повысить уровень»</li>
+    <li>Переход на <code>/character/:id/levelup</code></li>
+    <li><strong>Шаг 1</strong> — выбрать характеристику для повышения (+1). Если новое значение ≥ 16 → пересчитать HP</li>
+    <li><strong>Шаг 2</strong> — выбрать один ход из доступных по уровню (2–5 или 6–10). Ходы с невыполненным <code>requiresId</code> показаны серыми и недоступны</li>
+    <li>Подтверждение → уровень +1, XP сбрасывается, редирект на <code>/character/:id</code></li>
+  </ol>
+</div>

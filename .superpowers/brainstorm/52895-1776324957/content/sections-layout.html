@@ -1,0 +1,107 @@
+<h2>Как организовать секции игрового экрана?</h2>
+<p class="subtitle">Характеристики, хиты, ходы, снаряжение, связи — всё не влезает на один экран мобильного</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="single-scroll" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1208; padding:8px; font-family:serif; height:180px; overflow:hidden;">
+      <div style="color:#d4a853; font-size:10px; border:1px solid #8b6914; border-radius:3px; padding:8px; height:100%; box-sizing:border-box; overflow:hidden;">
+        <div style="font-weight:bold; margin-bottom:6px; font-size:12px; border-bottom:1px solid #8b6914; padding-bottom:4px;">Thorin Axeborn — Воин</div>
+        <div style="display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap;">
+          <div style="border:1px solid #8b6914; padding:2px 5px; font-size:9px;">СИЛ 16 +2</div>
+          <div style="border:1px solid #8b6914; padding:2px 5px; font-size:9px;">ЛОВ 12 +0</div>
+          <div style="border:1px solid #8b6914; padding:2px 5px; font-size:9px;">ИНТ 8 -1</div>
+        </div>
+        <div style="margin-bottom:6px; font-size:9px; opacity:0.6; text-transform:uppercase; letter-spacing:1px;">— Хиты —</div>
+        <div style="background:#8b6914; height:4px; width:70%; border-radius:2px; margin-bottom:6px; opacity:0.7;"></div>
+        <div style="font-size:9px; opacity:0.6; text-transform:uppercase; letter-spacing:1px;">— Ходы —</div>
+        <div style="font-size:9px; opacity:0.5; margin-top:3px;">· Рубящий удар</div>
+        <div style="font-size:9px; opacity:0.3; margin-top:2px;">· Воля к победе</div>
+        <div style="font-size:8px; text-align:center; margin-top:8px; opacity:0.3;">↓ прокрути ↓</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Один длинный скролл</h3>
+      <p>Все секции идут одна за другой по вертикали. Просто, привычно. Можно быстро прокрутить до нужного места.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="horizontal-tabs" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1208; padding:0; font-family:serif; height:180px; overflow:hidden; border-radius:6px;">
+      <!-- Tab bar -->
+      <div style="display:flex; border-bottom:1px solid #8b6914; background:#0d0a04;">
+        <div style="flex:1; padding:6px 2px; text-align:center; color:#d4a853; font-size:9px; border-bottom:2px solid #d4a853;">Стат</div>
+        <div style="flex:1; padding:6px 2px; text-align:center; color:#8b6914; font-size:9px; opacity:0.5;">Ходы</div>
+        <div style="flex:1; padding:6px 2px; text-align:center; color:#8b6914; font-size:9px; opacity:0.5;">Шмот</div>
+        <div style="flex:1; padding:6px 2px; text-align:center; color:#8b6914; font-size:9px; opacity:0.5;">Связи</div>
+      </div>
+      <!-- Tab content -->
+      <div style="padding:10px; color:#d4a853; font-size:10px;">
+        <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+          <div style="border:1px solid #8b6914; padding:4px 7px; font-size:9px; text-align:center;">
+            <div style="opacity:0.5; font-size:8px;">СИЛ</div>
+            <div style="font-size:14px; font-weight:bold;">16</div>
+            <div style="opacity:0.7; font-size:9px;">+2</div>
+          </div>
+          <div style="border:1px solid #8b6914; padding:4px 7px; font-size:9px; text-align:center;">
+            <div style="opacity:0.5; font-size:8px;">ЛОВ</div>
+            <div style="font-size:14px; font-weight:bold;">12</div>
+            <div style="opacity:0.7; font-size:9px;">+0</div>
+          </div>
+          <div style="border:1px solid #8b6914; padding:4px 7px; font-size:9px; text-align:center;">
+            <div style="opacity:0.5; font-size:8px;">ИНТ</div>
+            <div style="font-size:14px; font-weight:bold;">8</div>
+            <div style="opacity:0.7; font-size:9px;">-1</div>
+          </div>
+        </div>
+        <div style="font-size:9px; opacity:0.5; text-transform:uppercase; margin-bottom:4px;">Хиты</div>
+        <div style="background:#0d0a04; height:5px; border-radius:2px; overflow:hidden; margin-bottom:2px;">
+          <div style="background:#d4a853; height:100%; width:70%; opacity:0.7;"></div>
+        </div>
+        <div style="font-size:8px; opacity:0.4;">23 / 25</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Горизонтальные вкладки</h3>
+      <p>Секции — вкладки вверху экрана: Стат / Ходы / Шмот / Связи. Каждая секция отдельный экран без скролла.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="accordion" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1208; padding:8px; font-family:serif; height:180px; overflow:hidden;">
+      <div style="color:#d4a853; font-size:10px; border:1px solid #8b6914; border-radius:3px; padding:8px; height:100%; box-sizing:border-box;">
+        <!-- Pinned stats -->
+        <div style="display:flex; gap:4px; margin-bottom:6px; border-bottom:1px solid #8b6914; padding-bottom:6px;">
+          <div style="font-size:9px; border:1px solid #8b6914; padding:2px 5px;">СИЛ 16+2</div>
+          <div style="font-size:9px; border:1px solid #8b6914; padding:2px 5px;">HP 23/25</div>
+          <div style="font-size:9px; border:1px solid #8b6914; padding:2px 5px;">Броня 2</div>
+        </div>
+        <!-- Accordion -->
+        <div style="border:1px solid #8b6914; border-radius:2px; margin-bottom:4px; overflow:hidden;">
+          <div style="background:#2a1f0a; padding:4px 8px; font-size:9px; display:flex; justify-content:space-between;">
+            <span>ХОДЫ</span><span style="color:#d4a853;">▼</span>
+          </div>
+          <div style="padding:5px 8px; font-size:8px; opacity:0.7;">
+            <div>✓ Рубящий удар</div>
+            <div>✓ Воля к победе</div>
+          </div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; margin-bottom:4px;">
+          <div style="background:#0d0a04; padding:4px 8px; font-size:9px; display:flex; justify-content:space-between; opacity:0.6;">
+            <span>СНАРЯЖЕНИЕ</span><span>▶</span>
+          </div>
+        </div>
+        <div style="border:1px solid #8b6914; border-radius:2px; opacity:0.5;">
+          <div style="padding:4px 8px; font-size:9px; display:flex; justify-content:space-between;">
+            <span>СВЯЗИ</span><span>▶</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Аккордеон + закреплённая шапка</h3>
+      <p>Ключевые стат (хиты, броня, характеристики) всегда закреплены вверху. Ходы, снаряжение, связи — сворачиваемые секции ниже.</p>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Справжня неокирилиця</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- e-Ukraine font (Ukrainian government) -->
+<style>
+@font-face {
+  font-family: 'e-Ukraine';
+  src: url('https://s3-alpha-sig.figma.com/fonts/e-Ukraine-Regular.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'e-Ukraine';
+  src: url('https://s3-alpha-sig.figma.com/fonts/e-Ukraine-Bold.woff2') format('woff2');
+  font-weight: 700;
+}
+</style>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    color: #e0e0e0;
+    font-family: sans-serif;
+    padding: 24px 16px;
+  }
+  h1 { font-size: 18px; margin-bottom: 8px; color: #fff; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 28px; line-height: 1.6; }
+
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #555;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #222;
+    margin-top: 32px;
+  }
+
+  /* What we're looking for */
+  .neo-explainer {
+    background: #1a1208;
+    border: 1px solid #8b6914;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .neo-col h4 { font-size: 11px; color: #8b6914; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .neo-letters { display: flex; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+  .neo-letters span { font-size: 52px; line-height: 1; color: #d4a853; }
+  .neo-note { font-size: 11px; color: #a07830; line-height: 1.5; }
+  .traditional-col span { font-family: 'Times New Roman', Times, serif; }
+  .neo-col span { font-family: 'Onest', sans-serif; }
+
+  .verdict {
+    grid-column: 1 / -1;
+    background: rgba(192,57,43,0.1);
+    border: 1px solid #c0392b44;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #e88;
+    line-height: 1.5;
+  }
+
+  /* Options */
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .option-card {
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .option-card:hover { border-color: #555; }
+  .option-card.selected { border-color: #d4a853; }
+  .option-card.selected .badge { background: #d4a853; color: #111; }
+
+  .option-top { display: flex; }
+  .badge {
+    width: 48px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: bold;
+    color: #888; background: #222;
+    transition: background 0.2s, color 0.2s;
+  }
+  .preview-pane {
+    flex: 1;
+    background: #1a1208;
+    padding: 16px;
+    border-left: 1px solid #2a2a2a;
+  }
+  .preview-pane h3 { font-size: 20px; font-weight: 700; color: #d4a853; margin-bottom: 8px; }
+  .preview-pane .specimen { font-size: 13px; color: #a07830; line-height: 1.6; }
+  .preview-pane .specimen em { color: #d4a853; font-style: normal; font-weight: 600; }
+  .key-letters { font-size: 36px; color: #8b6914; margin-bottom: 8px; letter-spacing: 4px; }
+
+  .desc-pane { padding: 12px 16px; border-top: 1px solid #222; }
+  .desc-pane h4 { font-size: 14px; color: #fff; margin-bottom: 4px; }
+  .desc-pane p { font-size: 12px; color: #888; line-height: 1.5; }
+  .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    font-size: 10px;
+    background: #2a2a2a; color: #aaa;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .tag.good { background: #1a2a1a; color: #8bc48b; }
+  .tag.warn { background: #2a2a1a; color: #c4c48b; }
+  .tag.bad { background: #2a1a1a; color: #c48b8b; }
+
+  /* e-Ukraine */
+  .eukraine h3, .eukraine .key-letters, .eukraine .specimen {
+    font-family: 'e-Ukraine', 'Onest', sans-serif;
+  }
+
+  /* Fixel workaround - no CDN, use description */
+  .fixel h3, .fixel .key-letters, .fixel .specimen {
+    font-family: 'Onest', sans-serif; /* placeholder */
+  }
+</style>
+<script>
+function toggleSelect(el) {
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.recordChoice) window.recordChoice(el.dataset.choice, el.querySelector('h4')?.textContent || el.dataset.choice);
+}
+</script>
+</head>
+<body>
+
+<h1>Настоящая неокирилица — что ищем</h1>
+<p class="subtitle">
+  Неокирилица — форма буквы, а не страна производства. Главный маркер: строчная <strong style="color:#d4a853;">в</strong> должна быть высокой — выходить за x-height, как заглавная.
+</p>
+
+<div class="neo-explainer">
+  <div class="traditional-col">
+    <h4>Традиционная кириллица</h4>
+    <div class="neo-letters">
+      <span style="font-family: 'Times New Roman', serif;">в д б ж</span>
+    </div>
+    <div class="neo-note">«в» — на уровне x-height, копирует лат. B.<br>«д» — с хвостами-ножками вниз.</div>
+  </div>
+  <div class="neo-col">
+    <h4>Неокирилица (идеал)</h4>
+    <div class="neo-letters">
+      <!-- показываем концепцию SVG-буквами -->
+      <svg width="180" height="60" viewBox="0 0 180 60" style="overflow:visible;">
+        <!-- в — высокое, ascender -->
+        <text x="0" y="52" font-size="52" fill="#d4a853" font-family="serif" font-style="italic">в</text>
+        <line x1="0" y1="38" x2="32" y2="38" stroke="#8b6914" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="34" y="42" font-size="9" fill="#8b6914">x-height</text>
+        <line x1="0" y1="6" x2="32" y2="6" stroke="#d4a853" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="34" y="10" font-size="9" fill="#d4a853">ascender</text>
+      </svg>
+    </div>
+    <div class="neo-note" style="margin-top:4px;">«в» — высокое, выходит на уровень заглавных.<br>«д» — без хвостов, чистый треугольник.</div>
+  </div>
+  <div class="verdict">
+    ⚠ В свободно доступных шрифтах не из России настоящего высокого «в» почти нет. Ниже — лучшие доступные варианты с оценкой.
+  </div>
+</div>
+
+<div class="section-title">Варианты</div>
+<div class="options-grid">
+
+  <!-- Fixel -->
+  <div class="option-card fixel" data-choice="fixel" onclick="toggleSelect(this)">
+    <div class="option-top">
+      <div class="badge">A</div>
+      <div class="preview-pane fixel">
+        <div class="key-letters">в д б ж з</div>
+        <h3>Торін Залізний</h3>
+        <div class="specimen">Воін · Рівень 3<br>Коли атакуєш ворога — кидай+<em>СИЛ</em>.</div>
+      </div>
+    </div>
+    <div class="desc-pane">
+      <h4>Fixel</h4>
+      <p>Шрифт Міністерства цифрової трансформації України. Проектировался как государственный шрифт Украины, с осознанным подходом к кириллице. Бесплатный, GitHub. <strong style="color:#fff">Нужно скачать и подключить вручную</strong> — на Google Fonts нет.</p>
+      <div class="tags">
+        <span class="tag good">✓ Украина</span>
+        <span class="tag good">✓ Бесплатный</span>
+        <span class="tag warn">⚠ Не на Google Fonts</span>
+        <span class="tag warn">⚠ в — улучшенное, не идеал</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- e-Ukraine -->
+  <div class="option-card eukraine" data-choice="e-ukraine" onclick="toggleSelect(this)">
+    <div class="option-top">
+      <div class="badge">B</div>
+      <div class="preview-pane eukraine">
+        <div class="key-letters">в д б ж з</div>
+        <h3>Торін Залізний</h3>
+        <div class="specimen">Воін · Рівень 3<br>Коли атакуєш ворога — кидай+<em>СИЛ</em>.</div>
+      </div>
+    </div>
+    <div class="desc-pane">
+      <h4>e-Ukraine</h4>
+      <p>Ещё один украинский государственный шрифт (Мінцифри). Гуманистическая гротеска, чуть мягче Fixel. Тоже бесплатный, тоже нужно скачивать отдельно.</p>
+      <div class="tags">
+        <span class="tag good">✓ Украина</span>
+        <span class="tag good">✓ Бесплатный</span>
+        <span class="tag warn">⚠ Не на Google Fonts</span>
+        <span class="tag warn">⚠ в — почти традиционное</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Честный ответ -->
+  <div style="background:#1a1208; border:1px solid #8b6914; border-radius:8px; padding:20px;">
+    <h4 style="color:#d4a853; margin-bottom:8px; font-size:14px;">Честный вывод</h4>
+    <p style="font-size:13px; color:#a07830; line-height:1.6;">
+      Настоящее высокое «в» в свободных нероссийских шрифтах — большая редкость.
+      Российские студии (CSTM, TypeType, Brownfox) владеют этой нишей.
+      Есть два пути:<br><br>
+      <strong style="color:#d4a853;">① Использовать Onest / Geologica</strong> — не идеальная неокирилица,
+      но чистая, украинская/нероссийская, хорошо читается. Принять компромисс.<br><br>
+      <strong style="color:#d4a853;">② Использовать платный нероссийский шрифт</strong> —
+      например <em>Halvar</em> (Hannes von Döhren, Германия) или
+      шрифты <em>Pangram Pangram</em> (Швейцария) — в них Кириллица реформирована сильнее.
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>
