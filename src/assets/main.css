@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #1a1208;
+  --color-bg-dark: #0d0a04;
+  --color-bg-elevated: #2a1f0a;
+  --color-accent: #d4a853;
+  --color-border: #8b6914;
+  --color-text: #d4a853;
+  --color-text-muted: #8b6914;
+  --color-danger: #c0392b;
+
+  --font-family: 'Commissioner', sans-serif;
+  --border-radius: 2px;
+}
+
+html, body, #app {
+  min-height: 100%;
+  background: var(--color-bg-dark);
+  color: var(--color-text);
+}
+
+body {
+  font-family: var(--font-family);
+  font-feature-settings: "locl" 1;
+  font-language-override: "BGR";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Контейнер контента — мобильная ширина */
+.content-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--color-bg);
+  min-height: 100dvh;
+}
+
+/* Кнопки */
+.btn-primary {
+  background: var(--color-border);
+  color: var(--color-bg);
+  border: none;
+  padding: 10px 24px;
+  font-family: var(--font-family);
+  font-feature-settings: "locl" 1;
+  font-language-override: "BGR";
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  padding: 10px 16px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Текстовые метки */
+.label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-text-muted);
+}
+
+/* Разделитель */
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  opacity: 0.4;
+}
