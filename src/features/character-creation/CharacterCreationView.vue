@@ -73,9 +73,13 @@ function finish(gearPatch: Partial<Character>) {
   const d = draft.value
   const maxHp = calcMaxHp(fighter.baseHp, d.stats.con)
   const maxLoad = calcMaxLoad(fighter.baseLoad, d.stats.str)
-  // Стартовые ходы + расовый ход
+  // Стартовые ходы + расовый ход + ходы, даваемые автоматически
+  const AUTO_GRANTED = ['fighter_signature_weapon', 'fighter_armored']
   const raceMove = fighter.races.find(r => r.id === d.race)
   const allMoveIds = [...d.startingMoveIds]
+  for (const id of AUTO_GRANTED) {
+    if (!allMoveIds.includes(id)) allMoveIds.push(id)
+  }
   if (raceMove && !allMoveIds.includes(raceMove.moveId)) allMoveIds.push(raceMove.moveId)
 
   characters.update(creation.draftId, {
