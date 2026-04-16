@@ -24,17 +24,21 @@ describe('xpThreshold', () => {
 })
 
 describe('calcMaxHp', () => {
-  it('Fighter base 10 + CON modifier', () => {
-    expect(calcMaxHp(10, 15)).toBe(11) // CON 15 → +1
-    expect(calcMaxHp(10, 16)).toBe(12) // CON 16 → +2
-    expect(calcMaxHp(10, 8)).toBe(9)   // CON 8  → -1
+  it.each([
+    [10, 15, 11],
+    [10, 16, 12],
+    [10, 8, 9],
+  ])('base %i + CON %i → maxHp %i', (base, con, expected) => {
+    expect(calcMaxHp(base, con)).toBe(expected)
   })
 })
 
 describe('calcMaxLoad', () => {
-  it('Fighter base 12 + STR modifier', () => {
-    expect(calcMaxLoad(12, 16)).toBe(14) // STR 16 → +2
-    expect(calcMaxLoad(12, 9)).toBe(12)  // STR 9  → 0
-    expect(calcMaxLoad(12, 6)).toBe(11)  // STR 6  → -1
+  it.each([
+    [12, 16, 14],
+    [12, 9, 12],
+    [12, 6, 11],
+  ])('base %i + STR %i → maxLoad %i', (base, str, expected) => {
+    expect(calcMaxLoad(base, str)).toBe(expected)
   })
 })
