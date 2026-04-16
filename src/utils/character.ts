@@ -1,3 +1,4 @@
+/** Dungeon World stat modifier. Input: integer 1–18. */
 export function statModifier(stat: number): number {
   if (stat <= 3) return -3
   if (stat <= 5) return -2
