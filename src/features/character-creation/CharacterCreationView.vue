@@ -9,7 +9,7 @@ import StepIdentity from './steps/StepIdentity.vue'
 import StepStats from './steps/StepStats.vue'
 import StepMoves from './steps/StepMoves.vue'
 import StepGear from './steps/StepGear.vue'
-import type { Character, Stats } from '@/types/character'
+import type { Character } from '@/types/character'
 
 const router = useRouter()
 const characters = useCharactersStore()
