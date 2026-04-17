@@ -1,152 +1,127 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import fighter from '@/data/classes/fighter'
-import type { Character } from '@/types/character'
+import type { Character, ClassId, StatKey } from '@/types/character'
+import { CLASS_LIST } from '@/data/classes'
+import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
+import { roll2d6, statBonusFrom2d6 } from '@/utils/derived'
 
 const props = defineProps<{ draft: Character }>()
-const emit = defineEmits<{
-  patch: [data: Partial<Character>]
-  next: []
-}>()
+const emit = defineEmits<{ patch: [Partial<Character>]; next: [] }>()
 
-const name = ref(props.draft.name)
-const selectedLooks = ref<Record<string, string>>(
-  Object.fromEntries(fighter.looks.map(l => [l.category, '']))
-)
-const race = ref(props.draft.race)
-const alignment = ref(props.draft.alignment)
+const rolled = ref(Object.values(props.draft.statRolls).some(v => v > 0))
 
-const lookString = computed(() =>
-  Object.values(selectedLooks.value).filter(Boolean).join(', ')
-)
-
-const canProceed = computed(() =>
-  name.value.trim().length > 0 && race.value && alignment.value
-)
-
-function proceed() {
-  emit('patch', {
-    name: name.value.trim(),
-    look: lookString.value,
-    race: race.value,
-    alignment: alignment.value,
-  })
-  emit('next')
+function rollAll() {
+  const rolls: Record<StatKey, number> = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
+  const stats: Record<StatKey, number> = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
+  for (const key of STAT_KEYS) {
+    const r = roll2d6()
+    rolls[key] = r
+    stats[key] = statBonusFrom2d6(r)
+  }
+  emit('patch', { statRolls: rolls, stats })
+  rolled.value = true
 }
+
+function rerollOne(key: StatKey) {
+  const r = roll2d6()
+  emit('patch', {
+    statRolls: { ...props.draft.statRolls, [key]: r },
+    stats: { ...props.draft.stats, [key]: statBonusFrom2d6(r) },
+  })
+}
+
+function setStatManual(key: StatKey, value: number) {
+  const v = Math.max(0, Math.min(3, value))
+  emit('patch', { stats: { ...props.draft.stats, [key]: v } })
+}
+
+function selectClass(id: ClassId) {
+  emit('patch', { classId: id })
+}
+
+const canContinue = computed(() =>
+  props.draft.name.trim().length > 0 && rolled.value,
+)
 </script>
 
 <template>
-  <div class="step-wrap">
-    <h2 class="step-title">Личность</h2>
-
-    <!-- Имя -->
-    <div class="field">
+  <div class="step">
+    <section class="block">
       <label class="label">Имя</label>
-      <input class="text-input" v-model="name" placeholder="Имя персонажа" maxlength="40" />
-    </div>
+      <input
+        class="input"
+        :value="draft.name"
+        @input="emit('patch', { name: ($event.target as HTMLInputElement).value })"
+        placeholder="Имя персонажа"
+      />
+      <label class="label">Истинное имя (опционально)</label>
+      <input
+        class="input"
+        :value="draft.trueName ?? ''"
+        @input="emit('patch', { trueName: ($event.target as HTMLInputElement).value })"
+        placeholder="Имя, дающее силу"
+      />
+    </section>
 
-    <!-- Внешность -->
-    <div class="field">
-      <div class="label" style="margin-bottom: 8px">Внешность</div>
-      <div v-for="look in fighter.looks" :key="look.category" class="look-group">
-        <div class="label" style="margin-bottom: 6px; opacity: 0.6">{{ look.category }}</div>
-        <div class="option-row">
-          <button
-            v-for="opt in look.options"
-            :key="opt"
-            class="option-chip"
-            :class="{ 'option-chip--selected': selectedLooks[look.category] === opt }"
-            @click="selectedLooks[look.category] = opt"
-          >{{ opt }}</button>
+    <section class="block">
+      <div class="label">Класс</div>
+      <div class="class-grid">
+        <button
+          v-for="cls in CLASS_LIST"
+          :key="cls.id"
+          class="class-card"
+          :class="{ 'class-card--active': draft.classId === cls.id }"
+          @click="selectClass(cls.id)"
+        >
+          {{ cls.name }}
+        </button>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-header">
+        <span class="label">Характеристики</span>
+        <button class="btn-ghost" @click="rollAll">Бросить все 2d6</button>
+      </div>
+      <div class="stats">
+        <div v-for="key in STAT_KEYS" :key="key" class="stat">
+          <div class="stat__head">
+            <span class="stat__name">{{ STAT_LABELS[key] }}</span>
+            <button class="btn-mini" @click="rerollOne(key)" title="Перебросить">🎲</button>
+          </div>
+          <div class="stat__roll">Бросок: {{ draft.statRolls[key] || '—' }}</div>
+          <input
+            type="number"
+            class="input stat__input"
+            :value="draft.stats[key]"
+            min="0"
+            max="3"
+            @input="setStatManual(key, Number(($event.target as HTMLInputElement).value))"
+          />
         </div>
       </div>
-    </div>
-
-    <!-- Раса -->
-    <div class="field">
-      <div class="label" style="margin-bottom: 8px">Раса</div>
-      <div class="choice-list">
-        <button
-          v-for="r in fighter.races"
-          :key="r.id"
-          class="choice-item"
-          :class="{ 'choice-item--selected': race === r.id }"
-          @click="race = r.id"
-        >
-          <span class="choice-item__name">{{ r.name }}</span>
-          <span class="choice-item__hint">+ход: {{ fighter.moves.find(m => m.id === r.moveId)?.name }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Мировоззрение -->
-    <div class="field">
-      <div class="label" style="margin-bottom: 8px">Мировоззрение</div>
-      <div class="choice-list">
-        <button
-          v-for="a in fighter.alignments"
-          :key="a.id"
-          class="choice-item"
-          :class="{ 'choice-item--selected': alignment === a.id }"
-          @click="alignment = a.id"
-        >
-          <span class="choice-item__name">{{ a.name }}</span>
-          <span class="choice-item__hint">XP: {{ a.trigger }}</span>
-        </button>
-      </div>
-    </div>
+    </section>
 
     <div class="step-footer">
-      <button class="btn-primary" :disabled="!canProceed" @click="proceed">Далее →</button>
+      <button class="btn-primary" :disabled="!canContinue" @click="emit('next')">Далее →</button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.step-wrap { padding: 16px; display: flex; flex-direction: column; gap: 20px; }
-.step-title { font-size: 20px; font-weight: 700; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; }
-.field { display: flex; flex-direction: column; gap: 8px; }
-.text-input {
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-family: inherit;
-  font-size: 16px;
-  padding: 10px 12px;
-  border-radius: var(--border-radius);
-  width: 100%;
-}
-.text-input::placeholder { color: var(--color-text-muted); opacity: 0.5; }
-.text-input:focus { outline: none; border-color: var(--color-accent); }
-.look-group { margin-bottom: 10px; }
-.option-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.option-chip {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-family: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.option-chip--selected { border-color: var(--color-accent); color: var(--color-accent); }
-.choice-list { display: flex; flex-direction: column; gap: 6px; }
-.choice-item {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  padding: 10px 12px;
-  text-align: left;
-  border-radius: var(--border-radius);
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.choice-item--selected { border-color: var(--color-accent); background: var(--color-bg-elevated); }
-.choice-item__name { font-size: 14px; font-weight: 600; }
-.choice-item__hint { font-size: 11px; color: var(--color-text-muted); }
+.step { padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+.block { display: flex; flex-direction: column; gap: 8px; }
+.block-header { display: flex; justify-content: space-between; align-items: center; }
+.input { width: 100%; padding: 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; font-size: 15px; border-radius: 4px; }
+.class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.class-card { padding: 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; cursor: pointer; border-radius: 4px; }
+.class-card--active { border-color: var(--color-accent); color: var(--color-accent); }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.stat { padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
+.stat__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.stat__name { font-weight: 600; }
+.stat__roll { font-size: 12px; color: var(--color-text-muted); margin-bottom: 6px; }
+.stat__input { text-align: center; }
+.btn-mini { background: none; border: none; cursor: pointer; font-size: 18px; padding: 0; color: inherit; }
 .step-footer { display: flex; justify-content: flex-end; padding-top: 8px; }
 </style>
