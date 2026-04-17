@@ -1,13 +1,20 @@
 import { defineStore } from 'pinia'
 import type { Character } from '@/types/character'
+import { isReadyToLevelUp } from '@/utils/derived'
+
+const STORAGE_KEY = 'wod.characters.v1'
 
 export const useCharactersStore = defineStore('characters', {
   state: () => ({
     list: [] as Character[],
+    activeId: null as string | null,
   }),
   getters: {
-    getById: (state) => (id: string) =>
-      state.list.find((c) => c.id === id),
+    active(state): Character | undefined {
+      return state.activeId ? state.list.find(c => c.id === state.activeId) : undefined
+    },
+    getById: (state) => (id: string) => state.list.find(c => c.id === id),
+    isReadyToLevelUp: () => (char: Character) => isReadyToLevelUp(char),
   },
   actions: {
     add(data: Omit<Character, 'id' | 'createdAt'>): Character {
@@ -20,12 +27,21 @@ export const useCharactersStore = defineStore('characters', {
       return character
     },
     update(id: string, patch: Partial<Omit<Character, 'id' | 'createdAt'>>) {
-      const idx = this.list.findIndex((c) => c.id === id)
+      const idx = this.list.findIndex(c => c.id === id)
       if (idx !== -1) this.list[idx] = { ...this.list[idx], ...patch }
     },
     remove(id: string) {
-      this.list = this.list.filter((c) => c.id !== id)
+      this.list = this.list.filter(c => c.id !== id)
+      if (this.activeId === id) this.activeId = null
+    },
+    setActive(id: string | null) {
+      this.activeId = id
+    },
+    applyLevelUp(id: string, patch: Partial<Character>) {
+      this.update(id, patch)
     },
   },
-  persist: true,
+  persist: {
+    key: STORAGE_KEY,
+  },
 })
