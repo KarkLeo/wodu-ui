@@ -1,110 +1,198 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import fighter from '@/data/classes/fighter'
-import type { Character, InventoryItem } from '@/types/character'
+import type { Character, InventoryItem, ArmorType } from '@/types/character'
+import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
+import { hitDiceCount, rollHitDice } from '@/utils/derived'
 
 const props = defineProps<{ draft: Character }>()
-const emit = defineEmits<{
-  patch: [data: Partial<Character>]
-  finish: [data: Partial<Character>]
-}>()
+const emit = defineEmits<{ patch: [Partial<Character>]; finish: [] }>()
 
-// Для каждой группы снаряжения — выбранный индекс (null = не выбрано)
-// Группа с одним предметом — автовыбор
-const selections = ref<(number | null)[]>(
-  fighter.startingGear.map(group => group.length === 1 ? 0 : null)
-)
+const hpRolled = computed(() => props.draft.maxHp > 0)
 
-const allSelected = computed(() =>
-  selections.value.every(s => s !== null)
-)
-
-const finalInventory = computed((): InventoryItem[] =>
-  selections.value.flatMap((idx, groupIdx) =>
-    idx !== null ? [fighter.startingGear[groupIdx][idx]] : []
-  )
-)
-
-function select(groupIdx: number, itemIdx: number) {
-  selections.value[groupIdx] = itemIdx
+function rollHp() {
+  const numDice = hitDiceCount(props.draft.stats.con)
+  const { total } = rollHitDice(numDice, props.draft.level)
+  emit('patch', { hitDice: numDice, maxHp: total, currentHp: total })
 }
 
-function finish() {
-  emit('finish', {
-    inventory: finalInventory.value,
-    coins: 10,
-    armor: finalInventory.value
-      .flatMap(i => i.tags)
-      .reduce((acc, tag) => {
-        const m = tag.match(/^броня (\d+)$/)
-        return m ? acc + parseInt(m[1]) : acc
-      }, 0),
+function setArmor(type: ArmorType) {
+  emit('patch', { armor: { ...props.draft.armor, type } })
+}
+function toggleShield() {
+  emit('patch', { armor: { ...props.draft.armor, shield: !props.draft.armor.shield } })
+}
+
+function addFromCatalog(templateId: string) {
+  const tpl = findGearTemplate(templateId)
+  if (!tpl) return
+  if ((tpl.price ?? 0) > props.draft.coins) return
+  const item: InventoryItem = {
+    id: crypto.randomUUID(),
+    name: tpl.name,
+    price: tpl.price,
+    tags: [...tpl.tags],
+    damage: tpl.damage,
+    notes: tpl.notes,
+  }
+  emit('patch', {
+    inventory: [...props.draft.inventory, item],
+    coins: props.draft.coins - (tpl.price ?? 0),
   })
 }
+
+function removeItem(id: string) {
+  const item = props.draft.inventory.find(i => i.id === id)
+  if (!item) return
+  emit('patch', {
+    inventory: props.draft.inventory.filter(i => i.id !== id),
+    coins: props.draft.coins + (item.price ?? 0),
+  })
+}
+
+const customName = ref('')
+const customPrice = ref(0)
+function addCustom() {
+  if (!customName.value.trim()) return
+  if (customPrice.value > props.draft.coins) return
+  const item: InventoryItem = {
+    id: crypto.randomUUID(),
+    name: customName.value.trim(),
+    price: customPrice.value || undefined,
+    tags: ['custom'],
+  }
+  emit('patch', {
+    inventory: [...props.draft.inventory, item],
+    coins: props.draft.coins - customPrice.value,
+  })
+  customName.value = ''
+  customPrice.value = 0
+}
+
+function openCategory(id: string) {
+  openCat.value = openCat.value === id ? null : id
+}
+const openCat = ref<string | null>('weapon')
+
+const itemsByCategory = computed(() => {
+  const out: Record<string, typeof GEAR_CATALOG> = {}
+  for (const cat of GEAR_CATEGORIES) out[cat.id] = []
+  for (const item of GEAR_CATALOG) {
+    const cat = item.tags.find(t => (GEAR_CATEGORIES as readonly { id: string }[]).some(c => c.id === t)) ?? 'gear'
+    out[cat].push(item)
+  }
+  return out
+})
+
+const canFinish = computed(() => hpRolled.value)
 </script>
 
 <template>
-  <div class="step-wrap">
-    <h2 class="step-title">Снаряжение</h2>
-    <p class="hint">Выбери по одному варианту из каждой группы</p>
+  <div class="step">
+    <section class="block">
+      <div class="block-header">
+        <span class="label">Очки здоровья</span>
+        <span class="hint">1 + ТЕЛ = {{ hitDiceCount(draft.stats.con) }} к6, оставляется {{ draft.level }}</span>
+      </div>
+      <div class="hp-row">
+        <span class="hp-value">{{ draft.maxHp || '—' }}</span>
+        <button class="btn-primary" @click="rollHp">{{ hpRolled ? 'Перебросить' : 'Бросить ОЗ' }}</button>
+      </div>
+    </section>
 
-    <div class="gear-groups">
-      <div
-        v-for="(group, gIdx) in fighter.startingGear"
-        :key="gIdx"
-        class="gear-group"
-      >
-        <!-- Группа из одного предмета — автовыбрана -->
-        <div v-if="group.length === 1" class="gear-auto">
-          <span class="label" style="opacity:.5">Автоматически</span>
-          <span class="gear-auto__name">{{ group[0].name }}</span>
-        </div>
-        <!-- Группа с выбором -->
-        <div v-else class="choice-list">
+    <section class="block">
+      <div class="label">Доспех</div>
+      <div class="armor-grid">
+        <button class="armor-card" :class="{ 'armor-card--active': draft.armor.type === 'none' }" @click="setArmor('none')">Без</button>
+        <button class="armor-card" :class="{ 'armor-card--active': draft.armor.type === 'light' }" @click="setArmor('light')">Лёгкий (1)</button>
+        <button class="armor-card" :class="{ 'armor-card--active': draft.armor.type === 'full' }" @click="setArmor('full')">Полный (2)</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" :checked="draft.armor.shield" @change="toggleShield" />
+        Щит (+1)
+      </label>
+    </section>
+
+    <section class="block">
+      <div class="block-header">
+        <span class="label">Снаряжение</span>
+        <span class="coins">💰 {{ draft.coins }}с</span>
+      </div>
+
+      <div v-for="cat in GEAR_CATEGORIES" :key="cat.id" class="cat">
+        <button class="cat__head" @click="openCategory(cat.id)">
+          <span>{{ cat.name }}</span>
+          <span>{{ openCat === cat.id ? '▾' : '▸' }}</span>
+        </button>
+        <div v-if="openCat === cat.id" class="cat__body">
           <button
-            v-for="(item, iIdx) in group"
-            :key="item.id"
-            class="choice-item"
-            :class="{ 'choice-item--selected': selections[gIdx] === iIdx }"
-            @click="select(gIdx, iIdx)"
+            v-for="item in itemsByCategory[cat.id]"
+            :key="item.templateId"
+            class="gear-item"
+            :disabled="(item.price ?? 0) > draft.coins"
+            @click="addFromCatalog(item.templateId)"
           >
-            <span class="choice-item__name">{{ item.name }}</span>
-            <span class="choice-item__hint">вес {{ item.weight }}, {{ item.tags.join(', ') }}</span>
+            <div class="gear-item__name">{{ item.name }}</div>
+            <div class="gear-item__meta">
+              <span>{{ item.price }}с</span>
+              <span v-if="item.damage">· урон {{ item.damage }}</span>
+            </div>
+            <div v-if="item.notes" class="gear-item__notes">{{ item.notes }}</div>
           </button>
         </div>
       </div>
-    </div>
+
+      <div class="custom">
+        <div class="label">Свой предмет</div>
+        <div class="custom__row">
+          <input class="input" placeholder="Название" v-model="customName" />
+          <input class="input input--price" type="number" min="0" placeholder="Цена" v-model.number="customPrice" />
+          <button class="btn-ghost" :disabled="!customName.trim() || customPrice > draft.coins" @click="addCustom">+</button>
+        </div>
+      </div>
+
+      <div v-if="draft.inventory.length" class="inventory">
+        <div class="label">Куплено</div>
+        <div v-for="item in draft.inventory" :key="item.id" class="inv-row">
+          <span class="inv-row__name">{{ item.name }}</span>
+          <span class="inv-row__price">{{ item.price ?? 0 }}с</span>
+          <button class="btn-mini" @click="removeItem(item.id)">×</button>
+        </div>
+      </div>
+    </section>
 
     <div class="step-footer">
-      <button class="btn-primary" :disabled="!allSelected" @click="finish">Создать персонажа →</button>
+      <button class="btn-primary" :disabled="!canFinish" @click="emit('finish')">Завершить</button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.step-wrap { padding: 16px; display: flex; flex-direction: column; gap: 20px; }
-.step-title { font-size: 20px; font-weight: 700; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; }
+.step { padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+.block { display: flex; flex-direction: column; gap: 8px; }
+.block-header { display: flex; justify-content: space-between; align-items: center; }
 .hint { font-size: 12px; color: var(--color-text-muted); }
-.gear-groups { display: flex; flex-direction: column; gap: 16px; }
-.gear-group {}
-.gear-auto { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--border-radius); opacity: 0.7; }
-.gear-auto__name { font-size: 14px; }
-.choice-list { display: flex; flex-direction: column; gap: 6px; }
-.choice-item {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  padding: 10px 12px;
-  text-align: left;
-  border-radius: var(--border-radius);
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.choice-item--selected { border-color: var(--color-accent); background: var(--color-bg-elevated); }
-.choice-item__name { font-size: 14px; font-weight: 600; }
-.choice-item__hint { font-size: 11px; color: var(--color-text-muted); }
+.hp-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
+.hp-value { font-size: 24px; font-weight: 700; }
+.armor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.armor-card { padding: 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; cursor: pointer; border-radius: 4px; }
+.armor-card--active { border-color: var(--color-accent); color: var(--color-accent); }
+.check { display: flex; align-items: center; gap: 8px; }
+.coins { font-weight: 600; }
+.cat { border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }
+.cat__head { width: 100%; display: flex; justify-content: space-between; padding: 10px 12px; background: var(--color-bg-elevated); border: none; color: var(--color-text); cursor: pointer; font-family: inherit; font-size: 14px; }
+.cat__body { display: flex; flex-direction: column; }
+.gear-item { text-align: left; padding: 10px 12px; background: var(--color-bg-dark); border: none; border-top: 1px solid var(--color-border); color: var(--color-text); cursor: pointer; font-family: inherit; }
+.gear-item:disabled { opacity: 0.3; cursor: not-allowed; }
+.gear-item__name { font-weight: 600; margin-bottom: 2px; }
+.gear-item__meta { font-size: 12px; color: var(--color-text-muted); }
+.gear-item__notes { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+.custom { margin-top: 8px; }
+.custom__row { display: grid; grid-template-columns: 1fr 90px auto; gap: 6px; }
+.input { padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; border-radius: 4px; }
+.input--price { width: 90px; }
+.inventory { margin-top: 12px; border: 1px solid var(--color-border); border-radius: 4px; }
+.inv-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--color-border); }
+.inv-row:first-child { border-top: none; }
+.btn-mini { background: none; border: none; cursor: pointer; color: var(--color-text-muted); font-size: 16px; }
 .step-footer { display: flex; justify-content: flex-end; padding-top: 8px; }
 </style>
