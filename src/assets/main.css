@@ -84,3 +84,29 @@ body {
   background: var(--color-border);
   opacity: 0.4;
 }
+
+/* Форматирование описаний ходов */
+.fmt-roll    { color: var(--color-accent); font-weight: 700; }
+.fmt-success { color: #e8c87a; font-weight: 600; }
+.fmt-partial { color: #c4a055; font-weight: 600; }
+.fmt-fail    { color: var(--color-danger); font-weight: 600; }
+
+.fmt-trigger { display: block; margin-bottom: 6px; }
+.fmt-tiers {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fmt-tiers li {
+  display: flex;
+  gap: 4px;
+}
+.fmt-tiers li::before {
+  content: '✶';
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
