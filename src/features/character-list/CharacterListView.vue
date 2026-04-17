@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
+import { CLASSES } from '@/data/classes'
 
 const router = useRouter()
 const characters = useCharactersStore()
@@ -48,7 +49,7 @@ function hpPercent(current: number, max: number) {
         <div class="char-card__top">
           <div>
             <div class="char-card__name">{{ char.name }}</div>
-            <div class="label">{{ char.classId === 'fighter' ? 'Воин' : char.classId }} · Уровень {{ char.level }}</div>
+            <div class="label">{{ CLASSES[char.classId]?.name ?? char.classId }} · Уровень {{ char.level }}</div>
           </div>
           <div class="char-card__hp">
             <span class="label">HP</span>
