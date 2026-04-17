@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Character } from '@/types/character'
 
-const props = defineProps<{ char: Character }>()
+defineProps<{ char: Character }>()
 const emit = defineEmits<{ patch: [Partial<Character>] }>()
 
 function save(e: Event) {
