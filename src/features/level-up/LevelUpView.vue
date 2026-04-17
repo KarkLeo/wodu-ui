@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
-import { calcMaxHp } from '@/utils/character'
-import fighter from '@/data/classes/fighter'
-import LevelStatStep from './components/LevelStatStep.vue'
-import LevelMoveStep from './components/LevelMoveStep.vue'
-import type { Character, Stats } from '@/types/character'
+import type { Character, SkillId, AbilityId, StatKey } from '@/types/character'
+import { getReward } from '@/data/xpTable'
+import RewardsSummary from './components/RewardsSummary.vue'
+import HitDiceRollStep from './components/HitDiceRollStep.vue'
+import SkillPickStep from './components/SkillPickStep.vue'
+import AbilityPickStep from './components/AbilityPickStep.vue'
+import StatBumpStep from './components/StatBumpStep.vue'
+
+type Phase = 'hitDice' | 'skill' | 'ability' | 'stat' | 'confirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,73 +18,104 @@ const characters = useCharactersStore()
 
 const id = computed(() => route.params.id as string)
 const char = computed(() => characters.getById(id.value))
+const targetLevel = computed(() => (char.value ? char.value.level + 1 : 1))
+const reward = computed(() => getReward(targetLevel.value))
 
-const step = ref<1 | 2>(1)
-const chosenStat = ref<keyof Stats | null>(null)
+const pendingPatch = ref<Partial<Character>>({})
+const phase = ref<Phase>('hitDice')
+const done = ref({ hitDice: false, skill: false, ability: false, stat: false })
 
-function selectStat(stat: keyof Stats) {
-  chosenStat.value = stat
-  step.value = 2
+onMounted(() => {
+  if (!char.value || !reward.value) {
+    router.push('/')
+    return
+  }
+  // автобонус к урону
+  if (reward.value.damageDice) {
+    pendingPatch.value.damageBonusDice = (char.value.damageBonusDice ?? 0) + reward.value.damageDice
+  }
+  advance()
+})
+
+function advance() {
+  const r = reward.value
+  if (!r) return
+  if (r.hitDice && !done.value.hitDice) { phase.value = 'hitDice'; return }
+  if (r.skills && !done.value.skill) { phase.value = 'skill'; return }
+  if (r.abilities && !done.value.ability) { phase.value = 'ability'; return }
+  if (r.statBonus && !done.value.stat) { phase.value = 'stat'; return }
+  phase.value = 'confirm'
 }
 
-function finish(moveId: string) {
-  if (!char.value || !chosenStat.value) return
-  const newStatVal = char.value.stats[chosenStat.value] + 1
-  const newStats = { ...char.value.stats, [chosenStat.value]: newStatVal }
+function onHitDice(delta: number) {
+  if (!char.value) return
+  pendingPatch.value.maxHp = (pendingPatch.value.maxHp ?? char.value.maxHp) + delta
+  pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + delta
+  pendingPatch.value.hitDice = (pendingPatch.value.hitDice ?? char.value.hitDice) + 1
+  done.value.hitDice = true
+  advance()
+}
 
-  // Пересчёт maxHp если КОН поднялась выше порога
-  const newMaxHp = chosenStat.value === 'con'
-    ? calcMaxHp(fighter.baseHp, newStatVal) + (char.value.level) // +1 hp за уровень сверху базы
-    : char.value.maxHp
+function onSkill(sid: SkillId) {
+  if (!char.value) return
+  const current = pendingPatch.value.skillIds ?? char.value.skillIds
+  pendingPatch.value.skillIds = [...current, sid]
+  done.value.skill = true
+  advance()
+}
 
-  // Если ход заменяет другой — убрать старый
-  const move = fighter.moves.find(m => m.id === moveId)
-  let newMoveIds = [...char.value.moveIds]
-  if (move?.replacesId) newMoveIds = newMoveIds.filter(id => id !== move.replacesId)
-  if (!newMoveIds.includes(moveId)) newMoveIds.push(moveId)
+function onAbility(aid: AbilityId) {
+  if (!char.value) return
+  const current = pendingPatch.value.abilityIds ?? char.value.abilityIds
+  pendingPatch.value.abilityIds = [...current, aid]
+  done.value.ability = true
+  advance()
+}
 
-  characters.update(id.value, {
-    stats: newStats,
-    maxHp: newMaxHp,
-    level: char.value.level + 1,
-    xp: 0,
-    moveIds: newMoveIds,
+function onStat(key: StatKey) {
+  if (!char.value) return
+  const base = pendingPatch.value.stats ?? char.value.stats
+  pendingPatch.value.stats = { ...base, [key]: Math.min(3, base[key] + 1) }
+  done.value.stat = true
+  advance()
+}
+
+function apply() {
+  if (!char.value) return
+  characters.applyLevelUp(id.value, {
+    ...pendingPatch.value,
+    level: targetLevel.value,
   })
   router.push(`/character/${id.value}`)
 }
 </script>
 
 <template>
-  <div v-if="char" class="content-wrap">
-    <div class="lu-header">
+  <div v-if="char && reward" class="content-wrap">
+    <header class="hdr">
       <button class="btn-ghost" @click="router.push(`/character/${id}`)">← Назад</button>
       <div>
         <div class="label">Повышение уровня</div>
-        <div style="font-size: 16px; font-weight: 700;">Уровень {{ char.level }} → {{ char.level + 1 }}</div>
+        <div class="hdr__level">Уровень {{ char.level }} → {{ targetLevel }}</div>
       </div>
-      <div class="label" style="text-align: right">Шаг {{ step }}/2</div>
-    </div>
+      <div></div>
+    </header>
 
-    <LevelStatStep
-      v-if="step === 1"
-      :char="char"
-      @select="selectStat"
-    />
+    <RewardsSummary :reward="reward" :target-level="targetLevel" />
 
-    <LevelMoveStep
-      v-if="step === 2"
-      :char="char"
-      @finish="finish"
-    />
+    <HitDiceRollStep v-if="phase === 'hitDice'" @done="onHitDice" />
+    <SkillPickStep v-else-if="phase === 'skill'" :char="char" @done="onSkill" />
+    <AbilityPickStep v-else-if="phase === 'ability'" :char="char" @done="onAbility" />
+    <StatBumpStep v-else-if="phase === 'stat'" :char="char" @done="onStat" />
+    <section v-else-if="phase === 'confirm'" class="confirm">
+      <div class="label">Готово — применить изменения?</div>
+      <button class="btn-primary" @click="apply">Применить</button>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.lu-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--color-border);
-}
+.hdr { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--color-border); }
+.hdr__level { font-size: 16px; font-weight: 700; }
+.confirm { padding: 24px 16px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
 </style>
