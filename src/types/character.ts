@@ -4,10 +4,16 @@ export interface Move {
   id: string
   classId: string
   name: string
-  description: string
+  trigger?: string      // «когда ты…» + бросок
+  hit10?: string        // результат на 10+
+  hit7?: string         // результат на 7–9
+  miss?: string         // результат на провале
+  options?: string[]    // список для ходов «выберите N из этих вариантов»
+  note?: string         // дополнительный абзац после тиров (отдельное правило хода)
+  description?: string  // пассивный текст или fallback (если нет trigger)
   type: MoveType
-  requiresId?: string   // ход-условие (должен быть взят раньше)
-  replacesId?: string   // этот ход заменяет указанный
+  requiresId?: string
+  replacesId?: string
 }
 
 export interface Stats {
@@ -36,6 +42,13 @@ export interface InventoryItem {
   uses?: number
 }
 
+export interface SignatureWeapon {
+  base: string
+  range: string
+  enhancements: string[]
+  appearance: string
+}
+
 export type CharacterStatus = 'draft' | 'active'
 
 export interface Character {
@@ -51,6 +64,7 @@ export interface Character {
   race: string
   bonds: string[]           // шаблоны заполняются в игре
   startingMoveIds: string[]
+  signatureWeapon?: SignatureWeapon
 
   // Игровые данные
   stats: Stats

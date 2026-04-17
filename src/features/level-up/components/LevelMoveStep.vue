@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Character, Move } from '@/types/character'
 import fighter from '@/data/classes/fighter'
+import MoveDescription from '@/components/ui/MoveDescription.vue'
 
 const props = defineProps<{ char: Character }>()
 const emit = defineEmits<{ finish: [moveId: string] }>()
@@ -51,7 +52,7 @@ const expanded = ref<string | null>(null)
           <span class="move-item__chevron">{{ expanded === move.id ? '▲' : '▼' }}</span>
         </div>
         <div v-if="expanded === move.id" class="move-item__desc">
-          {{ move.description }}
+          <MoveDescription :move="move" />
         </div>
         <div v-if="!isLocked(move)" class="move-item__footer">
           <button class="btn-primary" @click="$emit('finish', move.id)">Выбрать этот ход</button>
