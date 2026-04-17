@@ -1,0 +1,89 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { Character } from '@/types/character'
+import { CLASSES } from '@/data/classes'
+import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp } from '@/utils/derived'
+
+const props = defineProps<{ char: Character }>()
+const emit = defineEmits<{
+  patch: [Partial<Character>]
+  levelUp: []
+  back: []
+}>()
+
+const className = computed(() => CLASSES[props.char.classId].name)
+const armor = computed(() => totalArmor(props.char))
+const xpToNext = computed(() => xpToNextLevel(props.char))
+const xpPct = computed(() => xpProgressPercent(props.char))
+const ready = computed(() => isReadyToLevelUp(props.char))
+
+function bumpHp(delta: number) {
+  const next = Math.max(0, Math.min(props.char.maxHp, props.char.currentHp + delta))
+  emit('patch', { currentHp: next })
+}
+function bumpXp(delta: number) {
+  emit('patch', { xp: Math.max(0, props.char.xp + delta) })
+}
+</script>
+
+<template>
+  <header class="hdr">
+    <div class="hdr__top">
+      <button class="btn-ghost" @click="emit('back')">← Список</button>
+      <div class="hdr__title">
+        <div class="hdr__name">{{ char.name }}</div>
+        <div class="label">{{ className }} · Уровень {{ char.level }}<span v-if="char.trueName"> · “{{ char.trueName }}”</span></div>
+      </div>
+      <div class="hdr__armor">
+        <div class="label">Броня</div>
+        <div class="hdr__armor-val">{{ armor }}</div>
+      </div>
+    </div>
+
+    <div v-if="ready" class="levelup">
+      <span>Готов к повышению уровня!</span>
+      <button class="btn-primary" @click="emit('levelUp')">Повысить ↑</button>
+    </div>
+
+    <div class="hdr__meters">
+      <div class="meter">
+        <div class="meter__label">HP</div>
+        <div class="meter__controls">
+          <button class="btn-mini" @click="bumpHp(-1)">−</button>
+          <span class="meter__val">{{ char.currentHp }} / {{ char.maxHp }}</span>
+          <button class="btn-mini" @click="bumpHp(1)">+</button>
+        </div>
+      </div>
+      <div class="meter">
+        <div class="meter__label">
+          XP {{ xpToNext !== null ? `(до ${xpToNext})` : '(макс)' }}
+        </div>
+        <div class="meter__controls">
+          <button class="btn-mini" @click="bumpXp(-10)">−10</button>
+          <span class="meter__val">{{ char.xp }}</span>
+          <button class="btn-mini" @click="bumpXp(10)">+10</button>
+          <button class="btn-mini" @click="bumpXp(100)">+100</button>
+        </div>
+        <div class="xp-bar"><div class="xp-bar__fill" :style="{ width: xpPct + '%' }" /></div>
+      </div>
+    </div>
+  </header>
+</template>
+
+<style scoped>
+.hdr { border-bottom: 1px solid var(--color-border); padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.hdr__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.hdr__title { flex: 1; }
+.hdr__name { font-size: 20px; font-weight: 700; }
+.hdr__armor { text-align: right; }
+.hdr__armor-val { font-size: 22px; font-weight: 700; }
+.levelup { background: var(--color-bg-elevated); border: 1px solid var(--color-accent); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 13px; }
+.hdr__meters { display: flex; flex-direction: column; gap: 8px; }
+.meter { display: flex; flex-direction: column; gap: 4px; }
+.meter__label { font-size: 12px; color: var(--color-text-muted); }
+.meter__controls { display: flex; align-items: center; gap: 8px; }
+.meter__val { flex: 1; text-align: center; font-weight: 600; }
+.btn-mini { padding: 2px 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); cursor: pointer; border-radius: 3px; font-family: inherit; }
+.xp-bar { height: 3px; background: var(--color-bg-elevated); border-radius: 2px; overflow: hidden; }
+.xp-bar__fill { height: 100%; background: var(--color-accent); transition: width 0.3s; }
+</style>
