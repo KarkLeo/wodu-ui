@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Character, Ritual, Spirit, Magic } from '@/types/character'
 import type { AbilityId } from '@/types/character'
 import { SPHERE_PRESETS } from '@/data/spheres'
@@ -14,6 +15,8 @@ function ensureMagic(): Magic {
   ) as Ritual[]
   return { ...m, rituals }
 }
+
+const normalizedRituals = computed(() => ensureMagic().rituals)
 
 function updateSpirit(idx: number, patch: Partial<Spirit>) {
   const magic = ensureMagic()
@@ -79,7 +82,7 @@ function removeRitual(idx: number) {
         <span class="label">Ритуалы</span>
         <button class="btn-ghost" @click="addRitual">+ Ритуал</button>
       </div>
-      <div v-for="(r, idx) in (char.magic?.rituals ?? [])" :key="idx" class="ritual">
+      <div v-for="(r, idx) in normalizedRituals" :key="idx" class="ritual">
         <div class="ritual-header">
           <input
             class="input"
