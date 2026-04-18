@@ -37,11 +37,18 @@ export const useCharactersStore = defineStore('characters', {
     setActive(id: string | null) {
       this.activeId = id
     },
-    applyLevelUp(id: string, patch: Partial<Character>) {
-      this.update(id, patch)
-    },
   },
   persist: {
     key: STORAGE_KEY,
+    afterHydrate(ctx) {
+      ctx.store.$patch((state) => {
+        state.list = state.list.map((c: Character) => ({
+          ...c,
+          inventory: c.inventory ?? [],
+          skillIds: c.skillIds ?? [],
+          abilityIds: c.abilityIds ?? [],
+        }))
+      })
+    },
   },
 })

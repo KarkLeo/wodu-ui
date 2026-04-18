@@ -2,19 +2,15 @@
 import { ref, computed } from 'vue'
 import type { Character, AbilityId } from '@/types/character'
 import { ABILITIES } from '@/types/character'
-import { CLASSES } from '@/data/classes'
 
 const props = defineProps<{ char: Character }>()
 const emit = defineEmits<{ done: [id: AbilityId] }>()
 
 const picked = ref<AbilityId | null>(null)
 
-const available = computed(() => {
-  const cls = CLASSES[props.char.classId]
-  return ABILITIES.filter(a =>
-    cls.abilityPool.includes(a.id) && !props.char.abilityIds.includes(a.id),
-  )
-})
+const available = computed(() =>
+  ABILITIES.filter(a => !props.char.abilityIds.includes(a.id)),
+)
 </script>
 
 <template>
@@ -28,7 +24,7 @@ const available = computed(() => {
           <div class="desc">{{ a.description }}</div>
         </div>
       </label>
-      <div v-if="!available.length" class="empty">Весь класс-пул уже освоен.</div>
+      <div v-if="!available.length" class="empty">Все доступные способности уже освоены.</div>
     </div>
     <button class="btn-primary" :disabled="!picked" @click="picked && emit('done', picked)">Принять</button>
   </section>
