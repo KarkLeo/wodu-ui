@@ -40,3 +40,5 @@ export const CLASSES: Record<ClassId, ClassData> = {
 }
 
 export const CLASS_LIST: ClassData[] = Object.values(CLASSES)
+
+export const MAGIC_ABILITY_IDS = ['summoning', 'domination', 'ritual', 'incantations'] as const

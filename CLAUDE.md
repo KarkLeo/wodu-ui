@@ -4,37 +4,72 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Interactive character sheet for the tabletop RPG **Dungeon World**. The goal is a mobile-friendly, user-friendly web application with three distinct interface modes.
+Interactive character sheet for the tabletop RPG **World of Dungeons** (©1979 J.S. Harper with C. McDowell, One & Seven Tactical Design Institute, Seattle, WA). Mobile-first web app with three interface modes: character creation, in-game play, and level-up flow.
+
+## Commands
+
+```bash
+npm run dev       # start Vite dev server
+npm run build     # vue-tsc type check + Vite production build
+npm run preview   # preview production build
+```
+
+There are no tests in this project — do not add or maintain them.
 
 ## Tech Stack
 
 - **Framework**: Vue 3 + TypeScript
-- **State / Persistence**: Pinia store, data persisted to `localStorage`
+- **State / Persistence**: Pinia + `pinia-plugin-persistedstate`; localStorage keys are `wod.characters.v1` and `wod.creation.v1`
 - **UI Components**: [Reka UI](https://reka-ui.com/) for complex controls (dropdowns, dialogs, tabs, etc.)
-- **Mobile-first**: all layouts must be responsive
+- **Routing**: Vue Router with route guards that redirect draft/missing characters to `/`
 
-## Design References
+## Data Model
 
-- `ref/` — reference scans of the official Dungeon World character sheet. Every field, section, and label from these pages must be represented. Nothing may be omitted or distorted.
-- `mood/` — mood board images that define the visual atmosphere. The final design should evoke the same dark, handcrafted aesthetic seen there.
+The central type is `Character` (`src/types/character.ts`). Key sub-types:
+- `Stats` — six stats (`str/dex/con/int/wis/cha`), each stored as a bonus (not raw roll)
+- `ArmorState` — `type: 'none'|'light'|'full'` + `shield: boolean`
+- `InventoryItem` — tagged items; `tags: ['weapon']` marks weapons, `'ranged'` marks ranged weapons
+- `Magic` — optional, only present for wizard/cleric classes
+- `CharacterStatus` — `'draft'` (creation in progress) | `'active'` (fully created)
 
-## Interface Modes
+`ClassData` is defined in `src/data/classes.ts` and drives what skills/abilities each class grants.
 
-The app has three distinct views; switching between them should feel seamless:
+## Computed Logic (`src/utils/derived.ts`)
 
-1. **Character Creation** — all choices that are one-time setup (class, race, name, background, bonds, alignment, starting moves). After character is created these sections are hidden from the in-game view.
-2. **In-Game** — the active play sheet: stats, HP, XP, armor, damage dice, current moves, inventory, holds/debilities, bonds.
-3. **Level Up** — triggered when XP threshold is reached; presents available advancement choices.
+All derived values live here — never recalculate inline in components:
+- `totalArmor` — base armor + shield + `toughness` ability bonus
+- `damageFormula` — weapon damage string with ability bonuses (`skirmish`, `hewing`, `volley`)
+- `isReadyToLevelUp` — compares `xp` against `XP_THRESHOLDS` table
+- `rollHitDice(numDice, level)` — rolls N d6, keeps top `level`, returns rolls/kept/total
+- `statBonusFrom2d6(roll)` — converts 2d6 roll to stat bonus (0/1/2/3)
+
+## Stores
+
+- `useCharactersStore` (`src/stores/characters.ts`) — the only persistent store for characters; `active` getter returns the currently selected character
+- `useCreationStore` (`src/stores/creation.ts`) — ephemeral creation wizard state; tracks `draftId` and `step` (1–3)
+
+## Routes & Views
+
+| Route | View | Guard |
+|-------|------|-------|
+| `/` | `CharacterListView` | — |
+| `/character/new` | `CharacterCreationView` | — |
+| `/character/:id` | `InGameView` | redirects if draft/missing |
+| `/character/:id/levelup` | `LevelUpView` | redirects if not active |
 
 ## Architecture Guidelines
 
-- Feature-based folder structure (`src/features/character-creation/`, `src/features/in-game/`, `src/features/level-up/`) with each feature owning its components, composables, and store slice.
-- A single root Pinia store module per feature; the character object shape should be defined as a TypeScript interface in `src/types/character.ts`.
-- Keep Reka UI primitives wrapped in thin project-specific components (`src/components/ui/`) so the design system is swappable.
-- The move list is rendered as a scrollable list; players browse and select from available moves rather than seeing a static block of text.
+- Feature-based folder structure: `src/features/{character-creation,in-game,level-up}/`
+- All domain constants (skills list, abilities list, gear catalog, XP table, magic spheres) live in `src/data/`
+- Keep Reka UI primitives wrapped in thin project-specific components under `src/components/ui/`
+
+## Design References
+
+- `ref/` — reference scans of the original character sheet; every field must be represented faithfully
+- `mood/` — mood board defining the dark, handcrafted visual aesthetic
 
 ## Key UX Rules
 
-- Creation-only fields are hidden after character creation is complete.
-- No decorative UI chrome — every element must serve a functional purpose.
-- All user data survives page refresh via `localStorage` (Pinia plugin or manual watcher).
+- Creation-only fields are hidden once `status === 'active'`
+- No decorative UI chrome — every element must serve a functional purpose
+- All user data survives page refresh via Pinia persisted state

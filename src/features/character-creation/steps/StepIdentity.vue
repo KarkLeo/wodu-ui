@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { Character, ClassId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
@@ -8,7 +8,7 @@ import { roll2d6, statBonusFrom2d6 } from '@/utils/derived'
 const props = defineProps<{ draft: Character }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; next: [] }>()
 
-const rolled = ref(Object.values(props.draft.statRolls).some(v => v > 0))
+const rolled = computed(() => STAT_KEYS.every(k => props.draft.statRolls[k] > 0))
 
 function rollAll() {
   const rolls: Record<StatKey, number> = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
@@ -19,7 +19,6 @@ function rollAll() {
     stats[key] = statBonusFrom2d6(r)
   }
   emit('patch', { statRolls: rolls, stats })
-  rolled.value = true
 }
 
 function rerollOne(key: StatKey) {
@@ -36,7 +35,8 @@ function setStatManual(key: StatKey, value: number) {
 }
 
 function selectClass(id: ClassId) {
-  emit('patch', { classId: id })
+  if (id === props.draft.classId) return
+  emit('patch', { classId: id, skillIds: [], abilityIds: [], magic: undefined })
 }
 
 const canContinue = computed(() =>
