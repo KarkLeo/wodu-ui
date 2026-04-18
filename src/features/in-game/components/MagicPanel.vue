@@ -84,7 +84,7 @@ function removeRitual(idx: number) {
           <input
             class="input"
             placeholder="Название"
-            :value="typeof r === 'string' ? r : r.name"
+            :value="r.name"
             @input="updateRitual(idx, { name: ($event.target as HTMLInputElement).value })"
           />
           <button class="btn-mini" @click="removeRitual(idx)">×</button>
@@ -93,7 +93,7 @@ function removeRitual(idx: number) {
           class="input textarea"
           placeholder="Описание"
           rows="3"
-          :value="typeof r === 'string' ? '' : r.description"
+          :value="r.description"
           @input="updateRitual(idx, { description: ($event.target as HTMLTextAreaElement).value })"
         />
       </div>
