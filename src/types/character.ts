@@ -58,9 +58,14 @@ export interface Spirit {
   sphere2: string
 }
 
+export interface Ritual {
+  name: string
+  description: string
+}
+
 export interface Magic {
   spirits: Spirit[]
-  rituals: string[]
+  rituals: Ritual[]
   cantrips: string[]
 }
 
