@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { Character, SkillId, AbilityId, Spirit, Magic } from '@/types/character'
 import { SKILLS, ABILITIES } from '@/types/character'
 import { CLASSES } from '@/data/classes'
@@ -11,6 +11,7 @@ const emit = defineEmits<{ patch: [Partial<Character>]; next: [] }>()
 const classData = computed(() => CLASSES[props.draft.classId])
 
 const autoSkills = computed<SkillId[]>(() => classData.value.grantedSkillIds)
+const requiredSkillPicks = computed(() => Math.max(0, 2 - autoSkills.value.length))
 const autoAbilities = computed<AbilityId[]>(() => classData.value.autoAbilityIds ?? [])
 const requiredAbilityPicks = computed(() => 2 - autoAbilities.value.length)
 const abilityPool = computed<AbilityId[]>(() => classData.value.abilityPool)
@@ -24,6 +25,7 @@ const pickedAbilities = computed(() =>
 
 function toggleSkill(id: SkillId) {
   if (autoSkills.value.includes(id)) return
+  if (requiredSkillPicks.value === 0) return
   const has = props.draft.skillIds.includes(id)
   let next: SkillId[]
   if (has) {
@@ -84,7 +86,7 @@ const hasIncantations = computed(() => pickedAbilities.value.includes('incantati
 const hasRitual = computed(() => pickedAbilities.value.includes('ritual'))
 
 const canContinue = computed(() => {
-  if (pickedSkills.value.length !== 1) return false
+  if (pickedSkills.value.length !== requiredSkillPicks.value) return false
   if (pickedAbilities.value.length !== requiredAbilityPicks.value) return false
   if (showMagic.value) {
     const magic = props.draft.magic
@@ -100,21 +102,22 @@ const canContinue = computed(() => {
   return true
 })
 
-syncAutos()
-
-if (hasIncantations.value) {
-  const magic = ensureMagic()
-  if (!magic.cantrips?.length) {
-    emit('patch', { magic: { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
+onMounted(() => {
+  syncAutos()
+  if (hasIncantations.value) {
+    const magic = ensureMagic()
+    if (!magic.cantrips?.length) {
+      emit('patch', { magic: { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
+    }
   }
-}
+})
 </script>
 
 <template>
   <div class="step">
     <section class="block">
       <div class="label">Навыки</div>
-      <p class="hint">Автоматические — от класса. Выбери ровно 1 дополнительный.</p>
+      <p class="hint">Автоматические — от класса.<span v-if="requiredSkillPicks > 0"> Выбери ещё {{ requiredSkillPicks }}.</span></p>
       <div class="checklist">
         <label
           v-for="sk in SKILLS"

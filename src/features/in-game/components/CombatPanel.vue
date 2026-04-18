@@ -14,7 +14,7 @@ const armor = computed(() => totalArmor(props.char))
     <div class="label">Бой</div>
     <div class="summary">
       <div>Броня: <b>{{ armor }}</b> ({{ armorLabel(char.armor) }})</div>
-      <div>Бонус костей урона: <b>+{{ char.damageBonusDice }}d6</b></div>
+      <div v-if="char.damageBonusDice > 0">Бонус костей урона: <b>+{{ char.damageBonusDice }}d6</b></div>
     </div>
     <div v-if="weapons.length" class="weapons">
       <div v-for="w in weapons" :key="w.id" class="weapon">
