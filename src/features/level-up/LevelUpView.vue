@@ -96,7 +96,7 @@ function onStat(key: StatKey) {
 
 function apply() {
   if (!char.value) return
-  characters.applyLevelUp(id.value, {
+  characters.update(id.value, {
     ...pendingPatch.value,
     level: targetLevel.value,
   })
