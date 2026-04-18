@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import type { Character, InventoryItem, ArmorType } from '@/types/character'
 import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
-import { hitDiceCount, rollHitDice } from '@/utils/derived'
+import { hitDiceCount, rollHitDice, sturdinessBonus } from '@/utils/derived'
 
 const props = defineProps<{ draft: Character }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; finish: [] }>()
@@ -12,7 +12,8 @@ const hpRolled = computed(() => props.draft.maxHp > 0)
 function rollHp() {
   const numDice = hitDiceCount(props.draft.stats.con)
   const { total } = rollHitDice(numDice, props.draft.level)
-  emit('patch', { hitDice: numDice, maxHp: total, currentHp: total })
+  const hp = total + sturdinessBonus(props.draft.abilityIds)
+  emit('patch', { hitDice: numDice, maxHp: hp, currentHp: hp })
 }
 
 function setArmor(type: ArmorType) {
