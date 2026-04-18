@@ -11,7 +11,6 @@ import InventoryPanel from './components/InventoryPanel.vue'
 import MagicPanel from './components/MagicPanel.vue'
 import NotesPanel from './components/NotesPanel.vue'
 import type { Character } from '@/types/character'
-import { MAGIC_ABILITY_IDS } from '@/data/classes'
 
 type Tab = 'main' | 'combat' | 'inventory' | 'magic' | 'notes'
 
@@ -29,8 +28,7 @@ function patch(data: Partial<Character>) {
 const activeTab = ref<Tab>('main')
 
 const hasMagic = computed(() =>
-  !!char.value?.magic ||
-  !!char.value?.abilityIds?.some(id => (MAGIC_ABILITY_IDS as readonly string[]).includes(id)),
+  !!char.value?.abilityIds?.some(id => id === 'summoning' || id === 'ritual'),
 )
 const tabs = computed<{ id: Tab; label: string }[]>(() => {
   const base: { id: Tab; label: string }[] = [
@@ -70,7 +68,12 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
     </div>
     <CombatPanel v-else-if="activeTab === 'combat'" :char="char" />
     <InventoryPanel v-else-if="activeTab === 'inventory'" :char="char" @patch="patch" />
-    <MagicPanel v-else-if="activeTab === 'magic'" :char="char" @patch="patch" />
+    <MagicPanel
+      v-else-if="activeTab === 'magic'"
+      :char="char"
+      :ability-ids="char.abilityIds"
+      @patch="patch"
+    />
     <NotesPanel v-else-if="activeTab === 'notes'" :char="char" @patch="patch" />
   </div>
 </template>
