@@ -1,10 +1,10 @@
-import type { ArmorState, Character, InventoryItem, StatKey } from '@/types/character'
+import type { AbilityId, ArmorState, Character, InventoryItem, StatKey } from '@/types/character'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
 export function totalArmor(char: Pick<Character, 'armor' | 'abilityIds'>): number {
   const base = char.armor.type === 'full' ? 2 : char.armor.type === 'light' ? 1 : 0
   const shield = char.armor.shield ? 1 : 0
-  const toughness = char.abilityIds.includes('toughness') ? 1 : 0
+  const toughness = (char.abilityIds ?? []).includes('toughness') ? 1 : 0
   return base + shield + toughness
 }
 
@@ -22,9 +22,10 @@ export function damageFormula(char: Pick<Character, 'abilityIds' | 'damageBonusD
   const bonuses: string[] = []
   const melee = weapon.tags.includes('weapon') && !weapon.tags.includes('ranged')
   const ranged = weapon.tags.includes('ranged')
-  if (char.abilityIds.includes('skirmish')) bonuses.push('+1 Манёвр.')
-  if (melee && char.abilityIds.includes('hewing')) bonuses.push('+2 Рубка')
-  if (ranged && char.abilityIds.includes('volley')) bonuses.push('+2 Залп')
+  const abilityIds = char.abilityIds ?? []
+  if (abilityIds.includes('skirmish')) bonuses.push('+1 Манёвр.')
+  if (melee && abilityIds.includes('hewing')) bonuses.push('+2 Рубка')
+  if (ranged && abilityIds.includes('volley')) bonuses.push('+2 Залп')
   const bonusDice = char.damageBonusDice > 0 ? ` +${char.damageBonusDice}d6` : ''
   const extras = bonuses.length ? ' (' + bonuses.join(', ') + ')' : ''
   return `${weapon.damage}${bonusDice}${extras}`
@@ -77,3 +78,7 @@ export function rollHitDice(numDice: number, level: number): { rolls: number[]; 
 }
 
 export const STAT_ORDER: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+
+export function sturdinessBonus(abilityIds: AbilityId[]): number {
+  return abilityIds.includes('sturdy') ? 6 : 0
+}
