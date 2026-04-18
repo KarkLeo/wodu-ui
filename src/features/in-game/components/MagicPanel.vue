@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import type { Character, Spirit, Magic } from '@/types/character'
+import type { Character, Ritual, Spirit, Magic } from '@/types/character'
+import type { AbilityId } from '@/types/character'
 import { SPHERE_PRESETS } from '@/data/spheres'
 
-const props = defineProps<{ char: Character }>()
+const props = defineProps<{ char: Character; abilityIds: AbilityId[] }>()
 const emit = defineEmits<{ patch: [Partial<Character>] }>()
 
 function ensureMagic(): Magic {
-  return props.char.magic ?? { spirits: [], rituals: [], cantrips: [] }
+  const m = props.char.magic ?? { spirits: [], rituals: [], cantrips: [] }
+  // migrate legacy string[] rituals
+  const rituals = m.rituals.map(r =>
+    typeof r === 'string' ? { name: r as string, description: '' } : r,
+  ) as Ritual[]
+  return { ...m, rituals }
 }
 
 function updateSpirit(idx: number, patch: Partial<Spirit>) {
@@ -30,16 +36,17 @@ function removeSpirit(id: string) {
   emit('patch', { magic: { ...magic, spirits: magic.spirits.filter(s => s.id !== id) } })
 }
 
-function updateRitual(idx: number, value: string) {
+function updateRitual(idx: number, patch: Partial<Ritual>) {
   const magic = ensureMagic()
-  const rituals = [...magic.rituals]
-  rituals[idx] = value
+  const rituals = magic.rituals.map((r, i) => (i === idx ? { ...r, ...patch } : r))
   emit('patch', { magic: { ...magic, rituals } })
 }
+
 function addRitual() {
   const magic = ensureMagic()
-  emit('patch', { magic: { ...magic, rituals: [...magic.rituals, ''] } })
+  emit('patch', { magic: { ...magic, rituals: [...magic.rituals, { name: '', description: '' }] } })
 }
+
 function removeRitual(idx: number) {
   const magic = ensureMagic()
   emit('patch', { magic: { ...magic, rituals: magic.rituals.filter((_, i) => i !== idx) } })
@@ -48,7 +55,7 @@ function removeRitual(idx: number) {
 
 <template>
   <section class="panel">
-    <div class="group">
+    <div v-if="abilityIds.includes('summoning')" class="group">
       <div class="label-row">
         <span class="label">Духи</span>
         <button class="btn-ghost" @click="addSpirit">+ Дух</button>
@@ -67,18 +74,32 @@ function removeRitual(idx: number) {
       </datalist>
     </div>
 
-    <div class="group">
+    <div v-if="abilityIds.includes('ritual')" class="group">
       <div class="label-row">
         <span class="label">Ритуалы</span>
         <button class="btn-ghost" @click="addRitual">+ Ритуал</button>
       </div>
-      <div v-for="(r, idx) in (char.magic?.rituals ?? [])" :key="idx" class="ritual-row">
-        <input class="input" :value="r" @input="updateRitual(idx, ($event.target as HTMLInputElement).value)" />
-        <button class="btn-mini" @click="removeRitual(idx)">×</button>
+      <div v-for="(r, idx) in (char.magic?.rituals ?? [])" :key="idx" class="ritual">
+        <div class="ritual-header">
+          <input
+            class="input"
+            placeholder="Название"
+            :value="typeof r === 'string' ? r : r.name"
+            @input="updateRitual(idx, { name: ($event.target as HTMLInputElement).value })"
+          />
+          <button class="btn-mini" @click="removeRitual(idx)">×</button>
+        </div>
+        <textarea
+          class="input textarea"
+          placeholder="Описание"
+          rows="3"
+          :value="typeof r === 'string' ? '' : r.description"
+          @input="updateRitual(idx, { description: ($event.target as HTMLTextAreaElement).value })"
+        />
       </div>
     </div>
 
-    <div v-if="(char.magic?.cantrips?.length ?? 0) > 0" class="group">
+    <div v-if="abilityIds.includes('incantations') && (char.magic?.cantrips?.length ?? 0) > 0" class="group">
       <div class="label">Заклички</div>
       <ul class="cantrips">
         <li v-for="c in char.magic?.cantrips" :key="c">{{ c }}</li>
@@ -92,9 +113,11 @@ function removeRitual(idx: number) {
 .group { display: flex; flex-direction: column; gap: 6px; }
 .label-row { display: flex; justify-content: space-between; align-items: center; }
 .spirit { display: flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; margin-bottom: 6px; }
+.ritual { display: flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; margin-bottom: 6px; }
+.ritual-header { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
 .spheres { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .input { padding: 6px 10px; background: var(--color-bg-dark); border: 1px solid var(--color-border); color: var(--color-text); border-radius: 3px; font-family: inherit; font-size: 13px; }
-.ritual-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.textarea { resize: vertical; width: 100%; box-sizing: border-box; }
 .btn-mini { background: none; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 12px; }
 .cantrips { list-style: disc; padding-left: 18px; color: var(--color-text-muted); font-size: 13px; }
 </style>

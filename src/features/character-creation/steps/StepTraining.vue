@@ -76,8 +76,8 @@ function updateSpirit(idx: number, patchSp: Partial<Spirit>) {
 function updateRitual(idx: number, value: string) {
   const magic = ensureMagic()
   const rituals = [...(magic.rituals ?? [])]
-  while (rituals.length < 2) rituals.push('')
-  rituals[idx] = value
+  while (rituals.length < 2) rituals.push({ name: '', description: '' })
+  rituals[idx] = { ...rituals[idx], name: value }
   emit('patch', { magic: { ...magic, rituals } })
 }
 
@@ -96,7 +96,7 @@ const canContinue = computed(() => {
     }
     if (hasRitual.value) {
       const rituals = magic.rituals ?? []
-      if (rituals.filter(r => r.trim()).length < 2) return false
+      if (rituals.filter(r => r.name.trim()).length < 2) return false
     }
   }
   return true
@@ -197,7 +197,7 @@ onMounted(() => {
           :key="i"
           class="input"
           :placeholder="`Ритуал ${i}`"
-          :value="(draft.magic?.rituals ?? [])[i - 1] ?? ''"
+          :value="(draft.magic?.rituals ?? [])[i - 1]?.name ?? ''"
           @input="updateRitual(i - 1, ($event.target as HTMLInputElement).value)"
         />
       </div>
