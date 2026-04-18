@@ -3,6 +3,8 @@ import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import type { Character, SkillId, AbilityId, StatKey } from '@/types/character'
+import { ABILITIES } from '@/types/character'
+import { sturdinessBonus } from '@/utils/derived'
 import { getReward } from '@/data/xpTable'
 import RewardsSummary from './components/RewardsSummary.vue'
 import HitDiceRollStep from './components/HitDiceRollStep.vue'
@@ -39,18 +41,25 @@ onMounted(() => {
 
 function advance() {
   const r = reward.value
-  if (!r) return
+  if (!r || !char.value) return
   if (r.hitDice && !done.value.hitDice) { phase.value = 'hitDice'; return }
   if (r.skills && !done.value.skill) { phase.value = 'skill'; return }
-  if (r.abilities && !done.value.ability) { phase.value = 'ability'; return }
+  if (r.abilities && !done.value.ability) {
+    const currentIds = pendingPatch.value.abilityIds ?? char.value.abilityIds
+    const hasOptions = ABILITIES.some(a => !currentIds.includes(a.id))
+    if (hasOptions) { phase.value = 'ability'; return }
+    done.value.ability = true
+  }
   if (r.statBonus && !done.value.stat) { phase.value = 'stat'; return }
   phase.value = 'confirm'
 }
 
-function onHitDice(delta: number) {
+function onHitDice(newMaxHp: number) {
   if (!char.value) return
-  pendingPatch.value.maxHp = (pendingPatch.value.maxHp ?? char.value.maxHp) + delta
-  pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + delta
+  const oldMax = char.value.maxHp
+  const hpGain = Math.max(0, newMaxHp - oldMax)
+  pendingPatch.value.maxHp = newMaxHp
+  pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + hpGain
   pendingPatch.value.hitDice = (pendingPatch.value.hitDice ?? char.value.hitDice) + 1
   done.value.hitDice = true
   advance()
@@ -68,6 +77,11 @@ function onAbility(aid: AbilityId) {
   if (!char.value) return
   const current = pendingPatch.value.abilityIds ?? char.value.abilityIds
   pendingPatch.value.abilityIds = [...current, aid]
+  if (aid === 'sturdy') {
+    const bonus = sturdinessBonus([aid])
+    pendingPatch.value.maxHp = (pendingPatch.value.maxHp ?? char.value.maxHp) + bonus
+    pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + bonus
+  }
   done.value.ability = true
   advance()
 }
@@ -103,7 +117,12 @@ function apply() {
 
     <RewardsSummary :reward="reward" :target-level="targetLevel" />
 
-    <HitDiceRollStep v-if="phase === 'hitDice'" @done="onHitDice" />
+    <HitDiceRollStep
+      v-if="phase === 'hitDice'"
+      :num-dice="(char.hitDice ?? 1) + 1"
+      :target-level="targetLevel"
+      @done="onHitDice"
+    />
     <SkillPickStep v-else-if="phase === 'skill'" :char="char" @done="onSkill" />
     <AbilityPickStep v-else-if="phase === 'ability'" :char="char" @done="onAbility" />
     <StatBumpStep v-else-if="phase === 'stat'" :char="char" @done="onStat" />
