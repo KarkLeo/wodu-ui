@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Character, SkillId, AbilityId, StatKey } from '@/types/character'
 import { ABILITIES } from '@/types/character'
-import { sturdinessBonus, rollHitDice } from '@/utils/derived'
+import { sturdinessBonus } from '@/utils/derived'
 import { getReward } from '@/data/xpTable'
 import type { CharacterCommand, LevelUpPatch } from '@/domain/commands'
 
@@ -44,11 +44,8 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     advance()
   }
 
-  function rollHp() {
+  function onHitDice(newMaxHp: number) {
     if (!char.value) return
-    const numDice = (char.value.hitDice ?? 1) + 1
-    const { total } = rollHitDice(numDice, targetLevel.value)
-    const newMaxHp = total
     const hpGain = Math.max(0, newMaxHp - char.value.maxHp)
     const existing = pending.value.hpHistory ?? char.value.hpHistory ?? []
     pending.value = {
@@ -111,5 +108,5 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     dispatch({ type: 'LEVEL_UP', patch })
   }
 
-  return { targetLevel, reward, phase, done, pending, init, rollHp, pickSkill, pickAbility, bumpStat, confirm }
+  return { targetLevel, reward, phase, done, pending, init, onHitDice, pickSkill, pickAbility, bumpStat, confirm }
 }

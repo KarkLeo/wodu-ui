@@ -1,136 +1,55 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useCharactersStore } from '@/stores/characters'
-import type { Character, SkillId, AbilityId, StatKey } from '@/types/character'
-import { ABILITIES } from '@/types/character'
-import { sturdinessBonus } from '@/utils/derived'
-import { getReward } from '@/data/xpTable'
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useActiveCharacter } from '@/composables/useActiveCharacter'
+import { useLevelUp } from '@/composables/useLevelUp'
 import RewardsSummary from './components/RewardsSummary.vue'
 import HitDiceRollStep from './components/HitDiceRollStep.vue'
 import SkillPickStep from './components/SkillPickStep.vue'
 import AbilityPickStep from './components/AbilityPickStep.vue'
 import StatBumpStep from './components/StatBumpStep.vue'
 
-type Phase = 'hitDice' | 'skill' | 'ability' | 'stat' | 'confirm'
-
-const route = useRoute()
 const router = useRouter()
-const characters = useCharactersStore()
-
-const id = computed(() => route.params.id as string)
-const char = computed(() => characters.getById(id.value))
-const targetLevel = computed(() => (char.value ? char.value.level + 1 : 1))
-const reward = computed(() => getReward(targetLevel.value))
-
-const pendingPatch = ref<Partial<Character>>({})
-const phase = ref<Phase>('hitDice')
-const done = ref({ hitDice: false, skill: false, ability: false, stat: false })
+const { id, char, dispatch } = useActiveCharacter()
+const lv = useLevelUp(char, dispatch)
 
 onMounted(() => {
-  if (!char.value || !reward.value) {
+  if (!char.value || !lv.reward.value) {
     router.push('/')
     return
   }
-  // автобонус к урону
-  if (reward.value.damageDice) {
-    pendingPatch.value.damageBonusDice = (char.value.damageBonusDice ?? 0) + reward.value.damageDice
-  }
-  advance()
+  lv.init()
 })
 
-function advance() {
-  const r = reward.value
-  if (!r || !char.value) return
-  if (r.hitDice && !done.value.hitDice) { phase.value = 'hitDice'; return }
-  if (r.skills && !done.value.skill) { phase.value = 'skill'; return }
-  if (r.abilities && !done.value.ability) {
-    const currentIds = pendingPatch.value.abilityIds ?? char.value.abilityIds
-    const hasOptions = ABILITIES.some(a => !currentIds.includes(a.id))
-    if (hasOptions) { phase.value = 'ability'; return }
-    done.value.ability = true
-  }
-  if (r.statBonus && !done.value.stat) { phase.value = 'stat'; return }
-  phase.value = 'confirm'
-}
-
-function onHitDice(newMaxHp: number) {
-  if (!char.value) return
-  const oldMax = char.value.maxHp
-  const hpGain = Math.max(0, newMaxHp - oldMax)
-  pendingPatch.value.maxHp = newMaxHp
-  pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + hpGain
-  pendingPatch.value.hitDice = (pendingPatch.value.hitDice ?? char.value.hitDice) + 1
-  const existing = pendingPatch.value.hpHistory ?? char.value.hpHistory ?? []
-  pendingPatch.value.hpHistory = [...existing, { level: targetLevel.value, roll: hpGain, source: 'dice' as const }]
-  done.value.hitDice = true
-  advance()
-}
-
-function onSkill(sid: SkillId) {
-  if (!char.value) return
-  const current = pendingPatch.value.skillIds ?? char.value.skillIds
-  pendingPatch.value.skillIds = [...current, sid]
-  done.value.skill = true
-  advance()
-}
-
-function onAbility(aid: AbilityId) {
-  if (!char.value) return
-  const current = pendingPatch.value.abilityIds ?? char.value.abilityIds
-  pendingPatch.value.abilityIds = [...current, aid]
-  if (aid === 'sturdy') {
-    const bonus = sturdinessBonus([aid])
-    pendingPatch.value.maxHp = (pendingPatch.value.maxHp ?? char.value.maxHp) + bonus
-    pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + bonus
-    const existing = pendingPatch.value.hpHistory ?? char.value.hpHistory ?? []
-    pendingPatch.value.hpHistory = [...existing, { level: targetLevel.value, roll: 6, source: 'sturdy' as const }]
-  }
-  done.value.ability = true
-  advance()
-}
-
-function onStat(key: StatKey) {
-  if (!char.value) return
-  const base = pendingPatch.value.stats ?? char.value.stats
-  pendingPatch.value.stats = { ...base, [key]: Math.min(3, base[key] + 1) }
-  done.value.stat = true
-  advance()
-}
-
 function apply() {
-  if (!char.value) return
-  characters.update(id.value, {
-    ...pendingPatch.value,
-    level: targetLevel.value,
-  })
+  lv.confirm()
   router.push(`/character/${id.value}`)
 }
 </script>
 
 <template>
-  <div v-if="char && reward" class="content-wrap">
+  <div v-if="char && lv.reward.value" class="content-wrap">
     <header class="hdr">
       <button class="btn-ghost" @click="router.push(`/character/${id}`)">← Назад</button>
       <div>
         <div class="label">Повышение уровня</div>
-        <div class="hdr__level">Уровень {{ char.level }} → {{ targetLevel }}</div>
+        <div class="hdr__level">Уровень {{ char.level }} → {{ lv.targetLevel.value }}</div>
       </div>
       <div></div>
     </header>
 
-    <RewardsSummary :reward="reward" :target-level="targetLevel" />
+    <RewardsSummary :reward="lv.reward.value" :target-level="lv.targetLevel.value" />
 
     <HitDiceRollStep
-      v-if="phase === 'hitDice'"
+      v-if="lv.phase.value === 'hitDice'"
       :num-dice="(char.hitDice ?? 1) + 1"
-      :target-level="targetLevel"
-      @done="onHitDice"
+      :target-level="lv.targetLevel.value"
+      @done="lv.onHitDice"
     />
-    <SkillPickStep v-else-if="phase === 'skill'" :char="char" @done="onSkill" />
-    <AbilityPickStep v-else-if="phase === 'ability'" :char="char" @done="onAbility" />
-    <StatBumpStep v-else-if="phase === 'stat'" :char="char" @done="onStat" />
-    <section v-else-if="phase === 'confirm'" class="confirm">
+    <SkillPickStep v-else-if="lv.phase.value === 'skill'" :char="char" @done="lv.pickSkill" />
+    <AbilityPickStep v-else-if="lv.phase.value === 'ability'" :char="char" @done="lv.pickAbility" />
+    <StatBumpStep v-else-if="lv.phase.value === 'stat'" :char="char" @done="lv.bumpStat" />
+    <section v-else-if="lv.phase.value === 'confirm'" class="confirm">
       <div class="label">Готово — применить изменения?</div>
       <button class="btn-primary" @click="apply">Применить</button>
     </section>
