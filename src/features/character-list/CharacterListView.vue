@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
+import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { CLASSES } from '@/data/classes'
 
 const router = useRouter()
 const characters = useCharactersStore()
 const creation = useCreationStore()
+const { createDraft } = useCharacterCreation()
 
 const activeChars = computed(() => characters.list.filter(c => c.status === 'active'))
 const draftChars = computed(() => characters.list.filter(c => c.status === 'draft'))
@@ -22,7 +24,8 @@ function resumeCreation(id: string) {
 }
 
 function startNew() {
-  creation.reset()
+  creation.reset()  // очищаем старый draftId если был
+  createDraft()
   router.push('/character/new')
 }
 
