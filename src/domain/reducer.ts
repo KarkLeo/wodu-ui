@@ -21,4 +21,6 @@ export function applyCommand(char: Character, cmd: CharacterCommand): Character 
     case 'UPDATE_STATS':    return { ...char, stats: cmd.stats }
     case 'UPDATE_NOTES':    return { ...char, notes: cmd.notes }
   }
+  const _exhaustive: never = cmd
+  return _exhaustive
 }
