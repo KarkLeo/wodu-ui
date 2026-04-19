@@ -4,6 +4,7 @@ import type { Character } from '@/types/character'
 import { CLASSES } from '@/data/classes'
 import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp } from '@/utils/derived'
 import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
+import ArmorBreakdownPopover from '@/components/ui/ArmorBreakdownPopover.vue'
 
 const props = defineProps<{ char: Character }>()
 const emit = defineEmits<{
@@ -37,7 +38,10 @@ function bumpXp(delta: number) {
       </div>
       <div class="hdr__armor">
         <div class="label">Броня</div>
-        <div class="hdr__armor-val">{{ armor }}</div>
+        <div class="hdr__armor-row">
+          <div class="hdr__armor-val">{{ armor }}</div>
+          <ArmorBreakdownPopover :char="char" />
+        </div>
       </div>
     </div>
 
@@ -78,6 +82,7 @@ function bumpXp(delta: number) {
 .hdr__title { flex: 1; }
 .hdr__name { font-size: 20px; font-weight: 700; }
 .hdr__armor { text-align: right; }
+.hdr__armor-row { display: flex; align-items: center; gap: 4px; }
 .hdr__armor-val { font-size: 22px; font-weight: 700; }
 .levelup { background: var(--color-bg-elevated); border: 1px solid var(--color-accent); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 13px; }
 .hdr__meters { display: flex; flex-direction: column; gap: 8px; }
