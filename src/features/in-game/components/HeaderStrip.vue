@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 import type { Character } from '@/types/character'
 import { CLASSES } from '@/data/classes'
-import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp } from '@/utils/derived'
+import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula } from '@/utils/derived'
 import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
 import ArmorBreakdownPopover from '@/components/ui/ArmorBreakdownPopover.vue'
+import DamageBreakdownPopover from '@/components/ui/DamageBreakdownPopover.vue'
 
 const props = defineProps<{ char: Character }>()
 const emit = defineEmits<{
@@ -15,6 +16,13 @@ const emit = defineEmits<{
 
 const className = computed(() => CLASSES[props.char.classId].name)
 const armor = computed(() => totalArmor(props.char))
+const equippedWeapon = computed(() => {
+  const weapons = props.char.inventory.filter(isWeapon)
+  return weapons.find(w => w.equipped) ?? weapons[0] ?? null
+})
+const dmgFormula = computed(() =>
+  equippedWeapon.value ? damageFormula(props.char, equippedWeapon.value) : null
+)
 const xpToNext = computed(() => xpToNextLevel(props.char))
 const xpPct = computed(() => xpProgressPercent(props.char))
 const ready = computed(() => isReadyToLevelUp(props.char))
@@ -36,10 +44,17 @@ function bumpXp(delta: number) {
         <div class="hdr__name">{{ char.name }}</div>
         <div class="label">{{ className }} · Уровень {{ char.level }}<span v-if="char.trueName"> · “{{ char.trueName }}”</span></div>
       </div>
-      <div class="hdr__armor">
+      <div v-if="equippedWeapon" class="hdr__stat">
+        <div class="label">Урон</div>
+        <div class="hdr__stat-row">
+          <div class="hdr__stat-val">{{ dmgFormula }}</div>
+          <DamageBreakdownPopover :char="char" :weapon="equippedWeapon" />
+        </div>
+      </div>
+      <div class="hdr__stat">
         <div class="label">Броня</div>
-        <div class="hdr__armor-row">
-          <div class="hdr__armor-val">{{ armor }}</div>
+        <div class="hdr__stat-row">
+          <div class="hdr__stat-val">{{ armor }}</div>
           <ArmorBreakdownPopover :char="char" />
         </div>
       </div>
@@ -81,9 +96,9 @@ function bumpXp(delta: number) {
 .hdr__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .hdr__title { flex: 1; }
 .hdr__name { font-size: 20px; font-weight: 700; }
-.hdr__armor { text-align: right; }
-.hdr__armor-row { display: flex; align-items: center; gap: 4px; }
-.hdr__armor-val { font-size: 22px; font-weight: 700; }
+.hdr__stat { text-align: right; }
+.hdr__stat-row { display: flex; align-items: center; gap: 4px; }
+.hdr__stat-val { font-size: 18px; font-weight: 700; }
 .levelup { background: var(--color-bg-elevated); border: 1px solid var(--color-accent); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; font-size: 13px; }
 .hdr__meters { display: flex; flex-direction: column; gap: 8px; }
 .meter { display: flex; flex-direction: column; gap: 4px; }
