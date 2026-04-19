@@ -61,6 +61,8 @@ function onHitDice(newMaxHp: number) {
   pendingPatch.value.maxHp = newMaxHp
   pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + hpGain
   pendingPatch.value.hitDice = (pendingPatch.value.hitDice ?? char.value.hitDice) + 1
+  const existing = pendingPatch.value.hpHistory ?? char.value.hpHistory ?? []
+  pendingPatch.value.hpHistory = [...existing, { level: targetLevel.value, roll: hpGain, source: 'dice' as const }]
   done.value.hitDice = true
   advance()
 }
@@ -81,6 +83,8 @@ function onAbility(aid: AbilityId) {
     const bonus = sturdinessBonus([aid])
     pendingPatch.value.maxHp = (pendingPatch.value.maxHp ?? char.value.maxHp) + bonus
     pendingPatch.value.currentHp = (pendingPatch.value.currentHp ?? char.value.currentHp) + bonus
+    const existing = pendingPatch.value.hpHistory ?? char.value.hpHistory ?? []
+    pendingPatch.value.hpHistory = [...existing, { level: targetLevel.value, roll: 6, source: 'sturdy' as const }]
   }
   done.value.ability = true
   advance()
