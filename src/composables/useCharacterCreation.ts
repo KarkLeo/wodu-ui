@@ -12,6 +12,9 @@ export function useCharacterCreation() {
   const draft = computed(() => (creation.draftId ? characters.getById(creation.draftId) : undefined))
 
   function createDraft() {
+    if (creation.draftId && characters.getById(creation.draftId)) {
+      return characters.getById(creation.draftId)!
+    }
     // Создаём черновик ЯВНО (не в onMounted)
     const char = characters.add({
       status: 'draft',

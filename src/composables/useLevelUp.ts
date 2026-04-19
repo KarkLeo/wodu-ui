@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Character, SkillId, AbilityId, StatKey } from '@/types/character'
 import { ABILITIES } from '@/types/character'
-import { sturdinessBonus, hitDiceCount, rollHitDice } from '@/utils/derived'
+import { sturdinessBonus, rollHitDice } from '@/utils/derived'
 import { getReward } from '@/data/xpTable'
 import type { CharacterCommand, LevelUpPatch } from '@/domain/commands'
 
@@ -46,17 +46,16 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function rollHp() {
     if (!char.value) return
-    const numDice = hitDiceCount(char.value.stats.con)
+    const numDice = (char.value.hitDice ?? 1) + 1
     const { total } = rollHitDice(numDice, targetLevel.value)
-    const sturdyBonus = sturdinessBonus(char.value.abilityIds)
-    const newMaxHp = total + sturdyBonus + char.value.maxHp
+    const newMaxHp = total
     const hpGain = Math.max(0, newMaxHp - char.value.maxHp)
     const existing = pending.value.hpHistory ?? char.value.hpHistory ?? []
     pending.value = {
       ...pending.value,
       maxHp: newMaxHp,
-      currentHp: (char.value.currentHp) + hpGain,
-      hitDice: (pending.value.hitDice ?? char.value.hitDice) + 1,
+      currentHp: char.value.currentHp + hpGain,
+      hitDice: (char.value.hitDice ?? 1) + 1,
       hpHistory: [...existing, { level: targetLevel.value, roll: hpGain, source: 'dice' as const }],
     }
     done.value.hitDice = true
