@@ -27,7 +27,6 @@ onMounted(() => {
       maxHp: 0,
       skillIds: [],
       abilityIds: [],
-      armor: { type: 'none', shield: false },
       inventory: [],
       coins: 60,
       damageBonusDice: 0,
