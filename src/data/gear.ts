@@ -1,10 +1,5 @@
 import type { InventoryItem } from '@/types/character'
 
-export type GearTemplate = Omit<InventoryItem, 'id'> & {
-  templateId: string
-  category: string
-}
-
 export const GEAR_CATEGORIES = [
   { id: 'weapon', name: 'Оружие' },
   { id: 'armor',  name: 'Доспехи и щиты' },
@@ -14,6 +9,11 @@ export const GEAR_CATEGORIES = [
   { id: 'rare',   name: 'Редкие предметы' },
   { id: 'fire',   name: 'Огненное масло' },
 ] as const
+
+export type GearTemplate = Omit<InventoryItem, 'id'> & {
+  templateId: string
+  category: typeof GEAR_CATEGORIES[number]['id']
+}
 
 export const GEAR_CATALOG: GearTemplate[] = [
   // Оружие
