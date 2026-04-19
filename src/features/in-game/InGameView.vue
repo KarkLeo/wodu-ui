@@ -6,13 +6,12 @@ import HeaderStrip from './components/HeaderStrip.vue'
 import StatsPanel from './components/StatsPanel.vue'
 import SkillsPanel from './components/SkillsPanel.vue'
 import AbilitiesPanel from './components/AbilitiesPanel.vue'
-import CombatPanel from './components/CombatPanel.vue'
 import InventoryPanel from './components/InventoryPanel.vue'
 import MagicPanel from './components/MagicPanel.vue'
 import NotesPanel from './components/NotesPanel.vue'
 import type { Character } from '@/types/character'
 
-type Tab = 'main' | 'combat' | 'inventory' | 'magic' | 'notes'
+type Tab = 'main' | 'inventory' | 'magic' | 'notes'
 
 const route = useRoute()
 const router = useRouter()
@@ -33,7 +32,6 @@ const hasMagic = computed(() =>
 const tabs = computed<{ id: Tab; label: string }[]>(() => {
   const base: { id: Tab; label: string }[] = [
     { id: 'main', label: 'Основное' },
-    { id: 'combat', label: 'Бой' },
     { id: 'inventory', label: 'Инвентарь' },
   ]
   if (hasMagic.value) base.push({ id: 'magic', label: 'Магия' })
@@ -66,7 +64,6 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
       <SkillsPanel :char="char" />
       <AbilitiesPanel :char="char" />
     </div>
-    <CombatPanel v-else-if="activeTab === 'combat'" :char="char" @patch="patch" />
     <InventoryPanel v-else-if="activeTab === 'inventory'" :char="char" @patch="patch" />
     <MagicPanel
       v-else-if="activeTab === 'magic'"
