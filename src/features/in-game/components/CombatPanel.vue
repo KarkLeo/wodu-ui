@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Character } from '@/types/character'
 import { damageFormula, totalArmor, armorLabel, isWeapon } from '@/utils/derived'
+import DamageBreakdownPopover from '@/components/ui/DamageBreakdownPopover.vue'
 
 const props = defineProps<{ char: Character }>()
 
@@ -17,9 +18,17 @@ const armor = computed(() => totalArmor(props.char))
       <div v-if="char.damageBonusDice > 0">Бонус костей урона: <b>+{{ char.damageBonusDice }}d6</b></div>
     </div>
     <div v-if="weapons.length" class="weapons">
-      <div v-for="w in weapons" :key="w.id" class="weapon">
+      <div
+        v-for="w in weapons"
+        :key="w.id"
+        class="weapon"
+        :class="{ 'weapon--equipped': w.equipped }"
+      >
         <div class="weapon__name">{{ w.name }}</div>
-        <div class="weapon__dmg">{{ damageFormula(char, w) }}</div>
+        <div class="weapon__dmg-row">
+          <span class="weapon__dmg">{{ damageFormula(char, w) }}</span>
+          <DamageBreakdownPopover :char="char" :weapon="w" />
+        </div>
       </div>
     </div>
     <div v-else class="empty">Нет оружия в инвентаре.</div>
@@ -30,8 +39,11 @@ const armor = computed(() => totalArmor(props.char))
 .panel { padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
 .summary { display: flex; gap: 16px; margin-top: 6px; font-size: 13px; color: var(--color-text-muted); }
 .weapons { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.weapon { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
+.weapon { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
+.weapon--equipped { border-color: var(--color-accent); }
+.weapon:not(.weapon--equipped) { opacity: 0.6; }
 .weapon__name { font-weight: 600; }
+.weapon__dmg-row { display: flex; align-items: center; gap: 4px; }
 .weapon__dmg { font-family: monospace; }
 .empty { margin-top: 6px; color: var(--color-text-muted); font-size: 13px; }
 </style>
