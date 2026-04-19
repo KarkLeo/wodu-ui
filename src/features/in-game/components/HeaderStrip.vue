@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Character } from '@/types/character'
 import { CLASSES } from '@/data/classes'
 import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp } from '@/utils/derived'
+import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
 
 const props = defineProps<{ char: Character }>()
 const emit = defineEmits<{
@@ -51,6 +52,7 @@ function bumpXp(delta: number) {
         <div class="meter__controls">
           <button class="btn-mini" @click="bumpHp(-1)">−</button>
           <span class="meter__val">{{ char.currentHp }} / {{ char.maxHp }}</span>
+          <HpBreakdownPopover :char="char" />
           <button class="btn-mini" @click="bumpHp(1)">+</button>
         </div>
       </div>
