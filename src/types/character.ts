@@ -38,8 +38,6 @@ export type AbilityId = typeof ABILITIES[number]['id']
 export type StatKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 export type Stats = Record<StatKey, number>
 
-export type ArmorType = 'none' | 'light' | 'full'
-export interface ArmorState { type: ArmorType; shield: boolean }
 
 export interface InventoryItem {
   id: string
@@ -94,7 +92,6 @@ export interface Character {
   skillIds: SkillId[]
   abilityIds: AbilityId[]
 
-  armor: ArmorState
   inventory: InventoryItem[]
   coins: number
 
