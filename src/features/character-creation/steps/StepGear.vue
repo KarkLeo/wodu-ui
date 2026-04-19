@@ -12,8 +12,13 @@ const hpRolled = computed(() => props.draft.maxHp > 0)
 function rollHp() {
   const numDice = hitDiceCount(props.draft.stats.con)
   const { total } = rollHitDice(numDice, props.draft.level)
-  const hp = total + sturdinessBonus(props.draft.abilityIds)
-  emit('patch', { hitDice: numDice, maxHp: hp, currentHp: hp })
+  const sturdyBonus = sturdinessBonus(props.draft.abilityIds)
+  const hp = total + sturdyBonus
+  const hpHistory: NonNullable<Character['hpHistory']> = [
+    { level: 1, roll: total, source: 'dice' },
+    ...(sturdyBonus > 0 ? [{ level: 1, roll: 6, source: 'sturdy' as const }] : []),
+  ]
+  emit('patch', { hitDice: numDice, maxHp: hp, currentHp: hp, hpHistory })
 }
 
 function setArmor(type: ArmorType) {
