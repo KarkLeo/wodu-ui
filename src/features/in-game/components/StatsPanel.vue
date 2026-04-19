@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { Character, StatKey } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
 
-const props = defineProps<{ char: Character }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+type Dispatcher = (cmd: CharacterCommand) => void
+
+const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
 function setStat(key: StatKey, value: number) {
   const v = Math.max(0, Math.min(3, value))
-  emit('patch', { stats: { ...props.char.stats, [key]: v } })
+  props.dispatch({ type: 'UPDATE_STATS', stats: { ...props.char.stats, [key]: v } })
 }
 </script>
 

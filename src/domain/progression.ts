@@ -2,7 +2,7 @@ import type { Character } from '@/types/character'
 import type { LevelUpPatch } from './commands'
 
 export function gainXp(char: Character, amount: number): Character {
-  return { ...char, xp: char.xp + amount }
+  return { ...char, xp: Math.max(0, char.xp + amount) }
 }
 
 export function levelUp(char: Character, patch: LevelUpPatch): Character {
