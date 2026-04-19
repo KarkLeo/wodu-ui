@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import type { Character } from '@/types/character'
 import { isReadyToLevelUp } from '@/utils/derived'
+import { applyCommand } from '@/domain/reducer'
+import type { CharacterCommand } from '@/domain/commands'
 
 const STORAGE_KEY = 'wod.characters.v1'
 
@@ -29,6 +31,11 @@ export const useCharactersStore = defineStore('characters', {
     update(id: string, patch: Partial<Omit<Character, 'id' | 'createdAt'>>) {
       const idx = this.list.findIndex(c => c.id === id)
       if (idx !== -1) this.list[idx] = { ...this.list[idx], ...patch }
+    },
+    dispatch(id: string, cmd: CharacterCommand) {
+      const idx = this.list.findIndex(c => c.id === id)
+      if (idx === -1) return
+      this.list[idx] = applyCommand(this.list[idx], cmd)
     },
     remove(id: string) {
       this.list = this.list.filter(c => c.id !== id)
