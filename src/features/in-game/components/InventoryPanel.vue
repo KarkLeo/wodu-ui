@@ -36,7 +36,7 @@ function commitPurchase(tpl: NonNullable<ReturnType<typeof findGearTemplate>>, d
     id: crypto.randomUUID(),
     name: tpl.name,
     price: tpl.price,
-    tags: [...tpl.tags],
+    descriptor: tpl.descriptor,
     damage: tpl.damage,
     notes: tpl.notes,
   }
@@ -75,7 +75,7 @@ const sortedInventory = computed(() => {
 })
 
 const multipleWeaponsEquipped = computed(() =>
-  props.char.inventory.filter(i => i.equipped && i.tags.includes('weapon')).length > 1
+  props.char.inventory.filter(i => i.equipped && i.descriptor.kind === 'weapon').length > 1
 )
 
 function addCustom() {
@@ -84,7 +84,7 @@ function addCustom() {
     id: crypto.randomUUID(),
     name: customName.value.trim(),
     price: customPrice.value || undefined,
-    tags: ['custom'],
+    descriptor: { kind: 'custom' },
   }
   emit('patch', { inventory: [...props.char.inventory, item] })
   customName.value = ''
@@ -95,7 +95,7 @@ const itemsByCategory = computed(() => {
   const out: Record<string, typeof GEAR_CATALOG> = {}
   for (const cat of GEAR_CATEGORIES) out[cat.id] = []
   for (const item of GEAR_CATALOG) {
-    const cat = item.tags.find(t => (GEAR_CATEGORIES as readonly { id: string }[]).some(c => c.id === t)) ?? 'gear'
+    const cat = item.category ?? 'gear'
     out[cat].push(item)
   }
   return out

@@ -8,9 +8,9 @@ export interface BreakdownLine {
 
 export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds'>): number {
   const equipped = (char.inventory ?? []).filter(i => i.equipped)
-  const hasFull = equipped.some(i => i.tags.includes('armor') && i.tags.includes('full'))
-  const hasLight = equipped.some(i => i.tags.includes('armor') && i.tags.includes('light'))
-  const hasShield = equipped.some(i => i.tags.includes('shield'))
+  const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
+  const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
+  const hasShield = equipped.some(i => i.descriptor.kind === 'shield')
   const base = hasFull ? 2 : hasLight ? 1 : 0
   const shield = hasShield ? 1 : 0
   const toughness = (char.abilityIds ?? []).includes('toughness') ? 1 : 0
@@ -18,14 +18,14 @@ export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds'>): n
 }
 
 export function isWeapon(item: InventoryItem): boolean {
-  return item.tags.includes('weapon')
+  return item.descriptor.kind === 'weapon'
 }
 
 export function damageFormula(char: Pick<Character, 'abilityIds' | 'damageBonusDice'>, weapon: InventoryItem): string {
   if (!weapon.damage) return '—'
   const bonuses: string[] = []
-  const melee = weapon.tags.includes('weapon') && !weapon.tags.includes('ranged')
-  const ranged = weapon.tags.includes('ranged')
+  const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
+  const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
   const abilityIds = char.abilityIds ?? []
   if (abilityIds.includes('skirmish')) bonuses.push('+1 Манёвр.')
   if (melee && abilityIds.includes('hewing')) bonuses.push('+2 Рубка')
@@ -101,8 +101,8 @@ export function damageBreakdownLines(
 ): BreakdownLine[] {
   if (!weapon.damage) return []
   const lines: BreakdownLine[] = [{ value: weapon.damage, label: 'оружие' }]
-  const melee = weapon.tags.includes('weapon') && !weapon.tags.includes('ranged')
-  const ranged = weapon.tags.includes('ranged')
+  const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
+  const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
   const abilityIds = char.abilityIds ?? []
   if (abilityIds.includes('skirmish')) lines.push({ value: '+1', label: 'Манёвренность' })
   if (melee && abilityIds.includes('hewing')) lines.push({ value: '+2', label: 'Рубка' })
@@ -116,9 +116,9 @@ export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'ability
   note?: string
 } {
   const equipped = (char.inventory ?? []).filter(i => i.equipped)
-  const hasFull = equipped.some(i => i.tags.includes('armor') && i.tags.includes('full'))
-  const hasLight = equipped.some(i => i.tags.includes('armor') && i.tags.includes('light'))
-  const hasShield = equipped.some(i => i.tags.includes('shield'))
+  const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
+  const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
+  const hasShield = equipped.some(i => i.descriptor.kind === 'shield')
   const lines: BreakdownLine[] = []
   if (hasFull) lines.push({ value: '2', label: 'полный доспех' })
   else if (hasLight) lines.push({ value: '1', label: 'лёгкий доспех' })
