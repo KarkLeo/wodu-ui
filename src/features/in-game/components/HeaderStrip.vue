@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Character } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
 import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula } from '@/utils/derived'
 import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
 import ArmorBreakdownPopover from '@/components/ui/ArmorBreakdownPopover.vue'
 import DamageBreakdownPopover from '@/components/ui/DamageBreakdownPopover.vue'
 
-const props = defineProps<{ char: Character }>()
+type Dispatcher = (cmd: CharacterCommand) => void
+
+const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 const emit = defineEmits<{
-  patch: [Partial<Character>]
   levelUp: []
   back: []
 }>()
@@ -28,11 +30,11 @@ const xpPct = computed(() => xpProgressPercent(props.char))
 const ready = computed(() => isReadyToLevelUp(props.char))
 
 function bumpHp(delta: number) {
-  const next = Math.max(0, Math.min(props.char.maxHp, props.char.currentHp + delta))
-  emit('patch', { currentHp: next })
+  if (delta > 0) props.dispatch({ type: 'HEAL', amount: delta })
+  else if (delta < 0) props.dispatch({ type: 'APPLY_DAMAGE', amount: Math.abs(delta) })
 }
 function bumpXp(delta: number) {
-  emit('patch', { xp: Math.max(0, props.char.xp + delta) })
+  if (delta !== 0) props.dispatch({ type: 'GAIN_XP', amount: delta })
 }
 </script>
 

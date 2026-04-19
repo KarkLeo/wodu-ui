@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import type { Character, Ritual, Spirit, Magic } from '@/types/character'
 import type { AbilityId } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 import { SPHERE_PRESETS } from '@/data/spheres'
 
-const props = defineProps<{ char: Character; abilityIds: AbilityId[] }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+type Dispatcher = (cmd: CharacterCommand) => void
+
+const props = defineProps<{ char: Character; abilityIds: AbilityId[]; dispatch: Dispatcher }>()
 
 function ensureMagic(): Magic {
   const m = props.char.magic ?? { spirits: [], rituals: [], cantrips: [] }
@@ -21,12 +23,13 @@ const normalizedRituals = computed(() => ensureMagic().rituals)
 function updateSpirit(idx: number, patch: Partial<Spirit>) {
   const magic = ensureMagic()
   const spirits = magic.spirits.map((s, i) => (i === idx ? { ...s, ...patch } : s))
-  emit('patch', { magic: { ...magic, spirits } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits } })
 }
 
 function addSpirit() {
   const magic = ensureMagic()
-  emit('patch', {
+  props.dispatch({
+    type: 'UPDATE_MAGIC',
     magic: {
       ...magic,
       spirits: [...magic.spirits, { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' }],
@@ -36,23 +39,23 @@ function addSpirit() {
 
 function removeSpirit(id: string) {
   const magic = ensureMagic()
-  emit('patch', { magic: { ...magic, spirits: magic.spirits.filter(s => s.id !== id) } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits: magic.spirits.filter(s => s.id !== id) } })
 }
 
 function updateRitual(idx: number, patch: Partial<Ritual>) {
   const magic = ensureMagic()
   const rituals = magic.rituals.map((r, i) => (i === idx ? { ...r, ...patch } : r))
-  emit('patch', { magic: { ...magic, rituals } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals } })
 }
 
 function addRitual() {
   const magic = ensureMagic()
-  emit('patch', { magic: { ...magic, rituals: [...magic.rituals, { name: '', description: '' }] } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals: [...magic.rituals, { name: '', description: '' }] } })
 }
 
 function removeRitual(idx: number) {
   const magic = ensureMagic()
-  emit('patch', { magic: { ...magic, rituals: magic.rituals.filter((_, i) => i !== idx) } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals: magic.rituals.filter((_, i) => i !== idx) } })
 }
 </script>
 
