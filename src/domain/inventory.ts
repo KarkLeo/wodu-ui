@@ -36,7 +36,7 @@ export function addCustomItem(char: Character, name: string, price?: number): Ch
   return {
     ...char,
     inventory: [...char.inventory, item],
-    coins: price ? Math.max(0, char.coins - price) : char.coins,
+    coins: price !== undefined ? Math.max(0, char.coins - price) : char.coins,
   }
 }
 
