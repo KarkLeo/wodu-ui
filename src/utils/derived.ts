@@ -1,6 +1,11 @@
 import type { AbilityId, ArmorState, Character, InventoryItem, StatKey } from '@/types/character'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
+export interface BreakdownLine {
+  value: string
+  label: string
+}
+
 export function totalArmor(char: Pick<Character, 'armor' | 'abilityIds'>): number {
   const base = char.armor.type === 'full' ? 2 : char.armor.type === 'light' ? 1 : 0
   const shield = char.armor.shield ? 1 : 0
@@ -81,4 +86,42 @@ export const STAT_ORDER: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
 export function sturdinessBonus(abilityIds: AbilityId[]): number {
   return abilityIds.includes('sturdy') ? 6 : 0
+}
+
+export function hpBreakdownLines(hpHistory: Character['hpHistory']): BreakdownLine[] {
+  if (!hpHistory?.length) return []
+  return hpHistory.map(entry => ({
+    value: entry.source === 'sturdy' ? '+6' : String(entry.roll),
+    label: entry.source === 'sturdy' ? 'Стойкость' : `ур. ${entry.level}, бросок к6`,
+  }))
+}
+
+export function damageBreakdownLines(
+  char: Pick<Character, 'abilityIds' | 'damageBonusDice'>,
+  weapon: InventoryItem,
+): BreakdownLine[] {
+  if (!weapon.damage) return []
+  const lines: BreakdownLine[] = [{ value: weapon.damage, label: 'оружие' }]
+  const melee = weapon.tags.includes('weapon') && !weapon.tags.includes('ranged')
+  const ranged = weapon.tags.includes('ranged')
+  const abilityIds = char.abilityIds ?? []
+  if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'бонус уровня' })
+  if (abilityIds.includes('skirmish')) lines.push({ value: '+1', label: 'Манёвренность' })
+  if (melee && abilityIds.includes('hewing')) lines.push({ value: '+2', label: 'Рубка' })
+  if (ranged && abilityIds.includes('volley')) lines.push({ value: '+2', label: 'Залп' })
+  return lines
+}
+
+export function armorBreakdownLines(char: Pick<Character, 'armor' | 'abilityIds'>): {
+  lines: BreakdownLine[]
+  note?: string
+} {
+  const lines: BreakdownLine[] = []
+  if (char.armor.type === 'full') lines.push({ value: '2', label: 'полный доспех' })
+  else if (char.armor.type === 'light') lines.push({ value: '1', label: 'лёгкий доспех' })
+  if (char.armor.shield) lines.push({ value: '+1', label: 'щит' })
+  const abilityIds = char.abilityIds ?? []
+  if (abilityIds.includes('toughness')) lines.push({ value: '+1', label: 'Прочность' })
+  const note = abilityIds.includes('skirmish') ? 'доспех считается лёгким (Манёвренность)' : undefined
+  return { lines, note }
 }
