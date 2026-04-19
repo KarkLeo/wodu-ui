@@ -42,12 +42,15 @@ export const useCharactersStore = defineStore('characters', {
     key: STORAGE_KEY,
     afterHydrate(ctx) {
       ctx.store.$patch((state) => {
-        state.list = state.list.map((c: Character) => ({
-          ...c,
-          inventory: c.inventory ?? [],
-          skillIds: c.skillIds ?? [],
-          abilityIds: c.abilityIds ?? [],
-        }))
+        state.list = state.list.map((c: any) => {
+          const { armor: _armor, ...rest } = c
+          return {
+            ...rest,
+            inventory: rest.inventory ?? [],
+            skillIds: rest.skillIds ?? [],
+            abilityIds: rest.abilityIds ?? [],
+          }
+        })
       })
     },
   },
