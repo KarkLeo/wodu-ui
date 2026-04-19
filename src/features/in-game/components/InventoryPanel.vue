@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Character, InventoryItem, ArmorType } from '@/types/character'
+import type { Character, InventoryItem } from '@/types/character'
 import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
 
 const props = defineProps<{ char: Character }>()
@@ -10,21 +10,28 @@ const showCatalog = ref(false)
 const openCat = ref<string | null>('weapon')
 const customName = ref('')
 const customPrice = ref(0)
+const pendingTemplateId = ref<string | null>(null)
+
+const pendingTemplate = computed(() =>
+  pendingTemplateId.value ? findGearTemplate(pendingTemplateId.value) ?? null : null
+)
 
 function setCoins(value: number) {
   emit('patch', { coins: Math.max(0, value) })
 }
 
-function setArmorType(type: ArmorType) {
-  emit('patch', { armor: { ...props.char.armor, type } })
-}
-function toggleShield() {
-  emit('patch', { armor: { ...props.char.armor, shield: !props.char.armor.shield } })
-}
-
 function addFromCatalog(templateId: string) {
   const tpl = findGearTemplate(templateId)
   if (!tpl) return
+  const price = tpl.price ?? 0
+  if (price > props.char.coins) {
+    pendingTemplateId.value = templateId
+    return
+  }
+  commitPurchase(tpl, true)
+}
+
+function commitPurchase(tpl: NonNullable<ReturnType<typeof findGearTemplate>>, deductCoins: boolean) {
   const item: InventoryItem = {
     id: crypto.randomUUID(),
     name: tpl.name,
@@ -35,8 +42,18 @@ function addFromCatalog(templateId: string) {
   }
   emit('patch', {
     inventory: [...props.char.inventory, item],
-    coins: Math.max(0, props.char.coins - (tpl.price ?? 0)),
+    ...(deductCoins ? { coins: Math.max(0, props.char.coins - (tpl.price ?? 0)) } : {}),
   })
+  pendingTemplateId.value = null
+}
+
+function cancelPending() {
+  pendingTemplateId.value = null
+}
+
+function gmApproved() {
+  if (!pendingTemplate.value) return
+  commitPurchase(pendingTemplate.value, false)
 }
 
 function removeItem(id: string) {
@@ -98,16 +115,6 @@ const itemsByCategory = computed(() => {
       />
     </div>
 
-    <div class="armor">
-      <div class="label">Доспех</div>
-      <div class="armor-grid">
-        <button :class="{ 'active': char.armor.type === 'none' }" @click="setArmorType('none')">Без</button>
-        <button :class="{ 'active': char.armor.type === 'light' }" @click="setArmorType('light')">Лёгкий</button>
-        <button :class="{ 'active': char.armor.type === 'full' }" @click="setArmorType('full')">Полный</button>
-      </div>
-      <label class="shield"><input type="checkbox" :checked="char.armor.shield" @change="toggleShield" /> Щит</label>
-    </div>
-
     <div class="list">
       <div class="label">Инвентарь</div>
       <div v-if="multipleWeaponsEquipped" class="warn">⚠ Экипировано несколько видов оружия</div>
@@ -138,6 +145,16 @@ const itemsByCategory = computed(() => {
         <input class="input" placeholder="Название" v-model="customName" />
         <input class="input input--price" type="number" min="0" placeholder="Цена" v-model.number="customPrice" />
         <button class="btn-ghost" :disabled="!customName.trim()" @click="addCustom">+</button>
+      </div>
+    </div>
+
+    <div v-if="pendingTemplate" class="gm-dialog">
+      <div class="gm-dialog__text">
+        Не хватает монет на <b>{{ pendingTemplate.name }}</b> ({{ pendingTemplate.price }}с, у вас {{ char.coins }}с). Обговорите с ГМ.
+      </div>
+      <div class="gm-dialog__actions">
+        <button class="btn-ghost" @click="cancelPending">Обсудить с ГМ</button>
+        <button class="btn-primary" @click="gmApproved">ГМ одобрил</button>
       </div>
     </div>
 
@@ -174,10 +191,6 @@ const itemsByCategory = computed(() => {
 .panel { padding: 12px 16px; display: flex; flex-direction: column; gap: 14px; }
 .coins-row { display: flex; justify-content: space-between; align-items: center; }
 .coins-input { width: 100px; text-align: right; padding: 6px 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); border-radius: 3px; font-family: inherit; }
-.armor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
-.armor-grid button { padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); cursor: pointer; border-radius: 3px; font-family: inherit; }
-.armor-grid .active { border-color: var(--color-accent); color: var(--color-accent); }
-.shield { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
 .list { display: flex; flex-direction: column; gap: 4px; }
 .warn { font-size: 12px; color: var(--color-accent); padding: 6px 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-accent); border-radius: 3px; }
 .inv-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 3px; }
@@ -200,4 +213,7 @@ const itemsByCategory = computed(() => {
 .gear-item__meta { font-size: 11px; color: var(--color-text-muted); }
 .empty { color: var(--color-text-muted); font-size: 13px; }
 .catalog-toggle { align-self: flex-start; }
+.gm-dialog { background: var(--color-bg-elevated); border: 1px solid var(--color-accent); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.gm-dialog__text { font-size: 13px; }
+.gm-dialog__actions { display: flex; gap: 8px; justify-content: flex-end; }
 </style>
