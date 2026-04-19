@@ -27,7 +27,7 @@ There are no tests in this project — do not add or maintain them.
 
 The central type is `Character` (`src/types/character.ts`). Key sub-types:
 - `Stats` — six stats (`str/dex/con/int/wis/cha`), each stored as a bonus (not raw roll)
-- `InventoryItem` — tagged items; `tags: ['weapon']` marks weapons, `'ranged'` marks ranged weapons, `'armor'+'light'` / `'armor'+'full'` / `'shield'` mark armor pieces; `equipped?: boolean` flags the active item
+- `InventoryItem` — items with typed descriptors; `descriptor: ItemDescriptor` (discriminated union with kinds: `weapon`, `armor`, `shield`, `gear`, `tool`, `occult`, `custom`); `descriptor.class` (`'light'|'full'|'none'`) for armor pieces; `equipped?: boolean` flags the active item
 - `Magic` — optional, only present for wizard/cleric classes
 - `CharacterStatus` — `'draft'` (creation in progress) | `'active'` (fully created)
 - `hpHistory` — optional array `{ level, roll, source: 'dice'|'sturdy' }[]` tracking every HP roll per level
@@ -52,7 +52,7 @@ All derived values live here — never recalculate inline in components:
 
 ## Stores
 
-- `useCharactersStore` (`src/stores/characters.ts`) — the only persistent store for characters; `active` getter returns the currently selected character
+- `useCharactersStore` (`src/stores/characters.ts`) — the only persistent store for characters; `active` getter returns the currently selected character; `dispatch(id, cmd: CharacterCommand)` applies domain commands; `update(id, patch)` — legacy, used only in creation wizard
 - `useCreationStore` (`src/stores/creation.ts`) — ephemeral creation wizard state; tracks `draftId` and `step` (1–3)
 
 ## Routes & Views
@@ -74,6 +74,22 @@ Three breakdown popovers share the same `InfoPopover` base (Reka UI `PopoverRoot
 **Critical:** `PopoverPortal` teleports content to `<body>`, bypassing Vue scoped CSS. Style `.info-content` in a non-scoped `<style>` block inside `InfoPopover.vue`.
 
 The in-game header (`HeaderStrip.vue`) shows HP / XP meters, armor value, and the equipped weapon's damage formula — all with breakdown popovers. Armor and damage are read-only in the header; armor type comes from equipping items in Inventory.
+
+## Domain Layer (`src/domain/`)
+
+All game state mutations go through domain commands:
+- `commands.ts` — `CharacterCommand` discriminated union (14 command types)
+- `reducer.ts` — `applyCommand(char, cmd): Character` pure function
+- `inventory.ts`, `combat.ts`, `progression.ts` — domain logic modules
+
+Use `store.dispatch(id, cmd)` from composables. Never call `characters.update()` from gameplay components.
+
+## Composables (`src/composables/`)
+
+- `useActiveCharacter()` — reactive char + dispatch bound to route id
+- `useInventory(dispatch)` — inventory command helpers
+- `useLevelUp(char, dispatch)` — level-up state machine
+- `useCharacterCreation()` — creation wizard logic + draft lifecycle
 
 ## Architecture Guidelines
 
