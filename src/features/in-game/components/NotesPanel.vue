@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Character } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 
-defineProps<{ char: Character }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+type Dispatcher = (cmd: CharacterCommand) => void
+
+const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
 function save(e: Event) {
-  emit('patch', { notes: (e.target as HTMLTextAreaElement).value })
+  props.dispatch({ type: 'UPDATE_NOTES', notes: (e.target as HTMLTextAreaElement).value })
 }
 </script>
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useCharactersStore } from '@/stores/characters'
+import { useRouter } from 'vue-router'
+import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import HeaderStrip from './components/HeaderStrip.vue'
 import StatsPanel from './components/StatsPanel.vue'
 import SkillsPanel from './components/SkillsPanel.vue'
@@ -9,20 +9,11 @@ import AbilitiesPanel from './components/AbilitiesPanel.vue'
 import InventoryPanel from './components/InventoryPanel.vue'
 import MagicPanel from './components/MagicPanel.vue'
 import NotesPanel from './components/NotesPanel.vue'
-import type { Character } from '@/types/character'
 
 type Tab = 'main' | 'inventory' | 'magic' | 'notes'
 
-const route = useRoute()
 const router = useRouter()
-const characters = useCharactersStore()
-
-const id = computed(() => route.params.id as string)
-const char = computed(() => characters.getById(id.value))
-
-function patch(data: Partial<Character>) {
-  characters.update(id.value, data)
-}
+const { id, char, dispatch } = useActiveCharacter()
 
 const activeTab = ref<Tab>('main')
 
@@ -44,7 +35,7 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
   <div v-if="char" class="content-wrap">
     <HeaderStrip
       :char="char"
-      @patch="patch"
+      :dispatch="dispatch"
       @level-up="router.push(`/character/${id}/levelup`)"
       @back="router.push('/')"
     />
@@ -60,18 +51,18 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
     </nav>
 
     <div v-if="activeTab === 'main'">
-      <StatsPanel :char="char" @patch="patch" />
+      <StatsPanel :char="char" :dispatch="dispatch" />
       <SkillsPanel :char="char" />
       <AbilitiesPanel :char="char" />
     </div>
-    <InventoryPanel v-else-if="activeTab === 'inventory'" :char="char" @patch="patch" />
+    <InventoryPanel v-else-if="activeTab === 'inventory'" :char="char" :dispatch="dispatch" />
     <MagicPanel
       v-else-if="activeTab === 'magic'"
       :char="char"
       :ability-ids="char.abilityIds"
-      @patch="patch"
+      :dispatch="dispatch"
     />
-    <NotesPanel v-else-if="activeTab === 'notes'" :char="char" @patch="patch" />
+    <NotesPanel v-else-if="activeTab === 'notes'" :char="char" :dispatch="dispatch" />
   </div>
 </template>
 

@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Character, InventoryItem } from '@/types/character'
+import type { Character } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
+import { useInventory } from '@/composables/useInventory'
 import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
 
-const props = defineProps<{ char: Character }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+type Dispatcher = (cmd: CharacterCommand) => void
+
+const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
+
+const inv = useInventory(props.dispatch)
 
 const showCatalog = ref(false)
 const openCat = ref<string | null>('weapon')
@@ -17,7 +22,7 @@ const pendingTemplate = computed(() =>
 )
 
 function setCoins(value: number) {
-  emit('patch', { coins: Math.max(0, value) })
+  inv.setCoins(Math.max(0, value))
 }
 
 function addFromCatalog(templateId: string) {
@@ -32,18 +37,17 @@ function addFromCatalog(templateId: string) {
 }
 
 function commitPurchase(tpl: NonNullable<ReturnType<typeof findGearTemplate>>, deductCoins: boolean) {
-  const item: InventoryItem = {
-    id: crypto.randomUUID(),
-    name: tpl.name,
-    price: tpl.price,
-    descriptor: tpl.descriptor,
-    damage: tpl.damage,
-    notes: tpl.notes,
+  if (deductCoins) {
+    inv.buy(tpl.templateId)
+  } else {
+    inv.receive({
+      name: tpl.name,
+      descriptor: tpl.descriptor,
+      damage: tpl.damage,
+      price: tpl.price,
+      notes: tpl.notes,
+    })
   }
-  emit('patch', {
-    inventory: [...props.char.inventory, item],
-    ...(deductCoins ? { coins: Math.max(0, props.char.coins - (tpl.price ?? 0)) } : {}),
-  })
   pendingTemplateId.value = null
 }
 
@@ -57,15 +61,14 @@ function gmApproved() {
 }
 
 function removeItem(id: string) {
-  emit('patch', { inventory: props.char.inventory.filter(i => i.id !== id) })
+  inv.remove(id)
 }
 
 function toggleEquipped(id: string) {
-  emit('patch', {
-    inventory: props.char.inventory.map(i =>
-      i.id === id ? { ...i, equipped: !i.equipped } : i
-    ),
-  })
+  const item = props.char.inventory.find(i => i.id === id)
+  if (!item) return
+  if (item.equipped) inv.unequip(id)
+  else inv.equip(id)
 }
 
 const sortedInventory = computed(() => {
@@ -80,13 +83,7 @@ const multipleWeaponsEquipped = computed(() =>
 
 function addCustom() {
   if (!customName.value.trim()) return
-  const item: InventoryItem = {
-    id: crypto.randomUUID(),
-    name: customName.value.trim(),
-    price: customPrice.value || undefined,
-    descriptor: { kind: 'custom' },
-  }
-  emit('patch', { inventory: [...props.char.inventory, item] })
+  inv.addCustom(customName.value.trim(), customPrice.value || undefined)
   customName.value = ''
   customPrice.value = 0
 }
