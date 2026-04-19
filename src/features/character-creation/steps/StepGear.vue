@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Character, InventoryItem, ArmorType } from '@/types/character'
+import type { Character, InventoryItem } from '@/types/character'
 import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
 import { hitDiceCount, rollHitDice, sturdinessBonus } from '@/utils/derived'
 
@@ -21,12 +21,6 @@ function rollHp() {
   emit('patch', { hitDice: numDice, maxHp: hp, currentHp: hp, hpHistory })
 }
 
-function setArmor(type: ArmorType) {
-  emit('patch', { armor: { ...props.draft.armor, type } })
-}
-function toggleShield() {
-  emit('patch', { armor: { ...props.draft.armor, shield: !props.draft.armor.shield } })
-}
 
 function addFromCatalog(templateId: string) {
   const tpl = findGearTemplate(templateId)
@@ -106,19 +100,6 @@ const canFinish = computed(() => hpRolled.value)
     </section>
 
     <section class="block">
-      <div class="label">Доспех</div>
-      <div class="armor-grid">
-        <button class="armor-card" :class="{ 'armor-card--active': draft.armor.type === 'none' }" @click="setArmor('none')">Без</button>
-        <button class="armor-card" :class="{ 'armor-card--active': draft.armor.type === 'light' }" @click="setArmor('light')">Лёгкий (1)</button>
-        <button class="armor-card" :class="{ 'armor-card--active': draft.armor.type === 'full' }" @click="setArmor('full')">Полный (2)</button>
-      </div>
-      <label class="check">
-        <input type="checkbox" :checked="draft.armor.shield" @change="toggleShield" />
-        Щит (+1)
-      </label>
-    </section>
-
-    <section class="block">
       <div class="block-header">
         <span class="label">Снаряжение</span>
         <span class="coins">💰 {{ draft.coins }}с</span>
@@ -179,10 +160,6 @@ const canFinish = computed(() => hpRolled.value)
 .hint { font-size: 12px; color: var(--color-text-muted); }
 .hp-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
 .hp-value { font-size: 24px; font-weight: 700; }
-.armor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.armor-card { padding: 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; cursor: pointer; border-radius: 4px; }
-.armor-card--active { border-color: var(--color-accent); color: var(--color-accent); }
-.check { display: flex; align-items: center; gap: 8px; }
 .coins { font-weight: 600; }
 .cat { border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }
 .cat__head { width: 100%; display: flex; justify-content: space-between; padding: 10px 12px; background: var(--color-bg-elevated); border: none; color: var(--color-text); cursor: pointer; font-family: inherit; font-size: 14px; }
