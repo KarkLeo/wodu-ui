@@ -43,6 +43,24 @@ function removeItem(id: string) {
   emit('patch', { inventory: props.char.inventory.filter(i => i.id !== id) })
 }
 
+function toggleEquipped(id: string) {
+  emit('patch', {
+    inventory: props.char.inventory.map(i =>
+      i.id === id ? { ...i, equipped: !i.equipped } : i
+    ),
+  })
+}
+
+const sortedInventory = computed(() => {
+  const equipped = props.char.inventory.filter(i => i.equipped)
+  const rest = props.char.inventory.filter(i => !i.equipped)
+  return [...equipped, ...rest]
+})
+
+const multipleWeaponsEquipped = computed(() =>
+  props.char.inventory.filter(i => i.equipped && i.tags.includes('weapon')).length > 1
+)
+
 function addCustom() {
   if (!customName.value.trim()) return
   const item: InventoryItem = {
@@ -92,8 +110,16 @@ const itemsByCategory = computed(() => {
 
     <div class="list">
       <div class="label">Инвентарь</div>
-      <div v-for="item in char.inventory" :key="item.id" class="inv-row">
-        <div>
+      <div v-if="multipleWeaponsEquipped" class="warn">⚠ Экипировано несколько видов оружия</div>
+      <div v-for="item in sortedInventory" :key="item.id" class="inv-row" :class="{ 'inv-row--equipped': item.equipped }">
+        <button
+          class="equip-btn"
+          :class="{ 'equip-btn--on': item.equipped }"
+          type="button"
+          :title="item.equipped ? 'Снять' : 'Экипировать'"
+          @click="toggleEquipped(item.id)"
+        >⚔</button>
+        <div class="inv-row__info">
           <div class="inv-row__name">{{ item.name }}</div>
           <div v-if="item.notes" class="inv-row__notes">{{ item.notes }}</div>
         </div>
@@ -153,10 +179,15 @@ const itemsByCategory = computed(() => {
 .armor-grid .active { border-color: var(--color-accent); color: var(--color-accent); }
 .shield { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
 .list { display: flex; flex-direction: column; gap: 4px; }
-.inv-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 3px; gap: 8px; }
+.warn { font-size: 12px; color: var(--color-accent); padding: 6px 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-accent); border-radius: 3px; }
+.inv-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 3px; }
+.inv-row--equipped { border-color: var(--color-accent); }
+.inv-row__info { flex: 1; min-width: 0; }
 .inv-row__name { font-weight: 600; }
 .inv-row__notes { font-size: 11px; color: var(--color-text-muted); }
-.inv-row__right { display: flex; align-items: center; gap: 6px; }
+.inv-row__right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.equip-btn { background: none; border: none; cursor: pointer; color: var(--color-text-muted); font-size: 14px; padding: 0 2px; flex-shrink: 0; }
+.equip-btn--on { color: var(--color-accent); }
 .tag { font-size: 11px; color: var(--color-text-muted); }
 .btn-mini { background: none; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 16px; }
 .custom__row { display: grid; grid-template-columns: 1fr 90px auto; gap: 6px; }
