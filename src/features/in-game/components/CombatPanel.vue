@@ -8,6 +8,7 @@ const props = defineProps<{ char: Character }>()
 
 const weapons = computed(() => props.char.inventory.filter(isWeapon))
 const armor = computed(() => totalArmor(props.char))
+const anyEquipped = computed(() => weapons.value.some(w => w.equipped))
 </script>
 
 <template>
@@ -17,7 +18,7 @@ const armor = computed(() => totalArmor(props.char))
       <div>Броня: <b>{{ armor }}</b> ({{ armorLabel(char.armor) }})</div>
       <div v-if="char.damageBonusDice > 0">Бонус костей урона: <b>+{{ char.damageBonusDice }}d6</b></div>
     </div>
-    <div v-if="weapons.length" class="weapons">
+    <div v-if="weapons.length" class="weapons" :class="{ 'weapons--has-equipped': anyEquipped }">
       <div
         v-for="w in weapons"
         :key="w.id"
@@ -41,7 +42,7 @@ const armor = computed(() => totalArmor(props.char))
 .weapons { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .weapon { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
 .weapon--equipped { border-color: var(--color-accent); }
-.weapon:not(.weapon--equipped) { opacity: 0.6; }
+.weapons--has-equipped .weapon:not(.weapon--equipped) { opacity: 0.6; }
 .weapon__name { font-weight: 600; }
 .weapon__dmg-row { display: flex; align-items: center; gap: 4px; }
 .weapon__dmg { font-family: monospace; }
