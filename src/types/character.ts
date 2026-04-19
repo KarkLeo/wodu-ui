@@ -48,6 +48,7 @@ export interface InventoryItem {
   tags: string[]
   damage?: string
   notes?: string
+  equipped?: boolean
 }
 
 export interface Spirit {
@@ -88,6 +89,7 @@ export interface Character {
   hitDice: number
   currentHp: number
   maxHp: number
+  hpHistory?: { level: number; roll: number; source: 'dice' | 'sturdy' }[]
 
   skillIds: SkillId[]
   abilityIds: AbilityId[]
