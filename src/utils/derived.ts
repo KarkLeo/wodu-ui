@@ -105,10 +105,10 @@ export function damageBreakdownLines(
   const melee = weapon.tags.includes('weapon') && !weapon.tags.includes('ranged')
   const ranged = weapon.tags.includes('ranged')
   const abilityIds = char.abilityIds ?? []
-  if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'бонус уровня' })
   if (abilityIds.includes('skirmish')) lines.push({ value: '+1', label: 'Манёвренность' })
   if (melee && abilityIds.includes('hewing')) lines.push({ value: '+2', label: 'Рубка' })
   if (ranged && abilityIds.includes('volley')) lines.push({ value: '+2', label: 'Залп' })
+  if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'бонус уровня' })
   return lines
 }
 
