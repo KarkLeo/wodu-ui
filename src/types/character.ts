@@ -38,12 +38,21 @@ export type AbilityId = typeof ABILITIES[number]['id']
 export type StatKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 export type Stats = Record<StatKey, number>
 
+export type ItemDescriptor =
+  | { kind: 'weapon'; melee: true }
+  | { kind: 'weapon'; melee: false }
+  | { kind: 'armor'; class: 'none' | 'light' | 'full' }
+  | { kind: 'shield' }
+  | { kind: 'gear'; consumable?: boolean }
+  | { kind: 'tool' }
+  | { kind: 'occult'; consumable?: boolean }
+  | { kind: 'custom' }
 
 export interface InventoryItem {
   id: string
   name: string
+  descriptor: ItemDescriptor
   price?: number
-  tags: string[]
   damage?: string
   notes?: string
   equipped?: boolean
