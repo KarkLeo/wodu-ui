@@ -1,4 +1,4 @@
-import type { AbilityId, ArmorState, Character, InventoryItem, StatKey } from '@/types/character'
+import type { AbilityId, Character, InventoryItem, StatKey } from '@/types/character'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
 export interface BreakdownLine {
@@ -6,16 +6,15 @@ export interface BreakdownLine {
   label: string
 }
 
-export function totalArmor(char: Pick<Character, 'armor' | 'abilityIds'>): number {
-  const base = char.armor.type === 'full' ? 2 : char.armor.type === 'light' ? 1 : 0
-  const shield = char.armor.shield ? 1 : 0
+export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds'>): number {
+  const equipped = (char.inventory ?? []).filter(i => i.equipped)
+  const hasFull = equipped.some(i => i.tags.includes('armor') && i.tags.includes('full'))
+  const hasLight = equipped.some(i => i.tags.includes('armor') && i.tags.includes('light'))
+  const hasShield = equipped.some(i => i.tags.includes('shield'))
+  const base = hasFull ? 2 : hasLight ? 1 : 0
+  const shield = hasShield ? 1 : 0
   const toughness = (char.abilityIds ?? []).includes('toughness') ? 1 : 0
   return base + shield + toughness
-}
-
-export function armorLabel(armor: ArmorState): string {
-  const base = armor.type === 'full' ? 'Полный' : armor.type === 'light' ? 'Лёгкий' : 'Без доспеха'
-  return armor.shield ? `${base} + щит` : base
 }
 
 export function isWeapon(item: InventoryItem): boolean {
@@ -112,14 +111,18 @@ export function damageBreakdownLines(
   return lines
 }
 
-export function armorBreakdownLines(char: Pick<Character, 'armor' | 'abilityIds'>): {
+export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'abilityIds'>): {
   lines: BreakdownLine[]
   note?: string
 } {
+  const equipped = (char.inventory ?? []).filter(i => i.equipped)
+  const hasFull = equipped.some(i => i.tags.includes('armor') && i.tags.includes('full'))
+  const hasLight = equipped.some(i => i.tags.includes('armor') && i.tags.includes('light'))
+  const hasShield = equipped.some(i => i.tags.includes('shield'))
   const lines: BreakdownLine[] = []
-  if (char.armor.type === 'full') lines.push({ value: '2', label: 'полный доспех' })
-  else if (char.armor.type === 'light') lines.push({ value: '1', label: 'лёгкий доспех' })
-  if (char.armor.shield) lines.push({ value: '+1', label: 'щит' })
+  if (hasFull) lines.push({ value: '2', label: 'полный доспех' })
+  else if (hasLight) lines.push({ value: '1', label: 'лёгкий доспех' })
+  if (hasShield) lines.push({ value: '+1', label: 'щит' })
   const abilityIds = char.abilityIds ?? []
   if (abilityIds.includes('toughness')) lines.push({ value: '+1', label: 'Прочность' })
   const note = abilityIds.includes('skirmish') ? 'доспех считается лёгким (Манёвренность)' : undefined
