@@ -66,7 +66,7 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
       <SkillsPanel :char="char" />
       <AbilitiesPanel :char="char" />
     </div>
-    <CombatPanel v-else-if="activeTab === 'combat'" :char="char" />
+    <CombatPanel v-else-if="activeTab === 'combat'" :char="char" @patch="patch" />
     <InventoryPanel v-else-if="activeTab === 'inventory'" :char="char" @patch="patch" />
     <MagicPanel
       v-else-if="activeTab === 'magic'"
