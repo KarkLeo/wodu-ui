@@ -58,7 +58,7 @@ function resetAllState() {
         <div class="char-card__top">
           <div>
             <div class="char-card__name">{{ char.name }}</div>
-            <div class="label">{{ CLASSES[char.classId]?.name ?? char.classId }} · Уровень {{ char.level }}</div>
+            <div class="label">{{ char.classId === 'custom' ? (char.customClassName ?? 'Свой класс') : (CLASSES[char.classId]?.name ?? char.classId) }} · Уровень {{ char.level }}</div>
           </div>
           <div class="char-card__hp">
             <span class="label">HP</span>

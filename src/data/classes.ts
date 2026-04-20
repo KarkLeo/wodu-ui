@@ -1,4 +1,7 @@
-import type { ClassData, ClassId } from '@/types/character'
+import { ABILITIES } from '@/types/character'
+import type { AbilityId, ClassData, ClassId } from '@/types/character'
+
+export const ALL_ABILITY_IDS: AbilityId[] = ABILITIES.map(a => a.id)
 
 export const CLASSES: Record<ClassId, ClassData> = {
   fighter: {
@@ -35,6 +38,13 @@ export const CLASSES: Record<ClassId, ClassData> = {
     name: 'Следопыт',
     grantedSkillIds: ['survival'],
     abilityPool: ['pet', 'scouting', 'volley', 'savage'],
+    hasMagic: false,
+  },
+  custom: {
+    id: 'custom',
+    name: 'Свой класс',
+    grantedSkillIds: [],
+    abilityPool: ALL_ABILITY_IDS,
     hasMagic: false,
   },
 }

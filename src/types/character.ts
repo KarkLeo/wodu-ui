@@ -80,7 +80,7 @@ export interface Magic {
 }
 
 export type CharacterStatus = 'draft' | 'active'
-export type ClassId = 'fighter' | 'thief' | 'cleric' | 'wizard' | 'ranger'
+export type ClassId = 'fighter' | 'thief' | 'cleric' | 'wizard' | 'ranger' | 'custom'
 
 export interface Character {
   id: string
@@ -90,6 +90,7 @@ export interface Character {
   name: string
   trueName?: string
   classId: ClassId
+  customClassName?: string
   level: number
   xp: number
 
