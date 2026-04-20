@@ -12,5 +12,6 @@ export function useInventory(dispatch: Dispatcher) {
     equip: (itemId: string) => dispatch({ type: 'EQUIP_ITEM', itemId }),
     unequip: (itemId: string) => dispatch({ type: 'UNEQUIP_ITEM', itemId }),
     setCoins: (amount: number) => dispatch({ type: 'SET_COINS', amount }),
+    use: (itemId: string) => dispatch({ type: 'USE_ITEM', itemId }),
   }
 }

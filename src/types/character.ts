@@ -50,12 +50,14 @@ export type ItemDescriptor =
 
 export interface InventoryItem {
   id: string
+  templateId?: string
   name: string
   descriptor: ItemDescriptor
   price?: number
   damage?: string
   notes?: string
   equipped?: boolean
+  quantity?: number
 }
 
 export interface Spirit {
@@ -105,6 +107,7 @@ export interface Character {
   coins: number
 
   magic?: Magic
+  quicksilverCount?: number
 
   damageBonusDice: number
   notes: string

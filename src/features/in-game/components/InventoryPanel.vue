@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Character } from '@/types/character'
+import type { Character, InventoryItem } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
 import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
+import { isConsumable } from '@/domain/inventory'
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
@@ -88,6 +89,27 @@ function addCustom() {
   customPrice.value = 0
 }
 
+const overdosePendingItemId = ref<string | null>(null)
+
+function useItemSafe(item: InventoryItem) {
+  console.log('[useItemSafe]', item.templateId, item.id, 'qsCount:', props.char.quicksilverCount, 'level:', props.char.level)
+  if (item.templateId === 'mercury' && (props.char.quicksilverCount ?? 0) >= props.char.level) {
+    overdosePendingItemId.value = item.id
+    return
+  }
+  inv.use(item.id)
+}
+function overdoseCancel() { overdosePendingItemId.value = null }
+function overdoseReset() {
+  props.dispatch({ type: 'RESET_QUICKSILVER' })
+  overdosePendingItemId.value = null
+}
+function overdoseRoll() {
+  inv.use(overdosePendingItemId.value!)
+  console.log('Бросок ТЕЛ против эффектов ртути')
+  overdosePendingItemId.value = null
+}
+
 const itemsByCategory = computed(() => {
   const out: Record<string, typeof GEAR_CATALOG> = {}
   for (const cat of GEAR_CATEGORIES) out[cat.id] = []
@@ -117,19 +139,23 @@ const itemsByCategory = computed(() => {
       <div v-if="multipleWeaponsEquipped" class="warn">⚠ Экипировано несколько видов оружия</div>
       <div v-for="item in sortedInventory" :key="item.id" class="inv-row" :class="{ 'inv-row--equipped': item.equipped }">
         <button
+          v-if="!isConsumable(item)"
           class="equip-btn"
           :class="{ 'equip-btn--on': item.equipped }"
           type="button"
           :title="item.equipped ? 'Снять' : 'Экипировать'"
           @click="toggleEquipped(item.id)"
         >⚔</button>
+        <div v-else class="equip-btn-placeholder" />
         <div class="inv-row__info">
           <div class="inv-row__name">{{ item.name }}</div>
           <div v-if="item.notes" class="inv-row__notes">{{ item.notes }}</div>
         </div>
         <div class="inv-row__right">
+          <span v-if="isConsumable(item) && (item.quantity ?? 1) > 1" class="tag">×{{ item.quantity }}</span>
           <span v-if="item.damage" class="tag">{{ item.damage }}</span>
           <span v-if="item.price" class="tag">{{ item.price }}с</span>
+          <button v-if="isConsumable(item)" class="btn-use" type="button" @click="useItemSafe(item)">Исп.</button>
           <button class="btn-mini" @click="removeItem(item.id)">×</button>
         </div>
       </div>
@@ -152,6 +178,17 @@ const itemsByCategory = computed(() => {
       <div class="gm-dialog__actions">
         <button class="btn-ghost" @click="cancelPending">Обсудить с ГМ</button>
         <button class="btn-primary" @click="gmApproved">ГМ одобрил</button>
+      </div>
+    </div>
+
+    <div v-if="overdosePendingItemId" class="gm-dialog overdose-dialog">
+      <div class="gm-dialog__text">
+        Превышена дневная доза ртути — выпито {{ char.quicksilverCount ?? 0 }} / {{ char.level }}.
+      </div>
+      <div class="gm-dialog__actions">
+        <button class="btn-ghost" @click="overdoseCancel">Отмена</button>
+        <button class="btn-ghost" @click="overdoseReset">Сбросить счётчик</button>
+        <button class="btn-primary" @click="overdoseRoll">Бросить кубы ТЕЛ</button>
       </div>
     </div>
 
@@ -198,6 +235,8 @@ const itemsByCategory = computed(() => {
 .inv-row__right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .equip-btn { background: none; border: none; cursor: pointer; color: var(--color-text-muted); font-size: 14px; padding: 0 2px; flex-shrink: 0; }
 .equip-btn--on { color: var(--color-accent); }
+.equip-btn-placeholder { width: 20px; flex-shrink: 0; }
+.btn-use { background: none; border: 1px solid var(--color-border); border-radius: 3px; color: var(--color-text-muted); cursor: pointer; font-size: 11px; padding: 2px 5px; font-family: inherit; flex-shrink: 0; }
 .tag { font-size: 11px; color: var(--color-text-muted); }
 .btn-mini { background: none; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 16px; }
 .custom__row { display: grid; grid-template-columns: 1fr 90px auto; gap: 6px; }
@@ -212,5 +251,6 @@ const itemsByCategory = computed(() => {
 .catalog-toggle { align-self: flex-start; }
 .gm-dialog { background: var(--color-bg-elevated); border: 1px solid var(--color-accent); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .gm-dialog__text { font-size: 13px; }
-.gm-dialog__actions { display: flex; gap: 8px; justify-content: flex-end; }
+.gm-dialog__actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.overdose-dialog { border-color: var(--color-danger, #e05252); }
 </style>

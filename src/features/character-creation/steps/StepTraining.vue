@@ -104,10 +104,16 @@ const canContinue = computed(() => {
 
 onMounted(() => {
   syncAutos()
-  if (hasIncantations.value) {
-    const magic = ensureMagic()
-    if (!magic.cantrips?.length) {
-      emit('patch', { magic: { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
+  if (showMagic.value) {
+    if (!props.draft.magic) {
+      const magic = ensureMagic()
+      emit('patch', {
+        magic: hasIncantations.value
+          ? { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] }
+          : magic,
+      })
+    } else if (hasIncantations.value && !props.draft.magic.cantrips?.length) {
+      emit('patch', { magic: { ...props.draft.magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
     }
   }
 })
