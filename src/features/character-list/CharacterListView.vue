@@ -35,9 +35,8 @@ function hpPercent(current: number, max: number) {
 
 function resetAllState() {
   if (!confirm('Удалить всех персонажей и очистить стейт? Действие необратимо.')) return
-  localStorage.removeItem('wod.characters.v1')
-  localStorage.removeItem('wod.creation.v1')
-  location.reload()
+  characters.clearAll()
+  creation.reset()
 }
 </script>
 

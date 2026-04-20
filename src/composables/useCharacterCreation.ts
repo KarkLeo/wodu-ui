@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import type { Character } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 
 export function useCharacterCreation() {
   const router = useRouter()
@@ -65,5 +66,9 @@ export function useCharacterCreation() {
     router.push(`/character/${id}`)
   }
 
-  return { draft, step: computed(() => creation.step), createDraft, patch, next, back, finish }
+  function dispatch(cmd: CharacterCommand) {
+    if (creation.draftId) characters.dispatch(creation.draftId, cmd)
+  }
+
+  return { draft, step: computed(() => creation.step), createDraft, patch, dispatch, next, back, finish }
 }

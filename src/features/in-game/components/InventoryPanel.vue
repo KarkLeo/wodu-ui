@@ -5,6 +5,7 @@ import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
 import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
 import { isConsumable } from '@/domain/inventory'
+import { isQuicksilverOverdose } from '@/utils/derived'
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
@@ -134,8 +135,7 @@ function cancelEdit() {
 const overdosePendingItemId = ref<string | null>(null)
 
 function useItemSafe(item: InventoryItem) {
-  console.log('[useItemSafe]', item.templateId, item.id, 'qsCount:', props.char.quicksilverCount, 'level:', props.char.level)
-  if (item.templateId === 'mercury' && (props.char.quicksilverCount ?? 0) >= props.char.level) {
+  if (item.templateId === 'mercury' && isQuicksilverOverdose(props.char)) {
     overdosePendingItemId.value = item.id
     return
   }
@@ -148,7 +148,6 @@ function overdoseReset() {
 }
 function overdoseRoll() {
   inv.use(overdosePendingItemId.value!)
-  console.log('Бросок ТЕЛ против эффектов ртути')
   overdosePendingItemId.value = null
 }
 

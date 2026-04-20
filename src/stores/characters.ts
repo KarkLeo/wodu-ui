@@ -44,6 +44,10 @@ export const useCharactersStore = defineStore('characters', {
     setActive(id: string | null) {
       this.activeId = id
     },
+    clearAll() {
+      this.list = []
+      this.activeId = null
+    },
   },
   persist: {
     key: STORAGE_KEY,

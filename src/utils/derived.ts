@@ -65,6 +65,10 @@ export function isReadyToLevelUp(char: Pick<Character, 'level' | 'xp'>): boolean
   return char.xp >= XP_THRESHOLDS[char.level + 1]
 }
 
+export function isQuicksilverOverdose(char: Pick<Character, 'quicksilverCount' | 'level'>): boolean {
+  return (char.quicksilverCount ?? 0) >= char.level
+}
+
 export function hitDiceCount(con: number): number {
   return 1 + Math.max(0, con)
 }

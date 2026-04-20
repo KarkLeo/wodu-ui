@@ -4,6 +4,7 @@ import type { Character, Ritual, Spirit, Magic } from '@/types/character'
 import type { AbilityId } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { SPHERE_PRESETS } from '@/data/spheres'
+import { isQuicksilverOverdose } from '@/utils/derived'
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
@@ -11,7 +12,7 @@ const props = defineProps<{ char: Character; abilityIds: AbilityId[]; dispatch: 
 
 const quicksilverCount = computed(() => props.char.quicksilverCount ?? 0)
 const quicksilverLimit = computed(() => props.char.level)
-const needsConRoll = computed(() => quicksilverCount.value >= quicksilverLimit.value)
+const needsConRoll = computed(() => isQuicksilverOverdose(props.char))
 
 function resetQuicksilver() { props.dispatch({ type: 'RESET_QUICKSILVER' }) }
 
