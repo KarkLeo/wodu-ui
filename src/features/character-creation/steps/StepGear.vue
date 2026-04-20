@@ -28,6 +28,7 @@ function addFromCatalog(templateId: string) {
   if ((tpl.price ?? 0) > props.draft.coins) return
   const item: InventoryItem = {
     id: crypto.randomUUID(),
+    templateId: tpl.templateId,
     name: tpl.name,
     price: tpl.price,
     descriptor: tpl.descriptor,

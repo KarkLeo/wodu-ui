@@ -32,6 +32,13 @@ function startNew() {
 function hpPercent(current: number, max: number) {
   return Math.max(0, Math.min(100, (current / max) * 100))
 }
+
+function resetAllState() {
+  if (!confirm('Удалить всех персонажей и очистить стейт? Действие необратимо.')) return
+  localStorage.removeItem('wod.characters.v1')
+  localStorage.removeItem('wod.creation.v1')
+  location.reload()
+}
 </script>
 
 <template>
@@ -87,6 +94,10 @@ function hpPercent(current: number, max: number) {
       <p>Нет персонажей.</p>
       <p class="label" style="margin-top: 8px">Нажми «+ Новый» чтобы начать</p>
     </div>
+
+    <div class="dev-tools">
+      <button class="btn-danger" @click="resetAllState">Полный сброс стейта</button>
+    </div>
   </div>
 </template>
 
@@ -119,4 +130,7 @@ function hpPercent(current: number, max: number) {
 .char-card__hp-fill { height: 100%; background: var(--color-accent); border-radius: 2px; transition: width 0.3s; }
 .draft-section { border-top: 1px solid var(--color-border); }
 .empty-state { padding: 48px 16px; text-align: center; color: var(--color-text-muted); font-size: 14px; }
+.dev-tools { padding: 24px 16px; display: flex; justify-content: center; }
+.btn-danger { background: none; border: 1px solid var(--color-danger, #e05252); color: var(--color-danger, #e05252); padding: 8px 14px; border-radius: 3px; font-family: inherit; font-size: 12px; cursor: pointer; }
+.btn-danger:hover { background: var(--color-danger, #e05252); color: var(--color-bg-dark); }
 </style>

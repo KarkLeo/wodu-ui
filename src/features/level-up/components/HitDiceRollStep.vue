@@ -31,7 +31,7 @@ const total = computed(() => kept.value.reduce((a, b) => a + b, 0))
     </div>
 
     <div v-if="rolls.length" class="result">
-      Итого ОЗ: <b>{{ total }}</b>
+      Прирост ОЗ: <b>{{ total }}</b>
     </div>
 
     <div class="actions">
