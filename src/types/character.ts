@@ -46,7 +46,7 @@ export type ItemDescriptor =
   | { kind: 'gear'; consumable?: boolean }
   | { kind: 'tool' }
   | { kind: 'occult'; consumable?: boolean }
-  | { kind: 'custom' }
+  | { kind: 'custom'; consumable?: boolean }
 
 export interface InventoryItem {
   id: string

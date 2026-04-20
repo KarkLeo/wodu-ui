@@ -52,6 +52,10 @@ function removeItem(id: string) {
 
 const customName = ref('')
 const customPrice = ref(0)
+const customNotes = ref('')
+const customConsumable = ref(false)
+const customQuantity = ref(1)
+
 function addCustom() {
   if (!customName.value.trim()) return
   if (customPrice.value > props.draft.coins) return
@@ -59,7 +63,9 @@ function addCustom() {
     id: crypto.randomUUID(),
     name: customName.value.trim(),
     price: customPrice.value || undefined,
-    descriptor: { kind: 'custom' },
+    notes: customNotes.value.trim() || undefined,
+    quantity: customConsumable.value ? customQuantity.value : undefined,
+    descriptor: { kind: 'custom', consumable: customConsumable.value || undefined },
   }
   emit('patch', {
     inventory: [...props.draft.inventory, item],
@@ -67,6 +73,9 @@ function addCustom() {
   })
   customName.value = ''
   customPrice.value = 0
+  customNotes.value = ''
+  customConsumable.value = false
+  customQuantity.value = 1
 }
 
 function openCategory(id: string) {
@@ -136,6 +145,14 @@ const canFinish = computed(() => hpRolled.value)
           <input class="input input--price" type="number" min="0" placeholder="Цена" v-model.number="customPrice" />
           <button class="btn-ghost" :disabled="!customName.trim() || customPrice > draft.coins" @click="addCustom">+</button>
         </div>
+        <input class="input custom__notes" placeholder="Описание" v-model="customNotes" />
+        <div class="custom__check">
+          <label class="check-label">
+            <input type="checkbox" v-model="customConsumable" />
+            Расходник
+          </label>
+          <input v-if="customConsumable" class="input input--qty" type="number" min="1" placeholder="Кол-во" v-model.number="customQuantity" />
+        </div>
       </div>
 
       <div v-if="draft.inventory.length" class="inventory">
@@ -172,6 +189,10 @@ const canFinish = computed(() => hpRolled.value)
 .gear-item__notes { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 .custom { margin-top: 8px; }
 .custom__row { display: grid; grid-template-columns: 1fr 90px auto; gap: 6px; }
+.custom__notes { width: 100%; margin-top: 6px; }
+.custom__check { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.check-label { display: flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; user-select: none; }
+.input--qty { width: 70px; }
 .input { padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; border-radius: 4px; }
 .input--price { width: 90px; }
 .inventory { margin-top: 12px; border: 1px solid var(--color-border); border-radius: 4px; }
