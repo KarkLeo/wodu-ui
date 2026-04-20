@@ -49,6 +49,7 @@ function commitPurchase(tpl: NonNullable<ReturnType<typeof findGearTemplate>>, d
     inv.buy(tpl.templateId)
   } else {
     inv.receive({
+      templateId: tpl.templateId,
       name: tpl.name,
       descriptor: tpl.descriptor,
       damage: tpl.damage,
