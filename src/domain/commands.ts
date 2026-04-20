@@ -18,6 +18,7 @@ export type CharacterCommand =
   | { type: 'RECEIVE_ITEM'; item: Omit<InventoryItem, 'id'> }
   | { type: 'ADD_CUSTOM_ITEM'; name: string; price?: number }
   | { type: 'REMOVE_ITEM'; itemId: string }
+  | { type: 'USE_ITEM'; itemId: string }
   | { type: 'EQUIP_ITEM'; itemId: string }
   | { type: 'UNEQUIP_ITEM'; itemId: string }
   | { type: 'SET_COINS'; amount: number }
@@ -31,3 +32,5 @@ export type CharacterCommand =
   | { type: 'UPDATE_MAGIC'; magic: Magic }
   | { type: 'UPDATE_STATS'; stats: Stats }
   | { type: 'UPDATE_NOTES'; notes: string }
+  | { type: 'DRINK_QUICKSILVER' }
+  | { type: 'RESET_QUICKSILVER' }

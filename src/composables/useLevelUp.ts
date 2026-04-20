@@ -44,16 +44,16 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     advance()
   }
 
-  function onHitDice(newMaxHp: number) {
+  function onHitDice(hpRoll: number) {
     if (!char.value) return
-    const hpGain = Math.max(0, newMaxHp - char.value.maxHp)
+    const newMaxHp = char.value.maxHp + hpRoll
     const existing = pending.value.hpHistory ?? char.value.hpHistory ?? []
     pending.value = {
       ...pending.value,
       maxHp: newMaxHp,
-      currentHp: char.value.currentHp + hpGain,
+      currentHp: char.value.currentHp + hpRoll,
       hitDice: (char.value.hitDice ?? 1) + 1,
-      hpHistory: [...existing, { level: targetLevel.value, roll: hpGain, source: 'dice' as const }],
+      hpHistory: [...existing, { level: targetLevel.value, roll: hpRoll, source: 'dice' as const }],
     }
     done.value.hitDice = true
     advance()

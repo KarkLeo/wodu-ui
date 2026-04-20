@@ -9,6 +9,12 @@ type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; abilityIds: AbilityId[]; dispatch: Dispatcher }>()
 
+const quicksilverCount = computed(() => props.char.quicksilverCount ?? 0)
+const quicksilverLimit = computed(() => props.char.level)
+const needsConRoll = computed(() => quicksilverCount.value >= quicksilverLimit.value)
+
+function resetQuicksilver() { props.dispatch({ type: 'RESET_QUICKSILVER' }) }
+
 function ensureMagic(): Magic {
   const m = props.char.magic ?? { spirits: [], rituals: [], cantrips: [] }
   // migrate legacy string[] rituals
@@ -78,6 +84,21 @@ function removeRitual(idx: number) {
       <datalist id="sphere-presets">
         <option v-for="s in SPHERE_PRESETS" :key="s" :value="s" />
       </datalist>
+
+      <div class="mercury">
+        <div class="mercury-row">
+          <span class="label">Ртуть</span>
+          <span class="mercury-count" :class="{ warning: needsConRoll }">
+            {{ quicksilverCount }} / {{ quicksilverLimit }}
+          </span>
+        </div>
+        <div class="mercury-actions">
+          <button class="btn-ghost" @click="resetQuicksilver">Новый день</button>
+        </div>
+        <div v-if="needsConRoll" class="mercury-warning">
+          ⚠ Бросок ТЕЛ — сопротивление эффектам ртути
+        </div>
+      </div>
     </div>
 
     <div v-if="abilityIds.includes('ritual')" class="group">
@@ -126,4 +147,10 @@ function removeRitual(idx: number) {
 .textarea { resize: vertical; width: 100%; box-sizing: border-box; }
 .btn-mini { background: none; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 12px; }
 .cantrips { list-style: disc; padding-left: 18px; color: var(--color-text-muted); font-size: 13px; }
+.mercury { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-top: 1px solid var(--color-border); margin-top: 6px; }
+.mercury-row { display: flex; justify-content: space-between; align-items: center; }
+.mercury-count { font-size: 13px; color: var(--color-text-muted); }
+.mercury-count.warning { color: var(--color-danger, #e05252); font-weight: 600; }
+.mercury-actions { display: flex; gap: 8px; }
+.mercury-warning { font-size: 12px; color: var(--color-danger, #e05252); }
 </style>
