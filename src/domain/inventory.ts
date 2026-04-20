@@ -114,15 +114,21 @@ export function removeItem(char: Character, itemId: string): Character {
 export function useItem(char: Character, itemId: string): Character {
   const item = char.inventory.find(i => i.id === itemId)
   if (!item) return char
+  let updated: Character
   if ((item.quantity ?? 1) <= 1) {
-    return { ...char, inventory: char.inventory.filter(i => i.id !== itemId) }
+    updated = { ...char, inventory: char.inventory.filter(i => i.id !== itemId) }
+  } else {
+    updated = {
+      ...char,
+      inventory: char.inventory.map(i =>
+        i.id === itemId ? { ...i, quantity: (i.quantity ?? 1) - 1 } : i
+      ),
+    }
   }
-  return {
-    ...char,
-    inventory: char.inventory.map(i =>
-      i.id === itemId ? { ...i, quantity: (i.quantity ?? 1) - 1 } : i
-    ),
+  if (item.templateId === 'mercury') {
+    return { ...updated, quicksilverCount: (char.quicksilverCount ?? 0) + 1 }
   }
+  return updated
 }
 
 export function equipItem(char: Character, itemId: string): Character {
@@ -145,10 +151,6 @@ export function unequipItem(char: Character, itemId: string): Character {
 
 export function setCoins(char: Character, amount: number): Character {
   return { ...char, coins: Math.max(0, amount) }
-}
-
-export function drinkQuicksilver(char: Character): Character {
-  return { ...char, quicksilverCount: (char.quicksilverCount ?? 0) + 1 }
 }
 
 export function resetQuicksilver(char: Character): Character {

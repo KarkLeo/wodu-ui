@@ -11,12 +11,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): Character 
     case 'ADD_CUSTOM_ITEM': return inv.addCustomItem(char, cmd.name, cmd.price, cmd.notes, cmd.consumable, cmd.quantity)
     case 'EDIT_CUSTOM_ITEM': return inv.editCustomItem(char, cmd.itemId, cmd)
     case 'REMOVE_ITEM':     return inv.removeItem(char, cmd.itemId)
-    case 'USE_ITEM': {
-      const item = char.inventory.find(i => i.id === cmd.itemId)
-      const result = inv.useItem(char, cmd.itemId)
-      if (item?.templateId === 'mercury') return { ...result, quicksilverCount: (char.quicksilverCount ?? 0) + 1 }
-      return result
-    }
+    case 'USE_ITEM':        return inv.useItem(char, cmd.itemId)
     case 'EQUIP_ITEM':      return inv.equipItem(char, cmd.itemId)
     case 'UNEQUIP_ITEM':    return inv.unequipItem(char, cmd.itemId)
     case 'SET_COINS':       return inv.setCoins(char, cmd.amount)
@@ -27,7 +22,6 @@ export function applyCommand(char: Character, cmd: CharacterCommand): Character 
     case 'UPDATE_MAGIC':       return { ...char, magic: cmd.magic }
     case 'UPDATE_STATS':       return { ...char, stats: cmd.stats }
     case 'UPDATE_NOTES':       return { ...char, notes: cmd.notes }
-    case 'DRINK_QUICKSILVER':  return inv.drinkQuicksilver(char)
     case 'RESET_QUICKSILVER':  return inv.resetQuicksilver(char)
   }
   const _exhaustive: never = cmd

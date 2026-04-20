@@ -9,7 +9,7 @@ import StepGear from './steps/StepGear.vue'
 
 const router = useRouter()
 const creation = useCreationStore()
-const { draft, step, patch, next, back, finish } = useCharacterCreation()
+const { draft, step, patch, dispatch, next, back, finish } = useCharacterCreation()
 
 const stepComponents = [StepIdentity, StepTraining, StepGear]
 const currentStepComponent = computed(() => stepComponents[step.value - 1])
@@ -39,6 +39,7 @@ onMounted(() => {
     <component
       :is="currentStepComponent"
       :draft="draft"
+      :dispatch="dispatch"
       @patch="patch"
       @next="next"
       @finish="finish"

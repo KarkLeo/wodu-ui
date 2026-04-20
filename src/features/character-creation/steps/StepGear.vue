@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Character, InventoryItem } from '@/types/character'
-import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
+import type { Character } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
+import { GEAR_CATALOG, GEAR_CATEGORIES } from '@/data/gear'
 import { hitDiceCount, rollHitDice, sturdinessBonus } from '@/utils/derived'
 
-const props = defineProps<{ draft: Character }>()
+const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; finish: [] }>()
 
 const hpRolled = computed(() => props.draft.maxHp > 0)
@@ -23,31 +24,11 @@ function rollHp() {
 
 
 function addFromCatalog(templateId: string) {
-  const tpl = findGearTemplate(templateId)
-  if (!tpl) return
-  if ((tpl.price ?? 0) > props.draft.coins) return
-  const item: InventoryItem = {
-    id: crypto.randomUUID(),
-    templateId: tpl.templateId,
-    name: tpl.name,
-    price: tpl.price,
-    descriptor: tpl.descriptor,
-    damage: tpl.damage,
-    notes: tpl.notes,
-  }
-  emit('patch', {
-    inventory: [...props.draft.inventory, item],
-    coins: props.draft.coins - (tpl.price ?? 0),
-  })
+  props.dispatch({ type: 'BUY_ITEM', templateId })
 }
 
 function removeItem(id: string) {
-  const item = props.draft.inventory.find(i => i.id === id)
-  if (!item) return
-  emit('patch', {
-    inventory: props.draft.inventory.filter(i => i.id !== id),
-    coins: props.draft.coins + (item.price ?? 0),
-  })
+  props.dispatch({ type: 'REMOVE_ITEM', itemId: id })
 }
 
 const customName = ref('')
@@ -59,17 +40,13 @@ const customQuantity = ref(1)
 function addCustom() {
   if (!customName.value.trim()) return
   if (customPrice.value > props.draft.coins) return
-  const item: InventoryItem = {
-    id: crypto.randomUUID(),
+  props.dispatch({
+    type: 'ADD_CUSTOM_ITEM',
     name: customName.value.trim(),
     price: customPrice.value || undefined,
     notes: customNotes.value.trim() || undefined,
+    consumable: customConsumable.value || undefined,
     quantity: customConsumable.value ? customQuantity.value : undefined,
-    descriptor: { kind: 'custom', consumable: customConsumable.value || undefined },
-  }
-  emit('patch', {
-    inventory: [...props.draft.inventory, item],
-    coins: props.draft.coins - customPrice.value,
   })
   customName.value = ''
   customPrice.value = 0
