@@ -36,12 +36,16 @@ function setStatManual(key: StatKey, value: number) {
 
 function selectClass(id: ClassId) {
   if (id === props.draft.classId) return
-  emit('patch', { classId: id, skillIds: [], abilityIds: [], magic: undefined })
+  const patch: Partial<Character> = { classId: id, skillIds: [], abilityIds: [], magic: undefined }
+  if (id !== 'custom') patch.customClassName = undefined
+  emit('patch', patch)
 }
 
-const canContinue = computed(() =>
-  props.draft.name.trim().length > 0 && rolled.value,
-)
+const canContinue = computed(() => {
+  if (!props.draft.name.trim() || !rolled.value) return false
+  if (props.draft.classId === 'custom' && !props.draft.customClassName?.trim()) return false
+  return true
+})
 </script>
 
 <template>
@@ -76,6 +80,13 @@ const canContinue = computed(() =>
           {{ cls.name }}
         </button>
       </div>
+      <input
+        v-if="draft.classId === 'custom'"
+        class="input"
+        :value="draft.customClassName ?? ''"
+        @input="emit('patch', { customClassName: ($event.target as HTMLInputElement).value })"
+        placeholder="Название класса"
+      />
     </section>
 
     <section class="block">

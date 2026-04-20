@@ -27,13 +27,16 @@ function toggleSkill(id: SkillId) {
   if (autoSkills.value.includes(id)) return
   if (requiredSkillPicks.value === 0) return
   const has = props.draft.skillIds.includes(id)
-  let next: SkillId[]
+  let nextPicked: SkillId[]
   if (has) {
-    next = props.draft.skillIds.filter(x => x !== id)
+    nextPicked = pickedSkills.value.filter(x => x !== id)
   } else {
-    next = [...autoSkills.value, id]
+    nextPicked = [...pickedSkills.value, id]
+    if (nextPicked.length > requiredSkillPicks.value) {
+      nextPicked = nextPicked.slice(nextPicked.length - requiredSkillPicks.value)
+    }
   }
-  emit('patch', { skillIds: next })
+  emit('patch', { skillIds: [...autoSkills.value, ...nextPicked] })
 }
 
 function toggleAbility(id: AbilityId) {
@@ -112,7 +115,10 @@ onMounted(() => {
   <div class="step">
     <section class="block">
       <div class="label">Навыки</div>
-      <p class="hint">Автоматические — от класса.<span v-if="requiredSkillPicks > 0"> Выбери ещё {{ requiredSkillPicks }}.</span></p>
+      <p class="hint">
+        <template v-if="draft.classId === 'custom'">Выбери любые {{ requiredSkillPicks }} навыка.</template>
+        <template v-else>Автоматические — от класса.<span v-if="requiredSkillPicks > 0"> Выбери ещё {{ requiredSkillPicks }}.</span></template>
+      </p>
       <div class="checklist">
         <label
           v-for="sk in SKILLS"
@@ -134,8 +140,8 @@ onMounted(() => {
     <section class="block">
       <div class="label">Способности</div>
       <p class="hint">
-        Выбери {{ requiredAbilityPicks }} из {{ abilityPool.length }} доступных класса.
-        <span v-if="autoAbilities.length">Автоматически: {{ autoAbilities.map(id => ABILITIES.find(a => a.id === id)?.name).join(', ') }}.</span>
+        <template v-if="draft.classId === 'custom'">Выбери любые {{ requiredAbilityPicks }} способности.</template>
+        <template v-else>Выбери {{ requiredAbilityPicks }} из {{ abilityPool.length }} доступных класса.<span v-if="autoAbilities.length"> Автоматически: {{ autoAbilities.map(id => ABILITIES.find(a => a.id === id)?.name).join(', ') }}.</span></template>
       </p>
       <div class="checklist">
         <label
