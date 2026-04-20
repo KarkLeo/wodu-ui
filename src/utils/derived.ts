@@ -17,6 +17,17 @@ export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds'>): n
   return base + shield + toughness
 }
 
+export function armorTypeLabel(char: Pick<Character, 'inventory'>): string {
+  const equipped = (char.inventory ?? []).filter(i => i.equipped)
+  const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
+  const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
+  const hasShield = equipped.some(i => i.descriptor.kind === 'shield')
+  const base = hasFull ? 'полный' : hasLight ? 'лёгкий' : ''
+  if (!base && !hasShield) return ''
+  if (!base) return 'щит'
+  return hasShield ? `${base} + щит` : base
+}
+
 export function isWeapon(item: InventoryItem): boolean {
   return item.descriptor.kind === 'weapon'
 }

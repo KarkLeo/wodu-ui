@@ -28,6 +28,10 @@ import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka
   flex-shrink: 0;
 }
 .info-btn:hover { color: var(--color-text); }
+</style>
+
+<style>
+/* PopoverPortal teleports content outside component scope — scoped CSS won't match */
 .info-content {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
@@ -37,5 +41,7 @@ import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   z-index: 200;
   font-size: 13px;
+  font-family: var(--font-family);
+  color: var(--color-text);
 }
 </style>

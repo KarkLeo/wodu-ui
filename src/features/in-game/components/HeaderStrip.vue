@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
-import { totalArmor, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula } from '@/utils/derived'
+import { totalArmor, armorTypeLabel, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula } from '@/utils/derived'
 import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
 import ArmorBreakdownPopover from '@/components/ui/ArmorBreakdownPopover.vue'
 import DamageBreakdownPopover from '@/components/ui/DamageBreakdownPopover.vue'
@@ -18,6 +18,7 @@ const emit = defineEmits<{
 
 const className = computed(() => CLASSES[props.char.classId].name)
 const armor = computed(() => totalArmor(props.char))
+const armorType = computed(() => armorTypeLabel(props.char))
 const equippedWeapon = computed(() => {
   const weapons = props.char.inventory.filter(isWeapon)
   return weapons.find(w => w.equipped) ?? weapons[0] ?? null
@@ -59,6 +60,7 @@ function bumpXp(delta: number) {
           <div class="hdr__stat-val">{{ armor }}</div>
           <ArmorBreakdownPopover :char="char" />
         </div>
+        <div v-if="armorType" class="label">{{ armorType }}</div>
       </div>
     </div>
 
