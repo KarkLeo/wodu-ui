@@ -88,17 +88,6 @@ const hasRitual = computed(() => pickedAbilities.value.includes('ritual'))
 const canContinue = computed(() => {
   if (pickedSkills.value.length !== requiredSkillPicks.value) return false
   if (pickedAbilities.value.length !== requiredAbilityPicks.value) return false
-  if (showMagic.value) {
-    const magic = props.draft.magic
-    if (!magic || magic.spirits.length < 2) return false
-    for (const s of magic.spirits) {
-      if (!s.name.trim() || !s.appearance.trim() || !s.sphere1.trim() || !s.sphere2.trim()) return false
-    }
-    if (hasRitual.value) {
-      const rituals = magic.rituals ?? []
-      if (rituals.filter(r => r.name.trim()).length < 2) return false
-    }
-  }
   return true
 })
 
