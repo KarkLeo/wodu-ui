@@ -10,6 +10,7 @@ export interface LevelUpPatch {
   abilityIds: AbilityId[]
   stats: Stats
   damageBonusDice: number
+  magic?: Magic
 }
 
 export type CharacterCommand =

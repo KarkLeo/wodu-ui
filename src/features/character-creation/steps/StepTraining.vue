@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue'
 import type { Character, SkillId, AbilityId, Spirit, Magic } from '@/types/character'
 import { SKILLS, ABILITIES } from '@/types/character'
-import { CLASSES } from '@/data/classes'
+import { CLASSES, MAGIC_ABILITY_IDS } from '@/data/classes'
 import { SPHERE_PRESETS } from '@/data/spheres'
 
 const props = defineProps<{ draft: Character }>()
@@ -52,7 +52,14 @@ function toggleAbility(id: AbilityId) {
       nextPicked = nextPicked.slice(nextPicked.length - requiredAbilityPicks.value)
     }
   }
-  emit('patch', { abilityIds: [...autoAbilities.value, ...nextPicked] })
+  const patch: Partial<Character> = { abilityIds: [...autoAbilities.value, ...nextPicked] }
+  if (id === 'summoning' && !has && !props.draft.magic) {
+    patch.magic = ensureMagic()
+  } else if (id === 'summoning' && has && props.draft.classId !== 'wizard') {
+    const remainingMagicIds = nextPicked.filter(a => (MAGIC_ABILITY_IDS as readonly string[]).includes(a))
+    if (remainingMagicIds.length === 0) patch.magic = undefined
+  }
+  emit('patch', patch)
 }
 
 function syncAutos() {
@@ -63,10 +70,12 @@ function syncAutos() {
 
 function ensureMagic(): Magic {
   if (props.draft.magic) return props.draft.magic
-  const spirits: Spirit[] = [
-    { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' },
-    { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' },
-  ]
+  const spirits: Spirit[] = props.draft.classId === 'wizard'
+    ? [
+        { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' },
+        { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' },
+      ]
+    : []
   return { spirits, rituals: [], cantrips: [] }
 }
 
@@ -84,7 +93,9 @@ function updateRitual(idx: number, value: string) {
   emit('patch', { magic: { ...magic, rituals } })
 }
 
-const showMagic = computed(() => props.draft.classId === 'wizard')
+const showMagic = computed(() =>
+  props.draft.classId === 'wizard' || props.draft.abilityIds.includes('summoning'),
+)
 const hasIncantations = computed(() => pickedAbilities.value.includes('incantations'))
 const hasRitual = computed(() => pickedAbilities.value.includes('ritual'))
 
@@ -96,17 +107,15 @@ const canContinue = computed(() => {
 
 onMounted(() => {
   syncAutos()
-  if (showMagic.value) {
-    if (!props.draft.magic) {
-      const magic = ensureMagic()
-      emit('patch', {
-        magic: hasIncantations.value
-          ? { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] }
-          : magic,
-      })
-    } else if (hasIncantations.value && !props.draft.magic.cantrips?.length) {
-      emit('patch', { magic: { ...props.draft.magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
-    }
+  if (showMagic.value && !props.draft.magic) {
+    const magic = ensureMagic()
+    emit('patch', {
+      magic: hasIncantations.value
+        ? { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] }
+        : magic,
+    })
+  } else if (showMagic.value && props.draft.magic && hasIncantations.value && !props.draft.magic.cantrips?.length) {
+    emit('patch', { magic: { ...props.draft.magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
   }
 })
 </script>
@@ -171,7 +180,10 @@ onMounted(() => {
 
     <section v-if="showMagic" class="block">
       <div class="label">Магия</div>
-      <p class="hint">Волшебник начинает с двумя известными духами.</p>
+      <p class="hint">
+        <template v-if="draft.classId === 'wizard'">Волшебник начинает с двумя известными духами.</template>
+        <template v-else>Запиши духов, которых знает персонаж, если они есть.</template>
+      </p>
       <div v-for="(sp, idx) in (draft.magic?.spirits ?? [])" :key="sp.id" class="spirit">
         <div class="label">Дух {{ idx + 1 }}</div>
         <input class="input" placeholder="Имя" :value="sp.name" @input="updateSpirit(idx, { name: ($event.target as HTMLInputElement).value })" />
