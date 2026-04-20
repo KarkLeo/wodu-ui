@@ -16,7 +16,13 @@ const showCatalog = ref(false)
 const openCat = ref<string | null>('weapon')
 const customName = ref('')
 const customPrice = ref(0)
+const customNotes = ref('')
+const customConsumable = ref(false)
+const customQuantity = ref(1)
 const pendingTemplateId = ref<string | null>(null)
+
+const editingItemId = ref<string | null>(null)
+const editDraft = ref({ name: '', price: 0, notes: '', consumable: false, quantity: 1 })
 
 const pendingTemplate = computed(() =>
   pendingTemplateId.value ? findGearTemplate(pendingTemplateId.value) ?? null : null
@@ -84,9 +90,45 @@ const multipleWeaponsEquipped = computed(() =>
 
 function addCustom() {
   if (!customName.value.trim()) return
-  inv.addCustom(customName.value.trim(), customPrice.value || undefined)
+  inv.addCustom(
+    customName.value.trim(),
+    customPrice.value || undefined,
+    customNotes.value.trim() || undefined,
+    customConsumable.value || undefined,
+    customConsumable.value ? customQuantity.value : undefined,
+  )
   customName.value = ''
   customPrice.value = 0
+  customNotes.value = ''
+  customConsumable.value = false
+  customQuantity.value = 1
+}
+
+function startEdit(item: InventoryItem) {
+  editingItemId.value = item.id
+  editDraft.value = {
+    name: item.name,
+    price: item.price ?? 0,
+    notes: item.notes ?? '',
+    consumable: item.descriptor.kind === 'custom' ? (item.descriptor.consumable ?? false) : false,
+    quantity: item.quantity ?? 1,
+  }
+}
+
+function saveEdit() {
+  if (!editingItemId.value || !editDraft.value.name.trim()) return
+  inv.editCustom(editingItemId.value, {
+    name: editDraft.value.name.trim(),
+    price: editDraft.value.price || undefined,
+    notes: editDraft.value.notes.trim() || undefined,
+    consumable: editDraft.value.consumable || undefined,
+    quantity: editDraft.value.consumable ? editDraft.value.quantity : undefined,
+  })
+  editingItemId.value = null
+}
+
+function cancelEdit() {
+  editingItemId.value = null
 }
 
 const overdosePendingItemId = ref<string | null>(null)
@@ -137,28 +179,51 @@ const itemsByCategory = computed(() => {
     <div class="list">
       <div class="label">Инвентарь</div>
       <div v-if="multipleWeaponsEquipped" class="warn">⚠ Экипировано несколько видов оружия</div>
-      <div v-for="item in sortedInventory" :key="item.id" class="inv-row" :class="{ 'inv-row--equipped': item.equipped }">
-        <button
-          v-if="!isConsumable(item)"
-          class="equip-btn"
-          :class="{ 'equip-btn--on': item.equipped }"
-          type="button"
-          :title="item.equipped ? 'Снять' : 'Экипировать'"
-          @click="toggleEquipped(item.id)"
-        >⚔</button>
-        <div v-else class="equip-btn-placeholder" />
-        <div class="inv-row__info">
-          <div class="inv-row__name">{{ item.name }}</div>
-          <div v-if="item.notes" class="inv-row__notes">{{ item.notes }}</div>
+      <template v-for="item in sortedInventory" :key="item.id">
+        <div v-if="editingItemId === item.id" class="inv-row inv-row--editing">
+          <div class="edit-form">
+            <div class="edit-form__row">
+              <input class="input" placeholder="Название" v-model="editDraft.name" />
+              <input class="input input--price" type="number" min="0" placeholder="Цена" v-model.number="editDraft.price" />
+            </div>
+            <input class="input" placeholder="Описание" v-model="editDraft.notes" />
+            <div class="edit-form__check">
+              <label class="check-label">
+                <input type="checkbox" v-model="editDraft.consumable" />
+                Расходник
+              </label>
+              <input v-if="editDraft.consumable" class="input input--qty" type="number" min="1" placeholder="Кол-во" v-model.number="editDraft.quantity" />
+            </div>
+            <div class="edit-form__actions">
+              <button class="btn-ghost" @click="cancelEdit">Отмена</button>
+              <button class="btn-primary" :disabled="!editDraft.name.trim()" @click="saveEdit">Сохранить</button>
+            </div>
+          </div>
         </div>
-        <div class="inv-row__right">
-          <span v-if="isConsumable(item) && (item.quantity ?? 1) > 1" class="tag">×{{ item.quantity }}</span>
-          <span v-if="item.damage" class="tag">{{ item.damage }}</span>
-          <span v-if="item.price" class="tag">{{ item.price }}с</span>
-          <button v-if="isConsumable(item)" class="btn-use" type="button" @click="useItemSafe(item)">Исп.</button>
-          <button class="btn-mini" @click="removeItem(item.id)">×</button>
+        <div v-else class="inv-row" :class="{ 'inv-row--equipped': item.equipped }">
+          <button
+            v-if="!isConsumable(item)"
+            class="equip-btn"
+            :class="{ 'equip-btn--on': item.equipped }"
+            type="button"
+            :title="item.equipped ? 'Снять' : 'Экипировать'"
+            @click="toggleEquipped(item.id)"
+          >⚔</button>
+          <div v-else class="equip-btn-placeholder" />
+          <div class="inv-row__info">
+            <div class="inv-row__name">{{ item.name }}</div>
+            <div v-if="item.notes" class="inv-row__notes">{{ item.notes }}</div>
+          </div>
+          <div class="inv-row__right">
+            <span v-if="isConsumable(item) && (item.quantity ?? 1) > 1" class="tag">×{{ item.quantity }}</span>
+            <span v-if="item.damage" class="tag">{{ item.damage }}</span>
+            <span v-if="item.price" class="tag">{{ item.price }}с</span>
+            <button v-if="isConsumable(item)" class="btn-use" type="button" @click="useItemSafe(item)">Исп.</button>
+            <button v-if="item.descriptor.kind === 'custom'" class="btn-mini" type="button" @click="startEdit(item)">✎</button>
+            <button class="btn-mini" @click="removeItem(item.id)">×</button>
+          </div>
         </div>
-      </div>
+      </template>
       <div v-if="!char.inventory.length" class="empty">Пусто.</div>
     </div>
 
@@ -168,6 +233,14 @@ const itemsByCategory = computed(() => {
         <input class="input" placeholder="Название" v-model="customName" />
         <input class="input input--price" type="number" min="0" placeholder="Цена" v-model.number="customPrice" />
         <button class="btn-ghost" :disabled="!customName.trim()" @click="addCustom">+</button>
+      </div>
+      <input class="input custom__notes" placeholder="Описание" v-model="customNotes" />
+      <div class="custom__check">
+        <label class="check-label">
+          <input type="checkbox" v-model="customConsumable" />
+          Расходник
+        </label>
+        <input v-if="customConsumable" class="input input--qty" type="number" min="1" placeholder="Кол-во" v-model.number="customQuantity" />
       </div>
     </div>
 
@@ -240,6 +313,15 @@ const itemsByCategory = computed(() => {
 .tag { font-size: 11px; color: var(--color-text-muted); }
 .btn-mini { background: none; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 16px; }
 .custom__row { display: grid; grid-template-columns: 1fr 90px auto; gap: 6px; }
+.custom__notes { width: 100%; margin-top: 6px; }
+.custom__check { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.check-label { display: flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; user-select: none; }
+.input--qty { width: 70px; }
+.inv-row--editing { padding: 0; background: none; border: 1px solid var(--color-accent); }
+.edit-form { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; width: 100%; }
+.edit-form__row { display: grid; grid-template-columns: 1fr 90px; gap: 6px; }
+.edit-form__check { display: flex; align-items: center; gap: 8px; }
+.edit-form__actions { display: flex; gap: 6px; justify-content: flex-end; }
 .input { padding: 8px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); border-radius: 3px; font-family: inherit; }
 .catalog { display: flex; flex-direction: column; gap: 6px; }
 .cat { border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }

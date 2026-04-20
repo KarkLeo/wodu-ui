@@ -8,7 +8,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): Character 
   switch (cmd.type) {
     case 'BUY_ITEM':        return inv.buyItem(char, cmd.templateId)
     case 'RECEIVE_ITEM':    return inv.receiveItem(char, cmd.item)
-    case 'ADD_CUSTOM_ITEM': return inv.addCustomItem(char, cmd.name, cmd.price)
+    case 'ADD_CUSTOM_ITEM': return inv.addCustomItem(char, cmd.name, cmd.price, cmd.notes, cmd.consumable, cmd.quantity)
+    case 'EDIT_CUSTOM_ITEM': return inv.editCustomItem(char, cmd.itemId, cmd)
     case 'REMOVE_ITEM':     return inv.removeItem(char, cmd.itemId)
     case 'USE_ITEM': {
       const item = char.inventory.find(i => i.id === cmd.itemId)
