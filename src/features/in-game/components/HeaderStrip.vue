@@ -16,7 +16,11 @@ const emit = defineEmits<{
   back: []
 }>()
 
-const className = computed(() => CLASSES[props.char.classId].name)
+const className = computed(() =>
+  props.char.classId === 'custom'
+    ? (props.char.customClassName ?? 'Свой класс')
+    : CLASSES[props.char.classId].name
+)
 const armor = computed(() => totalArmor(props.char))
 const armorType = computed(() => armorTypeLabel(props.char))
 const equippedWeapon = computed(() => {
