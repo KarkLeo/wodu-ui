@@ -17,5 +17,6 @@ export function levelUp(char: Character, patch: LevelUpPatch): Character {
     abilityIds: patch.abilityIds,
     stats: patch.stats,
     damageBonusDice: patch.damageBonusDice,
+    ...(patch.magic !== undefined ? { magic: patch.magic } : {}),
   }
 }
