@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import type { Character, SkillId, AbilityId, StatKey } from '@/types/character'
+import type { Character, SkillId, AbilityId, StatKey, Magic } from '@/types/character'
 import { ABILITIES } from '@/types/character'
 import { sturdinessBonus } from '@/utils/derived'
 import { getReward } from '@/data/xpTable'
@@ -72,6 +72,9 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     const current = pending.value.abilityIds ?? char.value.abilityIds
     const newAbilityIds = [...current, aid]
     const updates: Partial<LevelUpPatch> = { ...pending.value, abilityIds: newAbilityIds }
+    if (aid === 'summoning' && !char.value.magic) {
+      updates.magic = { spirits: [], rituals: [], cantrips: [] } satisfies Magic
+    }
     if (aid === 'sturdy') {
       const bonus = sturdinessBonus([aid])
       const existing = pending.value.hpHistory ?? char.value.hpHistory ?? []
@@ -104,6 +107,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
       abilityIds: pending.value.abilityIds ?? char.value.abilityIds,
       stats: pending.value.stats ?? char.value.stats,
       damageBonusDice: pending.value.damageBonusDice ?? char.value.damageBonusDice,
+      magic: pending.value.magic ?? char.value.magic,
     }
     dispatch({ type: 'LEVEL_UP', patch })
   }
