@@ -33,5 +33,4 @@ export type CharacterCommand =
   | { type: 'UPDATE_MAGIC'; magic: Magic }
   | { type: 'UPDATE_STATS'; stats: Stats }
   | { type: 'UPDATE_NOTES'; notes: string }
-  | { type: 'DRINK_QUICKSILVER' }
   | { type: 'RESET_QUICKSILVER' }
