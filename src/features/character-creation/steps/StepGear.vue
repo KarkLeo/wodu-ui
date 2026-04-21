@@ -3,16 +3,28 @@ import { ref, computed } from 'vue'
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { GEAR_CATALOG, GEAR_CATEGORIES } from '@/data/gear'
-import { hitDiceCount, rollHitDice, sturdinessBonus } from '@/utils/derived'
+import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
+import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 
 const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; finish: [] }>()
 
+const { roll } = useDiceRoller()
+
 const hpRolled = computed(() => props.draft.maxHp > 0)
 
-function rollHp() {
+async function rollHp() {
   const numDice = hitDiceCount(props.draft.stats.con)
-  const { total } = rollHitDice(numDice, props.draft.level)
+  const level = props.draft.level
+  const result = await roll({
+    notation: `${numDice}d6`,
+    label: `Очки здоровья (${numDice}d6, оставить ${level})`,
+    purpose: { kind: 'hp-init', level, numDice, kept: level },
+    characterId: props.draft.id,
+  })
+  if (!result) return
+  const sorted = [...result.dice.map(d => d.value)].sort((a, b) => b - a)
+  const total = sorted.slice(0, level).reduce((a, b) => a + b, 0)
   const sturdyBonus = sturdinessBonus(props.draft.abilityIds)
   const hp = total + sturdyBonus
   const hpHistory: NonNullable<Character['hpHistory']> = [
@@ -82,7 +94,7 @@ const canFinish = computed(() => hpRolled.value)
       </div>
       <div class="hp-row">
         <span class="hp-value">{{ draft.maxHp || '—' }}</span>
-        <button class="btn-primary" @click="rollHp">{{ hpRolled ? 'Перебросить' : 'Бросить ОЗ' }}</button>
+        <button class="btn-primary" :disabled="isRolling" @click="rollHp">{{ hpRolled ? 'Перебросить' : 'Бросить ОЗ' }}</button>
       </div>
     </section>
 

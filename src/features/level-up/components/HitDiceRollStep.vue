@@ -1,15 +1,28 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { rollD6 } from '@/utils/derived'
+import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 
-const props = defineProps<{ numDice: number; targetLevel: number }>()
+const props = defineProps<{ numDice: number; targetLevel: number; characterId: string }>()
 const emit = defineEmits<{ done: [newMaxHp: number] }>()
 
+const { roll } = useDiceRoller()
 const rolls = ref<number[]>([])
 
-function doRoll() {
-  rolls.value = Array.from({ length: props.numDice }, () => rollD6())
-    .sort((a, b) => b - a)
+async function doRoll() {
+  const result = await roll({
+    notation: `${props.numDice}d6`,
+    label: `Hit dice (${props.numDice}d6, оставить ${props.targetLevel})`,
+    purpose: {
+      kind: 'hit-dice',
+      fromLevel: props.targetLevel - 1,
+      toLevel: props.targetLevel,
+      numDice: props.numDice,
+      kept: props.targetLevel,
+    },
+    characterId: props.characterId,
+  })
+  if (!result) return
+  rolls.value = result.dice.map(d => d.value).sort((a, b) => b - a)
 }
 
 const kept = computed(() => rolls.value.slice(0, props.targetLevel))
@@ -35,12 +48,12 @@ const total = computed(() => kept.value.reduce((a, b) => a + b, 0))
     </div>
 
     <div class="actions">
-      <button class="btn-primary" @click="doRoll">
+      <button class="btn-primary" :disabled="isRolling" @click="doRoll">
         {{ rolls.length ? 'Перебросить' : 'Бросить' }}
       </button>
       <button
         class="btn-primary"
-        :disabled="!rolls.length"
+        :disabled="!rolls.length || isRolling"
         @click="emit('done', total)"
       >
         Принять

@@ -3,8 +3,10 @@ import type { Character } from '@/types/character'
 import { isReadyToLevelUp } from '@/utils/derived'
 import { applyCommand } from '@/domain/reducer'
 import type { CharacterCommand } from '@/domain/commands'
+import { createLogger } from '@/utils/logger'
 
 const STORAGE_KEY = 'wod.characters.v1'
+const log = createLogger('store:characters')
 
 export const useCharactersStore = defineStore('characters', {
   state: () => ({
@@ -25,26 +27,39 @@ export const useCharactersStore = defineStore('characters', {
         id: crypto.randomUUID(),
         createdAt: Date.now(),
       }
+      log.debug('add', { id: character.id, status: character.status, name: character.name, classId: character.classId })
       this.list.push(character)
       return character
     },
     update(id: string, patch: Partial<Omit<Character, 'id' | 'createdAt'>>) {
       const idx = this.list.findIndex(c => c.id === id)
-      if (idx !== -1) this.list[idx] = { ...this.list[idx], ...patch }
+      if (idx === -1) {
+        log.warn('update: not found', { id })
+        return
+      }
+      log.debug('update', { id, keys: Object.keys(patch) })
+      this.list[idx] = { ...this.list[idx], ...patch }
     },
     dispatch(id: string, cmd: CharacterCommand) {
       const idx = this.list.findIndex(c => c.id === id)
-      if (idx === -1) return
+      if (idx === -1) {
+        log.warn('dispatch: not found', { id, cmd: cmd.type })
+        return
+      }
+      log.debug('dispatch', { id, cmd: cmd.type })
       this.list[idx] = applyCommand(this.list[idx], cmd)
     },
     remove(id: string) {
+      log.debug('remove', { id })
       this.list = this.list.filter(c => c.id !== id)
       if (this.activeId === id) this.activeId = null
     },
     setActive(id: string | null) {
+      log.debug('setActive', { prev: this.activeId, next: id })
       this.activeId = id
     },
     clearAll() {
+      log.info('clearAll', { count: this.list.length })
       this.list = []
       this.activeId = null
     },

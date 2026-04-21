@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import type { Character, SkillId, AbilityId, Spirit, Magic } from '@/types/character'
+import type { Character, SkillId, AbilityId, Spirit, Magic, Ritual } from '@/types/character'
 import { SKILLS, ABILITIES } from '@/types/character'
 import { CLASSES, MAGIC_ABILITY_IDS } from '@/data/classes'
 import { SPHERE_PRESETS } from '@/data/spheres'
@@ -85,11 +85,11 @@ function updateSpirit(idx: number, patchSp: Partial<Spirit>) {
   emit('patch', { magic: { ...magic, spirits } })
 }
 
-function updateRitual(idx: number, value: string) {
+function updateRitual(idx: number, patchRit: Partial<Ritual>) {
   const magic = ensureMagic()
   const rituals = [...(magic.rituals ?? [])]
   while (rituals.length < 2) rituals.push({ name: '', description: '' })
-  rituals[idx] = { ...rituals[idx], name: value }
+  rituals[idx] = { ...rituals[idx], ...patchRit }
   emit('patch', { magic: { ...magic, rituals } })
 }
 
@@ -205,14 +205,21 @@ onMounted(() => {
 
       <div v-if="hasRitual" class="rituals">
         <div class="label">Стартовые ритуалы (2)</div>
-        <input
-          v-for="i in 2"
-          :key="i"
-          class="input"
-          :placeholder="`Ритуал ${i}`"
-          :value="(draft.magic?.rituals ?? [])[i - 1]?.name ?? ''"
-          @input="updateRitual(i - 1, ($event.target as HTMLInputElement).value)"
-        />
+        <div v-for="i in 2" :key="i" class="ritual">
+          <input
+            class="input"
+            :placeholder="`Название ритуала ${i}`"
+            :value="(draft.magic?.rituals ?? [])[i - 1]?.name ?? ''"
+            @input="updateRitual(i - 1, { name: ($event.target as HTMLInputElement).value })"
+          />
+          <textarea
+            class="input textarea"
+            placeholder="Описание"
+            rows="3"
+            :value="(draft.magic?.rituals ?? [])[i - 1]?.description ?? ''"
+            @input="updateRitual(i - 1, { description: ($event.target as HTMLTextAreaElement).value })"
+          />
+        </div>
       </div>
 
       <div v-if="hasIncantations" class="cantrips">
@@ -244,5 +251,7 @@ onMounted(() => {
 .sphere { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--color-text-muted); }
 .input { width: 100%; padding: 8px; background: var(--color-bg-dark); border: 1px solid var(--color-border); color: var(--color-text); font-family: inherit; font-size: 14px; border-radius: 4px; }
 .rituals, .cantrips { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ritual { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 4px; }
+.textarea { resize: vertical; width: 100%; box-sizing: border-box; font-family: inherit; }
 .step-footer { display: flex; justify-content: flex-end; padding-top: 8px; }
 </style>

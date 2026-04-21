@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
-import { totalArmor, armorTypeLabel, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula } from '@/utils/derived'
+import { totalArmor, armorTypeLabel, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula, damageAbilityBonus } from '@/utils/derived'
+import { useDiceRoller } from '@/composables/useDiceRoller'
 import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
 import ArmorBreakdownPopover from '@/components/ui/ArmorBreakdownPopover.vue'
 import DamageBreakdownPopover from '@/components/ui/DamageBreakdownPopover.vue'
@@ -15,6 +17,24 @@ const emit = defineEmits<{
   levelUp: []
   back: []
 }>()
+
+const route = useRoute()
+const { rollDamage, isRolling } = useDiceRoller()
+
+async function handleRollDamage() {
+  if (!equippedWeapon.value) return
+  try {
+    await rollDamage(
+      route.params.id as string,
+      equippedWeapon.value.name,
+      equippedWeapon.value.damage ?? '1d6',
+      props.char.damageBonusDice,
+      damageAbilityBonus(props.char, equippedWeapon.value),
+    )
+  } catch (err) {
+    console.error('Бросок урона не удался:', err)
+  }
+}
 
 const className = computed(() =>
   props.char.classId === 'custom'
@@ -56,6 +76,11 @@ function bumpXp(delta: number) {
         <div class="hdr__stat-row">
           <div class="hdr__stat-val">{{ dmgFormula }}</div>
           <DamageBreakdownPopover :char="char" :weapon="equippedWeapon" />
+          <button
+            class="btn-roll"
+            :disabled="isRolling"
+            @click="handleRollDamage"
+          >⚄</button>
         </div>
       </div>
       <div class="hdr__stat">
@@ -114,6 +139,9 @@ function bumpXp(delta: number) {
 .meter__controls { display: flex; align-items: center; gap: 8px; }
 .meter__val { flex: 1; text-align: center; font-weight: 600; }
 .btn-mini { padding: 2px 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); color: var(--color-text); cursor: pointer; border-radius: 3px; font-family: inherit; }
+.btn-roll { background: none; border: 1px solid var(--color-border); border-radius: 3px; color: var(--color-text-muted); cursor: pointer; font-size: 14px; padding: 2px 6px; line-height: 1; flex-shrink: 0; }
+.btn-roll:hover:not(:disabled) { color: var(--color-accent); border-color: var(--color-accent); }
+.btn-roll:disabled { opacity: 0.4; cursor: default; }
 .xp-bar { height: 3px; background: var(--color-bg-elevated); border-radius: 2px; overflow: hidden; }
 .xp-bar__fill { height: 100%; background: var(--color-accent); transition: width 0.3s; }
 </style>
