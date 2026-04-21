@@ -5,6 +5,9 @@ import { ABILITIES } from '@/types/character'
 import { sturdinessBonus } from '@/utils/derived'
 import { getReward } from '@/data/xpTable'
 import type { CharacterCommand, LevelUpPatch } from '@/domain/commands'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('levelup')
 
 type Dispatcher = (cmd: CharacterCommand) => void
 type Phase = 'hitDice' | 'skill' | 'ability' | 'stat' | 'confirm'
@@ -21,6 +24,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
   function advance() {
     const r = reward.value
     if (!r || !char.value) return
+    log.debug('advance', { phase: phase.value, done: { ...done.value } })
     if (r.hitDice && !done.value.hitDice) { phase.value = 'hitDice'; return }
     if (r.skills && !done.value.skill) { phase.value = 'skill'; return }
     if (r.abilities && !done.value.ability) {
@@ -35,6 +39,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function init() {
     if (!char.value || !reward.value) return
+    log.info('init', { charId: char.value.id, targetLevel: targetLevel.value, reward: reward.value })
     pending.value = {}
     done.value = { hitDice: false, skill: false, ability: false, stat: false }
     // автобонус к урону
@@ -46,6 +51,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function onHitDice(hpRoll: number) {
     if (!char.value) return
+    log.debug('onHitDice', { hpRoll })
     const newMaxHp = char.value.maxHp + hpRoll
     const existing = pending.value.hpHistory ?? char.value.hpHistory ?? []
     pending.value = {
@@ -61,6 +67,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function pickSkill(sid: SkillId) {
     if (!char.value) return
+    log.debug('pickSkill', { sid })
     const current = pending.value.skillIds ?? char.value.skillIds
     pending.value = { ...pending.value, skillIds: [...current, sid] }
     done.value.skill = true
@@ -69,6 +76,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function pickAbility(aid: AbilityId) {
     if (!char.value) return
+    log.debug('pickAbility', { aid })
     const current = pending.value.abilityIds ?? char.value.abilityIds
     const newAbilityIds = [...current, aid]
     const updates: Partial<LevelUpPatch> = { ...pending.value, abilityIds: newAbilityIds }
@@ -89,6 +97,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function bumpStat(key: StatKey) {
     if (!char.value) return
+    log.debug('bumpStat', { key })
     const base = pending.value.stats ?? char.value.stats
     pending.value = { ...pending.value, stats: { ...base, [key]: Math.min(3, base[key] + 1) } }
     done.value.stat = true
@@ -97,6 +106,7 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
 
   function confirm() {
     if (!char.value) return
+    log.info('confirm', { charId: char.value.id, pending: { ...pending.value } })
     const patch: LevelUpPatch = {
       level: targetLevel.value,
       maxHp: pending.value.maxHp ?? char.value.maxHp,

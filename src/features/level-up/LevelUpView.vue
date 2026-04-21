@@ -44,6 +44,7 @@ function apply() {
       v-if="lv.phase.value === 'hitDice'"
       :num-dice="(char.hitDice ?? 1) + 1"
       :target-level="lv.targetLevel.value"
+      :character-id="id"
       @done="lv.onHitDice"
     />
     <SkillPickStep v-else-if="lv.phase.value === 'skill'" :char="char" @done="lv.pickSkill" />

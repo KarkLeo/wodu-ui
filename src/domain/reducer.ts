@@ -3,8 +3,12 @@ import type { CharacterCommand } from './commands'
 import * as inv from './inventory'
 import * as combat from './combat'
 import * as prog from './progression'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('domain')
 
 export function applyCommand(char: Character, cmd: CharacterCommand): Character {
+  log.debug(cmd.type, { charId: char.id, charName: char.name, cmd })
   switch (cmd.type) {
     case 'BUY_ITEM':        return inv.buyItem(char, cmd.templateId)
     case 'RECEIVE_ITEM':    return inv.receiveItem(char, cmd.item)

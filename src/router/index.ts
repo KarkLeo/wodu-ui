@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('router')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -19,10 +22,12 @@ const router = createRouter({
       name: 'in-game',
       component: () => import('@/features/in-game/InGameView.vue'),
       beforeEnter: (to) => {
-        // Защита: если персонаж не найден или draft → на главную
         const store = useCharactersStore()
         const char = store.getById(to.params.id as string)
-        if (!char || char.status === 'draft') return { name: 'character-list' }
+        if (!char || char.status === 'draft') {
+          log.warn('guard:in-game → redirect', { id: to.params.id, reason: !char ? 'not found' : 'draft' })
+          return { name: 'character-list' }
+        }
       },
     },
     {
@@ -32,10 +37,17 @@ const router = createRouter({
       beforeEnter: (to) => {
         const store = useCharactersStore()
         const char = store.getById(to.params.id as string)
-        if (!char || char.status !== 'active') return { name: 'character-list' }
+        if (!char || char.status !== 'active') {
+          log.warn('guard:level-up → redirect', { id: to.params.id, reason: !char ? 'not found' : 'not active' })
+          return { name: 'character-list' }
+        }
       },
     },
   ],
+})
+
+router.beforeEach((to, from) => {
+  log.debug('navigate', { from: from.fullPath, to: to.fullPath, name: String(to.name) })
 })
 
 export default router
