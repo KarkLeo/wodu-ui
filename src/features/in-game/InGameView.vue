@@ -9,8 +9,9 @@ import AbilitiesPanel from './components/AbilitiesPanel.vue'
 import InventoryPanel from './components/InventoryPanel.vue'
 import MagicPanel from './components/MagicPanel.vue'
 import NotesPanel from './components/NotesPanel.vue'
+import DicePanel from './components/DicePanel.vue'
 
-type Tab = 'main' | 'inventory' | 'magic' | 'notes'
+type Tab = 'main' | 'inventory' | 'magic' | 'dice' | 'notes'
 
 const router = useRouter()
 const { id, char, dispatch } = useActiveCharacter()
@@ -26,6 +27,7 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
     { id: 'inventory', label: 'Инвентарь' },
   ]
   if (hasMagic.value) base.push({ id: 'magic', label: 'Магия' })
+  base.push({ id: 'dice', label: 'Кубики' })
   base.push({ id: 'notes', label: 'Заметки' })
   return base
 })
@@ -62,6 +64,7 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
       :ability-ids="char.abilityIds"
       :dispatch="dispatch"
     />
+    <DicePanel v-else-if="activeTab === 'dice'" :dispatch="dispatch" />
     <NotesPanel v-else-if="activeTab === 'notes'" :char="char" :dispatch="dispatch" />
   </div>
 </template>

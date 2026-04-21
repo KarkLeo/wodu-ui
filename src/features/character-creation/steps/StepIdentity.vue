@@ -3,26 +3,42 @@ import { computed } from 'vue'
 import type { Character, ClassId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
-import { roll2d6, statBonusFrom2d6 } from '@/utils/derived'
+import { statBonusFrom2d6 } from '@/utils/derived'
+import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 
 const props = defineProps<{ draft: Character }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; next: [] }>()
 
+const { roll } = useDiceRoller()
+
 const rolled = computed(() => STAT_KEYS.every(k => props.draft.statRolls[k] > 0))
 
-function rollAll() {
-  const rolls: Record<StatKey, number> = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
-  const stats: Record<StatKey, number> = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
+async function rollAll() {
+  const rolls: Record<StatKey, number> = { ...props.draft.statRolls }
+  const stats: Record<StatKey, number> = { ...props.draft.stats }
   for (const key of STAT_KEYS) {
-    const r = roll2d6()
-    rolls[key] = r
-    stats[key] = statBonusFrom2d6(r)
+    const result = await roll({
+      notation: '2d6',
+      label: `${STAT_LABELS[key]} (2d6)`,
+      purpose: { kind: 'stat', statKey: key, statBonus: 0 },
+      characterId: props.draft.id,
+    })
+    if (!result) return
+    rolls[key] = result.diceTotal
+    stats[key] = statBonusFrom2d6(result.diceTotal)
+    emit('patch', { statRolls: { ...rolls }, stats: { ...stats } })
   }
-  emit('patch', { statRolls: rolls, stats })
 }
 
-function rerollOne(key: StatKey) {
-  const r = roll2d6()
+async function rerollOne(key: StatKey) {
+  const result = await roll({
+    notation: '2d6',
+    label: `${STAT_LABELS[key]} (2d6)`,
+    purpose: { kind: 'stat', statKey: key, statBonus: 0 },
+    characterId: props.draft.id,
+  })
+  if (!result) return
+  const r = result.diceTotal
   emit('patch', {
     statRolls: { ...props.draft.statRolls, [key]: r },
     stats: { ...props.draft.stats, [key]: statBonusFrom2d6(r) },
@@ -92,13 +108,13 @@ const canContinue = computed(() => {
     <section class="block">
       <div class="block-header">
         <span class="label">Характеристики</span>
-        <button class="btn-ghost" @click="rollAll">Бросить все 2d6</button>
+        <button class="btn-ghost" :disabled="isRolling" @click="rollAll">Бросить все 2d6</button>
       </div>
       <div class="stats">
         <div v-for="key in STAT_KEYS" :key="key" class="stat">
           <div class="stat__head">
             <span class="stat__name">{{ STAT_LABELS[key] }}</span>
-            <button class="btn-mini" @click="rerollOne(key)" title="Перебросить">🎲</button>
+            <button class="btn-mini" :disabled="isRolling" @click="rerollOne(key)" title="Перебросить">🎲</button>
           </div>
           <div class="stat__roll">Бросок: {{ draft.statRolls[key] || '—' }}</div>
           <input

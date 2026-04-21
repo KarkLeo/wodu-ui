@@ -98,6 +98,11 @@ export function rollHitDice(numDice: number, level: number): { rolls: number[]; 
 
 export const STAT_ORDER: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
+export function parseDamageNotation(formula: string): string {
+  const head = formula.split(/[\s(]/)[0]
+  return head.replace(/^d/i, '1d')
+}
+
 export function sturdinessBonus(abilityIds: AbilityId[]): number {
   return abilityIds.includes('sturdy') ? 6 : 0
 }
@@ -108,6 +113,20 @@ export function hpBreakdownLines(hpHistory: Character['hpHistory']): BreakdownLi
     value: entry.source === 'sturdy' ? '+6' : String(entry.roll),
     label: entry.source === 'sturdy' ? 'Стойкость' : `ур. ${entry.level}, бросок к6`,
   }))
+}
+
+export function damageAbilityBonus(
+  char: Pick<Character, 'abilityIds'>,
+  weapon: InventoryItem,
+): number {
+  const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
+  const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
+  const abilityIds = char.abilityIds ?? []
+  let bonus = 0
+  if (abilityIds.includes('skirmish')) bonus += 1
+  if (melee && abilityIds.includes('hewing')) bonus += 2
+  if (ranged && abilityIds.includes('volley')) bonus += 2
+  return bonus
 }
 
 export function damageBreakdownLines(

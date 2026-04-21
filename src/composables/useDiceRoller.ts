@@ -1,0 +1,164 @@
+import { ref, readonly } from 'vue'
+import { rollNotation, rollGroups } from '@/services/DiceBoxService'
+import { useRollHistoryStore } from '@/stores/rollHistory'
+import { parseDamageNotation } from '@/utils/derived'
+import type { DieResult, RollPurpose, RollRecord } from '@/types/dice'
+import type { StatKey } from '@/types/character'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('dice')
+const _isRolling = ref(false)
+export const isRolling = readonly(_isRolling)
+
+export function useDiceRoller() {
+  const historyStore = useRollHistoryStore()
+
+  async function roll(params: {
+    notation: string
+    modifier?: number
+    label: string
+    purpose: RollPurpose
+    characterId: string
+  }): Promise<RollRecord | undefined> {
+    if (_isRolling.value) {
+      log.warn('roll: blocked (already rolling)', { notation: params.notation, label: params.label })
+      return undefined
+    }
+    log.debug('roll: start', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
+    _isRolling.value = true
+    try {
+      const dice = await rollNotation(params.notation)
+      const diceTotal = dice.reduce((s, d) => s + d.value, 0)
+      const modifier = params.modifier ?? 0
+      const record: RollRecord = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        notation: params.notation,
+        dice,
+        diceTotal,
+        modifier,
+        total: diceTotal + modifier,
+        label: params.label,
+        purpose: params.purpose,
+        characterId: params.characterId,
+      }
+      log.debug('roll: recording', { characterId: record.characterId, total: record.total, diceCount: dice.length })
+      historyStore.addRecord(record)
+      return record
+    } finally {
+      _isRolling.value = false
+    }
+  }
+
+  function rollStat(characterId: string, statKey: StatKey, statLabel: string, statBonus: number) {
+    const sign = statBonus >= 0 ? `+${statBonus}` : String(statBonus)
+    return roll({
+      notation: '2d6',
+      modifier: statBonus,
+      label: `${statLabel} (2d6${sign})`,
+      purpose: { kind: 'stat', statKey, statBonus },
+      characterId,
+    })
+  }
+
+  function rollDamage(
+    characterId: string,
+    weaponName: string,
+    baseDamage: string,
+    damageBonusDice: number,
+    abilityBonus: number = 0,
+  ) {
+    const cleanDamage = parseDamageNotation(baseDamage)
+    const weaponFull = damageBonusDice > 0 ? `${cleanDamage}+${damageBonusDice}d6` : cleanDamage
+    const diceTerms: string[] = []
+    let fixedMod = 0
+    for (const raw of weaponFull.split(/(?=[+\-])/)) {
+      const term = raw.trim()
+      if (!term) continue
+      if (/d\d+/i.test(term)) diceTerms.push(term.replace(/^\+/, ''))
+      else fixedMod += Number(term)
+    }
+    const notation = diceTerms.join('+').replace(/\+\-/g, '-')
+    const modifier = fixedMod + abilityBonus
+    const modStr = modifier > 0 ? `+${modifier}` : modifier < 0 ? String(modifier) : ''
+    const label = `${weaponName}: ${notation}${modStr}`
+    return roll({
+      notation,
+      modifier,
+      label,
+      purpose: { kind: 'damage', weaponName, formula: `${notation}${modStr}` },
+      characterId,
+    })
+  }
+
+  async function rollSilentGroups(notations: string[]): Promise<DieResult[][] | undefined> {
+    if (_isRolling.value) {
+      log.warn('rollSilentGroups: blocked (already rolling)', { notations })
+      return undefined
+    }
+    log.debug('rollSilentGroups: start', { notations })
+    _isRolling.value = true
+    try {
+      const groups = await rollGroups(notations)
+      log.debug('rollSilentGroups: done', { groupCount: groups.length })
+      return groups
+    } finally {
+      _isRolling.value = false
+    }
+  }
+
+  async function rollSilent(notation: string): Promise<DieResult[] | undefined> {
+    if (_isRolling.value) {
+      log.warn('rollSilent: blocked (already rolling)', { notation })
+      return undefined
+    }
+    log.debug('rollSilent: start', { notation })
+    _isRolling.value = true
+    try {
+      const dice = await rollNotation(notation)
+      log.debug('rollSilent: done', { count: dice.length, values: dice.map(d => d.value) })
+      return dice
+    } finally {
+      _isRolling.value = false
+    }
+  }
+
+  function recordRoll(params: {
+    dice: DieResult[]
+    modifier?: number
+    label: string
+    purpose: RollPurpose
+    characterId: string
+    notation: string
+  }): RollRecord {
+    const diceTotal = params.dice.reduce((s, d) => s + d.value, 0)
+    const modifier = params.modifier ?? 0
+    const record: RollRecord = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      notation: params.notation,
+      dice: params.dice,
+      diceTotal,
+      modifier,
+      total: diceTotal + modifier,
+      label: params.label,
+      purpose: params.purpose,
+      characterId: params.characterId,
+    }
+    log.debug('recordRoll', { characterId: record.characterId, label: record.label, purpose: record.purpose.kind, total: record.total })
+    historyStore.addRecord(record)
+    return record
+  }
+
+  function rollFree(characterId: string, notation: string) {
+    return roll({
+      notation,
+      modifier: 0,
+      label: notation,
+      purpose: { kind: 'free', notation },
+      characterId,
+    })
+  }
+
+  return { roll, rollStat, rollDamage, rollFree, rollSilent, rollSilentGroups, recordRoll, isRolling }
+}
