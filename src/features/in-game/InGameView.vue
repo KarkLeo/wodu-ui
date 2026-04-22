@@ -13,8 +13,11 @@ import DicePanel from './components/DicePanel.vue'
 
 type Tab = 'main' | 'inventory' | 'magic' | 'dice' | 'notes'
 
+const props = defineProps<{ id?: string }>()
+const emit = defineEmits<{ close: [] }>()
+
 const router = useRouter()
-const { id, char, dispatch } = useActiveCharacter()
+const { id, char, dispatch } = useActiveCharacter(() => props.id)
 
 const activeTab = ref<Tab>('main')
 
@@ -39,7 +42,7 @@ const tabs = computed<{ id: Tab; label: string }[]>(() => {
       :char="char"
       :dispatch="dispatch"
       @level-up="router.push(`/character/${id}/levelup`)"
-      @back="router.push('/')"
+      @back="emit('close')"
     />
 
     <nav class="tabs">

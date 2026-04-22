@@ -8,11 +8,33 @@ type RollGroup = { sides: number; rolls?: Array<{ value: number }> }
 
 let instance: InstanceType<typeof DiceBox> | null = null
 let initPromise: Promise<void> | null = null
-let pending: ((results: RollGroup[]) => void) | null = null
+let pending: {
+  resolve: (results: RollGroup[]) => void
+  reject: (err: Error) => void
+  watchdog: ReturnType<typeof setTimeout>
+} | null = null
 let clearTimer: ReturnType<typeof setTimeout> | null = null
 
 const CLEAR_DELAY_MS = 1200
 const FADE_MS = 400
+const ROLL_WATCHDOG_MS = 10000
+
+function resolvePending(results: RollGroup[]) {
+  if (!pending) return
+  const { resolve, watchdog } = pending
+  clearTimeout(watchdog)
+  pending = null
+  resolve(results)
+}
+
+function rejectPending(reason: string) {
+  if (!pending) return
+  const { reject, watchdog } = pending
+  clearTimeout(watchdog)
+  pending = null
+  try { instance?.clear() } catch {}
+  reject(new Error(reason))
+}
 
 function scheduleClear() {
   if (clearTimer) clearTimeout(clearTimer)
@@ -56,11 +78,7 @@ export async function getDiceBox(): Promise<InstanceType<typeof DiceBox>> {
         themeColor: '#d4a853',
         onRollComplete: (results: RollGroup[]) => {
           log.debug('onRollComplete', { groups: results.length })
-          if (pending) {
-            const resolve = pending
-            pending = null
-            resolve(results)
-          }
+          resolvePending(results)
           scheduleClear()
         },
       })
@@ -84,16 +102,20 @@ function rollViaCallback(notation: string | string[]): Promise<RollGroup[]> {
   return new Promise(async (resolve, reject) => {
     const box = await getDiceBox()
     if (pending) {
-      reject(new Error('Another roll is already in flight'))
-      return
+      log.warn('rollViaCallback: resetting stuck pending roll')
+      rejectPending('Previous roll never completed — reset')
     }
     cancelClear()
-    pending = resolve
+    const watchdog = setTimeout(() => {
+      log.error('rollViaCallback: watchdog fired', { notation })
+      rejectPending(`Dice roll timed out after ${ROLL_WATCHDOG_MS}ms`)
+    }, ROLL_WATCHDOG_MS)
+    pending = { resolve, reject, watchdog }
     try {
       await box.roll(notation as string)
     } catch (err) {
-      pending = null
-      reject(err)
+      log.error('rollViaCallback: box.roll threw', err)
+      rejectPending(err instanceof Error ? err.message : String(err))
     }
   })
 }

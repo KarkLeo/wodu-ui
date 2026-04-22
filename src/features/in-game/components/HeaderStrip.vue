@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
@@ -18,14 +17,13 @@ const emit = defineEmits<{
   back: []
 }>()
 
-const route = useRoute()
 const { rollDamage, isRolling } = useDiceRoller()
 
 async function handleRollDamage() {
   if (!equippedWeapon.value) return
   try {
     await rollDamage(
-      route.params.id as string,
+      props.char.id,
       equippedWeapon.value.name,
       equippedWeapon.value.damage ?? '1d6',
       props.char.damageBonusDice,

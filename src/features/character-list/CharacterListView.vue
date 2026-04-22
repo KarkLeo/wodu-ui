@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
@@ -14,8 +14,23 @@ const { createDraft } = useCharacterCreation()
 const activeChars = computed(() => characters.list.filter(c => c.status === 'active'))
 const draftChars = computed(() => characters.list.filter(c => c.status === 'draft'))
 
+const selected = ref<Set<string>>(new Set())
+
+function toggleSelected(id: string, ev: Event) {
+  ev.stopPropagation()
+  if (selected.value.has(id)) selected.value.delete(id)
+  else selected.value.add(id)
+  selected.value = new Set(selected.value)
+}
+
+function openSelected() {
+  const ids = activeChars.value.map(c => c.id).filter(id => selected.value.has(id))
+  if (ids.length === 0) return
+  router.push(`/party/${ids.join(',')}`)
+}
+
 function openCharacter(id: string) {
-  router.push(`/character/${id}`)
+  router.push(`/party/${id}`)
 }
 
 function resumeCreation(id: string) {
@@ -44,7 +59,14 @@ function resetAllState() {
   <div class="content-wrap">
     <div class="list-header">
       <span class="label">Персонажи</span>
-      <button class="btn-primary" @click="startNew">+ Новый</button>
+      <div class="list-header__actions">
+        <button
+          v-if="selected.size > 0"
+          class="btn-primary"
+          @click="openSelected"
+        >Открыть ({{ selected.size }})</button>
+        <button class="btn-primary" @click="startNew">+ Новый</button>
+      </div>
     </div>
 
     <!-- Активные персонажи -->
@@ -53,10 +75,18 @@ function resetAllState() {
         v-for="char in activeChars"
         :key="char.id"
         class="char-card"
+        :class="{ 'char-card--selected': selected.has(char.id) }"
         @click="openCharacter(char.id)"
       >
         <div class="char-card__top">
-          <div>
+          <div
+            class="char-card__check"
+            :class="{ 'char-card__check--on': selected.has(char.id) }"
+            role="checkbox"
+            :aria-checked="selected.has(char.id)"
+            @click="toggleSelected(char.id, $event)"
+          >{{ selected.has(char.id) ? '✓' : '' }}</div>
+          <div class="char-card__title">
             <div class="char-card__name">{{ char.name }}</div>
             <div class="label">{{ char.classId === 'custom' ? (char.customClassName ?? 'Свой класс') : (CLASSES[char.classId]?.name ?? char.classId) }} · Уровень {{ char.level }}</div>
           </div>
@@ -122,7 +152,17 @@ function resetAllState() {
 }
 .char-card:hover { background: var(--color-bg-elevated); }
 .char-card--draft { opacity: 0.6; }
-.char-card__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.char-card__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
+.char-card__title { flex: 1; min-width: 0; }
+.char-card--selected { background: var(--color-bg-elevated); }
+.char-card__check {
+  width: 22px; height: 22px; border: 1px solid var(--color-border);
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; line-height: 1; color: var(--color-accent); flex-shrink: 0;
+  margin-top: 2px;
+}
+.char-card__check--on { border-color: var(--color-accent); }
+.list-header__actions { display: flex; gap: 8px; }
 .char-card__name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
 .char-card__hp { text-align: right; font-size: 14px; }
 .char-card__hp-bar { height: 4px; background: var(--color-bg-elevated); border-radius: 2px; overflow: hidden; }
