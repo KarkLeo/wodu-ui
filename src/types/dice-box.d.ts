@@ -1,5 +1,11 @@
 declare module '@3d-dice/dice-box' {
+  interface RollGroup {
+    sides: number
+    rolls: Array<{ value: number }>
+  }
+
   interface DiceBoxOptions {
+    container?: string
     assetPath?: string
     gravity?: number
     mass?: number
@@ -13,14 +19,11 @@ declare module '@3d-dice/dice-box' {
     settleTimeout?: number
     theme?: string
     themeColor?: string
-  }
-
-  interface RollGroup {
-    sides: number
-    rolls: Array<{ value: number }>
+    onRollComplete?: (results: RollGroup[]) => void
   }
 
   export default class DiceBox {
+    constructor(options: DiceBoxOptions)
     constructor(selector: string, options?: DiceBoxOptions)
     init(): Promise<void>
     roll(notation: string): Promise<RollGroup[]>
