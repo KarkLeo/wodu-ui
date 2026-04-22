@@ -20,13 +20,26 @@ const router = createRouter({
     {
       path: '/character/:id',
       name: 'in-game',
-      component: () => import('@/features/in-game/InGameView.vue'),
+      redirect: (to) => ({ name: 'party', params: { ids: to.params.id } }),
+    },
+    {
+      path: '/party/:ids',
+      name: 'party',
+      component: () => import('@/features/in-game/PartyView.vue'),
       beforeEnter: (to) => {
         const store = useCharactersStore()
-        const char = store.getById(to.params.id as string)
-        if (!char || char.status === 'draft') {
-          log.warn('guard:in-game → redirect', { id: to.params.id, reason: !char ? 'not found' : 'draft' })
+        const raw = (to.params.ids as string) ?? ''
+        const ids = raw.split(',').map(s => s.trim()).filter(Boolean)
+        const valid = ids.filter(id => {
+          const c = store.getById(id)
+          return c && c.status !== 'draft'
+        })
+        if (valid.length === 0) {
+          log.warn('guard:party → redirect', { ids: raw, reason: 'no valid characters' })
           return { name: 'character-list' }
+        }
+        if (valid.length !== ids.length) {
+          return { name: 'party', params: { ids: valid.join(',') } }
         }
       },
     },
