@@ -24,6 +24,7 @@ async function handleRollDamage() {
   try {
     await rollDamage(
       props.char.id,
+      props.char.name,
       equippedWeapon.value.name,
       equippedWeapon.value.damage ?? '1d6',
       props.char.damageBonusDice,
