@@ -25,4 +25,5 @@ export interface RollRecord {
   label: string
   purpose: RollPurpose
   characterId: string
+  characterName?: string
 }

@@ -3,6 +3,8 @@ import type { Character } from '@/types/character'
 import { isReadyToLevelUp } from '@/utils/derived'
 import { applyCommand } from '@/domain/reducer'
 import type { CharacterCommand } from '@/domain/commands'
+import { useChangeLogStore } from '@/stores/changeLog'
+import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
 
 const STORAGE_KEY = 'wod.characters.v1'
@@ -47,7 +49,19 @@ export const useCharactersStore = defineStore('characters', {
         return
       }
       log.debug('dispatch', { id, cmd: cmd.type })
-      this.list[idx] = applyCommand(this.list[idx], cmd)
+      const { character, changes } = applyCommand(this.list[idx], cmd)
+      this.list[idx] = character
+      if (character.status === 'active' && changes.length) {
+        const now = Date.now()
+        const entries: ChangeEntry[] = changes.map((c, i) => ({
+          ...c,
+          id: crypto.randomUUID(),
+          timestamp: now + i,
+          characterId: character.id,
+          characterName: character.name,
+        }))
+        useChangeLogStore().addMany(entries)
+      }
     },
     remove(id: string) {
       log.debug('remove', { id })

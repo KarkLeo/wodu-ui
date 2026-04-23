@@ -21,10 +21,10 @@ export const useRollHistoryStore = defineStore('rollHistory', {
       this.records.unshift(record)
       if (this.records.length > MAX_RECORDS) this.records.length = MAX_RECORDS
     },
-    clearByCharacter(characterId: string) {
+    clearAll() {
       const before = this.records.length
-      this.records = this.records.filter(r => r.characterId !== characterId)
-      log.debug('clearByCharacter', { characterId, removed: before - this.records.length })
+      this.records = []
+      log.debug('clearAll', { removed: before })
     },
   },
   persist: {

@@ -19,6 +19,7 @@ export function useDiceRoller() {
     label: string
     purpose: RollPurpose
     characterId: string
+    characterName?: string
   }): Promise<RollRecord | undefined> {
     if (_isRolling.value) {
       log.warn('roll: blocked (already rolling)', { notation: params.notation, label: params.label })
@@ -41,6 +42,7 @@ export function useDiceRoller() {
         label: params.label,
         purpose: params.purpose,
         characterId: params.characterId,
+        characterName: params.characterName,
       }
       log.debug('roll: recording', { characterId: record.characterId, total: record.total, diceCount: dice.length })
       historyStore.addRecord(record)
@@ -50,7 +52,7 @@ export function useDiceRoller() {
     }
   }
 
-  function rollStat(characterId: string, statKey: StatKey, statLabel: string, statBonus: number) {
+  function rollStat(characterId: string, characterName: string | undefined, statKey: StatKey, statLabel: string, statBonus: number) {
     const sign = statBonus >= 0 ? `+${statBonus}` : String(statBonus)
     return roll({
       notation: '2d6',
@@ -58,11 +60,13 @@ export function useDiceRoller() {
       label: `${statLabel} (2d6${sign})`,
       purpose: { kind: 'stat', statKey, statBonus },
       characterId,
+      characterName,
     })
   }
 
   function rollDamage(
     characterId: string,
+    characterName: string | undefined,
     weaponName: string,
     baseDamage: string,
     damageBonusDice: number,
@@ -88,6 +92,7 @@ export function useDiceRoller() {
       label,
       purpose: { kind: 'damage', weaponName, formula: `${notation}${modStr}` },
       characterId,
+      characterName,
     })
   }
 
@@ -129,6 +134,7 @@ export function useDiceRoller() {
     label: string
     purpose: RollPurpose
     characterId: string
+    characterName?: string
     notation: string
   }): RollRecord {
     const diceTotal = params.dice.reduce((s, d) => s + d.value, 0)
@@ -144,19 +150,21 @@ export function useDiceRoller() {
       label: params.label,
       purpose: params.purpose,
       characterId: params.characterId,
+      characterName: params.characterName,
     }
     log.debug('recordRoll', { characterId: record.characterId, label: record.label, purpose: record.purpose.kind, total: record.total })
     historyStore.addRecord(record)
     return record
   }
 
-  function rollFree(characterId: string, notation: string) {
+  function rollFree(characterId: string, characterName: string | undefined, notation: string) {
     return roll({
       notation,
       modifier: 0,
       label: notation,
       purpose: { kind: 'free', notation },
       characterId,
+      characterName,
     })
   }
 
