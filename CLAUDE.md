@@ -98,6 +98,14 @@ Use `store.dispatch(id, cmd)` from composables. Never call `characters.update()`
 - Keep Reka UI primitives wrapped in thin project-specific components under `src/components/ui/`
 - In-game tabs: **Основное** (stats/skills/abilities), **Инвентарь**, optionally **Магия**, **Заметки** — there is no Combat tab
 
+## Localization
+
+- Все пользовательские строки живут в `src/locales/ru.ts`. В шаблонах/компонентах — только через `t('key')` из `src/locales`.
+- При редизайне или добавлении новых UI-элементов: любую новую видимую пользователю строку сначала добавить в словарь, затем использовать `t()`. Не хардкодить в `.vue`.
+- Исключения (можно оставлять инлайн): отладочные `console.*`, ошибки для разработчика, технические строки (CSS-классы, ключи localStorage, имена событий).
+- Существующие хардкод-строки мигрировать по мере касания файла — массовая миграция не требуется.
+- Ключи: `section.subsection.name` в camelCase (например, `header.hpLabel`, `inventory.emptyState`). Группировать по экрану/фиче.
+
 ## Design References
 
 - `ref/` — reference scans of the original character sheet; every field must be represented faithfully
