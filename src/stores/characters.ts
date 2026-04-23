@@ -4,6 +4,7 @@ import { isReadyToLevelUp } from '@/utils/derived'
 import { applyCommand } from '@/domain/reducer'
 import type { CharacterCommand } from '@/domain/commands'
 import { useChangeLogStore } from '@/stores/changeLog'
+import { useRollHistoryStore } from '@/stores/rollHistory'
 import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
 
@@ -67,6 +68,8 @@ export const useCharactersStore = defineStore('characters', {
       log.debug('remove', { id })
       this.list = this.list.filter(c => c.id !== id)
       if (this.activeId === id) this.activeId = null
+      useRollHistoryStore().removeByCharacter(id)
+      useChangeLogStore().removeByCharacter(id)
     },
     setActive(id: string | null) {
       log.debug('setActive', { prev: this.activeId, next: id })
@@ -84,8 +87,17 @@ export const useCharactersStore = defineStore('characters', {
       ctx.store.$patch((state) => {
         state.list = state.list.map((c: any) => {
           const { armor: _armor, ...rest } = c
+          const magic = rest.magic
+            ? {
+                ...rest.magic,
+                rituals: (rest.magic.rituals ?? []).map((r: any) =>
+                  typeof r === 'string' ? { name: r, description: '' } : r,
+                ),
+              }
+            : rest.magic
           return {
             ...rest,
+            magic,
             inventory: rest.inventory ?? [],
             skillIds: rest.skillIds ?? [],
             abilityIds: rest.abilityIds ?? [],

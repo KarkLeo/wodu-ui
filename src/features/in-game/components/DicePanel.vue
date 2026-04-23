@@ -7,6 +7,9 @@ import { useCharactersStore } from '@/stores/characters'
 import { useDiceRoller } from '@/composables/useDiceRoller'
 import type { RollRecord } from '@/types/dice'
 import type { ChangeEntry } from '@/types/changeLog'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('dice-panel')
 
 type Tab = 'all' | 'rolls' | 'changes'
 type FeedItem =
@@ -58,7 +61,7 @@ async function handleRoll() {
   try {
     await rollFree(activeChar.value.id, activeChar.value.name, n)
   } catch (err) {
-    console.error('Бросок не удался:', err)
+    log.error('roll failed', err)
   }
 }
 

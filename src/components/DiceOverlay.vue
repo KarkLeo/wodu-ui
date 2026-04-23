@@ -2,9 +2,12 @@
 import { onMounted } from 'vue'
 import { getDiceBox } from '@/services/DiceBoxService'
 import { isRolling } from '@/composables/useDiceRoller'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('dice-overlay')
 
 onMounted(() => {
-  getDiceBox().catch(console.error)
+  getDiceBox().catch(err => log.error('getDiceBox failed', err))
 })
 </script>
 

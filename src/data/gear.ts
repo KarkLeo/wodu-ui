@@ -10,9 +10,12 @@ export const GEAR_CATEGORIES = [
   { id: 'fire',   name: 'Огненное масло' },
 ] as const
 
+export type GearUseEffect = 'quicksilver'
+
 export type GearTemplate = Omit<InventoryItem, 'id'> & {
   templateId: string
   category: typeof GEAR_CATEGORIES[number]['id']
+  useEffect?: GearUseEffect
 }
 
 export const GEAR_CATALOG: GearTemplate[] = [
@@ -53,7 +56,7 @@ export const GEAR_CATALOG: GearTemplate[] = [
   { templateId: 'pick',       name: 'Кирка',            price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
   { templateId: 'pole',       name: 'Складной шест',    price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
   // Оккультные (10с)
-  { templateId: 'mercury',   name: 'Ртуть (доза)',              price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult', notes: 'Слабый яд и наркотик. Больше доз в день, чем уровень — бросок ТЕЛ против эффектов.' },
+  { templateId: 'mercury',   name: 'Ртуть (доза)',              price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult', useEffect: 'quicksilver', notes: 'Слабый яд и наркотик. Больше доз в день, чем уровень — бросок ТЕЛ против эффектов.' },
   { templateId: 'bonedust',  name: 'Мешочек с костной пылью',  price: 10, descriptor: { kind: 'occult' },                   category: 'occult' },
   { templateId: 'holywater', name: 'Пузырёк святой воды',      price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult' },
   { templateId: 'bloodvial', name: 'Пузырёк крови',            price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult' },
@@ -72,4 +75,11 @@ export const GEAR_CATALOG: GearTemplate[] = [
 
 export function findGearTemplate(templateId: string): GearTemplate | undefined {
   return GEAR_CATALOG.find(g => g.templateId === templateId)
+}
+
+export function getItemsByCategory(): Record<string, GearTemplate[]> {
+  const out: Record<string, GearTemplate[]> = {}
+  for (const cat of GEAR_CATEGORIES) out[cat.id] = []
+  for (const item of GEAR_CATALOG) (out[item.category] ??= []).push(item)
+  return out
 }

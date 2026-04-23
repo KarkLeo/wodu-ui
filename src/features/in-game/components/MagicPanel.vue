@@ -4,6 +4,7 @@ import type { Character, Ritual, Spirit, Magic } from '@/types/character'
 import type { AbilityId } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { SPHERE_PRESETS } from '@/data/spheres'
+import { grantsSection } from '@/data/abilities'
 import { isQuicksilverOverdose } from '@/utils/derived'
 
 type Dispatcher = (cmd: CharacterCommand) => void
@@ -14,27 +15,25 @@ const quicksilverCount = computed(() => props.char.quicksilverCount ?? 0)
 const quicksilverLimit = computed(() => props.char.level)
 const needsConRoll = computed(() => isQuicksilverOverdose(props.char))
 
+const hasSpirits = computed(() => grantsSection(props.abilityIds, 'spirits'))
+const hasRituals = computed(() => grantsSection(props.abilityIds, 'rituals'))
+const hasCantrips = computed(() => grantsSection(props.abilityIds, 'cantrips'))
+
 function resetQuicksilver() { props.dispatch({ type: 'RESET_QUICKSILVER' }) }
 
-function ensureMagic(): Magic {
-  const m = props.char.magic ?? { spirits: [], rituals: [], cantrips: [] }
-  // migrate legacy string[] rituals
-  const rituals = m.rituals.map(r =>
-    typeof r === 'string' ? { name: r as string, description: '' } : r,
-  ) as Ritual[]
-  return { ...m, rituals }
+const EMPTY_MAGIC: Magic = { spirits: [], rituals: [], cantrips: [] }
+function currentMagic(): Magic {
+  return props.char.magic ?? EMPTY_MAGIC
 }
 
-const normalizedRituals = computed(() => ensureMagic().rituals)
-
 function updateSpirit(idx: number, patch: Partial<Spirit>) {
-  const magic = ensureMagic()
+  const magic = currentMagic()
   const spirits = magic.spirits.map((s, i) => (i === idx ? { ...s, ...patch } : s))
   props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits } })
 }
 
 function addSpirit() {
-  const magic = ensureMagic()
+  const magic = currentMagic()
   props.dispatch({
     type: 'UPDATE_MAGIC',
     magic: {
@@ -45,30 +44,30 @@ function addSpirit() {
 }
 
 function removeSpirit(id: string) {
-  const magic = ensureMagic()
+  const magic = currentMagic()
   props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits: magic.spirits.filter(s => s.id !== id) } })
 }
 
 function updateRitual(idx: number, patch: Partial<Ritual>) {
-  const magic = ensureMagic()
+  const magic = currentMagic()
   const rituals = magic.rituals.map((r, i) => (i === idx ? { ...r, ...patch } : r))
   props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals } })
 }
 
 function addRitual() {
-  const magic = ensureMagic()
+  const magic = currentMagic()
   props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals: [...magic.rituals, { name: '', description: '' }] } })
 }
 
 function removeRitual(idx: number) {
-  const magic = ensureMagic()
+  const magic = currentMagic()
   props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals: magic.rituals.filter((_, i) => i !== idx) } })
 }
 </script>
 
 <template>
   <section class="panel">
-    <div v-if="abilityIds.includes('summoning')" class="group">
+    <div v-if="hasSpirits" class="group">
       <div class="label-row">
         <span class="label">Духи</span>
         <button class="btn-ghost" @click="addSpirit">+ Дух</button>
@@ -102,12 +101,12 @@ function removeRitual(idx: number) {
       </div>
     </div>
 
-    <div v-if="abilityIds.includes('ritual')" class="group">
+    <div v-if="hasRituals" class="group">
       <div class="label-row">
         <span class="label">Ритуалы</span>
         <button class="btn-ghost" @click="addRitual">+ Ритуал</button>
       </div>
-      <div v-for="(r, idx) in normalizedRituals" :key="idx" class="ritual">
+      <div v-for="(r, idx) in (char.magic?.rituals ?? [])" :key="idx" class="ritual">
         <div class="ritual-header">
           <input
             class="input"
@@ -127,7 +126,7 @@ function removeRitual(idx: number) {
       </div>
     </div>
 
-    <div v-if="abilityIds.includes('incantations') && (char.magic?.cantrips?.length ?? 0) > 0" class="group">
+    <div v-if="hasCantrips && (char.magic?.cantrips?.length ?? 0) > 0" class="group">
       <div class="label">Заклички</div>
       <ul class="cantrips">
         <li v-for="c in char.magic?.cantrips" :key="c">{{ c }}</li>

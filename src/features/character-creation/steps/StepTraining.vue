@@ -2,10 +2,12 @@
 import { computed, onMounted } from 'vue'
 import type { Character, SkillId, AbilityId, Spirit, Magic, Ritual } from '@/types/character'
 import { SKILLS, ABILITIES } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 import { CLASSES, MAGIC_ABILITY_IDS } from '@/data/classes'
 import { SPHERE_PRESETS } from '@/data/spheres'
+import { getAbilityEffect, hasMagicAbility } from '@/data/abilities'
 
-const props = defineProps<{ draft: Character }>()
+const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; next: [] }>()
 
 const classData = computed(() => CLASSES[props.draft.classId])
@@ -53,9 +55,10 @@ function toggleAbility(id: AbilityId) {
     }
   }
   const patch: Partial<Character> = { abilityIds: [...autoAbilities.value, ...nextPicked] }
-  if (id === 'summoning' && !has && !props.draft.magic) {
+  const effect = getAbilityEffect(id)
+  if (effect?.initMagicOnAcquire && !has && !props.draft.magic) {
     patch.magic = ensureMagic()
-  } else if (id === 'summoning' && has && props.draft.classId !== 'wizard') {
+  } else if (effect?.initMagicOnAcquire && has && props.draft.classId !== 'wizard') {
     const remainingMagicIds = nextPicked.filter(a => (MAGIC_ABILITY_IDS as readonly string[]).includes(a))
     if (remainingMagicIds.length === 0) patch.magic = undefined
   }
@@ -82,7 +85,7 @@ function ensureMagic(): Magic {
 function updateSpirit(idx: number, patchSp: Partial<Spirit>) {
   const magic = ensureMagic()
   const spirits = magic.spirits.map((s, i) => (i === idx ? { ...s, ...patchSp } : s))
-  emit('patch', { magic: { ...magic, spirits } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits } })
 }
 
 function updateRitual(idx: number, patchRit: Partial<Ritual>) {
@@ -90,13 +93,19 @@ function updateRitual(idx: number, patchRit: Partial<Ritual>) {
   const rituals = [...(magic.rituals ?? [])]
   while (rituals.length < 2) rituals.push({ name: '', description: '' })
   rituals[idx] = { ...rituals[idx], ...patchRit }
-  emit('patch', { magic: { ...magic, rituals } })
+  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals } })
 }
 
 const showMagic = computed(() =>
-  props.draft.classId === 'wizard' || props.draft.abilityIds.includes('summoning'),
+  props.draft.classId === 'wizard' || hasMagicAbility(props.draft.abilityIds),
 )
-const hasIncantations = computed(() => pickedAbilities.value.includes('incantations'))
+const startingCantrips = computed<string[] | undefined>(() => {
+  for (const id of pickedAbilities.value) {
+    const eff = getAbilityEffect(id)
+    if (eff?.startingCantrips?.length) return eff.startingCantrips
+  }
+  return undefined
+})
 const hasRitual = computed(() => pickedAbilities.value.includes('ritual'))
 
 const canContinue = computed(() => {
@@ -107,15 +116,12 @@ const canContinue = computed(() => {
 
 onMounted(() => {
   syncAutos()
+  const cantrips = startingCantrips.value
   if (showMagic.value && !props.draft.magic) {
     const magic = ensureMagic()
-    emit('patch', {
-      magic: hasIncantations.value
-        ? { ...magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] }
-        : magic,
-    })
-  } else if (showMagic.value && props.draft.magic && hasIncantations.value && !props.draft.magic.cantrips?.length) {
-    emit('patch', { magic: { ...props.draft.magic, cantrips: ['Свеча', 'Тень', 'Чревовещание'] } })
+    emit('patch', { magic: cantrips ? { ...magic, cantrips } : magic })
+  } else if (showMagic.value && props.draft.magic && cantrips && !props.draft.magic.cantrips?.length) {
+    emit('patch', { magic: { ...props.draft.magic, cantrips } })
   }
 })
 </script>
@@ -222,9 +228,9 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="hasIncantations" class="cantrips">
+      <div v-if="startingCantrips" class="cantrips">
         <div class="label">Заклички</div>
-        <p class="hint">Свеча · Тень · Чревовещание</p>
+        <p class="hint">{{ startingCantrips.join(' · ') }}</p>
       </div>
     </section>
 

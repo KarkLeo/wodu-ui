@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
-import { GEAR_CATALOG, GEAR_CATEGORIES } from '@/data/gear'
+import { GEAR_CATEGORIES, getItemsByCategory } from '@/data/gear'
 import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 
@@ -73,15 +73,7 @@ function openCategory(id: string) {
 }
 const openCat = ref<string | null>('weapon')
 
-const itemsByCategory = computed(() => {
-  const out: Record<string, typeof GEAR_CATALOG> = {}
-  for (const cat of GEAR_CATEGORIES) out[cat.id] = []
-  for (const item of GEAR_CATALOG) {
-    const cat = item.category ?? 'gear'
-    out[cat].push(item)
-  }
-  return out
-})
+const itemsByCategory = getItemsByCategory()
 
 const canFinish = computed(() => hpRolled.value)
 </script>
