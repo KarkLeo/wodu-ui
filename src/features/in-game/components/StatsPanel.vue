@@ -3,6 +3,9 @@ import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
 import { useDiceRoller } from '@/composables/useDiceRoller'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('stats-panel')
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
@@ -19,7 +22,7 @@ async function handleRollStat(key: StatKey) {
   try {
     await rollStat(props.char.id, props.char.name, key, STAT_LABELS[key], props.char.stats[key])
   } catch (err) {
-    console.error('Бросок характеристики не удался:', err)
+    log.error('stat roll failed', err)
   }
 }
 </script>

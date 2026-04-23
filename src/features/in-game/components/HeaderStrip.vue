@@ -5,6 +5,7 @@ import type { CharacterCommand } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
 import { totalArmor, armorTypeLabel, xpToNextLevel, xpProgressPercent, isReadyToLevelUp, isWeapon, damageFormula, damageAbilityBonus } from '@/utils/derived'
 import { useDiceRoller } from '@/composables/useDiceRoller'
+import { createLogger } from '@/utils/logger'
 import HpBreakdownPopover from '@/components/ui/HpBreakdownPopover.vue'
 import ArmorBreakdownPopover from '@/components/ui/ArmorBreakdownPopover.vue'
 import DamageBreakdownPopover from '@/components/ui/DamageBreakdownPopover.vue'
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const { rollDamage, isRolling } = useDiceRoller()
+const log = createLogger('header-strip')
 
 async function handleRollDamage() {
   if (!equippedWeapon.value) return
@@ -31,7 +33,7 @@ async function handleRollDamage() {
       damageAbilityBonus(props.char, equippedWeapon.value),
     )
   } catch (err) {
-    console.error('Бросок урона не удался:', err)
+    log.error('damage roll failed', err)
   }
 }
 

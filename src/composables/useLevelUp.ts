@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Character, SkillId, AbilityId, StatKey, Magic } from '@/types/character'
 import { ABILITIES } from '@/types/character'
-import { sturdinessBonus } from '@/utils/derived'
+import { getAbilityEffect } from '@/data/abilities'
 import { getReward } from '@/data/xpTable'
 import type { CharacterCommand, LevelUpPatch } from '@/domain/commands'
 import { createLogger } from '@/utils/logger'
@@ -80,15 +80,16 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     const current = pending.value.abilityIds ?? char.value.abilityIds
     const newAbilityIds = [...current, aid]
     const updates: Partial<LevelUpPatch> = { ...pending.value, abilityIds: newAbilityIds }
-    if (aid === 'summoning' && !char.value.magic) {
+    const effect = getAbilityEffect(aid)
+    if (effect?.initMagicOnAcquire && !char.value.magic) {
       updates.magic = { spirits: [], rituals: [], cantrips: [] } satisfies Magic
     }
-    if (aid === 'sturdy') {
-      const bonus = sturdinessBonus([aid])
+    if (effect?.hpBonusOnAcquire && effect.hpBonusSource) {
+      const bonus = effect.hpBonusOnAcquire
       const existing = pending.value.hpHistory ?? char.value.hpHistory ?? []
       updates.maxHp = (pending.value.maxHp ?? char.value.maxHp) + bonus
       updates.currentHp = (pending.value.currentHp ?? char.value.currentHp) + bonus
-      updates.hpHistory = [...existing, { level: targetLevel.value, roll: 6, source: 'sturdy' as const }]
+      updates.hpHistory = [...existing, { level: targetLevel.value, roll: bonus, source: effect.hpBonusSource }]
     }
     pending.value = updates
     done.value.ability = true

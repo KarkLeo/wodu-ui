@@ -15,6 +15,7 @@ export type ChangeKind =
   | 'coins'
   | 'magic'
   | 'quicksilver-reset'
+  | 'create'
 
 export interface ChangeEntry {
   id: string

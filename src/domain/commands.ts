@@ -35,3 +35,4 @@ export type CharacterCommand =
   | { type: 'UPDATE_STATS'; stats: Stats }
   | { type: 'UPDATE_NOTES'; notes: string }
   | { type: 'RESET_QUICKSILVER' }
+  | { type: 'FINALIZE_CHARACTER' }

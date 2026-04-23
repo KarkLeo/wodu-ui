@@ -71,7 +71,7 @@ export function useCharacterCreation() {
       return
     }
     log.info('finish', { draftId: creation.draftId })
-    characters.update(creation.draftId, { status: 'active' })
+    characters.dispatch(creation.draftId, { type: 'FINALIZE_CHARACTER' })
     characters.setActive(creation.draftId)
     const id = creation.draftId
     creation.reset()
