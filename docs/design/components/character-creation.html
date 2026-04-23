@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>CharacterCreation · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1320px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 720px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 26px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage + .stage { margin-top: 20px; }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 6px;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  /* ================================================================
+     БАЗОВЫЕ ПРИМИТИВЫ
+     ================================================================ */
+  .btn-hero {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    background: #A6833E;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    color: #1a1205;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.02em; line-height: 1;
+    cursor: pointer; white-space: nowrap;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+  }
+  .btn-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+  .btn-hero:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+  .btn-hero svg { width: 14px; height: 14px; }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.02em; line-height: 1;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .btn-ghost:hover { color: var(--vtt-accent-soft); border-color: var(--vtt-border-strong); }
+  .btn-ghost svg { width: 14px; height: 14px; }
+
+  .btn-icon {
+    width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .btn-icon:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .btn-icon svg { width: 14px; height: 14px; }
+
+  /* кнопка «бросить» — тёмный бордер + золото */
+  .btn-roll {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 7px 12px;
+    background: rgba(36,28,21,0.55);
+    border: 1px solid rgba(140,106,58,0.35);
+    border-radius: var(--r-sm);
+    color: var(--vtt-accent);
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.1em;
+    cursor: pointer; white-space: nowrap;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .btn-roll:hover {
+    background: rgba(140,106,58,0.2); border-color: var(--vtt-border-gold);
+  }
+  .btn-roll svg { width: 12px; height: 12px; }
+
+  /* ================================================================
+     CC-SHELL — контейнер мастера создания
+     ================================================================ */
+  /*
+     ┌─────────────────────────────────────────────────────┐
+     │  .cc-topbar  ← Назад · STEP · крестик (≤48px)       │
+     ├─────────────────────────────────────────────────────┤
+     │  .cc-stepper · точки 1–3 + подпись текущего шага    │
+     ├─────────────────────────────────────────────────────┤
+     │  .cc-content (scroll)                               │
+     │    .cc-section × N — разделы шага                   │
+     ├─────────────────────────────────────────────────────┤
+     │  .cc-footer · «Назад» · indicator · «Далее»         │
+     └─────────────────────────────────────────────────────┘
+  */
+  .cc-shell {
+    display: grid;
+    grid-template-rows: 52px auto 1fr auto;
+    min-height: 720px;
+    max-width: 720px; margin: 0 auto;
+    background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9));
+    border-radius: var(--r-lg);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(140,106,58,0.18);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .cc-topbar {
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: var(--s-3);
+    padding: 0 var(--s-4);
+    border-bottom: 1px solid rgba(140,106,58,0.12);
+  }
+  .cc-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: none; padding: 6px 10px 6px 4px;
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans); font-size: 13px;
+    cursor: pointer; border-radius: var(--r-sm);
+  }
+  .cc-back:hover { color: var(--vtt-accent); }
+  .cc-back svg { width: 14px; height: 14px; }
+  .cc-title {
+    font-family: var(--font-serif); font-size: 15px;
+    color: var(--vtt-accent-soft);
+    text-align: center; line-height: 1;
+  }
+  .cc-title .cc-title-step {
+    display: block; font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 3px;
+  }
+
+  .cc-stepper {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: var(--s-3);
+    padding: var(--s-3) var(--s-5);
+  }
+  .cc-stepper-line {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(140,106,58,0.4), transparent);
+  }
+  .cc-stepper-dots {
+    display: inline-flex; gap: 6px; align-items: center;
+  }
+  .cc-dot {
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: var(--r-pill);
+    background: rgba(36,28,21,0.55);
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--vtt-text-muted);
+    border: 1px solid rgba(140,106,58,0.25);
+    position: relative;
+  }
+  .cc-dot.is-done {
+    color: var(--vtt-accent-soft);
+    background: rgba(140,106,58,0.25);
+    border-color: rgba(140,106,58,0.5);
+  }
+  .cc-dot.is-active {
+    color: var(--vtt-bg-base);
+    background: linear-gradient(to bottom, var(--vtt-accent), var(--vtt-accent-deep));
+    border-color: var(--vtt-border-gold);
+    box-shadow: 0 0 14px rgba(212,168,87,0.35);
+  }
+  .cc-dot + .cc-dot::before {
+    content: ""; position: absolute;
+    left: -8px; top: 50%; transform: translateY(-50%);
+    width: 6px; height: 1px;
+    background: rgba(140,106,58,0.35);
+  }
+
+  .cc-content {
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--s-4) var(--s-5) var(--s-5);
+    display: flex; flex-direction: column; gap: var(--s-5);
+  }
+  .cc-content::-webkit-scrollbar { width: 4px; }
+  .cc-content::-webkit-scrollbar-thumb { background: rgba(140,106,58,0.3); border-radius: var(--r-pill); }
+
+  .cc-section {
+    display: flex; flex-direction: column; gap: var(--s-3);
+  }
+  .cc-section-head {
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .cc-section-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .cc-section-hint {
+    font-family: var(--font-serif); font-style: italic; font-size: 12px;
+    color: var(--vtt-text-muted);
+  }
+  .cc-section-action { margin-left: auto; }
+
+  .cc-footer {
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    border-top: 1px solid rgba(140,106,58,0.12);
+    background: rgba(7,5,10,0.3);
+  }
+  .cc-footer-hint {
+    text-align: center;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .cc-footer-hint b { color: var(--vtt-accent-soft); font-weight: 500; }
+
+  /* ================================================================
+     ПОЛЯ ВВОДА
+     ================================================================ */
+  .cc-field { display: flex; flex-direction: column; gap: 6px; }
+  .cc-field-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .cc-field-label .opt {
+    font-family: var(--font-serif); font-style: italic; font-size: 11px;
+    letter-spacing: 0; text-transform: none;
+    color: var(--vtt-text-muted);
+  }
+  .cc-input {
+    font-family: var(--font-serif); font-size: 18px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(140,106,58,0.3);
+    color: var(--vtt-text-primary);
+    outline: none;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .cc-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
+  .cc-input:focus { border-bottom-color: var(--vtt-accent); }
+  .cc-input.is-truename {
+    font-family: var(--font-serif); font-style: italic;
+    color: var(--vtt-accent-soft);
+  }
+
+  /* ================================================================
+     АТРИБУТЫ — шесть карточек
+     ================================================================ */
+  .cc-attr-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2);
+  }
+  .cc-attr {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "label label roll"
+      "value value value";
+    column-gap: 8px;
+    padding: 10px 12px 12px;
+    border-radius: var(--r-md);
+    background: rgba(36,28,21,0.4);
+    transition: background var(--t-fast) var(--ease);
+  }
+  .cc-attr:hover { background: rgba(36,28,21,0.65); }
+  .cc-attr-label {
+    grid-area: label;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    line-height: 1;
+  }
+  .cc-attr-roll {
+    grid-area: roll;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: none; padding: 0;
+    color: var(--vtt-text-muted);
+    cursor: pointer; border-radius: var(--r-pill);
+    transition: color var(--t-fast) var(--ease);
+  }
+  .cc-attr-roll:hover { color: var(--vtt-accent); }
+  .cc-attr-roll svg { width: 14px; height: 14px; }
+  .cc-attr-value {
+    grid-area: value;
+    display: flex; align-items: baseline; gap: 10px; margin-top: 2px;
+  }
+  .cc-attr-mod {
+    font-family: var(--font-serif); font-size: 32px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1;
+  }
+  .cc-attr-empty .cc-attr-mod { color: var(--vtt-text-muted); }
+  .cc-attr-roll-trace {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--vtt-text-muted);
+    letter-spacing: 0.06em;
+  }
+  .cc-attr-roll-trace em {
+    color: var(--vtt-text-secondary); font-style: normal;
+  }
+  .cc-attr.is-fresh {
+    animation: cc-fresh 1400ms var(--ease);
+  }
+  .cc-attr.is-max .cc-attr-mod {
+    color: var(--vtt-accent);
+    text-shadow: 0 0 12px rgba(212,168,87,0.4);
+  }
+  @keyframes cc-fresh {
+    0%   { box-shadow: 0 0 0 2px rgba(212,168,87,0.3); }
+    100% { box-shadow: 0 0 0 2px rgba(212,168,87,0); }
+  }
+
+  /* ================================================================
+     КЛАССЫ — сетка карточек
+     ================================================================ */
+  .cc-class-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2);
+  }
+  .cc-class {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 14px 14px 16px;
+    background: rgba(36,28,21,0.4);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+  }
+  .cc-class:hover { background: rgba(36,28,21,0.7); }
+  .cc-class.is-selected {
+    background: rgba(140,106,58,0.18);
+    border-color: rgba(140,106,58,0.55);
+  }
+  .cc-class-glyph {
+    width: 28px; height: 28px;
+    color: var(--vtt-accent-deep);
+    margin-bottom: 2px;
+  }
+  .cc-class.is-selected .cc-class-glyph { color: var(--vtt-accent); }
+  .cc-class-glyph svg { width: 100%; height: 100%; }
+  .cc-class-name {
+    font-family: var(--font-serif); font-size: 18px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1.1;
+  }
+  .cc-class-tag {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .cc-class-tag b { color: var(--vtt-text-secondary); font-weight: 500; }
+
+  /* ================================================================
+     УМЕНИЯ — строки с чекбоксами
+     ================================================================ */
+  .cc-abil-list {
+    display: flex; flex-direction: column;
+  }
+  .cc-abil {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    align-items: center;
+    column-gap: 14px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease);
+    border-radius: var(--r-sm);
+  }
+  .cc-abil + .cc-abil { border-top: 1px solid rgba(140,106,58,0.1); }
+  .cc-abil:hover { background: rgba(228,201,160,0.03); }
+  .cc-abil.is-selected {
+    background: rgba(140,106,58,0.12);
+  }
+  .cc-abil.is-locked { opacity: 0.75; cursor: default; }
+  .cc-abil.is-disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .cc-check {
+    width: 22px; height: 22px;
+    border-radius: var(--r-pill);
+    background: transparent;
+    border: 1px solid rgba(140,106,58,0.35);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: transparent;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .cc-check svg { width: 12px; height: 12px; }
+  .cc-abil.is-selected .cc-check {
+    background: var(--vtt-accent);
+    border-color: var(--vtt-accent);
+    color: var(--vtt-bg-base);
+  }
+  .cc-abil.is-locked .cc-check {
+    background: rgba(140,106,58,0.45);
+    border-color: rgba(140,106,58,0.55);
+    color: var(--vtt-accent-soft);
+  }
+  .cc-abil-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cc-abil-name {
+    font-family: var(--font-serif); font-size: 16px;
+    color: var(--vtt-text-primary); line-height: 1.2;
+  }
+  .cc-abil-desc {
+    font-family: var(--font-serif); font-style: italic; font-size: 12px;
+    color: var(--vtt-text-muted); line-height: 1.35;
+  }
+  .cc-abil-flag {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    flex-shrink: 0;
+  }
+
+  /* ================================================================
+     НАВЫКИ — чипсы
+     ================================================================ */
+  .cc-skill-grid {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .cc-skill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px;
+    background: rgba(36,28,21,0.5);
+    border: 1px solid transparent;
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-serif); font-size: 13px;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .cc-skill:hover { background: rgba(36,28,21,0.75); }
+  .cc-skill.is-selected {
+    background: rgba(140,106,58,0.2);
+    border-color: rgba(140,106,58,0.55);
+    color: var(--vtt-accent-soft);
+  }
+  .cc-skill.is-locked {
+    background: rgba(140,106,58,0.1);
+    color: var(--vtt-accent-deep);
+    cursor: default;
+  }
+  .cc-skill .lock-glyph {
+    width: 10px; height: 10px; color: var(--vtt-accent-deep);
+  }
+  .cc-skill .lock-glyph svg { width: 100%; height: 100%; }
+
+  /* ================================================================
+     HP — карточка броска
+     ================================================================ */
+  .cc-hp {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: var(--s-4);
+    padding: 18px 20px;
+    background: rgba(36,28,21,0.45);
+    border-radius: var(--r-md);
+  }
+  .cc-hp-value {
+    font-family: var(--font-serif); font-size: 44px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1;
+  }
+  .cc-hp-body { display: flex; flex-direction: column; gap: 4px; }
+  .cc-hp-body .cc-hp-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .cc-hp-body .cc-hp-formula {
+    font-family: var(--font-serif); font-style: italic; font-size: 13px;
+    color: var(--vtt-text-muted);
+  }
+  .cc-hp-body .cc-hp-formula em { color: var(--vtt-text-secondary); font-style: normal; }
+
+  /* ================================================================
+     TRUE NAME accent decoration
+     ================================================================ */
+  .cc-truename-hint {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-serif); font-style: italic; font-size: 11px;
+    color: var(--vtt-text-muted);
+    margin-top: 2px;
+  }
+  .cc-truename-hint svg { width: 11px; height: 11px; color: var(--vtt-accent-deep); flex-shrink: 0; }
+
+  /* ================================================================
+     ERROR / DELETE CONFIRM
+     ================================================================ */
+  .cc-delete-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: var(--s-5) var(--s-5) var(--s-4);
+    background: linear-gradient(to top, rgba(58,24,32,0.95), rgba(14,11,8,0.92));
+    border-top: 1px solid rgba(121,43,59,0.45);
+    display: flex; flex-direction: column; gap: var(--s-3);
+  }
+  .cc-delete-sheet h4 {
+    margin: 0; font-family: var(--font-serif); font-size: 22px; font-weight: 500;
+    color: var(--vtt-text-primary);
+  }
+  .cc-delete-sheet p {
+    margin: 0; font-size: 13px; color: var(--vtt-text-secondary); max-width: 480px;
+  }
+  .cc-delete-actions {
+    display: flex; gap: var(--s-2); margin-top: var(--s-2);
+  }
+  .btn-danger {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid rgba(178, 59, 79, 0.4);
+    border-radius: var(--r-pill);
+    color: var(--vtt-danger-bright);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.02em; line-height: 1;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  }
+  .btn-danger:hover { background: var(--vtt-danger-soft); border-color: var(--vtt-danger); }
+
+  /* ================================================================
+     BEFORE/AFTER
+     ================================================================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 1100px) { .compare { grid-template-columns: 1fr; } }
+  .compare-shot {
+    aspect-ratio: 9 / 16;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    text-align: center; padding: 16px;
+  }
+  .diff-table {
+    display: grid; grid-template-columns: 1fr auto auto;
+    gap: 8px 24px; margin-top: 20px;
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--vtt-text-secondary);
+  }
+  .diff-table .h { color: var(--vtt-accent-deep); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .was { color: var(--vtt-danger-bright); }
+  .now { color: var(--vtt-success); }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Flow · Character creation</p>
+  <h1>CharacterCreation</h1>
+  <p class="lead">
+    Мастер создания персонажа «World of Dungeons 1979». Три шага: <b>основы</b> (имя, атрибуты,
+    класс) → <b>путь</b> (умения, навыки, магия для волшебника) → <b>плоть и кровь</b> (HP).
+    Плюс отдельно — <b>удаление</b>. Весь флоу живёт в одном shell-контейнере с верхним степпером
+    и хиро-кнопкой снизу. Типографика ведёт, рамок нет.
+  </p>
+
+  <!-- ============ §1 ANATOMY ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>Анатомия — shell и степпер</h2>
+    <p class="group-lead">
+      Четыре зоны сверху вниз: <b>топбар</b> (назад + заголовок шага + закрыть),
+      <b>степпер</b> (три точки, текущая — золотой герб), <b>контент</b> (скролл) и
+      <b>футер</b> с одним <code>btn-hero</code> «Далее». Визуально всё держится на типографике,
+      рамки только у input-ов (underline).
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Shell · шаг 1 из 3 · только каркас</p>
+
+      <div class="cc-shell" style="min-height: 420px;">
+        <div class="cc-topbar">
+          <button class="cc-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>Назад</button>
+          <div class="cc-title"><span class="cc-title-step">Шаг 1 из 3</span>Основы</div>
+          <button class="btn-icon" aria-label="Закрыть"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+        </div>
+        <div class="cc-stepper">
+          <span class="cc-stepper-line"></span>
+          <div class="cc-stepper-dots">
+            <span class="cc-dot is-active">1</span>
+            <span class="cc-dot">2</span>
+            <span class="cc-dot">3</span>
+          </div>
+          <span class="cc-stepper-line"></span>
+        </div>
+        <div class="cc-content" style="align-items: center; justify-content: center; color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;">
+          <div style="text-align: center;">.cc-content<br><span style="color: var(--vtt-accent-deep);">разделы шага</span></div>
+        </div>
+        <div class="cc-footer">
+          <button class="btn-ghost" disabled style="opacity: 0.3;">← Назад</button>
+          <div class="cc-footer-hint"><b>Шаг 1</b> · Имя, атрибуты, класс</div>
+          <button class="btn-hero" disabled>Далее →</button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему степпер — три точки, а не процентная полоса:</b> шагов всего три, и каждый сам
+        по себе осмысленный. Точки-гербы позволяют тапнуть назад на уже пройденный шаг для правки,
+        а также показать, что следующий шаг ждёт (пустая) против «всё уже сделано» (золотая).
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 STEP 1 — BASICS ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>Шаг 1 · Основы — имя, атрибуты, класс</h2>
+    <p class="group-lead">
+      Три раздела: <b>имя</b> (и опц. истинное имя), <b>броски атрибутов</b> (2d6 на каждую
+      характеристику → модификатор 0–3 по таблице), <b>выбор класса</b>. Разделы отделены
+      eyebrow-ярлыками, между ними — воздух. Нет карточек в карточках.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Разделы шага 1</p>
+
+      <div class="cc-shell" style="min-height: 720px;">
+        <div class="cc-topbar">
+          <button class="cc-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>Назад</button>
+          <div class="cc-title"><span class="cc-title-step">Шаг 1 из 3</span>Основы</div>
+          <button class="btn-icon"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+        </div>
+        <div class="cc-stepper">
+          <span class="cc-stepper-line"></span>
+          <div class="cc-stepper-dots">
+            <span class="cc-dot is-active">1</span>
+            <span class="cc-dot">2</span>
+            <span class="cc-dot">3</span>
+          </div>
+          <span class="cc-stepper-line"></span>
+        </div>
+        <div class="cc-content">
+          <!-- NAME -->
+          <div class="cc-section">
+            <div class="cc-section-head"><span class="cc-section-label">Имя</span></div>
+            <div class="cc-field">
+              <input class="cc-input" type="text" placeholder="Имя персонажа" value="Йорик Медвежатник">
+            </div>
+            <div class="cc-field">
+              <span class="cc-field-label">Истинное имя <span class="opt">— опционально</span></span>
+              <input class="cc-input is-truename" type="text" placeholder="Имя, дающее силу" value="Варн'каар из Дальнего Леса">
+              <span class="cc-truename-hint">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg>
+                Скрыто от других. Даёт бонус, если враг его не узнал.
+              </span>
+            </div>
+          </div>
+
+          <!-- ATTRIBUTES -->
+          <div class="cc-section">
+            <div class="cc-section-head">
+              <span class="cc-section-label">Характеристики</span>
+              <span class="cc-section-hint">по 2d6 на каждую · модификатор 0…+3</span>
+              <span class="cc-section-action">
+                <button class="btn-roll">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="8" height="8" rx="1"/><circle cx="4.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="6" cy="6" r="0.6" fill="currentColor"/><circle cx="4.5" cy="7.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="7.5" r="0.6" fill="currentColor"/></svg>
+                  Бросить все
+                </button>
+              </span>
+            </div>
+            <div class="cc-attr-grid">
+              <div class="cc-attr is-max">
+                <span class="cc-attr-label">СИЛ</span>
+                <button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg></button>
+                <div class="cc-attr-value">
+                  <span class="cc-attr-mod">+3</span>
+                  <span class="cc-attr-roll-trace">2d6: <em>6 + 6</em></span>
+                </div>
+              </div>
+              <div class="cc-attr">
+                <span class="cc-attr-label">ЛОВ</span>
+                <button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg></button>
+                <div class="cc-attr-value">
+                  <span class="cc-attr-mod">+1</span>
+                  <span class="cc-attr-roll-trace">2d6: <em>3 + 5</em></span>
+                </div>
+              </div>
+              <div class="cc-attr is-fresh">
+                <span class="cc-attr-label">ВЫН</span>
+                <button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg></button>
+                <div class="cc-attr-value">
+                  <span class="cc-attr-mod">+2</span>
+                  <span class="cc-attr-roll-trace">2d6: <em>5 + 5</em></span>
+                </div>
+              </div>
+              <div class="cc-attr">
+                <span class="cc-attr-label">ИНТ</span>
+                <button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg></button>
+                <div class="cc-attr-value">
+                  <span class="cc-attr-mod">0</span>
+                  <span class="cc-attr-roll-trace">2d6: <em>2 + 3</em></span>
+                </div>
+              </div>
+              <div class="cc-attr">
+                <span class="cc-attr-label">МДР</span>
+                <button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg></button>
+                <div class="cc-attr-value">
+                  <span class="cc-attr-mod">+1</span>
+                  <span class="cc-attr-roll-trace">2d6: <em>4 + 4</em></span>
+                </div>
+              </div>
+              <div class="cc-attr cc-attr-empty">
+                <span class="cc-attr-label">ХАР</span>
+                <button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg></button>
+                <div class="cc-attr-value">
+                  <span class="cc-attr-mod">—</span>
+                  <span class="cc-attr-roll-trace">нажми ↻</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CLASS -->
+          <div class="cc-section">
+            <div class="cc-section-head">
+              <span class="cc-section-label">Класс</span>
+              <span class="cc-section-hint">выбери один путь</span>
+            </div>
+            <div class="cc-class-grid">
+              <button class="cc-class is-selected">
+                <span class="cc-class-glyph"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3 L19 8 L14 25 L9 8 Z"/><path d="M9 8 L19 8"/></svg></span>
+                <span class="cc-class-name">Воин</span>
+                <span class="cc-class-tag"><b>Атлетика</b> · 2 умения</span>
+              </button>
+              <button class="cc-class">
+                <span class="cc-class-glyph"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 C9 13 15 12 21 16 L24 13"/><circle cx="22" cy="11" r="2"/><path d="M5 19 L8 22"/></svg></span>
+                <span class="cc-class-name">Вор</span>
+                <span class="cc-class-tag"><b>Скрытность</b> · 2 умения</span>
+              </button>
+              <button class="cc-class">
+                <span class="cc-class-glyph"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4 L14 24 M9 9 L19 9 M11 18 L17 18"/></svg></span>
+                <span class="cc-class-name">Жрец</span>
+                <span class="cc-class-tag"><b>Тайны · Лечение</b></span>
+              </button>
+              <button class="cc-class">
+                <span class="cc-class-glyph"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3 L16 11 L23 11 L17.5 15.5 L19.5 23 L14 18.5 L8.5 23 L10.5 15.5 L5 11 L12 11 Z"/></svg></span>
+                <span class="cc-class-name">Волшебник</span>
+                <span class="cc-class-tag"><b>Знания</b> · призыв авто</span>
+              </button>
+              <button class="cc-class">
+                <span class="cc-class-glyph"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21 C7 15 13 8 22 6 M22 6 L20 11 M22 6 L17 8"/></svg></span>
+                <span class="cc-class-name">Следопыт</span>
+                <span class="cc-class-tag"><b>Выживание</b> · 2 умения</span>
+              </button>
+              <button class="cc-class">
+                <span class="cc-class-glyph"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="16" height="16" rx="2"/><path d="M10 14 L14 14 M12 10 L12 18"/></svg></span>
+                <span class="cc-class-name">Свой класс</span>
+                <span class="cc-class-tag">2 навыка · 2 умения</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="cc-footer">
+          <button class="btn-ghost" disabled style="opacity: 0.3;">← Назад</button>
+          <div class="cc-footer-hint"><b>Йорик</b> · Воин · атрибуты готовы</div>
+          <button class="btn-hero">Далее →</button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Бросок атрибута</b> — ↻ на каждой карточке. Крит (12) светится золотом, свежий бросок
+        подсвечивается 1.4с, пустая карточка показывает «—» и подсказку. Под модификатором — микро-лог
+        «2d6: 6 + 6» шрифтом mono, чтобы было видно что именно выпало и не было подозрений в магии.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 STEP 2 — ABILITIES + SKILLS ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>Шаг 2 · Путь — умения и навыки</h2>
+    <p class="group-lead">
+      В зависимости от класса. Воин — 2 умения из четырёх. Волшебник — 1 закреплённый
+      «Призыв» (locked) + 1 из трёх. Навыки идут чипами внизу: класс даёт один-два
+      «бесплатных» (lock-glyph), остальные добираются до общего числа 2.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Пример для класса «Волшебник» — locked + выбор</p>
+
+      <div class="cc-shell" style="min-height: 720px;">
+        <div class="cc-topbar">
+          <button class="cc-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>Назад</button>
+          <div class="cc-title"><span class="cc-title-step">Шаг 2 из 3</span>Путь</div>
+          <button class="btn-icon"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+        </div>
+        <div class="cc-stepper">
+          <span class="cc-stepper-line"></span>
+          <div class="cc-stepper-dots">
+            <span class="cc-dot is-done"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+            <span class="cc-dot is-active">2</span>
+            <span class="cc-dot">3</span>
+          </div>
+          <span class="cc-stepper-line"></span>
+        </div>
+        <div class="cc-content">
+          <!-- ABILITIES -->
+          <div class="cc-section">
+            <div class="cc-section-head">
+              <span class="cc-section-label">Умения</span>
+              <span class="cc-section-hint">1 закреплено, выбери ещё одно</span>
+              <span class="cc-section-action">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--vtt-accent-soft); letter-spacing: 0.06em;">2 / 2</span>
+              </span>
+            </div>
+            <div class="cc-abil-list">
+              <div class="cc-abil is-locked">
+                <span class="cc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+                <div class="cc-abil-body">
+                  <span class="cc-abil-name">Призыв</span>
+                  <span class="cc-abil-desc">Волшебник привязывает духа и говорит с ним голосом; даёт доступ к Магии.</span>
+                </div>
+                <span class="cc-abil-flag">базовое</span>
+              </div>
+              <div class="cc-abil is-selected">
+                <span class="cc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+                <div class="cc-abil-body">
+                  <span class="cc-abil-name">Ритуал</span>
+                  <span class="cc-abil-desc">Длинный сакральный акт. Один раз в сцену творит большое чудо по описанию мастера.</span>
+                </div>
+                <span class="cc-abil-flag">выбрано</span>
+              </div>
+              <div class="cc-abil">
+                <span class="cc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+                <div class="cc-abil-body">
+                  <span class="cc-abil-name">Заклички</span>
+                  <span class="cc-abil-desc">Короткие заклинания. Ртутью платишь — эффект на пару раундов.</span>
+                </div>
+              </div>
+              <div class="cc-abil is-disabled">
+                <span class="cc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+                <div class="cc-abil-body">
+                  <span class="cc-abil-name">Подчинение</span>
+                  <span class="cc-abil-desc">Подчиняешь чужую волю — на время или до следующего спора.</span>
+                </div>
+                <span class="cc-abil-flag">слотов нет</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SKILLS -->
+          <div class="cc-section">
+            <div class="cc-section-head">
+              <span class="cc-section-label">Навыки</span>
+              <span class="cc-section-hint">«Знания» от класса · выбери ещё один</span>
+              <span class="cc-section-action">
+                <span style="font-family: var(--font-mono); font-size: 11px; color: var(--vtt-accent-soft); letter-spacing: 0.06em;">2 / 2</span>
+              </span>
+            </div>
+            <div class="cc-skill-grid">
+              <span class="cc-skill is-locked">
+                <span class="lock-glyph"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="4.5" width="6" height="4" rx="0.5"/><path d="M3.5 4.5 L3.5 3 C3.5 1.8 4.2 1.2 5 1.2 C5.8 1.2 6.5 1.8 6.5 3 L6.5 4.5"/></svg></span>
+                Знания
+              </span>
+              <span class="cc-skill">Атлетика</span>
+              <span class="cc-skill">Скрытность</span>
+              <span class="cc-skill">Выживание</span>
+              <span class="cc-skill is-selected">Тайны</span>
+              <span class="cc-skill">Лечение</span>
+              <span class="cc-skill">Убеждение</span>
+              <span class="cc-skill">Обман</span>
+              <span class="cc-skill">Восприятие</span>
+            </div>
+          </div>
+        </div>
+        <div class="cc-footer">
+          <button class="btn-ghost">← Назад</button>
+          <div class="cc-footer-hint"><b>Волшебник</b> · путь определён</div>
+          <button class="btn-hero">Далее →</button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Locked-состояние</b> — умения и навыки, которые приходят с классом и не требуют выбора.
+        Чекбокс уже «поставлен», но visually не кликабелен: у умений просто золотой checkmark с меткой
+        <i>«базовое»</i>, у навыков-чипов — мини-замок. Для «Свой класс» этот состояния нет — выбирай что хочешь.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 STEP 3 — HP ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>Шаг 3 · Плоть и кровь — HP</h2>
+    <p class="group-lead">
+      HP = <code>1 + max(0, ВЫН)</code> кубиков d6, оставляем <b>наивысший</b>. Умение «Стойкость»
+      (<code>sturdy</code>) даёт +6 сверху. Кнопка «Перебросить» — без ограничений. На третьем шаге
+      hero-кнопка становится <b>«Создать»</b> и генерирует персонажа.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">HP для Воина с ВЫН +2 и «Стойкостью»</p>
+
+      <div class="cc-shell" style="min-height: 560px;">
+        <div class="cc-topbar">
+          <button class="cc-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>Назад</button>
+          <div class="cc-title"><span class="cc-title-step">Шаг 3 из 3</span>Плоть и кровь</div>
+          <button class="btn-icon"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+        </div>
+        <div class="cc-stepper">
+          <span class="cc-stepper-line"></span>
+          <div class="cc-stepper-dots">
+            <span class="cc-dot is-done"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+            <span class="cc-dot is-done"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+            <span class="cc-dot is-active">3</span>
+          </div>
+          <span class="cc-stepper-line"></span>
+        </div>
+        <div class="cc-content">
+          <div class="cc-section">
+            <div class="cc-section-head">
+              <span class="cc-section-label">Очки здоровья</span>
+              <span class="cc-section-hint">3d6, высший + 6 от «Стойкости»</span>
+              <span class="cc-section-action">
+                <button class="btn-roll">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 6 C3 4 4.5 3 6 3 M9 6 C9 8 7.5 9 6 9 M9 6 L10.5 4.5 M9 6 L7.5 4.5"/></svg>
+                  Перебросить
+                </button>
+              </span>
+            </div>
+            <div class="cc-hp">
+              <span class="cc-hp-value">11</span>
+              <div class="cc-hp-body">
+                <span class="cc-hp-label">HP — стартовый максимум</span>
+                <span class="cc-hp-formula">3d6: <em>5</em> · <em>3</em> · <em>2</em> → взяли <em>5</em> + 6 <span style="color: var(--vtt-accent-deep);">Стойкость</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cc-section">
+            <div class="cc-section-head">
+              <span class="cc-section-label">Итог</span>
+              <span class="cc-section-hint">проверь перед созданием</span>
+            </div>
+            <div class="cc-abil-list">
+              <div class="cc-abil is-locked">
+                <span class="cc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6.5 L5 8.5 L9 4"/></svg></span>
+                <div class="cc-abil-body">
+                  <span class="cc-abil-name">Йорик Медвежатник</span>
+                  <span class="cc-abil-desc">Воин · ур. 1 · СИЛ +3, ЛОВ +1, ВЫН +2, ИНТ 0, МДР +1, ХАР +1</span>
+                </div>
+                <span class="cc-abil-flag">HP 11</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cc-footer">
+          <button class="btn-ghost">← Назад</button>
+          <div class="cc-footer-hint">готов войти в мир</div>
+          <button class="btn-hero">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2 L9 6 L13 6.5 L10 9.5 L11 13 L7 11 L3 13 L4 9.5 L1 6.5 L5 6 Z"/></svg>
+            Создать
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 DELETE ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>Удаление персонажа</h2>
+    <p class="group-lead">
+      Удаление — из списка персонажей (отдельный экран, не этот мастер). Но когда оно происходит —
+      подтверждение приезжает снизу как <b>danger-шит</b>: тёмно-красный градиент, имя и дата
+      последнего сеанса в теле, две кнопки — <code>Отмена</code> (ghost) и <code>Удалить</code>
+      (danger). Выдернуть персонажа молча нельзя.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Подтверждение удаления</p>
+
+      <div class="cc-shell" style="min-height: 440px;">
+        <div class="cc-topbar">
+          <button class="cc-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>Персонажи</button>
+          <div class="cc-title"><span class="cc-title-step">Мои герои</span>Йорик Медвежатник</div>
+          <button class="btn-icon"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+        </div>
+        <div class="cc-stepper" style="justify-content: center;">
+          <span class="cc-stepper-line" style="opacity: 0.3;"></span>
+          <div class="cc-stepper-dots" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vtt-text-muted);">
+            Воин · ур. 3 · последний сеанс 12 апр
+          </div>
+          <span class="cc-stepper-line" style="opacity: 0.3;"></span>
+        </div>
+        <div class="cc-content" style="filter: brightness(0.6);">
+          <div class="cc-section">
+            <div class="cc-section-head"><span class="cc-section-label">Характеристики</span></div>
+            <div class="cc-attr-grid">
+              <div class="cc-attr"><span class="cc-attr-label">СИЛ</span><div class="cc-attr-value"><span class="cc-attr-mod">+3</span></div></div>
+              <div class="cc-attr"><span class="cc-attr-label">ЛОВ</span><div class="cc-attr-value"><span class="cc-attr-mod">+1</span></div></div>
+              <div class="cc-attr"><span class="cc-attr-label">ВЫН</span><div class="cc-attr-value"><span class="cc-attr-mod">+2</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cc-delete-sheet">
+          <span class="cc-section-label" style="color: var(--vtt-danger-bright);">Удалить героя?</span>
+          <h4>Йорик Медвежатник, Воин ур. 3</h4>
+          <p>
+            Весь прогресс, HP, инвентарь и заметки исчезнут без следа. Это действие нельзя отменить.
+            Если просто хочешь отдохнуть — персонажа всегда можно «убрать из партии», не удаляя.
+          </p>
+          <div class="cc-delete-actions">
+            <button class="btn-hero">Отмена</button>
+            <button class="btn-danger">Удалить навсегда</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему шит, а не модалка:</b> удаление — терминальное действие. Шит снизу занимает до
+        60% высоты экрана, тело persona за ним приглушено <code>filter: brightness(0.6)</code>, но
+        видно «что именно я удаляю». Красный градиент и явная формулировка «нельзя отменить» нужны,
+        чтобы случайным тапом не потерять полгода игры.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §6 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§6</p>
+    <h2>Было / стало</h2>
+    <p class="group-lead">
+      Старый мастер (<code>app-doc/screens/create-character*.png</code>) — всё в рамках: каждый инпут
+      в bordered-box, класс-кнопки обведены, атрибуты в обведённых карточках. Ощущение «анкета на
+      паспорт в госуслугах», а не начало приключения.
+    </p>
+
+    <div class="compare">
+      <div>
+        <p class="variant-label">Было · всё в рамках</p>
+        <div class="compare-shot">
+          app-doc/screens/<br>create-character.png<br><br>
+          рамки везде · ~12 границ на одном экране
+        </div>
+      </div>
+      <div>
+        <p class="variant-label">Стало · ведёт типографика</p>
+        <div class="cc-shell" style="min-height: 520px;">
+          <div class="cc-topbar">
+            <button class="cc-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>Назад</button>
+            <div class="cc-title"><span class="cc-title-step">Шаг 1 из 3</span>Основы</div>
+            <button class="btn-icon"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+          </div>
+          <div class="cc-stepper">
+            <span class="cc-stepper-line"></span>
+            <div class="cc-stepper-dots">
+              <span class="cc-dot is-active">1</span>
+              <span class="cc-dot">2</span>
+              <span class="cc-dot">3</span>
+            </div>
+            <span class="cc-stepper-line"></span>
+          </div>
+          <div class="cc-content">
+            <div class="cc-section">
+              <div class="cc-section-head"><span class="cc-section-label">Имя</span></div>
+              <div class="cc-field"><input class="cc-input" type="text" value="Йорик Медвежатник"></div>
+            </div>
+            <div class="cc-section">
+              <div class="cc-section-head"><span class="cc-section-label">Характеристики</span><span class="cc-section-hint">2d6 → 0…+3</span></div>
+              <div class="cc-attr-grid">
+                <div class="cc-attr is-max"><span class="cc-attr-label">СИЛ</span><button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11"/></svg></button><div class="cc-attr-value"><span class="cc-attr-mod">+3</span></div></div>
+                <div class="cc-attr"><span class="cc-attr-label">ЛОВ</span><button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11"/></svg></button><div class="cc-attr-value"><span class="cc-attr-mod">+1</span></div></div>
+                <div class="cc-attr"><span class="cc-attr-label">ВЫН</span><button class="cc-attr-roll"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11"/></svg></button><div class="cc-attr-value"><span class="cc-attr-mod">+2</span></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="cc-footer">
+            <button class="btn-ghost" disabled style="opacity: 0.3;">← Назад</button>
+            <div class="cc-footer-hint"><b>Йорик</b> · Воин</div>
+            <button class="btn-hero">Далее →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="diff-table">
+      <span class="h">параметр</span><span class="h">было</span><span class="h">стало</span>
+
+      <span>Визуальная граница у каждого элемента</span><span class="was">да</span><span class="now">только underline у input · hover-fill у карточек</span>
+      <span>Шаг 1 — высота на экране</span><span class="was">~1400px (скролл обязателен)</span><span class="now">~900px (обычно без скролла)</span>
+      <span>Навигация между шагами</span><span class="was">«Шаг 1 из 3» текстом в углу</span><span class="now">кликабельные точки-гербы</span>
+      <span>Возврат к правке</span><span class="was">только через «Назад»</span><span class="now">клик по пройденной точке</span>
+      <span>Атрибут-броски</span><span class="was">карточка с иконкой d6 + 0 внутри поля</span><span class="now">крупная цифра модификатора + micro-log «2d6: 6+6»</span>
+      <span>Locked-элементы (класс-базовое)</span><span class="was">не различимы</span><span class="now">золотой чек + метка «базовое»</span>
+      <span>Удаление</span><span class="was">подтверждение модалкой</span><span class="now">danger-sheet снизу с контекстом</span>
+    </div>
+
+    <div class="notes">
+      <b>Главный сдвиг:</b> создание персонажа было формой («заполни поля»). Стало ритуалом
+      («брось кубы, выбери путь»). Та же логика, но с шагами-точками, явными микро-логами бросков
+      и типографской иерархией вместо сетки рамок. Три шага, один <code>btn-hero</code> внизу, нигде
+      нет «отправить на сервер».
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

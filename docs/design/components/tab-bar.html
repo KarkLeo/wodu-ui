@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>TabBar · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 720px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 2px;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  /* ================================================================
+     TAB BAR — ядро
+     ================================================================ */
+  /*
+    Анатомия:
+    .tab-bar         — контейнер (горизонтальный список)
+    .tab-item        — таб (button)
+    .tab-item-label  — текст
+    .tab-item-dot    — жёлтая точка-индикатор ("нужно внимание")
+    .tab-item-badge  — числовой бейдж (новые записи / непросмотренное)
+    .tab-item.is-active — активный таб (текст акцент + подчёркивание)
+  */
+
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: max-content;
+    padding: 10px 18px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--r-xs) var(--r-xs) 0 0;
+    color: var(--vtt-text-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .tab-item:hover {
+    color: var(--vtt-text-secondary);
+    background: rgba(228, 201, 160, 0.03);
+  }
+  .tab-item:focus-visible {
+    outline: 1px solid var(--vtt-border-gold);
+    outline-offset: -2px;
+  }
+
+  /* активный таб — подчёркивание, приподнятый фон, акцентный текст */
+  .tab-item.is-active {
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+  }
+  .tab-item.is-active::after {
+    content: "";
+    position: absolute;
+    left: 10px; right: 10px; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* disabled (например — ещё нечего смотреть) */
+  .tab-item.is-disabled {
+    color: var(--vtt-border-strong);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* иконка слева от текста (опционально) */
+  .tab-item-glyph {
+    width: 14px; height: 14px;
+    color: currentColor;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+  .tab-item-glyph svg { width: 100%; height: 100%; display: block; }
+  .tab-item.is-active .tab-item-glyph { opacity: 1; }
+
+  /* ---- индикаторы ---- */
+  .tab-item-dot {
+    width: 6px; height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--vtt-accent);
+    box-shadow: 0 0 6px rgba(212, 168, 87, 0.8);
+    animation: tab-dot-pulse 1.8s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .tab-item-dot.kind-danger {
+    background: var(--vtt-danger-bright);
+    box-shadow: 0 0 6px rgba(178, 59, 79, 0.7);
+  }
+  .tab-item-dot.kind-info {
+    background: var(--vtt-info);
+    box-shadow: 0 0 6px rgba(90, 122, 142, 0.7);
+    animation: none;
+  }
+  @keyframes tab-dot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
+  .tab-item-badge {
+    min-width: 18px; height: 18px;
+    padding: 0 5px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--vtt-text-secondary);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .tab-item.is-active .tab-item-badge {
+    background: var(--vtt-bg-elevated);
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+  }
+
+  /* ================ SIZES ================ */
+  .tab-bar.size-sm .tab-item { padding: 7px 12px 9px; font-size: 12px; gap: 6px; }
+  .tab-bar.size-sm .tab-item-glyph { width: 12px; height: 12px; }
+  .tab-bar.size-sm .tab-item-badge { min-width: 16px; height: 16px; font-size: 9px; }
+
+  .tab-bar.size-lg .tab-item { padding: 12px 22px 14px; font-size: 14px; }
+
+  /* ================ VARIANTS ================ */
+  /* variant-mobile — таб-бар снизу экрана (bottom nav), крупнее hit-area */
+  .tab-bar.variant-bottom {
+    border-top: 1px solid var(--vtt-border-subtle);
+    border-bottom: none;
+    padding: 6px;
+  }
+  .tab-bar.variant-bottom .tab-item {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 4px;
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    min-width: 0;
+  }
+  .tab-bar.variant-bottom .tab-item-glyph { width: 18px; height: 18px; opacity: 0.75; }
+  .tab-bar.variant-bottom .tab-item.is-active { background: var(--vtt-bg-elevated); }
+  .tab-bar.variant-bottom .tab-item.is-active::after {
+    left: 50%; right: auto; bottom: 2px;
+    transform: translateX(-50%);
+    width: 16px; height: 2px;
+  }
+  .tab-bar.variant-bottom .tab-item-dot {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 14px);
+  }
+  .tab-bar.variant-bottom .tab-item-badge {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 20px);
+    min-width: 14px; height: 14px; font-size: 9px;
+    padding: 0 4px;
+  }
+
+  /* ================ DEMO VIEWPORT ================ */
+  .viewport {
+    background: var(--vtt-bg-base);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+  }
+  .viewport-chrome {
+    padding: 8px 14px;
+    background: var(--vtt-bg-sunken);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .viewport-filler {
+    padding: 32px 24px;
+    color: var(--vtt-text-muted);
+    font-size: 13px;
+    min-height: 120px;
+  }
+  .viewport-filler b { color: var(--vtt-text-secondary); }
+
+  /* "имитация" StatusHeader для демо shell ---- очень минимально */
+  .fake-header {
+    padding: 14px 20px;
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .fake-header-name {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--vtt-accent-soft);
+  }
+  .fake-header-meta {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+
+  /* ================ DICE FAB (floating dice entry) ================ */
+  /* Замена вкладки "Кубики": кубик всплывает над экраном — доступен с любой страницы */
+  .dice-fab-demo {
+    position: relative;
+    height: 140px;
+    background:
+      radial-gradient(ellipse at 80% 60%, rgba(140,106,58,0.08), transparent 60%),
+      var(--vtt-bg-sunken);
+    border: 1px dashed var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .dice-fab {
+    position: absolute;
+    right: 20px; bottom: 20px;
+    width: 52px; height: 52px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #A6833E;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    color: #1a1205;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(228,201,160,0.08) inset;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+  }
+  .dice-fab:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+    transform: translateY(-1px);
+  }
+  .dice-fab svg { width: 22px; height: 22px; }
+  .dice-fab-note {
+    position: absolute;
+    right: 84px; bottom: 32px;
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--vtt-text-muted);
+  }
+
+  /* ================ BEFORE / AFTER ================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 960px) { .compare { grid-template-columns: 1fr; } }
+
+  .bad-tabs {
+    display: flex; gap: 4px;
+    padding: 8px;
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-danger-bright);
+  }
+  .bad-tab {
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: 0;
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-mono); font-size: 12px;
+    cursor: pointer;
+  }
+  .bad-tab.is-active {
+    background: var(--vtt-accent-deep);
+    color: var(--vtt-bg-base);
+    border-color: var(--vtt-accent);
+  }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Molecule · Navigation</p>
+  <h1>TabBar</h1>
+  <p class="lead">
+    Горизонтальная навигация между вкладками листа персонажа. Четыре вкладки:
+    <b>Основное · Инвентарь · Магия · Заметки</b>. История бросков вынесена <i>из вкладок</i> —
+    кубик живёт как плавающая кнопка поверх любого экрана (см. §5). Вкладки — <b>segmented</b> из
+    дизайн-системы, активный — через <code>bg-elevated</code> + золотое подчёркивание снизу.
+    На вкладках живут <b>точечные индикаторы</b> — жёлтая точка сигналит «здесь есть что посмотреть»
+    (готов level-up, истощена ртуть, новая заметка).
+  </p>
+
+  <!-- ============ §1 BASE ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>Базовая шкала — четыре вкладки</h2>
+    <p class="group-lead">
+      Единственная активная, остальные — muted. Подчёркивание активной снизу перекрывает границу
+      <code>border-bottom</code> таб-бара — это визуально «соединяет» таб с контентом под ним.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Desktop · default</p>
+      <div class="viewport" style="max-width: 720px">
+        <div class="viewport-chrome"><span>vtt — экран персонажа</span><span>1280 × 800</span></div>
+        <div class="fake-header">
+          <span class="fake-header-name">Йорик Медвежатник</span>
+          <span class="fake-header-meta"><b style="color:var(--vtt-text-secondary)">Воин</b> · ур. 1</span>
+        </div>
+        <nav class="tab-bar">
+          <button class="tab-item is-active"><span class="tab-item-label">Основное</span></button>
+          <button class="tab-item"><span class="tab-item-label">Инвентарь</span></button>
+          <button class="tab-item"><span class="tab-item-label">Магия</span></button>
+          <button class="tab-item"><span class="tab-item-label">Заметки</span></button>
+        </nav>
+        <div class="viewport-filler"><b>↓ контент вкладки «Основное»</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 INDICATORS ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>Индикаторы — точки и бейджи</h2>
+    <p class="group-lead">
+      Две разновидности «внимание»: <b>точка</b> (качественный сигнал — «есть что сделать») и
+      <b>бейдж с числом</b> (количественный — «N новых записей»). Точка пульсирует, бейдж — статичен.
+      Цвет точки может быть <code>accent</code> (по умолчанию — level-up), <code>danger</code> (истощена
+      ртуть) или <code>info</code> (напоминание).
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Типы индикаторов</p>
+
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">Готов level-up (точка на «Основное»)</span>
+          <div class="viewport" style="max-width: 720px">
+            <nav class="tab-bar">
+              <button class="tab-item is-active"><span class="tab-item-label">Основное</span><span class="tab-item-dot" title="Готов к повышению"></span></button>
+              <button class="tab-item"><span class="tab-item-label">Инвентарь</span></button>
+              <button class="tab-item"><span class="tab-item-label">Магия</span></button>
+              <button class="tab-item"><span class="tab-item-label">Заметки</span></button>
+            </nav>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">Истощена ртуть — danger-точка на «Магии»</span>
+          <div class="viewport" style="max-width: 720px">
+            <nav class="tab-bar">
+              <button class="tab-item is-active"><span class="tab-item-label">Основное</span></button>
+              <button class="tab-item"><span class="tab-item-label">Инвентарь</span></button>
+              <button class="tab-item">
+                <span class="tab-item-label">Магия</span>
+                <span class="tab-item-dot kind-danger" title="Истощена ртуть"></span>
+              </button>
+              <button class="tab-item"><span class="tab-item-label">Заметки</span></button>
+            </nav>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">Новый предмет в инвентаре + черновик заметки</span>
+          <div class="viewport" style="max-width: 720px">
+            <nav class="tab-bar">
+              <button class="tab-item is-active"><span class="tab-item-label">Основное</span></button>
+              <button class="tab-item">
+                <span class="tab-item-label">Инвентарь</span>
+                <span class="tab-item-badge">2</span>
+              </button>
+              <button class="tab-item"><span class="tab-item-label">Магия</span></button>
+              <button class="tab-item">
+                <span class="tab-item-label">Заметки</span>
+                <span class="tab-item-dot kind-info" title="Черновик"></span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">Всё сразу — три разных сигнала</span>
+          <div class="viewport" style="max-width: 720px">
+            <nav class="tab-bar">
+              <button class="tab-item">
+                <span class="tab-item-label">Основное</span>
+                <span class="tab-item-dot"></span>
+              </button>
+              <button class="tab-item is-active">
+                <span class="tab-item-label">Инвентарь</span>
+                <span class="tab-item-badge">2</span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-label">Магия</span>
+                <span class="tab-item-dot kind-danger"></span>
+              </button>
+              <button class="tab-item"><span class="tab-item-label">Заметки</span></button>
+            </nav>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Когда точка, когда бейдж:</b> точка — для <i>качественного</i> сигнала («готов / истощён / черновик»),
+        цифра не нужна. Бейдж — когда <i>количество</i> важно («2 новых», «+5 предметов подобрано»).
+        На одном табе одновременно точка и бейдж не живут — это шум.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 WITH ICONS / SIZES ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>Размеры и варианты</h2>
+    <p class="group-lead">
+      Три размера: <b>sm</b> (плотный — внутри popover'ов и боковых панелей), <b>md</b> (default — в шапке листа),
+      <b>lg</b> (крупный — на узких экранах). На mobile доступен нижний <b>bottom-nav</b> вариант с иконками.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Размеры</p>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">sm · в контексте боковой панели</span>
+          <div class="viewport" style="max-width: 540px">
+            <nav class="tab-bar size-sm">
+              <button class="tab-item is-active">Свёрнутые</button>
+              <button class="tab-item">Надетые</button>
+              <button class="tab-item">Каталог</button>
+            </nav>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">md · default</span>
+          <div class="viewport" style="max-width: 720px">
+            <nav class="tab-bar">
+              <button class="tab-item is-active">Основное</button>
+              <button class="tab-item">Инвентарь</button>
+              <button class="tab-item">Магия</button>
+              <button class="tab-item">Заметки</button>
+            </nav>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label" style="display:block; margin-bottom:8px">lg · с иконками</span>
+          <div class="viewport" style="max-width: 720px">
+            <nav class="tab-bar size-lg">
+              <button class="tab-item is-active">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/><path d="M8 1.5 L8 14.5"/></svg></span>
+                <span class="tab-item-label">Основное</span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="10"/><path d="M5 4 L5 2 L11 2 L11 4"/></svg></span>
+                <span class="tab-item-label">Инвентарь</span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L10 6 L14 6.5 L11 9.5 L12 14 L8 11.5 L4 14 L5 9.5 L2 6.5 L6 6 Z"/></svg></span>
+                <span class="tab-item-label">Магия</span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12"/><path d="M5 5 L11 5"/><path d="M5 8 L11 8"/><path d="M5 11 L9 11"/></svg></span>
+                <span class="tab-item-label">Заметки</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Иконки — опционально.</b> На desktop текста хватает. На lg-размере с иконками — когда экран широкий и
+        хочется чуть «шапочнее» (или если в будущем станут 5+ вкладок, и текст без иконки перестанет читаться).
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 MOBILE ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>Mobile — bottom nav</h2>
+    <p class="group-lead">
+      На mobile (≤ 640px) таб-бар лучше жить <b>внизу экрана</b> — большой палец ложится естественно,
+      не перекрывает шапку. Иконка + подпись, активный — через подложку и короткую подчёркивающую
+      чёрточку снизу. Индикаторы — в правом верхнем углу кнопки.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Mobile — 360px</p>
+
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+
+        <div style="flex: 0 0 auto;">
+          <span class="variant-label" style="display:block; margin-bottom:8px">Top — классический</span>
+          <div class="viewport" style="width: 360px;">
+            <div class="viewport-chrome"><span>mobile · top</span><span>360 × 780</span></div>
+            <div class="fake-header" style="padding: 10px 14px; gap: 10px;">
+              <span class="fake-header-name" style="font-size: 16px;">Йорик</span>
+              <span class="fake-header-meta" style="font-size: 9px;">ур. 1</span>
+            </div>
+            <nav class="tab-bar">
+              <button class="tab-item is-active"><span class="tab-item-label">Основное</span><span class="tab-item-dot"></span></button>
+              <button class="tab-item"><span class="tab-item-label">Инвент.</span></button>
+              <button class="tab-item"><span class="tab-item-label">Магия</span></button>
+              <button class="tab-item"><span class="tab-item-label">Заметки</span></button>
+            </nav>
+            <div class="viewport-filler" style="padding: 20px 14px; min-height: 240px;">
+              <b>контент вкладки</b>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 0 0 auto;">
+          <span class="variant-label" style="display:block; margin-bottom:8px">Bottom — с иконками</span>
+          <div class="viewport" style="width: 360px;">
+            <div class="viewport-chrome"><span>mobile · bottom</span><span>360 × 780</span></div>
+            <div class="fake-header" style="padding: 10px 14px; gap: 10px;">
+              <span class="fake-header-name" style="font-size: 16px;">Йорик</span>
+              <span class="fake-header-meta" style="font-size: 9px;">ур. 1</span>
+            </div>
+            <div class="viewport-filler" style="padding: 20px 14px; min-height: 260px;">
+              <b>контент вкладки «Основное»</b><br>
+              <br>характеристики, навыки,<br>способности…
+            </div>
+            <nav class="tab-bar variant-bottom">
+              <button class="tab-item is-active">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/><path d="M8 1.5 L8 14.5"/></svg></span>
+                <span class="tab-item-label">Основное</span>
+                <span class="tab-item-dot"></span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="10"/><path d="M5 4 L5 2 L11 2 L11 4"/></svg></span>
+                <span class="tab-item-label">Инвент.</span>
+                <span class="tab-item-badge">2</span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L10 6 L14 6.5 L11 9.5 L12 14 L8 11.5 L4 14 L5 9.5 L2 6.5 L6 6 Z"/></svg></span>
+                <span class="tab-item-label">Магия</span>
+                <span class="tab-item-dot kind-danger"></span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12"/><path d="M5 5 L11 5"/><path d="M5 8 L11 8"/><path d="M5 11 L9 11"/></svg></span>
+                <span class="tab-item-label">Заметки</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Когда top, когда bottom:</b> оба живут. <b>Top</b> по умолчанию — привычно для web и совпадает с desktop.
+        <b>Bottom</b> — если приложение обернут в PWA/нативный контейнер или когда экраны длинные (магия, инвентарь)
+        и палец устаёт возвращаться наверх. Решение — переключатель в настройках, не автоматом по устройству.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 DICE — FAB ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>Кубики — не вкладка, а плавающая кнопка</h2>
+    <p class="group-lead">
+      «Кубики» раньше жили вкладкой наравне с остальными. Это неправильно: бросок — <b>действие</b>, а не
+      <i>раздел листа</i>. Игрок может захотеть бросить дайс, глядя на свой инвентарь, магию, что угодно. Поэтому
+      вкладка удаляется, а <b>плавающая кнопка-кубик</b> появляется в правом-нижнем углу <i>любого</i> экрана.
+      Тап — открывается drawer с историей бросков и вводом формулы. История → отдельный раздел (возможно, общий
+      для всей партии, но это уже следующий компонент).
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Dice FAB</p>
+
+      <div class="dice-fab-demo">
+        <span class="dice-fab-note">Всегда под рукой →</span>
+        <button class="dice-fab" aria-label="Бросить кубик">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="16" height="16" rx="2"/>
+            <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="notes">
+        <b>Почему не в таб-баре:</b> вкладка — это <i>где я сейчас</i>. «Кубики» — это не «где я», это «что я делаю».
+        Если в таб-баре кнопка-кубик — это нарушение семантики, как если бы в меню приложения лежала кнопка
+        «позвонить маме» рядом с «настройки». <b>FAB</b> правильно передаёт: это глобальное действие, не раздел.
+        <br><br>
+        <b>Что внутри drawer'а (наметка, следующий компонент):</b> sticky-ввод формулы + список бросков (формула,
+        результат крупно, timestamp) + пара быстрых предустановок. История — <i>общая</i> для сессии, т.к. игрок
+        хочет видеть и свои броски, и ведущего.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §6 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§6</p>
+    <h2>До / После</h2>
+    <p class="group-lead">
+      Слева — текущий таб-бар: 5 вкладок (включая «Кубики»), бордерные кнопки, активная — заливкой золотом,
+      нет индикаторов «нужно внимание». Справа — 4 вкладки, тихий таб-стиль, точка-индикатор,
+      кубик отдельно (FAB).
+    </p>
+
+    <div class="compare">
+      <div>
+        <p class="variant-label">До</p>
+        <div class="viewport">
+          <div class="bad-tabs">
+            <button class="bad-tab is-active">Основное</button>
+            <button class="bad-tab">Инвентарь</button>
+            <button class="bad-tab">Магия</button>
+            <button class="bad-tab">Кубики</button>
+            <button class="bad-tab">Заметки</button>
+          </div>
+          <div class="viewport-filler"><b>вкладки соревнуются за внимание</b></div>
+        </div>
+      </div>
+      <div>
+        <p class="variant-label">После</p>
+        <div class="viewport" style="position: relative;">
+          <nav class="tab-bar">
+            <button class="tab-item is-active"><span class="tab-item-label">Основное</span><span class="tab-item-dot"></span></button>
+            <button class="tab-item"><span class="tab-item-label">Инвентарь</span></button>
+            <button class="tab-item"><span class="tab-item-label">Магия</span><span class="tab-item-dot kind-danger"></span></button>
+            <button class="tab-item"><span class="tab-item-label">Заметки</span></button>
+          </nav>
+          <div class="viewport-filler" style="min-height: 100px;"><b>вкладки тихие, сигналят только когда нужно</b></div>
+          <button class="dice-fab" aria-label="Бросить кубик" style="position:absolute; right:16px; bottom:16px;">
+            <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="16" height="16" rx="2"/>
+              <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Что изменилось:</b>
+      <br>· <b>5 → 4 вкладки</b> — «Кубики» ушли в FAB.
+      <br>· <b>«Все кнопки одинаково громкие» → «активная + остальные тихие»</b>: золотая заливка ушла из обычных
+      табов, осталась только узкая подчёркивающая линия снизу.
+      <br>· <b>Индикаторы</b>: появилась механика «точка = нужно внимание», которая раньше решалась модалкой-алертом
+      «Готов к повышению уровня!».
+      <br>· <b>Порядок</b>: «Магия» и «Заметки» поменялись местами — магия чаще используется, ближе к центру.
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

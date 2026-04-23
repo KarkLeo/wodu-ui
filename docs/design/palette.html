@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Стайл-гайд VTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Background / Surface */
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+
+    /* Border */
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+
+    /* Accent */
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+
+    /* Danger */
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+
+    /* Semantic */
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+
+    /* Text */
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+    --vtt-text-inverse: #0E0B08;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    /* Radius — мелкая сетка для медиевальной точности, крупная для магических карточек */
+    --r-xs: 4px;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 18px;
+    --r-xl: 28px;
+    --r-pill: 999px;
+
+    /* Spacing */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    /* Elevation — многослойные тени, тёплые */
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-3: 0 1px 0 rgba(228, 201, 160, 0.06) inset, 0 4px 10px rgba(0, 0, 0, 0.45), 0 16px 32px rgba(0, 0, 0, 0.55);
+    --shadow-4: 0 1px 0 rgba(228, 201, 160, 0.08) inset, 0 10px 30px rgba(0, 0, 0, 0.6), 0 30px 60px rgba(0, 0, 0, 0.55);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    /* Glow — магия: мягкое свечение вокруг активных/важных элементов */
+    --glow-accent: 0 0 0 1px rgba(212, 168, 87, 0.45), 0 0 18px rgba(212, 168, 87, 0.35), 0 0 48px rgba(212, 168, 87, 0.15);
+    --glow-accent-strong: 0 0 0 1px rgba(212, 168, 87, 0.6), 0 0 24px rgba(212, 168, 87, 0.55), 0 0 64px rgba(212, 168, 87, 0.25);
+    --glow-danger: 0 0 0 1px rgba(178, 59, 79, 0.5), 0 0 20px rgba(178, 59, 79, 0.4), 0 0 56px rgba(178, 59, 79, 0.18);
+    --glow-success: 0 0 0 1px rgba(107, 142, 78, 0.45), 0 0 18px rgba(107, 142, 78, 0.35);
+
+    /* Motion */
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+    --t-slow: 480ms;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 64px 48px 96px;
+  }
+
+  header.hero {
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0 0 12px;
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 60px;
+    letter-spacing: 0.005em;
+    margin: 0 0 16px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.05;
+  }
+
+  h1 .amp {
+    color: var(--vtt-accent);
+    font-style: italic;
+  }
+
+  .hero p {
+    max-width: 640px;
+    color: var(--vtt-text-secondary);
+    margin: 0;
+  }
+
+  section.group {
+    margin-top: 64px;
+  }
+
+  section.group h2 {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 400;
+    margin: 0 0 4px;
+    color: var(--vtt-accent-soft);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  section.group h2::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--vtt-border-strong), transparent);
+  }
+
+  section.group .group-lead {
+    color: var(--vtt-text-muted);
+    font-size: 14px;
+    margin: 0 0 28px;
+    max-width: 720px;
+  }
+
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .swatch {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color var(--t-fast) var(--ease);
+    box-shadow: var(--shadow-1);
+  }
+
+  .swatch:hover {
+    border-color: var(--vtt-border-strong);
+  }
+
+  .swatch-color {
+    height: 92px;
+    position: relative;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+
+  .swatch-color.checkered {
+    background-image:
+      linear-gradient(45deg, #1a1a1a 25%, transparent 25%),
+      linear-gradient(-45deg, #1a1a1a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1a1a1a 75%),
+      linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+    background-color: #0a0a0a;
+  }
+
+  .swatch-body {
+    padding: 14px 16px 16px;
+  }
+
+  .swatch-token {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--vtt-accent);
+    margin: 0 0 2px;
+    word-break: break-all;
+  }
+
+  .swatch-hex {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    user-select: all;
+    margin: 0 0 10px;
+    display: inline-block;
+  }
+
+  .swatch-hex:hover {
+    color: var(--vtt-accent-soft);
+  }
+
+  .swatch-hex.copied {
+    color: var(--vtt-success);
+  }
+
+  .swatch-note {
+    font-size: 13px;
+    color: var(--vtt-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .swatch-note b {
+    color: var(--vtt-text-primary);
+    font-weight: 600;
+  }
+
+  /* Player tokens */
+  .players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 24px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-1);
+  }
+
+  .player-token {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .player-token .dot {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--vtt-border-strong);
+    box-shadow: var(--shadow-1);
+  }
+
+  .player-token .hex {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-muted);
+  }
+
+  /* Preview "В деле" */
+  .preview {
+    margin-top: 28px;
+    padding: 28px;
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.06), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+  }
+
+  .preview-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0 0 16px;
+  }
+
+  .preview-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* Preview: panel */
+  .mock-panel {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 16px 20px;
+    min-width: 220px;
+    box-shadow: var(--shadow-2);
+  }
+
+  .mock-panel-title {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--vtt-accent-soft);
+    margin: 0 0 6px;
+    font-weight: 500;
+  }
+
+  .mock-panel-body {
+    font-size: 12px;
+    color: var(--vtt-text-secondary);
+    margin: 0;
+  }
+
+  /* Preview: HP bar */
+  .mock-hp {
+    min-width: 240px;
+  }
+
+  .mock-hp-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .mock-hp-track {
+    height: 8px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+  }
+
+  .mock-hp-fill {
+    height: 100%;
+    width: 62%;
+    background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
+    border-radius: var(--r-pill);
+  }
+
+  /* Preview: toast / status chips */
+  .mock-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: var(--r-xs);
+    font-family: var(--font-mono);
+  }
+
+  .mock-chip::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .chip-success { background: rgba(107,142,78,0.12); color: var(--vtt-success); border: 1px solid rgba(107,142,78,0.35); }
+  .chip-warning { background: rgba(192,138,62,0.12); color: var(--vtt-warning); border: 1px solid rgba(192,138,62,0.35); }
+  .chip-info    { background: rgba(90,122,142,0.12); color: var(--vtt-info); border: 1px solid rgba(90,122,142,0.35); }
+  .chip-danger  { background: var(--vtt-danger-soft); color: var(--vtt-danger-bright); border: 1px solid rgba(178,59,79,0.35); }
+
+  /* Preview: map canvas stacking */
+  .mock-map {
+    width: 100%;
+    max-width: 340px;
+    height: 160px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(140,106,58,0.06) 23px, rgba(140,106,58,0.06) 24px),
+      repeating-linear-gradient(90deg, transparent 0, transparent 23px, rgba(140,106,58,0.06) 23px, rgba(140,106,58,0.06) 24px),
+      var(--vtt-bg-base);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mock-map .token {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--vtt-bg-base);
+    box-shadow: 0 0 0 1px var(--vtt-border-strong);
+  }
+
+  /* Text sample */
+  .text-sample {
+    padding: 22px 24px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-1);
+    min-width: 280px;
+  }
+
+  .text-sample h4 {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    margin: 0 0 6px;
+    color: var(--vtt-accent-soft);
+    font-weight: 500;
+  }
+
+  .text-sample p { margin: 0 0 4px; }
+  .text-sample .t-primary { color: var(--vtt-text-primary); }
+  .text-sample .t-secondary { color: var(--vtt-text-secondary); font-size: 14px; }
+  .text-sample .t-muted { color: var(--vtt-text-muted); font-size: 12px; }
+
+  /* Typography section */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 20px;
+  }
+
+  .type-card {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 28px 30px 26px;
+    box-shadow: var(--shadow-1);
+  }
+
+  .type-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0 0 20px;
+  }
+
+  .type-hero {
+    color: var(--vtt-accent-soft);
+    line-height: 1.05;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    padding-bottom: 18px;
+  }
+
+  .type-hero-serif {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 52px;
+    letter-spacing: 0.005em;
+  }
+
+  .type-hero-sans {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 42px;
+    letter-spacing: -0.01em;
+  }
+
+  .type-alphabet {
+    color: var(--vtt-text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    margin-bottom: 18px;
+    word-spacing: 0.1em;
+  }
+
+  .type-alphabet-serif { font-family: var(--font-serif); }
+  .type-alphabet-sans  { font-family: var(--font-sans); letter-spacing: 0.01em; }
+
+  .type-scale {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    margin-bottom: 18px;
+  }
+
+  .type-sample-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .type-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+
+  .type-sample { color: var(--vtt-text-primary); line-height: 1.2; }
+  .type-sample.serif { font-family: var(--font-serif); }
+  .type-sample.sans  { font-family: var(--font-sans); }
+  .type-sample.italic { font-style: italic; color: var(--vtt-accent-soft); }
+  .type-sample.caps  { text-transform: uppercase; letter-spacing: 0.12em; }
+  .type-sample.muted { color: var(--vtt-text-muted); }
+  .type-sample.w-500 { font-weight: 500; }
+  .type-sample.w-600 { font-weight: 600; }
+  .type-sample.s-56 { font-size: 40px; color: var(--vtt-accent-soft); }
+  .type-sample.s-28 { font-size: 26px; color: var(--vtt-accent-soft); }
+  .type-sample.s-20 { font-size: 19px; }
+  .type-sample.s-15 { font-size: 15px; }
+  .type-sample.s-14 { font-size: 14px; }
+  .type-sample.s-13 { font-size: 13px; }
+  .type-sample.s-11 { font-size: 11px; }
+
+  .type-note {
+    font-size: 13px;
+    color: var(--vtt-text-secondary);
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .type-note b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  /* ========== GEOMETRY & EFFECTS ========== */
+
+  .tokens-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .token-card {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .token-card h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+    margin: 0;
+  }
+
+  .token-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--vtt-text-secondary);
+    line-height: 1.5;
+  }
+
+  .token-card code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-accent);
+  }
+
+  /* Radius demo */
+  .radius-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .radius-chip {
+    width: 58px; height: 58px;
+    background: linear-gradient(135deg, var(--vtt-bg-elevated), var(--vtt-bg-surface));
+    border: 1px solid var(--vtt-border-strong);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 4px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--vtt-text-muted);
+  }
+
+  /* Spacing demo */
+  .spacing-row { display: flex; align-items: flex-end; gap: 8px; }
+  .spacing-bar {
+    width: 28px;
+    background: var(--vtt-accent-deep);
+    border-radius: var(--r-xs) var(--r-xs) 0 0;
+    position: relative;
+    font-family: var(--font-mono); font-size: 9px; color: var(--vtt-text-muted);
+    text-align: center;
+  }
+  .spacing-bar span {
+    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+  }
+
+  /* Elevation demo */
+  .elevation-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .elevation-card {
+    aspect-ratio: 1;
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 11px; color: var(--vtt-accent);
+  }
+  .elevation-card.e1 { box-shadow: var(--shadow-1); }
+  .elevation-card.e2 { box-shadow: var(--shadow-2); }
+  .elevation-card.e3 { box-shadow: var(--shadow-3); }
+  .elevation-card.e4 { box-shadow: var(--shadow-4); }
+
+  /* Focus / state rings — тихие, не «магические» */
+  .state-row { display: flex; gap: 18px; flex-wrap: wrap; padding: 10px 0 4px; }
+  .state-chip {
+    height: 34px;
+    min-width: 90px;
+    padding: 0 14px;
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--vtt-text-muted);
+  }
+  .state-chip.focus { border-color: var(--vtt-accent-deep); box-shadow: 0 0 0 3px rgba(212,168,87,0.12); color: var(--vtt-accent-soft); }
+  .state-chip.active { border-color: var(--vtt-accent); color: var(--vtt-accent-soft); }
+  .state-chip.danger { border-color: var(--vtt-danger); color: var(--vtt-danger-bright); box-shadow: 0 0 0 3px rgba(178,59,79,0.1); }
+  .state-chip.success { border-color: var(--vtt-success); color: var(--vtt-success); }
+
+  /* Frosted glass demo */
+  .glass-stage {
+    height: 180px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--vtt-border-subtle);
+    background:
+      radial-gradient(circle at 20% 30%, rgba(212,168,87,0.35), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(121,43,59,0.4), transparent 45%),
+      linear-gradient(135deg, #2a1e14, #1a1510);
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .glass-card {
+    background: rgba(26, 21, 16, 0.55);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid rgba(228, 201, 160, 0.15);
+    border-radius: var(--r-lg);
+    padding: 16px 22px;
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+    box-shadow: var(--shadow-3);
+  }
+
+  /* Ambient light demo */
+  .ambient-stage {
+    height: 180px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--vtt-border-subtle);
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 40%, rgba(212, 168, 87, 0.22), transparent 60%),
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(121, 43, 59, 0.15), transparent 70%),
+      var(--vtt-bg-base);
+    position: relative;
+    overflow: hidden;
+  }
+  .ambient-stage::before {
+    /* vignette */
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+  }
+  .ambient-stage::after {
+    content: "свет костра";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-style: italic; font-size: 20px;
+    color: var(--vtt-accent-soft);
+    text-shadow: 0 0 20px rgba(212, 168, 87, 0.45);
+  }
+
+  /* Shimmer animation */
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(26px) rotate(0deg); }
+    to   { transform: rotate(360deg) translateX(26px) rotate(-360deg); }
+  }
+
+  /* ========== COMPONENTS ========== */
+
+  .components-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .comp-card {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 24px;
+    box-shadow: var(--shadow-1);
+  }
+
+  .comp-card h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+    margin: 0 0 4px;
+  }
+
+  .comp-card .comp-lead {
+    font-size: 12px;
+    color: var(--vtt-text-muted);
+    margin: 0 0 20px;
+  }
+
+  .comp-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .comp-row:last-child { margin-bottom: 0; }
+
+  /* Buttons — плоские, без градиентов и свечения по умолчанию */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-radius: var(--r-pill);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+    line-height: 1;
+  }
+
+  /* Primary: плоский тёмный с золотым текстом. Никаких градиентов */
+  .btn-primary {
+    background: var(--vtt-bg-elevated);
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-border-strong);
+  }
+  .btn-primary:hover {
+    background: #2e241a;
+    border-color: var(--vtt-border-gold);
+    color: var(--vtt-accent);
+  }
+
+  /* Hero — единственная «важная» кнопка в момент. Бронза, а не жёлтое золото — сдержаннее и благороднее. Тихий drop-shadow как у alchemy */
+  .btn-hero {
+    background: #A6833E;
+    color: #1a1205;
+    border-color: #8C6A3A;
+    font-weight: 600;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+  }
+  .btn-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--vtt-text-secondary);
+    border-color: var(--vtt-border-subtle);
+  }
+  .btn-ghost:hover {
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-border-strong);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--vtt-danger-bright);
+    border-color: rgba(178, 59, 79, 0.4);
+  }
+  .btn-danger:hover {
+    background: var(--vtt-danger-soft);
+    border-color: var(--vtt-danger);
+  }
+
+  /* Ghost-вариант опасного действия — для второстепенных «удалить / снять» рядом с основной кнопкой. Рамка появляется только на hover */
+  .btn-danger-ghost {
+    padding: 9px 12px;
+    background: transparent;
+    border-color: transparent;
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+  .btn-danger-ghost:hover {
+    color: var(--vtt-danger-bright);
+    border-color: var(--vtt-border-subtle);
+    background: rgba(178, 59, 79, 0.06);
+  }
+
+  .btn-icon {
+    padding: 0;
+    width: 38px; height: 38px;
+    justify-content: center;
+    background: transparent;
+    border-color: var(--vtt-border-subtle);
+    color: var(--vtt-text-secondary);
+    border-radius: var(--r-pill);
+  }
+  .btn-icon:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+
+  /* Компактная икон-кнопка — для плотных списков (строки инвентаря, аккордеоны, выдвижной ящик костей) */
+  .btn-icon-sm {
+    padding: 0;
+    width: 28px; height: 28px;
+    justify-content: center;
+    background: transparent;
+    border-color: var(--vtt-border-subtle);
+    color: var(--vtt-text-secondary);
+    border-radius: var(--r-xs);
+  }
+  .btn-icon-sm:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+
+  /* Маленькие кнопки — строгий xs радиус */
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: var(--r-xs); }
+
+  .btn:disabled, .btn.is-disabled {
+    opacity: 0.35; cursor: not-allowed;
+  }
+
+  /* Input */
+  .input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    box-shadow: var(--shadow-inset);
+    transition: all var(--t-med) var(--ease);
+    outline: none;
+  }
+  .input::placeholder { color: var(--vtt-text-muted); }
+  .input:focus {
+    border-color: var(--vtt-accent-deep);
+    box-shadow: var(--shadow-inset), 0 0 0 3px rgba(212, 168, 87, 0.15);
+  }
+
+  .field-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin-bottom: 8px;
+  }
+
+  /* Segmented / tabs */
+  .segmented {
+    display: inline-flex;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 3px;
+    box-shadow: var(--shadow-inset);
+  }
+  .segmented button {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 7px 14px;
+    background: transparent;
+    border: 0;
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    border-radius: var(--r-xs);
+    transition: all var(--t-fast) var(--ease);
+  }
+  .segmented button:hover { color: var(--vtt-text-secondary); }
+  .segmented button.active {
+    background: var(--vtt-bg-elevated);
+    color: var(--vtt-accent-soft);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* Feature card — элевированная, но без ornamentации. Золото только в метке-eyebrow */
+  .feature-card {
+    padding: 24px;
+    border-radius: var(--r-md);
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-subtle);
+    box-shadow: var(--shadow-2);
+  }
+  .feature-card .eyebrow-sm {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0 0 10px;
+  }
+  .feature-card h4 {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--vtt-accent-soft);
+    margin: 0 0 8px;
+    font-weight: 500;
+  }
+  .feature-card p { margin: 0; color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.55; }
+
+  /* Tooltip */
+  .tooltip {
+    display: inline-block;
+    padding: 10px 14px;
+    background: rgba(36, 28, 21, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    color: var(--vtt-text-secondary);
+    box-shadow: var(--shadow-3);
+    max-width: 240px;
+  }
+  .tooltip b { color: var(--vtt-accent-soft); display: block; font-family: var(--font-serif); font-size: 14px; margin-bottom: 2px; font-weight: 500; }
+
+  /* Battle token — круглые портреты персонажей. Без градиентов и glow — только тонкая граница и кольцо для состояний */
+  .battle-token {
+    position: relative;
+    width: 56px; height: 56px;
+    border-radius: var(--r-pill);
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-strong);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--vtt-accent-soft);
+    font-weight: 500;
+    box-shadow: var(--shadow-1);
+  }
+  .battle-token.active {
+    border-color: var(--vtt-accent-deep);
+    box-shadow: var(--shadow-1), 0 0 0 2px rgba(140, 106, 58, 0.35);
+  }
+  .battle-token.enemy {
+    border-color: var(--vtt-danger);
+    color: var(--vtt-danger-bright);
+  }
+  .battle-token .initiative {
+    position: absolute;
+    top: -4px; right: -4px;
+    min-width: 20px; height: 20px;
+    padding: 0 5px;
+    background: var(--vtt-bg-base);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--vtt-text-secondary);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .battle-token.active .initiative { border-color: var(--vtt-accent-deep); color: var(--vtt-accent-soft); }
+
+  footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-muted);
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Design reference · v0.2</p>
+    <h1>Стайл-гайд <span class="amp">VTT</span></h1>
+    <p>Визуальная система для виртуального стола в эстетике тёмного средневекового фэнтези. Настроение задано мудбордом: глубокий тёплый чёрный, благородное золото, приглушённый вино-красный. Типографика — Spectral (Франция) и Montserrat (Аргентина) в болгарском начертании кириллицы. Клик по HEX копирует значение.</p>
+  </header>
+
+  <!-- TYPOGRAPHY -->
+  <section class="group">
+    <h2>Типографика</h2>
+    <p class="group-lead">Две пары «серьёзный serif + геометричный sans». Страница объявлена с <code style="font-family: var(--font-mono); color: var(--vtt-accent)">lang="bg"</code> — это включает OpenType-фичу <code style="font-family: var(--font-mono); color: var(--vtt-accent)">locl</code>, и оба шрифта подставляют болгарские альтернаты для кириллицы (к, ж, д, т, в с прямыми штрихами и иной геометрией). Выглядит строже и уникальнее обычной русской кириллицы.</p>
+
+    <div class="type-grid">
+      <div class="type-card">
+        <p class="type-meta">Serif · заголовки · Spectral · Франция</p>
+        <div class="type-hero type-hero-serif">Крепость на закате</div>
+        <div class="type-alphabet type-alphabet-serif">
+          АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ<br>
+          абвгдежзийклмнопрстуфхцчшщъыьэюя<br>
+          0 1 2 3 4 5 6 7 8 9 — « » № §
+        </div>
+        <div class="type-scale">
+          <div class="type-sample-row"><span class="type-label">H1 · 56 / 400</span><span class="type-sample serif s-56">Kingdoms Rising</span></div>
+          <div class="type-sample-row"><span class="type-label">H2 · 28 / 400</span><span class="type-sample serif s-28">Бросок инициативы</span></div>
+          <div class="type-sample-row"><span class="type-label">H3 · 20 / 500</span><span class="type-sample serif s-20 w-500">Карточка персонажа</span></div>
+          <div class="type-sample-row"><span class="type-label">Eyebrow · 14 / 400 · italic</span><span class="type-sample serif s-14 italic">Ход десятый · ночь</span></div>
+        </div>
+        <p class="type-note"><b>Когда использовать.</b> Только заголовки, имена персонажей, крупные числовые значения (инициатива, урон в логе). Для длинного текста не годится — слишком тяжёл.</p>
+      </div>
+
+      <div class="type-card">
+        <p class="type-meta">Sans · интерфейс · Montserrat · Аргентина</p>
+        <div class="type-hero type-hero-sans">Пехота · ход 2/6</div>
+        <div class="type-alphabet type-alphabet-sans">
+          АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ<br>
+          абвгдежзийклмнопрстуфхцчшщъыьэюя<br>
+          0 1 2 3 4 5 6 7 8 9 — « » № §
+        </div>
+        <div class="type-scale">
+          <div class="type-sample-row"><span class="type-label">Body · 15 / 400</span><span class="type-sample sans s-15">Игрок бросает d20 и добавляет модификатор ловкости.</span></div>
+          <div class="type-sample-row"><span class="type-label">Label · 13 / 500 · caps</span><span class="type-sample sans s-13 caps w-500">Статы персонажа</span></div>
+          <div class="type-sample-row"><span class="type-label">Button · 13 / 600 · caps</span><span class="type-sample sans s-13 caps w-600">Бросить d20</span></div>
+          <div class="type-sample-row"><span class="type-label">Caption · 11 / 400</span><span class="type-sample sans s-11 muted">2 мин назад · скрытый бросок</span></div>
+        </div>
+        <p class="type-note"><b>Когда использовать.</b> Весь UI: кнопки, лейблы, body-текст в панелях, подписи, навигация. Болгарские формы «к/ж/д» делают интерфейс узнаваемым, но без декоративности.</p>
+      </div>
+    </div>
+
+    <div class="preview">
+      <p class="preview-title">Пара в паре</p>
+      <div class="preview-row">
+        <div class="mock-panel" style="min-width: 320px; border-color: var(--vtt-border-gold)">
+          <p class="mock-panel-title" style="font-size: 18px">Элара Рассветная</p>
+          <p class="mock-panel-body" style="margin-bottom: 10px">Полуэльфийка-паладин · уровень 7</p>
+          <div style="display: flex; gap: 14px; font-family: var(--font-sans); font-size: 12px; color: var(--vtt-text-muted); text-transform: uppercase; letter-spacing: 0.08em">
+            <span>HP 27/44</span><span>КД 18</span><span>Скорость 9 м</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. BACKGROUND -->
+  <section class="group">
+    <h2>Background / Surface</h2>
+    <p class="group-lead">Слои тёмного фона. Чем выше элемент в иерархии интерфейса (модалка, всплывашка), тем светлее его поверхность — это создаёт ощущение глубины без использования теней.</p>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-bg-base)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-bg-base</p>
+          <span class="swatch-hex" data-hex="#0E0B08">#0E0B08</span>
+          <p class="swatch-note"><b>Самый нижний слой.</b> Фон канваса карты, заливка страницы. Не использовать под длинный текст — слишком глубокий.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-bg-surface)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-bg-surface</p>
+          <span class="swatch-hex" data-hex="#1A1510">#1A1510</span>
+          <p class="swatch-note"><b>Основные панели UI.</b> Боковая панель чата, список инициативы, шит персонажа — всё, что «лежит» на фоне карты.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-bg-elevated)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-bg-elevated</p>
+          <span class="swatch-hex" data-hex="#241C15">#241C15</span>
+          <p class="swatch-note"><b>Плавающие поверхности.</b> Модалки, всплывающие меню, тултипы действий, открытая карточка монстра поверх панели.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-bg-sunken)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-bg-sunken</p>
+          <span class="swatch-hex" data-hex="#07050A">#07050A</span>
+          <p class="swatch-note"><b>Утопленные области.</b> Ячейки инвентаря, подложка HP-бара, лог событий — всё, куда элементы «вдавлены».</p>
+        </div>
+      </div>
+    </div>
+    <div class="preview">
+      <p class="preview-title">В деле</p>
+      <div class="preview-row">
+        <div class="mock-map">
+          <div class="token" style="background: #C94A3B; left: 28px; top: 40px"></div>
+          <div class="token" style="background: #5A7A8E; left: 80px; top: 70px"></div>
+          <div class="token" style="background: #D4A857; left: 140px; top: 50px"></div>
+        </div>
+        <div class="mock-panel">
+          <p class="mock-panel-title">Инициатива</p>
+          <p class="mock-panel-body">Панель поверх карты — заметная граница, но без контраста с фоном.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. BORDER -->
+  <section class="group">
+    <h2>Border / Divider</h2>
+    <p class="group-lead">Границы тоже тёплые, не серые — это ключ к стилю. Золотая окантовка используется экономно: рамка карты боя, активная панель, декоративные углы.</p>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-border-subtle)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-border-subtle</p>
+          <span class="swatch-hex" data-hex="#2E251C">#2E251C</span>
+          <p class="swatch-note"><b>Внутренние разделители.</b> Строки в таблице инициативы, разделение секций в шите персонажа.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-border-strong)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-border-strong</p>
+          <span class="swatch-hex" data-hex="#4A3A28">#4A3A28</span>
+          <p class="swatch-note"><b>Рамки панелей.</b> Внешние границы крупных блоков UI, граница input'а в фокусе.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-border-gold)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-border-gold</p>
+          <span class="swatch-hex" data-hex="#8C6A3A">#8C6A3A</span>
+          <p class="swatch-note"><b>Декоративная золотая окантовка.</b> Только для значимого: рамка карты, активный ход, важная модалка. Не злоупотреблять.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. ACCENT -->
+  <section class="group">
+    <h2>Accent — золото</h2>
+    <p class="group-lead">Главный бренд-акцент. Золотой — это действия игрока, активные состояния, заголовки. На тёмном фоне читается как «важно» и «благородно», поэтому используйте строго для значимых элементов.</p>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-accent)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-accent</p>
+          <span class="swatch-hex" data-hex="#D4A857">#D4A857</span>
+          <p class="swatch-note"><b>Основной акцент.</b> Главная кнопка «Бросить», индикатор активного хода, выделение выбранного токена.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-accent-soft)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-accent-soft</p>
+          <span class="swatch-hex" data-hex="#E4C9A0">#E4C9A0</span>
+          <p class="swatch-note"><b>Мягкий тёплый.</b> Крупные заголовки (serif), имя персонажа, hover-состояние текстовых ссылок.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-accent-deep)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-accent-deep</p>
+          <span class="swatch-hex" data-hex="#8C6A3A">#8C6A3A</span>
+          <p class="swatch-note"><b>Приглушённый акцент.</b> Eyebrow-лейблы (моно-капс), неактивная вкладка, обводка золотой кнопки.</p>
+        </div>
+      </div>
+    </div>
+    <div class="preview">
+      <p class="preview-title">В деле</p>
+      <div class="preview-row">
+        <button class="btn btn-hero">Бросить d20</button>
+        <button class="btn btn-ghost">Отмена</button>
+        <div class="mock-panel" style="border-color: var(--vtt-accent-deep)">
+          <p class="mock-panel-title">Ход: Элара</p>
+          <p class="mock-panel-body">Бронзовая рамка = активный игрок</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. DANGER -->
+  <section class="group">
+    <h2>Danger / Красный империи</h2>
+    <p class="group-lead">Приглушённый вино-красный из мудборда. Используется не только для ошибок — это цвет здоровья, врагов, агрессивных действий. Яркая версия — только для критических состояний.</p>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-danger)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-danger</p>
+          <span class="swatch-hex" data-hex="#792B3B">#792B3B</span>
+          <p class="swatch-note"><b>Основной красный.</b> HP-бар, маркер враждебного NPC, кнопка «Удалить», атакующее действие.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-danger-bright)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-danger-bright</p>
+          <span class="swatch-hex" data-hex="#B23B4F">#B23B4F</span>
+          <p class="swatch-note"><b>Критическая подсветка.</b> Мигание при критическом HP, текст крит-урона в логе. Экономно, чтобы сохранить силу сигнала.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-danger-soft)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-danger-soft</p>
+          <span class="swatch-hex" data-hex="#3A1820">#3A1820</span>
+          <p class="swatch-note"><b>Фон уведомлений об ошибке.</b> Подложка инлайн-ошибки валидации, заливка чипа danger.</p>
+        </div>
+      </div>
+    </div>
+    <div class="preview">
+      <p class="preview-title">В деле</p>
+      <div class="preview-row">
+        <div class="mock-hp">
+          <div class="mock-hp-label"><span>Элара</span><span>27 / 44</span></div>
+          <div class="mock-hp-track"><div class="mock-hp-fill"></div></div>
+        </div>
+        <button class="btn btn-danger">Атаковать</button>
+        <span class="mock-chip chip-danger">Критический урон</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. SEMANTIC -->
+  <section class="group">
+    <h2>Semantic — игровая логика</h2>
+    <p class="group-lead">Отдельные оттенки для лечения, предупреждений и подсказок. Все три намеренно приглушены и уведены в тёплую/холодную пыль, чтобы не конфликтовать с золотым и красным — палитра остаётся цельной.</p>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-success)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-success</p>
+          <span class="swatch-hex" data-hex="#6B8E4E">#6B8E4E</span>
+          <p class="swatch-note"><b>Успех, лечение.</b> Зелёные цифры исцеления в логе, удачный бросок навыка, кнопка «Готов» в лобби.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-warning)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-warning</p>
+          <span class="swatch-hex" data-hex="#C08A3E">#C08A3E</span>
+          <p class="swatch-note"><b>Предостережение.</b> Истекающие эффекты (осталось 1 раунд), низкий HP (&lt; 50%), несохранённые изменения. Близко к золоту — не ставить рядом с accent.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-info)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-info</p>
+          <span class="swatch-hex" data-hex="#5A7A8E">#5A7A8E</span>
+          <p class="swatch-note"><b>Нейтральная информация.</b> Тултипы с правилами, системные сообщения в чате, подсказки мастеру.</p>
+        </div>
+      </div>
+    </div>
+    <div class="preview">
+      <p class="preview-title">В деле</p>
+      <div class="preview-row">
+        <span class="mock-chip chip-success">+8 HP · лечение</span>
+        <span class="mock-chip chip-warning">Эффект истекает</span>
+        <span class="mock-chip chip-info">Бросок с преимуществом</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. TEXT -->
+  <section class="group">
+    <h2>Text / Нейтрали</h2>
+    <p class="group-lead">Тёплый off-white вместо чистого белого — иначе текст «вылетает» из палитры. Иерархия через три уровня приглушённости, плюс инверсный для текста на золоте.</p>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-text-primary)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-text-primary</p>
+          <span class="swatch-hex" data-hex="#E4C9A0">#E4C9A0</span>
+          <p class="swatch-note"><b>Основной текст.</b> Весь body, параграфы, значения статов. Тёплый, слегка золотистый — не использовать #FFF.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-text-secondary)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-text-secondary</p>
+          <span class="swatch-hex" data-hex="#B6A893">#B6A893</span>
+          <p class="swatch-note"><b>Вторичный текст.</b> Описания предметов, контекст в тултипах, лейблы полей формы.</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-text-muted)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-text-muted</p>
+          <span class="swatch-hex" data-hex="#858484">#858484</span>
+          <p class="swatch-note"><b>Подписи и disabled.</b> Таймстемпы в чате, неактивные кнопки, служебные значения (HEX, ID).</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--vtt-text-inverse)"></div>
+        <div class="swatch-body">
+          <p class="swatch-token">--vtt-text-inverse</p>
+          <span class="swatch-hex" data-hex="#0E0B08">#0E0B08</span>
+          <p class="swatch-note"><b>Текст на светлом.</b> Только для контента поверх `--vtt-accent` (золотая кнопка) или поверх соломенного hover-фона.</p>
+        </div>
+      </div>
+    </div>
+    <div class="preview">
+      <p class="preview-title">В деле</p>
+      <div class="preview-row">
+        <div class="text-sample">
+          <h4>Элара Рассветная</h4>
+          <p class="t-primary">Полуэльфийка-паладин · ур. 7</p>
+          <p class="t-secondary">HP 27/44 · КД 18 · Скорость 9 м</p>
+          <p class="t-muted">Последний ход: 2 мин назад</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. PLAYER TOKENS -->
+  <section class="group">
+    <h2>Player tokens</h2>
+    <p class="group-lead">Цвета для маркеров персонажей на карте. Все шесть специально подобраны так, чтобы различаться на тёмном фоне, но оставаться в гамме мудборда — без электрических тонов. Этого набора хватает на партию до 6 игроков; враги и NPC используют красный/серый.</p>
+    <div class="players">
+      <div class="player-token"><div class="dot" style="background: #C94A3B"></div><span class="hex">#C94A3B</span></div>
+      <div class="player-token"><div class="dot" style="background: #D4A857"></div><span class="hex">#D4A857</span></div>
+      <div class="player-token"><div class="dot" style="background: #6B8E4E"></div><span class="hex">#6B8E4E</span></div>
+      <div class="player-token"><div class="dot" style="background: #5A7A8E"></div><span class="hex">#5A7A8E</span></div>
+      <div class="player-token"><div class="dot" style="background: #8A5AA8"></div><span class="hex">#8A5AA8</span></div>
+      <div class="player-token"><div class="dot" style="background: #C08A3E"></div><span class="hex">#C08A3E</span></div>
+    </div>
+  </section>
+
+  <!-- GEOMETRY & EFFECTS -->
+  <section class="group">
+    <h2>Геометрия и эффекты</h2>
+    <p class="group-lead">UI максимально сдержан. Плоские поверхности, тонкие границы, скромные радиусы, строгая 4-кратная сетка. «Магия» не живёт в кнопках — она живёт в атмосфере сцены: тёплом свете на карте, frosted-glass модалках поверх мира, виньетке по краям. Интерфейс уходит в тень, чтобы приключение вышло вперёд.</p>
+
+    <div class="tokens-grid">
+
+      <div class="token-card">
+        <h3>Радиусы</h3>
+        <p>Мелкие для UI-элементов (кнопки, инпуты) — хранят медиевальную точность. Крупные (<code>--r-lg</code>+) только для магических карточек и модалок.</p>
+        <div class="radius-row">
+          <div class="radius-chip" style="border-radius: var(--r-xs)">2</div>
+          <div class="radius-chip" style="border-radius: var(--r-sm)">4</div>
+          <div class="radius-chip" style="border-radius: var(--r-md)">8</div>
+          <div class="radius-chip" style="border-radius: var(--r-lg)">14</div>
+          <div class="radius-chip" style="border-radius: var(--r-xl)">22</div>
+          <div class="radius-chip" style="border-radius: var(--r-pill)">∞</div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h3>Отступы</h3>
+        <p>Шкала 4-кратная: <code>4 · 8 · 12 · 16 · 24 · 32 · 48</code>. Плотные значения для данных в панелях, крупные — для воздуха между секциями.</p>
+        <div class="spacing-row" style="height: 60px; padding-bottom: 22px">
+          <div class="spacing-bar" style="height: 4px"><span>4</span></div>
+          <div class="spacing-bar" style="height: 8px"><span>8</span></div>
+          <div class="spacing-bar" style="height: 12px"><span>12</span></div>
+          <div class="spacing-bar" style="height: 16px"><span>16</span></div>
+          <div class="spacing-bar" style="height: 24px"><span>24</span></div>
+          <div class="spacing-bar" style="height: 32px"><span>32</span></div>
+          <div class="spacing-bar" style="height: 48px"><span>48</span></div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h3>Высоты (тени)</h3>
+        <p>Четыре уровня теней — тёплые, с внутренней подсветкой сверху. Чем выше слой, тем мягче и шире рассеяние. <code>shadow-inset</code> отдельно — для утопленных полей.</p>
+        <div class="elevation-row">
+          <div class="elevation-card e1">e1</div>
+          <div class="elevation-card e2">e2</div>
+          <div class="elevation-card e3">e3</div>
+          <div class="elevation-card e4">e4</div>
+        </div>
+      </div>
+
+      <div class="token-card">
+        <h3>Состояния</h3>
+        <p>Подсветка состояний — через цвет границы и тихий 2–3px ring. Никаких «магических» свечений на обычных элементах: свет бережём для атмосферы сцены, а не для UI.</p>
+        <div class="state-row">
+          <div class="state-chip">default</div>
+          <div class="state-chip focus">focus</div>
+          <div class="state-chip active">active</div>
+          <div class="state-chip danger">danger</div>
+        </div>
+      </div>
+
+      <div class="token-card" style="grid-column: span 2">
+        <h3>Frosted glass</h3>
+        <p>Для всплывающих слоёв поверх карты: модалки, оверлеи действий, тултипы над токенами. <code>backdrop-filter: blur(14px)</code> + полупрозрачный тёплый фон. Даёт ощущение, что интерфейс «плывёт» над сценой.</p>
+        <div class="glass-stage">
+          <div class="glass-card">Заклинание: Огненный шар</div>
+        </div>
+      </div>
+
+      <div class="token-card" style="grid-column: span 2">
+        <h3>Ambient light · свет костра</h3>
+        <p>Радиальные градиенты в тёплых тонах + виньетка по краям. Главный фокус получает «свет», края уходят в темноту. На карте боя — свет исходит от активного токена, факела, алтаря. Это и есть «магия без декораций».</p>
+        <div class="ambient-stage"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMPONENTS -->
+  <section class="group">
+    <h2>Компоненты</h2>
+    <p class="group-lead">Плоско, строго, типографика ведёт. Золотая заливка появляется только на одной ключевой кнопке в контексте; всё остальное — тёмные поверхности, тихие границы, акценты через цвет текста.</p>
+
+    <div class="components-grid">
+
+      <div class="comp-card">
+        <h3>Кнопки</h3>
+        <p class="comp-lead">Плоские, без градиентов. Primary — тёмная с золотым текстом. Сплошная золотая заливка (<code style="font-family: var(--font-mono); color: var(--vtt-accent); font-size: 11px">btn-hero</code>) — только для одного ключевого действия в контексте.</p>
+        <div class="comp-row">
+          <button class="btn btn-hero">Начать сессию</button>
+          <button class="btn btn-primary">Бросить d20</button>
+          <button class="btn btn-ghost">Отмена</button>
+        </div>
+        <div class="comp-row">
+          <button class="btn btn-danger">Атаковать</button>
+          <button class="btn btn-danger-ghost">Удалить</button>
+          <button class="btn btn-icon">⚔</button>
+          <button class="btn btn-icon">⛨</button>
+          <button class="btn btn-icon">⚙</button>
+          <button class="btn btn-icon-sm">✕</button>
+          <button class="btn btn-icon-sm">＋</button>
+        </div>
+        <div class="comp-row">
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-ghost btn-sm">Ghost SM</button>
+          <button class="btn btn-primary is-disabled">Не готов</button>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <h3>Поля и управление</h3>
+        <p class="comp-lead">Утопленные поля (shadow-inset) — ощущение «выгравировано». Focus-ring мягкий, золотой.</p>
+        <div style="margin-bottom: 14px">
+          <label class="field-label">Имя персонажа</label>
+          <input class="input" placeholder="например, Элара Рассветная" value="Элара Рассветная">
+        </div>
+        <div style="margin-bottom: 14px">
+          <label class="field-label">Заметка мастера</label>
+          <input class="input" placeholder="скрыта от игроков">
+        </div>
+        <label class="field-label">Режим отображения</label>
+        <div class="segmented">
+          <button class="active">Карта</button>
+          <button>Сцена</button>
+          <button>Театр</button>
+        </div>
+      </div>
+
+      <div class="comp-card" style="background: transparent; border: 0; padding: 0; box-shadow: none">
+        <div class="feature-card">
+          <p class="eyebrow-sm">Артефакт · редкий</p>
+          <h4>Свиток воскрешения</h4>
+          <p>Однократное применение. Требует компонента: бриллиант стоимостью не менее 500 зм. Восстанавливает жизнь существу, погибшему не более 10 дней назад.</p>
+          <div style="margin-top: 18px; display: flex; gap: 10px">
+            <button class="btn btn-hero btn-sm">Прочесть</button>
+            <button class="btn btn-ghost btn-sm">В инвентарь</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <h3>Токены на карте</h3>
+        <p class="comp-lead">Прямоугольные со скруглением — строже и современнее круглых. Активный ход отмечен тонким золотым кольцом, враг — красной границей. Значок в углу — инициатива.</p>
+        <div class="comp-row" style="gap: 18px; padding: 14px 6px">
+          <div class="battle-token">Э<span class="initiative">18</span></div>
+          <div class="battle-token active">Т<span class="initiative">15</span></div>
+          <div class="battle-token">К<span class="initiative">12</span></div>
+          <div class="battle-token enemy">⛧<span class="initiative">9</span></div>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <h3>Тултип</h3>
+        <p class="comp-lead">Frosted glass поверх сцены. Имя — serif-заголовок, описание — secondary-текст. Появляется при наведении на токен или предмет.</p>
+        <div class="comp-row" style="padding: 14px 0">
+          <div class="tooltip">
+            <b>Горящая стрела</b>
+            1d6 колющий + 1d4 огненный. Дистанция: 24/72 м. Боеприпас.
+          </div>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <h3>HP и статусы</h3>
+        <p class="comp-lead">Прогресс-бар с градиентом danger. Чипы статусов — frosted, с цветной обводкой под семантику.</p>
+        <div class="comp-row" style="flex-direction: column; align-items: stretch; gap: 12px">
+          <div class="mock-hp">
+            <div class="mock-hp-label"><span>Элара</span><span>27 / 44</span></div>
+            <div class="mock-hp-track"><div class="mock-hp-fill"></div></div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <span class="mock-chip chip-success">Благословение</span>
+            <span class="mock-chip chip-warning">Яд · 2 раунда</span>
+            <span class="mock-chip chip-info">Невидимость</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    VTT DESIGN · STYLEGUIDE v0.3 · GEOMETRY, EFFECTS, COMPONENTS
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('.swatch-hex').forEach(el => {
+    el.addEventListener('click', () => {
+      const hex = el.dataset.hex || el.textContent.trim();
+      navigator.clipboard?.writeText(hex);
+      const original = el.textContent;
+      el.textContent = 'скопировано · ' + hex;
+      el.classList.add('copied');
+      setTimeout(() => {
+        el.textContent = original;
+        el.classList.remove('copied');
+      }, 1100);
+    });
+  });
+</script>
+</body>
+</html>

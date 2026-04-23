@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Dice Drawer · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-drawer: -16px 0 48px -8px rgba(0, 0, 0, 0.55), -2px 0 0 rgba(140, 106, 58, 0.14);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 760px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 6px; display: block;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ================================================================
+     DICE ROW — атом (строка истории одного броска)
+     ================================================================
+     Состояния:
+       .dice-row                 — обычный
+       .dice-row.is-crit         — максимум (12 на 2d6, 20 на d20)
+       .dice-row.is-fail         — минимум / провал (≤6 на 2d6)
+       .dice-row.is-damage       — бросок урона (другой значок)
+       .dice-row.is-untagged     — без подписи (ручной бросок)
+  */
+  .dice-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .dice-row:hover { border-color: var(--vtt-border-strong); }
+  .dice-row + .dice-row { margin-top: 6px; }
+
+  /* значок слева — кубик или капля (урон) */
+  .dice-row-glyph {
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--vtt-text-muted);
+    flex-shrink: 0;
+  }
+  .dice-row-glyph svg { width: 16px; height: 16px; }
+
+  /* тело — формула и брейкдаун */
+  .dice-row-body { min-width: 0; }
+  .dice-row-meta {
+    display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    margin-bottom: 2px;
+  }
+  .dice-row-meta b {
+    color: var(--vtt-accent-deep); font-weight: 500;
+  }
+  .dice-row-meta .dot {
+    width: 3px; height: 3px; border-radius: var(--r-pill);
+    background: var(--vtt-text-muted); opacity: 0.6;
+  }
+  .dice-row-formula {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    color: var(--vtt-text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dice-row-formula .f-expr {
+    color: var(--vtt-text-primary);
+    font-weight: 500;
+  }
+  .dice-row-formula .f-rolls {
+    color: var(--vtt-text-muted);
+    font-style: italic;
+    margin: 0 4px;
+  }
+  .dice-row-formula .f-rolls em {
+    color: var(--vtt-text-secondary);
+    font-style: normal;
+  }
+  .dice-row-formula .f-mod {
+    color: var(--vtt-text-muted);
+  }
+
+  /* чип с результатом справа */
+  .dice-row-result {
+    min-width: 42px;
+    height: 42px; padding: 0 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--vtt-accent-soft);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* критический успех — золото + glow */
+  .dice-row.is-crit {
+    border-color: var(--vtt-border-gold);
+    background: linear-gradient(to right, rgba(140, 106, 58, 0.1), var(--vtt-bg-surface) 50%);
+  }
+  .dice-row.is-crit .dice-row-result {
+    background: var(--vtt-accent);
+    border-color: var(--vtt-accent);
+    color: var(--vtt-bg-base);
+    box-shadow: 0 0 16px rgba(212, 168, 87, 0.24);
+  }
+  .dice-row.is-crit .dice-row-glyph { color: var(--vtt-accent); }
+
+  /* провал — приглушённый красный */
+  .dice-row.is-fail {
+    border-color: rgba(121, 43, 59, 0.45);
+  }
+  .dice-row.is-fail .dice-row-result {
+    border-color: rgba(121, 43, 59, 0.55);
+    color: var(--vtt-danger-bright);
+    background: rgba(121, 43, 59, 0.08);
+  }
+  .dice-row.is-fail .dice-row-glyph { color: var(--vtt-danger-bright); opacity: 0.75; }
+
+  /* урон — капля */
+  .dice-row.is-damage .dice-row-glyph { color: var(--vtt-danger-bright); }
+
+  /* свежий бросок (подсветка на пару секунд) */
+  @keyframes dice-row-fresh {
+    0%   { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.25); }
+    100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
+  }
+  .dice-row.is-fresh { animation: dice-row-fresh 1600ms var(--ease); }
+
+  /* ================================================================
+     LOG ROW — атом (строка изменения листа персонажа)
+     ================================================================
+     Та же сетка, что у .dice-row: иконка → мета+суть → чип-дельта справа.
+     Типы (.is-*):
+       hp-damage / hp-heal      — урон и восстановление
+       xp                       — получен опыт
+       levelup                  — новый уровень (золото + glow, как крит)
+       attr                     — изменение характеристики
+       inventory-add / remove   — предмет получен / потерян / сломан
+       coin-earn / coin-spend   — монета
+       equip / unequip          — надето / снято
+       magic                    — заклинание, ритуал, ртуть
+  */
+  .log-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .log-row:hover { border-color: var(--vtt-border-strong); }
+  .log-row + .log-row,
+  .log-row + .dice-row,
+  .dice-row + .log-row { margin-top: 6px; }
+
+  .log-row-glyph {
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--vtt-text-muted);
+    flex-shrink: 0;
+  }
+  .log-row-glyph svg { width: 16px; height: 16px; }
+
+  .log-row-body { min-width: 0; }
+  .log-row-meta {
+    display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    margin-bottom: 2px;
+  }
+  .log-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; }
+  .log-row-meta .dot {
+    width: 3px; height: 3px; border-radius: var(--r-pill);
+    background: var(--vtt-text-muted); opacity: 0.6;
+  }
+  .log-row-label {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    color: var(--vtt-text-primary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .log-row-label em {
+    color: var(--vtt-accent-soft);
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  /* чип-дельта справа: +3 HP, −22 с, 2 / 3 ртути */
+  .log-row-delta {
+    min-width: 52px;
+    height: 42px; padding: 0 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--vtt-accent-soft);
+    line-height: 1;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .log-row-delta .unit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    margin-left: 3px;
+    color: var(--vtt-text-muted);
+    text-transform: uppercase;
+  }
+
+  /* --- состояния по типу события --- */
+  .log-row.is-hp-damage .log-row-glyph { color: var(--vtt-danger-bright); }
+  .log-row.is-hp-damage .log-row-delta {
+    color: var(--vtt-danger-bright);
+    border-color: rgba(178, 59, 79, 0.4);
+    background: rgba(121, 43, 59, 0.08);
+  }
+
+  .log-row.is-hp-heal .log-row-glyph { color: var(--vtt-success); }
+  .log-row.is-hp-heal .log-row-delta {
+    color: var(--vtt-success);
+    border-color: rgba(107, 142, 78, 0.4);
+    background: rgba(107, 142, 78, 0.08);
+  }
+
+  .log-row.is-xp .log-row-glyph { color: var(--vtt-accent); }
+  .log-row.is-xp .log-row-delta {
+    color: var(--vtt-accent);
+    border-color: rgba(212, 168, 87, 0.3);
+  }
+
+  .log-row.is-levelup {
+    border-color: var(--vtt-border-gold);
+    background: linear-gradient(to right, rgba(140, 106, 58, 0.1), var(--vtt-bg-surface) 50%);
+  }
+  .log-row.is-levelup .log-row-glyph { color: var(--vtt-accent); }
+  .log-row.is-levelup .log-row-delta {
+    background: var(--vtt-accent);
+    border-color: var(--vtt-accent);
+    color: var(--vtt-bg-base);
+    box-shadow: 0 0 16px rgba(212, 168, 87, 0.24);
+    font-size: 22px;
+  }
+
+  .log-row.is-attr .log-row-glyph { color: var(--vtt-accent-deep); }
+  .log-row.is-attr .log-row-delta {
+    color: var(--vtt-accent);
+    border-color: rgba(212, 168, 87, 0.3);
+  }
+
+  .log-row.is-coin-earn .log-row-glyph { color: var(--vtt-success); }
+  .log-row.is-coin-earn .log-row-delta { color: var(--vtt-success); }
+
+  .log-row.is-coin-spend .log-row-glyph { color: var(--vtt-warning); }
+  .log-row.is-coin-spend .log-row-delta { color: var(--vtt-warning); }
+
+  .log-row.is-inventory-add .log-row-glyph { color: var(--vtt-accent-deep); }
+
+  .log-row.is-inventory-remove .log-row-glyph { color: var(--vtt-text-muted); opacity: 0.7; }
+  .log-row.is-inventory-remove .log-row-label {
+    color: var(--vtt-text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--vtt-border-strong);
+  }
+  .log-row.is-inventory-remove .log-row-delta { color: var(--vtt-text-muted); }
+
+  .log-row.is-equip .log-row-glyph { color: var(--vtt-accent-deep); }
+  .log-row.is-unequip .log-row-glyph { color: var(--vtt-text-muted); opacity: 0.7; }
+  .log-row.is-unequip .log-row-label { color: var(--vtt-text-secondary); }
+
+  .log-row.is-magic .log-row-glyph { color: var(--vtt-info); }
+
+  .log-row.is-fresh { animation: dice-row-fresh 1600ms var(--ease); }
+
+  /* ================================================================
+     DATE DIVIDER
+     ================================================================ */
+  .dice-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 14px 4px 8px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .dice-divider::before,
+  .dice-divider::after {
+    content: ""; flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--vtt-border-subtle), transparent);
+  }
+  .dice-divider.first::before { background: transparent; }
+  .dice-divider.last::after { background: transparent; }
+
+  /* ================================================================
+     QUICK-ROLL CHIPS — стандартные кубики одним тапом
+     ================================================================ */
+  .quick-rolls {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .qr-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 4px;
+    min-width: 44px;
+    height: 30px;
+    padding: 0 10px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .qr-chip:hover {
+    color: var(--vtt-accent);
+    border-color: var(--vtt-border-gold);
+    background: var(--vtt-bg-elevated);
+  }
+  .qr-chip.is-highlight {
+    color: var(--vtt-accent);
+    border-color: var(--vtt-accent-deep);
+  }
+
+  /* ================================================================
+     DICE INPUT — поле формулы + hero «Бросить»
+     ================================================================ */
+  .dice-input {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .dice-input input {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 10px 16px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-primary);
+    outline: none;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .dice-input input::placeholder { color: var(--vtt-text-muted); }
+  .dice-input input:focus { border-color: var(--vtt-border-gold); }
+
+  /* ================================================================
+     BUTTONS
+     ================================================================ */
+  .btn-hero {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    background: #A6833E;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    color: #1a1205;
+    font-family: var(--font-sans);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.02em; line-height: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+    white-space: nowrap;
+  }
+  .btn-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+  .btn-hero svg { width: 14px; height: 14px; }
+
+  /* Компактная икон-кнопка — drawer плотный, pill 38px бы перегрузил. Используем palette btn-icon-sm (28 r-xs) */
+  .btn-icon-sm {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .btn-icon-sm:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .btn-icon-sm svg { width: 14px; height: 14px; }
+
+  /* segmented (фильтр истории) */
+  .segmented {
+    display: inline-flex;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    padding: 2px;
+    gap: 2px;
+  }
+  .segmented button {
+    padding: 4px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--r-xs);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .segmented button:hover { color: var(--vtt-text-secondary); }
+  .segmented button.is-active {
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* ================================================================
+     DICE DRAWER — сам слой-панель справа
+     ================================================================ */
+  .dice-drawer {
+    width: 340px;
+    height: 640px; /* в демонстрации; в приложении — 100vh, sticky right */
+    display: flex;
+    flex-direction: column;
+    background:
+      linear-gradient(to bottom, rgba(26, 21, 16, 0.94), rgba(14, 11, 8, 0.96)),
+      var(--vtt-bg-surface);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border-left: 1px solid var(--vtt-border-strong);
+    box-shadow: var(--shadow-drawer);
+  }
+
+  .drawer-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .drawer-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+  }
+  .drawer-title svg { width: 18px; height: 18px; color: var(--vtt-accent); }
+  .drawer-header-actions {
+    display: flex; gap: 4px; align-items: center;
+  }
+
+  /* список занимает оставшееся место, скроллится */
+  .drawer-log {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 12px 14px;
+  }
+
+  /* фильтр под шапкой: Броски / Изменения / Всё */
+  .drawer-filter {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    background: rgba(7, 5, 10, 0.35);
+  }
+  .drawer-filter .segmented { display: flex; width: 100%; }
+  .drawer-filter .segmented button { flex: 1; padding: 5px 8px; }
+  .drawer-log::-webkit-scrollbar { width: 6px; }
+  .drawer-log::-webkit-scrollbar-thumb {
+    background: var(--vtt-border-strong);
+    border-radius: var(--r-pill);
+  }
+  .drawer-log::-webkit-scrollbar-track { background: transparent; }
+
+  /* пустое состояние */
+  .drawer-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px;
+    min-height: 200px;
+    color: var(--vtt-text-muted);
+    text-align: center;
+    padding: 0 24px;
+  }
+  .drawer-empty svg {
+    width: 48px; height: 48px; opacity: 0.4;
+    color: var(--vtt-accent-deep);
+  }
+  .drawer-empty .e-title {
+    font-family: var(--font-serif);
+    font-size: 15px; font-style: italic;
+    color: var(--vtt-text-secondary);
+  }
+  .drawer-empty .e-hint { font-size: 12px; }
+
+  /* блок быстрых бросков */
+  .drawer-quick {
+    padding: 10px 12px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    background: rgba(7, 5, 10, 0.5);
+  }
+  .drawer-quick-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    margin-bottom: 8px;
+  }
+
+  /* блок ввода формулы */
+  .drawer-input-bar {
+    padding: 12px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    background: rgba(7, 5, 10, 0.65);
+  }
+  .drawer-input-hint {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--vtt-text-muted);
+    margin-top: 6px;
+  }
+
+  /* ================================================================
+     DICE DRAWER COLLAPSED RAIL
+     ================================================================ */
+  .dice-rail {
+    width: 48px;
+    height: 640px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    align-items: center; justify-items: center;
+    padding: 14px 0;
+    background: var(--vtt-bg-surface);
+    border-left: 1px solid var(--vtt-border-strong);
+    box-shadow: var(--shadow-drawer);
+    cursor: pointer;
+  }
+  .dice-rail:hover { background: var(--vtt-bg-elevated); }
+  .dice-rail-icon {
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-sm);
+    color: var(--vtt-accent);
+    background: radial-gradient(circle, rgba(140, 106, 58, 0.16), transparent 70%);
+  }
+  .dice-rail-icon svg { width: 16px; height: 16px; }
+  .dice-rail-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .dice-rail-last {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--vtt-accent-soft);
+    line-height: 1;
+    padding-bottom: 2px;
+  }
+  .dice-rail-last.is-crit { color: var(--vtt-accent); }
+  .dice-rail-last.is-fail { color: var(--vtt-danger-bright); }
+
+  /* ================================================================
+     CONTEXT — превью как оно ложится на экран приложения
+     ================================================================ */
+  .app-frame {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    height: 640px;
+    background: var(--vtt-bg-base);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .app-frame-content {
+    padding: 24px 28px;
+    min-width: 0;
+    color: var(--vtt-text-muted);
+  }
+  .app-frame-content h3 {
+    font-family: var(--font-serif); font-size: 22px;
+    margin: 0 0 6px; color: var(--vtt-accent-soft);
+    font-weight: 400;
+  }
+  .app-frame-content .mock {
+    margin-top: 20px;
+    display: grid; gap: 10px;
+  }
+  .mock-block {
+    height: 44px;
+    border: 1px dashed var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+  }
+  .mock-block.tall { height: 120px; }
+  .mock-block.short { height: 28px; }
+
+  /* floating dice button — триггер открытия, в свернутом состоянии */
+  .dice-fab {
+    position: absolute;
+    right: 14px; bottom: 14px;
+    width: 56px; height: 56px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--vtt-accent);
+    border: 1px solid var(--vtt-accent);
+    border-radius: var(--r-pill);
+    color: var(--vtt-bg-base);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(140, 106, 58, 0.14);
+    cursor: pointer;
+  }
+  .dice-fab svg { width: 26px; height: 26px; }
+  .dice-fab-badge {
+    position: absolute; top: -4px; right: -4px;
+    min-width: 20px; height: 20px; padding: 0 5px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--vtt-danger-bright);
+    border: 2px solid var(--vtt-bg-base);
+    border-radius: var(--r-pill);
+    color: #fff;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <p class="eyebrow">VTT · Components · Dice</p>
+  <h1>Dice Drawer · Журнал</h1>
+  <p class="lead">
+    Глобальная панель справа — <b>общая для всего приложения</b>, не привязана к конкретному
+    персонажу или вкладке. Раньше здесь оседали только броски; теперь это единый фид «что
+    происходило с персонажем» — <b>броски, урон и лечение, опыт и уровень, характеристики,
+    инвентарь, экипировка, магия</b>. В шапке — тумблер <code>Броски · Изменения · Всё</code>.
+    Классический VTT-паттерн: лента снизу, newest-at-bottom, автопрокрутка к свежей записи.
+    В свернутом состоянии — узкий рейл с последним результатом.
+  </p>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>1. DiceRow · строка истории</h2>
+    <p class="group-lead">
+      Один атом лога. Левая иконка — тип броска (кубик / капля для урона). В центре — мета
+      (источник, время) и формула с расшифровкой бросков. Справа — крупный результат в чипе.
+      Состояния кодируют <b>цветом результата</b>, а не лейблом.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Варианты</p>
+
+      <div style="display: grid; gap: 14px;">
+
+        <div>
+          <span class="variant-label">обычный бросок по характеристике</span>
+          <div class="dice-row">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>Тарн<span class="dot"></span>14:22</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">2d6+1</span>
+                <span class="f-rolls">·&nbsp;<em>4</em> + <em>3</em></span>
+                <span class="f-mod">+ 1</span>
+              </div>
+            </div>
+            <div class="dice-row-result">8</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">критический успех (12 на 2d6)</span>
+          <div class="dice-row is-crit">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>Тарн<span class="dot"></span>14:24</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">2d6</span>
+                <span class="f-rolls">·&nbsp;<em>6</em> + <em>6</em></span>
+              </div>
+            </div>
+            <div class="dice-row-result">12</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">провал (≤6 на 2d6)</span>
+          <div class="dice-row is-fail">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>ИНТ</b><span class="dot"></span>Тарн<span class="dot"></span>14:26</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">2d6</span>
+                <span class="f-rolls">·&nbsp;<em>2</em> + <em>3</em></span>
+              </div>
+            </div>
+            <div class="dice-row-result">5</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">бросок урона — значок капли</span>
+          <div class="dice-row is-damage">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1.5 C8 1.5 3 6.5 3 10 C3 12.761 5.239 15 8 15 C10.761 15 13 12.761 13 10 C13 6.5 8 1.5 8 1.5 Z"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>Урон</b><span class="dot"></span>лук<span class="dot"></span>14:28</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">d6+2</span>
+                <span class="f-rolls">·&nbsp;<em>5</em></span>
+                <span class="f-mod">+ 2</span>
+              </div>
+            </div>
+            <div class="dice-row-result">7</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">ручной бросок без подписи</span>
+          <div class="dice-row">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/>
+                <circle cx="5.5" cy="5.5" r="0.9" fill="currentColor"/>
+                <circle cx="10.5" cy="10.5" r="0.9" fill="currentColor"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>Ручной</b><span class="dot"></span>14:30</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">d20</span>
+                <span class="f-rolls">·&nbsp;<em>14</em></span>
+              </div>
+            </div>
+            <div class="dice-row-result">14</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">свежий (подсветка 1.6с после броска)</span>
+          <div class="dice-row is-fresh">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>ЛОВ</b><span class="dot"></span>Тарн<span class="dot"></span>сейчас</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">2d6+2</span>
+                <span class="f-rolls">·&nbsp;<em>5</em> + <em>4</em></span>
+                <span class="f-mod">+ 2</span>
+              </div>
+            </div>
+            <div class="dice-row-result">11</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        Подсказка «<b>f-rolls</b>» (в скобках, italic) показывает результат каждого дайса —
+        это важно для прозрачности бросков, особенно в офлайн-тейбле по Zoom'у. Если бросок
+        один кубик — скобки скрываем (см. вариант «ручной»).
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>2. LogRow · строка изменения листа</h2>
+    <p class="group-lead">
+      Тот же ритм, что у DiceRow: иконка → мета → суть → чип справа. Вместо формулы —
+      короткая фраза («Боевой меч», «Кольчуга надета», «Уровень 3»). Вместо результата —
+      <b>дельта</b> с единицей (HP, XP, с, брн). Цвет кодирует знак: красный — потеря,
+      зелёный — восстановление, золото — прогресс.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Типы событий</p>
+
+      <div style="display: grid; gap: 14px;">
+
+        <div>
+          <span class="variant-label">получен урон</span>
+          <div class="log-row is-hp-damage">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 14 s-5 -3.5 -5 -8 a3 3 0 0 1 5 -2.2 A3 3 0 0 1 13 6 c0 4.5 -5 8 -5 8 z"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Здоровье</b><span class="dot"></span>гоблин<span class="dot"></span>14:28</div>
+              <div class="log-row-label">Удар дубиной в плечо</div>
+            </div>
+            <div class="log-row-delta">−3 <span class="unit">HP</span></div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">восстановление HP</span>
+          <div class="log-row is-hp-heal">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M8 14 s-5 -3.5 -5 -8 a3 3 0 0 1 5 -2.2 A3 3 0 0 1 13 6 c0 4.5 -5 8 -5 8 z"/>
+                <path d="M8 5 v4 M6 7 h4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Здоровье</b><span class="dot"></span>привал<span class="dot"></span>18:00</div>
+              <div class="log-row-label">Короткий отдых у костра</div>
+            </div>
+            <div class="log-row-delta">+2 <span class="unit">HP</span></div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">получен опыт</span>
+          <div class="log-row is-xp">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1 l2 4.5 l5 0.4 l-3.8 3.3 l1.2 4.8 L8 11.5 L3.6 14 l1.2 -4.8 L1 5.9 l5 -0.4 z"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Опыт</b><span class="dot"></span>поход к болотам<span class="dot"></span>21:12</div>
+              <div class="log-row-label">Награда за сессию</div>
+            </div>
+            <div class="log-row-delta">+150 <span class="unit">XP</span></div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">новый уровень (золото + glow, как крит)</span>
+          <div class="log-row is-levelup">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M8 2 L2 8 h3 v5 h6 V8 h3 z"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Уровень</b><span class="dot"></span>Тарн<span class="dot"></span>21:14</div>
+              <div class="log-row-label">Поднят до <em>уровня 3</em>: +1 ВЫН, +4 HP</div>
+            </div>
+            <div class="log-row-delta">3</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">изменение характеристики</span>
+          <div class="log-row is-attr">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M2 12 l4 -4 l3 3 l5 -6"/>
+                <path d="M10 5 h4 v4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>ВЫН</b><span class="dot"></span>повышение<span class="dot"></span>21:15</div>
+              <div class="log-row-label"><em>14</em> → <em>15</em></div>
+            </div>
+            <div class="log-row-delta">+1</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">предмет получен</span>
+          <div class="log-row is-inventory-add">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M2 5 l6 -3 l6 3 v6 l-6 3 l-6 -3 z"/>
+                <path d="M2 5 l6 3 l6 -3 M8 8 v6"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Инвентарь</b><span class="dot"></span>находка<span class="dot"></span>21:18</div>
+              <div class="log-row-label">Боевой меч</div>
+            </div>
+            <div class="log-row-delta">+1</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">предмет потерян / сломан (зачёркнут)</span>
+          <div class="log-row is-inventory-remove">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M2 5 l6 -3 l6 3 v6 l-6 3 l-6 -3 z"/>
+                <path d="M2 5 l6 3 l6 -3 M8 8 v6"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Инвентарь</b><span class="dot"></span>сломано<span class="dot"></span>22:02</div>
+              <div class="log-row-label">Короткий лук</div>
+            </div>
+            <div class="log-row-delta">−1</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">пополнение монеты</span>
+          <div class="log-row is-coin-earn">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M8 5 v6 M6 7 h4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Монета</b><span class="dot"></span>награда<span class="dot"></span>21:18</div>
+              <div class="log-row-label">Выплата от старосты</div>
+            </div>
+            <div class="log-row-delta">+120 <span class="unit">с</span></div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">трата</span>
+          <div class="log-row is-coin-spend">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M5 8 h6" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Монета</b><span class="dot"></span>базар<span class="dot"></span>10:04</div>
+              <div class="log-row-label">Верёвка 10м, факелы ×3</div>
+            </div>
+            <div class="log-row-delta">−22 <span class="unit">с</span></div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">экипировка надета</span>
+          <div class="log-row is-equip">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M8 2 l5 2 v4 c0 3.5 -5 6 -5 6 s-5 -2.5 -5 -6 V4 z"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Экипировка</b><span class="dot"></span>14:20</div>
+              <div class="log-row-label">Кольчуга — <em>надета</em></div>
+            </div>
+            <div class="log-row-delta">+1 <span class="unit">брн</span></div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">экипировка снята</span>
+          <div class="log-row is-unequip">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M8 2 l5 2 v4 c0 3.5 -5 6 -5 6 s-5 -2.5 -5 -6 V4 z"/>
+                <path d="M3 3 l10 10" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Экипировка</b><span class="dot"></span>19:40</div>
+              <div class="log-row-label">Боевой меч — <em>снят</em></div>
+            </div>
+            <div class="log-row-delta">—</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">магия · ритуал / ртуть</span>
+          <div class="log-row is-magic">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M6 2 h4 v4 l3 6 a2.5 2.5 0 0 1 -2.3 3.4 H5.3 A2.5 2.5 0 0 1 3 12 z"/>
+                <path d="M6 8 h4"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Магия</b><span class="dot"></span>Вдох духа<span class="dot"></span>15:40</div>
+              <div class="log-row-label">Ритуал — <em>успех</em>, Ртуть</div>
+            </div>
+            <div class="log-row-delta">2 / 3</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        Дельта-чип справа — стандарт: знак (<b>+</b> / <b>−</b> / <b>—</b>), число, единица в
+        моношрифте. Длинные описания режутся ellipsis'ом — полный текст открывается в
+        hover-tooltip'е (deferред). Срок жизни событий в ленте тот же, что у бросков — 200
+        последних записей, потом молчаливая обрезка.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>3. Quick-roll chips · наборы кубиков</h2>
+    <p class="group-lead">
+      Стандартные кубики одним тапом. <b>2d6</b> подсвечена — это основной бросок системы.
+      Остальные кубики — для общих бросков и гомбрюшки, когда мастер скажет «d20 на восприятие».
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Наборы</p>
+
+      <div class="quick-rolls">
+        <button class="qr-chip">d4</button>
+        <button class="qr-chip">d6</button>
+        <button class="qr-chip">d8</button>
+        <button class="qr-chip">d10</button>
+        <button class="qr-chip">d12</button>
+        <button class="qr-chip">d20</button>
+        <button class="qr-chip is-highlight">2d6</button>
+        <button class="qr-chip">3d6</button>
+        <button class="qr-chip">d100</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>4. Dice input · ввод формулы</h2>
+    <p class="group-lead">
+      Ручной ввод любой формулы: <code>2d6+1</code>, <code>d20-2</code>, <code>4d6k3</code> (keep highest 3).
+      Hero-кнопка — единственный «сделать бросок здесь и сейчас».
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Поле + бросок</p>
+      <div style="max-width: 420px;">
+        <div class="dice-input">
+          <input type="text" placeholder="2d6+1, d20-2, 4d6k3…">
+          <button class="btn-hero">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+            </svg>
+            Бросить
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>5. Dice Drawer · свернутый рейл</h2>
+    <p class="group-lead">
+      Минимальное состояние: 48px, видна иконка, вертикальная надпись «Кубики» и
+      <b>последний результат</b> снизу. Тап — разворачивает панель.
+    </p>
+
+    <div class="stage" style="padding: 24px;">
+      <div style="display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;">
+
+        <div>
+          <span class="variant-label">обычный</span>
+          <div class="dice-rail" style="height: 320px;">
+            <div class="dice-rail-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </div>
+            <div class="dice-rail-label">Кубики</div>
+            <div class="dice-rail-last">8</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">после крита</span>
+          <div class="dice-rail" style="height: 320px;">
+            <div class="dice-rail-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </div>
+            <div class="dice-rail-label">Кубики</div>
+            <div class="dice-rail-last is-crit">12</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">после провала</span>
+          <div class="dice-rail" style="height: 320px;">
+            <div class="dice-rail-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </div>
+            <div class="dice-rail-label">Кубики</div>
+            <div class="dice-rail-last is-fail">5</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>6. Dice Drawer · раскрытая панель</h2>
+    <p class="group-lead">
+      Полный вид ~340px. Шапка с заголовком и фильтром. Лог с разделителями дней, свежий бросок
+      подсвечен. Внизу — быстрые кубики и поле формулы. Высота в приложении = <b>100vh</b>,
+      здесь зафиксирована 640px для демонстрации.
+    </p>
+
+    <div class="stage" style="padding: 24px;">
+      <div style="display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;">
+
+        <div>
+          <span class="variant-label">фильтр «Броски» — только кубы</span>
+          <div class="dice-drawer">
+
+            <div class="drawer-header">
+              <span class="drawer-title">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                </svg>
+                Журнал
+              </span>
+              <div></div>
+              <div class="drawer-header-actions">
+                <button class="btn-icon-sm" title="Очистить лог">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M3 4 L11 4 L10.3 12 L3.7 12 Z"/>
+                    <path d="M5.5 4 L5.5 2.5 L8.5 2.5 L8.5 4"/>
+                    <path d="M2 4 L12 4"/>
+                  </svg>
+                </button>
+                <button class="btn-icon-sm" title="Свернуть">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M10 3 L5 7 L10 11"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="drawer-filter">
+              <div class="segmented">
+                <button class="is-active">Броски</button>
+                <button>Изменения</button>
+                <button>Всё</button>
+              </div>
+            </div>
+
+            <div class="drawer-log">
+              <div class="dice-divider first"><span>Вчера · 20 апреля</span></div>
+
+              <div class="dice-row">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                    <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>МДР</b><span class="dot"></span>22:14</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">2d6</span>
+                    <span class="f-rolls">·&nbsp;<em>3</em> + <em>4</em></span>
+                  </div>
+                </div>
+                <div class="dice-row-result">7</div>
+              </div>
+
+              <div class="dice-row is-damage">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1.5 C8 1.5 3 6.5 3 10 C3 12.761 5.239 15 8 15 C10.761 15 13 12.761 13 10 C13 6.5 8 1.5 8 1.5 Z"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>Урон</b><span class="dot"></span>боевой меч<span class="dot"></span>22:16</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">d6+1</span>
+                    <span class="f-rolls">·&nbsp;<em>4</em></span>
+                    <span class="f-mod">+ 1</span>
+                  </div>
+                </div>
+                <div class="dice-row-result">5</div>
+              </div>
+
+              <div class="dice-divider"><span>Сегодня · 21 апреля</span></div>
+
+              <div class="dice-row">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                    <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>14:22</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">2d6+1</span>
+                    <span class="f-rolls">·&nbsp;<em>4</em> + <em>3</em></span>
+                    <span class="f-mod">+ 1</span>
+                  </div>
+                </div>
+                <div class="dice-row-result">8</div>
+              </div>
+
+              <div class="dice-row is-fail">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                    <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>ИНТ</b><span class="dot"></span>14:26</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">2d6</span>
+                    <span class="f-rolls">·&nbsp;<em>2</em> + <em>3</em></span>
+                  </div>
+                </div>
+                <div class="dice-row-result">5</div>
+              </div>
+
+              <div class="dice-row is-crit is-fresh">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                    <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>сейчас</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">2d6</span>
+                    <span class="f-rolls">·&nbsp;<em>6</em> + <em>6</em></span>
+                  </div>
+                </div>
+                <div class="dice-row-result">12</div>
+              </div>
+            </div>
+
+            <div class="drawer-quick">
+              <div class="drawer-quick-label">Быстрые</div>
+              <div class="quick-rolls">
+                <button class="qr-chip">d4</button>
+                <button class="qr-chip">d6</button>
+                <button class="qr-chip">d8</button>
+                <button class="qr-chip">d10</button>
+                <button class="qr-chip">d20</button>
+                <button class="qr-chip is-highlight">2d6</button>
+              </div>
+            </div>
+
+            <div class="drawer-input-bar">
+              <div class="dice-input">
+                <input type="text" placeholder="2d6+1, d20, 4d6k3…">
+                <button class="btn-hero">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  </svg>
+                  Бросить
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">пустой (новый игрок) · фильтр «Всё»</span>
+          <div class="dice-drawer">
+
+            <div class="drawer-header">
+              <span class="drawer-title">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                </svg>
+                Журнал
+              </span>
+              <div></div>
+              <div class="drawer-header-actions">
+                <button class="btn-icon-sm" title="Свернуть">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M10 3 L5 7 L10 11"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="drawer-filter">
+              <div class="segmented">
+                <button>Броски</button>
+                <button>Изменения</button>
+                <button class="is-active">Всё</button>
+              </div>
+            </div>
+
+            <div class="drawer-log">
+              <div class="drawer-empty">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                </svg>
+                <div class="e-title">Летопись пока чиста</div>
+                <div class="e-hint">Любой бросок, урон, находка или уровень осядут здесь</div>
+              </div>
+            </div>
+
+            <div class="drawer-quick">
+              <div class="drawer-quick-label">Быстрые</div>
+              <div class="quick-rolls">
+                <button class="qr-chip">d4</button>
+                <button class="qr-chip">d6</button>
+                <button class="qr-chip">d8</button>
+                <button class="qr-chip">d10</button>
+                <button class="qr-chip">d20</button>
+                <button class="qr-chip is-highlight">2d6</button>
+              </div>
+            </div>
+
+            <div class="drawer-input-bar">
+              <div class="dice-input">
+                <input type="text" placeholder="2d6+1, d20, 4d6k3…">
+                <button class="btn-hero">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  </svg>
+                  Бросить
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">смешанный лог · фильтр «Всё»</span>
+          <div class="dice-drawer">
+
+            <div class="drawer-header">
+              <span class="drawer-title">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                </svg>
+                Журнал
+              </span>
+              <div></div>
+              <div class="drawer-header-actions">
+                <button class="btn-icon-sm" title="Очистить лог">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M3 4 L11 4 L10.3 12 L3.7 12 Z"/>
+                    <path d="M5.5 4 L5.5 2.5 L8.5 2.5 L8.5 4"/>
+                    <path d="M2 4 L12 4"/>
+                  </svg>
+                </button>
+                <button class="btn-icon-sm" title="Свернуть">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M10 3 L5 7 L10 11"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="drawer-filter">
+              <div class="segmented">
+                <button>Броски</button>
+                <button>Изменения</button>
+                <button class="is-active">Всё</button>
+              </div>
+            </div>
+
+            <div class="drawer-log">
+              <div class="dice-divider first"><span>Сегодня · 21 апреля</span></div>
+
+              <div class="log-row is-coin-spend">
+                <span class="log-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <circle cx="8" cy="8" r="6"/>
+                    <path d="M5 8 h6" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div class="log-row-body">
+                  <div class="log-row-meta"><b>Монета</b><span class="dot"></span>базар<span class="dot"></span>10:04</div>
+                  <div class="log-row-label">Верёвка, факелы ×3</div>
+                </div>
+                <div class="log-row-delta">−22 <span class="unit">с</span></div>
+              </div>
+
+              <div class="log-row is-inventory-add">
+                <span class="log-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M2 5 l6 -3 l6 3 v6 l-6 3 l-6 -3 z"/>
+                    <path d="M2 5 l6 3 l6 -3 M8 8 v6"/>
+                  </svg>
+                </span>
+                <div class="log-row-body">
+                  <div class="log-row-meta"><b>Инвентарь</b><span class="dot"></span>10:05</div>
+                  <div class="log-row-label">Факелы ×3</div>
+                </div>
+                <div class="log-row-delta">+3</div>
+              </div>
+
+              <div class="log-row is-equip">
+                <span class="log-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M8 2 l5 2 v4 c0 3.5 -5 6 -5 6 s-5 -2.5 -5 -6 V4 z"/>
+                  </svg>
+                </span>
+                <div class="log-row-body">
+                  <div class="log-row-meta"><b>Экипировка</b><span class="dot"></span>14:20</div>
+                  <div class="log-row-label">Кольчуга — <em>надета</em></div>
+                </div>
+                <div class="log-row-delta">+1 <span class="unit">брн</span></div>
+              </div>
+
+              <div class="dice-row">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                    <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>14:22</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">2d6+1</span>
+                    <span class="f-rolls">·&nbsp;<em>4</em> + <em>3</em></span>
+                    <span class="f-mod">+ 1</span>
+                  </div>
+                </div>
+                <div class="dice-row-result">8</div>
+              </div>
+
+              <div class="log-row is-hp-damage">
+                <span class="log-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 14 s-5 -3.5 -5 -8 a3 3 0 0 1 5 -2.2 A3 3 0 0 1 13 6 c0 4.5 -5 8 -5 8 z"/>
+                  </svg>
+                </span>
+                <div class="log-row-body">
+                  <div class="log-row-meta"><b>Здоровье</b><span class="dot"></span>гоблин<span class="dot"></span>14:28</div>
+                  <div class="log-row-label">Удар дубиной</div>
+                </div>
+                <div class="log-row-delta">−3 <span class="unit">HP</span></div>
+              </div>
+
+              <div class="dice-row is-damage">
+                <span class="dice-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1.5 C8 1.5 3 6.5 3 10 C3 12.761 5.239 15 8 15 C10.761 15 13 12.761 13 10 C13 6.5 8 1.5 8 1.5 Z"/>
+                  </svg>
+                </span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>Урон</b><span class="dot"></span>боевой меч<span class="dot"></span>14:29</div>
+                  <div class="dice-row-formula">
+                    <span class="f-expr">d6+1</span>
+                    <span class="f-rolls">·&nbsp;<em>5</em></span>
+                    <span class="f-mod">+ 1</span>
+                  </div>
+                </div>
+                <div class="dice-row-result">6</div>
+              </div>
+
+              <div class="log-row is-xp">
+                <span class="log-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1 l2 4.5 l5 0.4 l-3.8 3.3 l1.2 4.8 L8 11.5 L3.6 14 l1.2 -4.8 L1 5.9 l5 -0.4 z"/>
+                  </svg>
+                </span>
+                <div class="log-row-body">
+                  <div class="log-row-meta"><b>Опыт</b><span class="dot"></span>21:12</div>
+                  <div class="log-row-label">Награда за сессию</div>
+                </div>
+                <div class="log-row-delta">+150 <span class="unit">XP</span></div>
+              </div>
+
+              <div class="log-row is-levelup is-fresh">
+                <span class="log-row-glyph">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 2 L2 8 h3 v5 h6 V8 h3 z"/>
+                  </svg>
+                </span>
+                <div class="log-row-body">
+                  <div class="log-row-meta"><b>Уровень</b><span class="dot"></span>сейчас</div>
+                  <div class="log-row-label">Поднят до <em>уровня 3</em></div>
+                </div>
+                <div class="log-row-delta">3</div>
+              </div>
+            </div>
+
+            <div class="drawer-quick">
+              <div class="drawer-quick-label">Быстрые</div>
+              <div class="quick-rolls">
+                <button class="qr-chip">d4</button>
+                <button class="qr-chip">d6</button>
+                <button class="qr-chip">d8</button>
+                <button class="qr-chip">d10</button>
+                <button class="qr-chip">d20</button>
+                <button class="qr-chip is-highlight">2d6</button>
+              </div>
+            </div>
+
+            <div class="drawer-input-bar">
+              <div class="dice-input">
+                <input type="text" placeholder="2d6+1, d20, 4d6k3…">
+                <button class="btn-hero">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  </svg>
+                  Бросить
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        Фильтр — <b>sticky за шапкой</b>, всегда на виду. Состояние запоминается локально
+        (localStorage), чтобы при возврате в приложение игрок увидел тот же срез, что смотрел
+        в прошлый раз. Кнопка «Бросить» и быстрые кубы <b>доступны всегда</b>, даже при фильтре
+        «Изменения» — они не относятся к просмотру ленты, это действия.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>7. В контексте приложения</h2>
+    <p class="group-lead">
+      Как панель садится поверх основного экрана. Слева — контент вкладки (лист персонажа, каталог,
+      магия — не важно). Справа — рейл или раскрытая панель. Когда панель свёрнута, поверх основного
+      контента висит <b>FAB</b> с бейджиком нового броска (для быстрого раскрытия, если игрок не видит рейл).
+    </p>
+
+    <div class="stage" style="padding: 24px;">
+
+      <span class="variant-label">свёрнутый рейл</span>
+      <div class="app-frame" style="margin-bottom: 20px;">
+        <div class="app-frame-content">
+          <h3>Основное · Тарн Ульрик</h3>
+          <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vtt-text-muted); margin-top: 6px;">Воин · уровень 3</div>
+          <div class="mock">
+            <div class="mock-block tall"></div>
+            <div class="mock-block"></div>
+            <div class="mock-block short"></div>
+            <div class="mock-block"></div>
+          </div>
+        </div>
+
+        <div class="dice-rail">
+          <div class="dice-rail-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+              <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+            </svg>
+          </div>
+          <div class="dice-rail-label">Кубики</div>
+          <div class="dice-rail-last">8</div>
+        </div>
+      </div>
+
+      <span class="variant-label">раскрытая панель</span>
+      <div class="app-frame">
+        <div class="app-frame-content">
+          <h3>Основное · Тарн Ульрик</h3>
+          <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vtt-text-muted); margin-top: 6px;">Воин · уровень 3</div>
+          <div class="mock">
+            <div class="mock-block tall"></div>
+            <div class="mock-block"></div>
+            <div class="mock-block short"></div>
+          </div>
+        </div>
+
+        <div class="dice-drawer">
+          <div class="drawer-header">
+            <span class="drawer-title">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+              Кубики
+            </span>
+            <div></div>
+            <div class="drawer-header-actions">
+              <button class="btn-icon-sm" title="Свернуть">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+                  <path d="M4 3 L9 7 L4 11"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="drawer-log">
+            <div class="dice-divider first last"><span>Сегодня · 21 апреля</span></div>
+
+            <div class="dice-row">
+              <span class="dice-row-glyph">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                </svg>
+              </span>
+              <div class="dice-row-body">
+                <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>14:22</div>
+                <div class="dice-row-formula">
+                  <span class="f-expr">2d6+1</span>
+                  <span class="f-rolls">·&nbsp;<em>4</em> + <em>3</em></span>
+                  <span class="f-mod">+ 1</span>
+                </div>
+              </div>
+              <div class="dice-row-result">8</div>
+            </div>
+
+            <div class="dice-row is-crit is-fresh">
+              <span class="dice-row-glyph">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                  <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+                </svg>
+              </span>
+              <div class="dice-row-body">
+                <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>сейчас</div>
+                <div class="dice-row-formula">
+                  <span class="f-expr">2d6</span>
+                  <span class="f-rolls">·&nbsp;<em>6</em> + <em>6</em></span>
+                </div>
+              </div>
+              <div class="dice-row-result">12</div>
+            </div>
+          </div>
+
+          <div class="drawer-quick">
+            <div class="drawer-quick-label">Быстрые</div>
+            <div class="quick-rolls">
+              <button class="qr-chip">d4</button>
+              <button class="qr-chip">d6</button>
+              <button class="qr-chip">d8</button>
+              <button class="qr-chip">d10</button>
+              <button class="qr-chip">d20</button>
+              <button class="qr-chip is-highlight">2d6</button>
+            </div>
+          </div>
+
+          <div class="drawer-input-bar">
+            <div class="dice-input">
+              <input type="text" placeholder="2d6+1, d20, 4d6k3…">
+              <button class="btn-hero">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                </svg>
+                Бросить
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <span class="variant-label" style="margin-top: 20px;">мобильный — FAB в углу, панель выдвигается снизу-справа</span>
+      <div class="app-frame" style="height: 380px;">
+        <div class="app-frame-content">
+          <h3>Инвентарь</h3>
+          <div class="mock">
+            <div class="mock-block"></div>
+            <div class="mock-block"></div>
+            <div class="mock-block"></div>
+            <div class="mock-block short"></div>
+          </div>
+          <div class="dice-fab" title="Открыть кости">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+              <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+            </svg>
+            <span class="dice-fab-badge">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>FAB с бейджиком</b> появляется, когда в логе есть непрочитанные броски,
+        сделанные «не игроком» (например, мастер бросил за NPC). Бейдж сбрасывается
+        при открытии панели. Если бросков нет — FAB всё равно виден, но без бейджа.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>8. Правила отображения</h2>
+    <p class="group-lead">Короткая памятка о том, как панель ведёт себя.</p>
+
+    <div class="stage">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Порядок</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Newest-at-bottom. Автопрокрутка к свежему броску, если пользователь уже внизу;
+            иначе появляется кнопка «↓ 3 новых» (не показана — deferред).
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Группировка</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Разделители по дням: «Сегодня», «Вчера», далее абсолютная дата. Разделитель
+            сам по себе — только eyebrow-текст с decorative-линией.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Состояния результата</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Крит (макс на всех кубиках) — золото + glow. Провал (≤6 на 2d6) — приглушённый
+            красный. Остальное — нейтральный чип.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Источник броска</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            В meta-строке: ярлык (<b>ВЫН</b>, <b>Урон</b>, <b>Ручной</b>), опционально —
+            имя персонажа и контекст (оружие, навык), время. Всё через тонкие точки.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Очистка</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Кнопка «корзина» в шапке — очищает весь лог (с confirm'ом). История персистится
+            локально (localStorage) — не привязана к конкретному чару.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Ограничение</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            В памяти держим последние <b>200 записей</b> (броски + изменения суммарно).
+            Старше — обрезаются молча. Для тейблтоп-сессии этого хватает на целый вечер.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Фильтр</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Sticky-тумблер <b>Броски · Изменения · Всё</b> под шапкой. Разделители дней
+            считаются по видимому срезу — если в день ничего нет, разделитель скрывается.
+            Состояние фильтра сохраняется локально.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Типы изменений</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Здоровье (урон / лечение), Опыт, Уровень, Характеристики, Инвентарь
+            (+ / − / сломано), Монета (+ / −), Экипировка (надето / снято), Магия
+            (ритуалы / заклинания / ртуть). Каждый тип — своя иконка и цвет дельты.
+          </p>
+        </div>
+
+        <div>
+          <div style="font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); margin-bottom: 6px;">Действия vs. просмотр</div>
+          <p style="color: var(--vtt-text-secondary); font-size: 13px; margin: 0;">
+            Быстрые кубики и поле формулы <b>всегда</b> видны и активны — даже на фильтре
+            «Изменения». Фильтр управляет только лентой, а не возможностью бросить.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="group">
+    <h2>9. Было / стало</h2>
+
+    <div class="stage">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+
+        <div>
+          <span class="variant-label" style="color: var(--vtt-danger-bright);">было</span>
+          <div style="
+            background: var(--vtt-bg-surface);
+            border: 1px solid var(--vtt-border-subtle);
+            border-radius: var(--r-sm);
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--vtt-text-muted);
+            line-height: 1.8;
+          ">
+            Бросков ещё не было<br>
+            ---<br>
+            [ Формула ] [Бросить]
+          </div>
+          <p style="color: var(--vtt-text-muted); font-size: 13px; margin-top: 10px;">
+            Отдельная вкладка «Кубики», пустая плашка, моноширинный ввод. Броски из листа
+            теряются, а урон / лечение / опыт / инвентарь <b>не трекаются вообще</b> —
+            восстановить по памяти, что было за сессию, невозможно.
+          </p>
+        </div>
+
+        <div>
+          <span class="variant-label" style="color: var(--vtt-success);">стало</span>
+          <div class="log-row is-levelup" style="margin-bottom: 6px;">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M8 2 L2 8 h3 v5 h6 V8 h3 z"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Уровень</b><span class="dot"></span>сейчас</div>
+              <div class="log-row-label">Поднят до <em>уровня 3</em></div>
+            </div>
+            <div class="log-row-delta">3</div>
+          </div>
+          <div class="log-row is-hp-damage" style="margin-bottom: 6px;">
+            <span class="log-row-glyph">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 14 s-5 -3.5 -5 -8 a3 3 0 0 1 5 -2.2 A3 3 0 0 1 13 6 c0 4.5 -5 8 -5 8 z"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta"><b>Здоровье</b><span class="dot"></span>гоблин<span class="dot"></span>14:28</div>
+              <div class="log-row-label">Удар дубиной</div>
+            </div>
+            <div class="log-row-delta">−3 <span class="unit">HP</span></div>
+          </div>
+          <div class="dice-row is-crit" style="margin-bottom: 6px;">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>сейчас</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">2d6</span>
+                <span class="f-rolls">·&nbsp;<em>6</em> + <em>6</em></span>
+              </div>
+            </div>
+            <div class="dice-row-result">12</div>
+          </div>
+          <div class="dice-row">
+            <span class="dice-row-glyph">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>14:22</div>
+              <div class="dice-row-formula">
+                <span class="f-expr">2d6+1</span>
+                <span class="f-rolls">·&nbsp;<em>4</em> + <em>3</em></span>
+                <span class="f-mod">+ 1</span>
+              </div>
+            </div>
+            <div class="dice-row-result">8</div>
+          </div>
+          <p style="color: var(--vtt-text-muted); font-size: 13px; margin-top: 10px;">
+            Глобальная панель — <b>единый фид сессии</b>. Броски и изменения листа
+            соседствуют в одной ленте, тумблер фильтрует. Крит, уровень и урон
+            считываются с расстояния — цветом, а не лейблом.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

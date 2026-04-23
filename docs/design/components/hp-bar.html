@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>HpBar · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  /* ================ PAGE CHROME ================ */
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 720px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 2px;
+  }
+
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  /* ================ HP BAR — ядро ================ */
+  /*
+    Анатомия:
+    .hp-bar         — контейнер (label + track + values + controls)
+    .hp-bar-label   — "HP" (моно-капс, тихая)
+    .hp-bar-track   — полоса прогресса (утопленная, pill)
+    .hp-bar-fill    — заливка текущего HP
+    .hp-bar-temp    — полупрозрачный overlay поверх fill (временное HP)
+    .hp-bar-values  — "6 / 8" (serif, крупная)
+    .hp-bar-ctrls   — ± круглые кнопки
+  */
+
+  .hp-bar {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    min-width: 240px;
+  }
+
+  .hp-bar-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    line-height: 1;
+  }
+
+  .hp-bar-track-wrap {
+    grid-column: 1 / 5;
+    grid-row: 2;
+    position: relative;
+    height: 8px;
+  }
+  .hp-bar-track {
+    position: absolute; inset: 0;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    box-shadow: var(--shadow-inset);
+  }
+  .hp-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
+    border-radius: var(--r-pill);
+    transition: width var(--t-med) var(--ease), background var(--t-med) var(--ease);
+  }
+
+  /* временное HP — золотой накладной слой */
+  .hp-bar-temp {
+    position: absolute; top: 0; height: 100%;
+    background: linear-gradient(to right, rgba(212, 168, 87, 0.75), rgba(228, 201, 160, 0.85));
+    border-radius: var(--r-pill);
+    box-shadow: 0 0 8px rgba(212, 168, 87, 0.4);
+    transition: width var(--t-med) var(--ease);
+  }
+
+  /* риски деления — каждые 5 или 10 hp, в зависимости от max */
+  .hp-bar-ticks {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    display: flex;
+  }
+  .hp-bar-ticks::before {
+    /* рисуем через repeating-linear-gradient — тихие вертикальные штрихи */
+    content: "";
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(20% - 1px),
+      rgba(14, 11, 8, 0.6) calc(20% - 1px),
+      rgba(14, 11, 8, 0.6) 20%
+    );
+    opacity: 0.7;
+  }
+
+  .hp-bar-values {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--vtt-accent-soft);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .hp-bar-values .hp-current { font-weight: 600; }
+  .hp-bar-values .hp-max { color: var(--vtt-text-secondary); font-weight: 400; }
+  .hp-bar-values .hp-sep { color: var(--vtt-text-muted); margin: 0 2px; }
+  .hp-bar-values .hp-temp-suffix {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--vtt-accent);
+    margin-left: 6px;
+  }
+
+  .hp-bar-ctrls {
+    display: inline-flex;
+    gap: 6px;
+  }
+  .hp-bar-btn {
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .hp-bar-btn:hover {
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+  }
+  .hp-bar-btn.is-damage:hover { border-color: var(--vtt-danger); color: var(--vtt-danger-bright); }
+  .hp-bar-btn.is-heal:hover { border-color: var(--vtt-success); color: var(--vtt-success); }
+
+  /* ---- fill colors by state ---- */
+  .hp-bar.state-full .hp-bar-fill { background: linear-gradient(to right, var(--vtt-success), #8FAF68); }
+  .hp-bar.state-healthy .hp-bar-fill { background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent)); }
+  .hp-bar.state-wounded .hp-bar-fill { background: linear-gradient(to right, var(--vtt-warning), #D9A45C); }
+  .hp-bar.state-critical .hp-bar-fill {
+    background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
+    animation: hp-pulse 1.8s ease-in-out infinite;
+  }
+  .hp-bar.state-zero .hp-bar-fill { background: var(--vtt-bg-elevated); }
+  .hp-bar.state-zero .hp-bar-values .hp-current { color: var(--vtt-danger-bright); }
+
+  @keyframes hp-pulse {
+    0%, 100% { filter: brightness(0.9); }
+    50% { filter: brightness(1.2) drop-shadow(0 0 6px rgba(178, 59, 79, 0.5)); }
+  }
+
+  /* ================ SIZES ================ */
+  /* sm — для списка персонажей; md — default (шапка); lg — для блока в шите */
+  .hp-bar.hp-sm { gap: 8px; min-width: 160px; }
+  .hp-bar.hp-sm .hp-bar-track-wrap { height: 5px; }
+  .hp-bar.hp-sm .hp-bar-values { font-size: 14px; }
+  .hp-bar.hp-sm .hp-bar-ctrls { display: none; }
+
+  .hp-bar.hp-lg { gap: 14px; min-width: 320px; }
+  .hp-bar.hp-lg .hp-bar-track-wrap { height: 12px; }
+  .hp-bar.hp-lg .hp-bar-values { font-size: 34px; }
+  .hp-bar.hp-lg .hp-bar-btn { width: 36px; height: 36px; font-size: 18px; }
+
+  /* ================ BLOCK VARIANT ================ */
+  /* для вкладки "Основное" — рамкой, большой цифрой, историей */
+  .hp-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 18px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    max-width: 340px;
+  }
+  .hp-block-top {
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .hp-block-top .hp-bar-label { font-size: 11px; }
+  .hp-block-top .hp-status-chip {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .hp-block-top .hp-status-chip.is-critical { color: var(--vtt-danger-bright); }
+  .hp-block-top .hp-status-chip.is-wounded { color: var(--vtt-warning); }
+  .hp-block-top .hp-status-chip.is-full { color: var(--vtt-success); }
+
+  .hp-block-center {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .hp-block-center .hp-bar-values { font-size: 40px; }
+
+  .hp-block-bar-wrap {
+    position: relative;
+    height: 10px;
+  }
+
+  /* ================ MINI (for character list) ================ */
+  .hp-mini {
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .hp-mini-bar {
+    position: relative; width: 120px; height: 4px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+  }
+  .hp-mini-bar .hp-bar-fill {
+    background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
+    height: 100%;
+  }
+  .hp-mini-val {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-secondary);
+    letter-spacing: 0.02em;
+  }
+
+  /* ================ STATUS EFFECTS CHIPS (inline under bar) ================ */
+  .hp-effects {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .hp-effect-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    border-radius: var(--r-pill);
+    background: rgba(26, 21, 16, 0.7);
+    border: 1px solid var(--vtt-border-subtle);
+    color: var(--vtt-text-secondary);
+  }
+  .hp-effect-chip::before {
+    content: "";
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+  }
+  .hp-effect-chip.is-dot { color: var(--vtt-danger-bright); border-color: rgba(178, 59, 79, 0.35); }
+  .hp-effect-chip.is-hot { color: var(--vtt-success); border-color: rgba(107, 142, 78, 0.35); }
+  .hp-effect-chip.is-warn { color: var(--vtt-warning); border-color: rgba(192, 138, 62, 0.35); }
+  .hp-effect-chip .chip-meta {
+    color: var(--vtt-text-muted);
+    font-weight: 400;
+  }
+
+  /* ================ POPOVER (damage/heal) ================ */
+  .hp-demo-wrap {
+    position: relative;
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    padding: 4px 0 80px;
+    flex-wrap: wrap;
+  }
+  .hp-demo-wrap > .hp-bar {
+    width: 280px;
+    flex-shrink: 0;
+  }
+
+  .hp-popover {
+    position: relative;
+    width: 320px;
+    min-width: 0;
+    max-width: 340px;
+    flex-shrink: 0;
+    padding: 14px 16px 14px;
+    background: rgba(36, 28, 21, 0.96);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+  }
+  .hp-popover::before {
+    content: "";
+    position: absolute; left: -7px; top: 24px;
+    width: 12px; height: 12px;
+    background: rgba(36, 28, 21, 0.96);
+    border-left: 1px solid var(--vtt-border-strong);
+    border-bottom: 1px solid var(--vtt-border-strong);
+    transform: rotate(45deg);
+  }
+
+  .hp-pop-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .hp-pop-title {
+    font-family: var(--font-serif);
+    font-size: 16px; color: var(--vtt-accent-soft); font-weight: 500;
+  }
+  .hp-pop-sub {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+
+  /* tabs урон / лечение / временное */
+  .hp-pop-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    padding: 3px;
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 12px;
+  }
+  .hp-pop-tabs button {
+    padding: 7px 8px;
+    background: transparent; border: 0;
+    color: var(--vtt-text-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    cursor: pointer; border-radius: 2px;
+    line-height: 1;
+  }
+  .hp-pop-tabs button.active {
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+  }
+  .hp-pop-tabs button.active.tab-damage { color: var(--vtt-danger-bright); }
+  .hp-pop-tabs button.active.tab-heal { color: var(--vtt-success); }
+
+  /* amount input — большое число по центру с ± по бокам */
+  .hp-amount {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0 12px;
+    min-width: 0;
+  }
+  .hp-amount button {
+    width: 40px; height: 40px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans);
+    font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  .hp-amount button:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .hp-amount input {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 0;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 36px;
+    color: var(--vtt-danger-bright);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .hp-amount input.is-heal { color: var(--vtt-success); }
+  .hp-amount input.is-temp { color: var(--vtt-accent); }
+  .hp-amount input::-webkit-outer-spin-button,
+  .hp-amount input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .hp-dice-quick {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+    margin: 2px 0 10px;
+  }
+  .hp-dice-quick button {
+    padding: 5px 10px;
+    background: transparent;
+    border: 1px dashed var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .hp-dice-quick button:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent); border-style: solid; }
+
+  .hp-pop-preview {
+    padding: 10px 12px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    font-size: 12px;
+    color: var(--vtt-text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .hp-pop-preview b { color: var(--vtt-accent-soft); font-family: var(--font-serif); font-size: 14px; }
+  .hp-pop-preview .delta-neg { color: var(--vtt-danger-bright); font-family: var(--font-mono); font-weight: 600; }
+  .hp-pop-preview .delta-pos { color: var(--vtt-success); font-family: var(--font-mono); font-weight: 600; }
+
+  .hp-pop-submit {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: var(--r-pill);
+    font-family: var(--font-sans);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    border: 1px solid;
+    line-height: 1;
+  }
+  .hp-pop-submit.is-damage { background: var(--vtt-danger); border-color: var(--vtt-danger); color: var(--vtt-text-primary); }
+  .hp-pop-submit.is-damage:hover { background: var(--vtt-danger-bright); }
+  .hp-pop-submit.is-heal { background: var(--vtt-success); border-color: var(--vtt-success); color: #0E0B08; }
+  .hp-pop-submit.is-heal:hover { filter: brightness(1.1); }
+  .hp-pop-submit.is-temp { background: #A6833E; border-color: #8C6A3A; color: #1a1205; }
+
+  /* ================ BEFORE / AFTER ================ */
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;
+  }
+  .compare-col { display: flex; flex-direction: column; gap: 12px; }
+  .compare-head {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .compare-head.ok { color: var(--vtt-success); }
+  .compare-head.bad { color: var(--vtt-danger-bright); }
+
+  /* имитация текущего HP-контроля */
+  .legacy-hp {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .legacy-hp .l-label {
+    font-family: var(--font-mono);
+    font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--vtt-accent-soft);
+  }
+  .legacy-hp .l-btn {
+    width: 40px; height: 40px;
+    background: transparent;
+    border: 1px solid var(--vtt-accent-deep);
+    border-radius: var(--r-xs);
+    color: var(--vtt-accent-soft);
+    font-size: 18px; cursor: pointer;
+  }
+  .legacy-hp .l-val {
+    text-align: center;
+    font-family: var(--font-serif); font-size: 24px; color: var(--vtt-accent-soft);
+  }
+  .legacy-hp .l-info {
+    width: 28px; height: 28px; border: 1px solid var(--vtt-accent-deep); border-radius: 50%;
+    color: var(--vtt-accent-soft); display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; font-family: var(--font-serif); font-style: italic; cursor: pointer;
+  }
+
+  footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--vtt-text-muted); letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <p class="eyebrow">Component · v0.1</p>
+  <h1>HpBar</h1>
+  <p class="lead">
+    Атом состояния персонажа — «сколько жизни осталось». Живёт в шапке, на листе,
+    в списке персонажей, в карточке врага. Принцип: <b>полоса — главный сигнал,
+    числа — уточнение, кнопки — периферия</b>. Цвет полосы кодирует опасность,
+    чтобы понять состояние персонажа можно было периферийным зрением.
+    Три размера (sm/md/lg), вариант-блок для листа и mini для списка.
+    Главное действие — <b>урон / лечение</b> — живёт в popover'е, а не в ±1-кнопках.
+  </p>
+
+  <!-- ============ 1. BASE ============ -->
+  <section class="group">
+    <h2>1. База · размеры</h2>
+    <p class="group-lead">
+      <b>md</b> — default для шапки персонажа. <b>sm</b> — в списке персонажей
+      (без кнопок, только индикатор). <b>lg</b> — для «пазопа» (pause-screen)
+      или экрана death-save, когда HP — главный фокус.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Три размера</p>
+
+      <div class="col" style="gap: 28px">
+
+        <div class="col">
+          <span class="variant-label">sm · 160px (список персонажей, без кнопок)</span>
+          <div class="hp-bar hp-sm state-healthy">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <div class="hp-bar-track-wrap" style="grid-column: 1 / 3; grid-row: 2;">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">md · default (шапка персонажа)</span>
+          <div class="hp-bar state-healthy" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage" aria-label="урон">−</button>
+            <button class="hp-bar-btn is-heal" aria-label="лечение">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">lg · для пауз / смерти / главного фокуса</span>
+          <div class="hp-bar hp-lg state-healthy" style="max-width: 480px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage" aria-label="урон">−</button>
+            <button class="hp-bar-btn is-heal" aria-label="лечение">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Layout grid.</b> Четыре колонки: <code>auto 1fr auto auto</code> — label ·
+      values · −btn · +btn. Полоса живёт на второй строке сетки через
+      <code>grid-column: 1 / 5; grid-row: 2</code> — так она всегда занимает
+      всю ширину независимо от длины чисел («1/10» vs «124/124»).
+    </div>
+  </section>
+
+  <!-- ============ 2. STATES ============ -->
+  <section class="group">
+    <h2>2. Состояния</h2>
+    <p class="group-lead">
+      Цвет заливки кодирует состояние без подписей. Пульсация включается
+      только в <b>critical</b> — так «срочность» не размазывается по всему
+      интерфейсу, и сигнал действительно работает.
+    </p>
+
+    <div class="stage">
+      <div class="col" style="gap: 20px">
+
+        <div class="col">
+          <span class="variant-label">state-full · 100% · success</span>
+          <div class="hp-bar state-full" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">8</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage">−</button>
+            <button class="hp-bar-btn is-heal" disabled style="opacity:0.35;cursor:not-allowed">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 100%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">state-healthy · >66% · золото</span>
+          <div class="hp-bar state-healthy" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage">−</button>
+            <button class="hp-bar-btn is-heal">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">state-wounded · 33–66% · warning</span>
+          <div class="hp-bar state-wounded" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">4</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage">−</button>
+            <button class="hp-bar-btn is-heal">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 50%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">state-critical · ≤33% · danger + пульсация</span>
+          <div class="hp-bar state-critical" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">2</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage">−</button>
+            <button class="hp-bar-btn is-heal">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 25%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">state-zero · 0 · «без сознания»</span>
+          <div class="hp-bar state-zero" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values"><span class="hp-current">0</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+            <button class="hp-bar-btn is-damage" disabled style="opacity:0.35;cursor:not-allowed">−</button>
+            <button class="hp-bar-btn is-heal">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Пороги.</b> WoD 1979 — лёгкая система, пороги условные:
+      <code>full = ==max</code>, <code>healthy &gt; 66%</code>,
+      <code>wounded 33–66%</code>, <code>critical ≤ 33%</code>,
+      <code>zero = 0</code>. Можно настраивать — это не правило игры, это
+      визуальное сигнализирование.
+    </div>
+  </section>
+
+  <!-- ============ 3. TEMP HP ============ -->
+  <section class="group">
+    <h2>3. Временное HP (щит / бафф)</h2>
+    <p class="group-lead">
+      Магический щит, бонус от эликсира, временное HP от заклинания — живут как
+      <b>золотой overlay поверх основной полосы</b>, а число добавляется справа с префиксом <code>+</code>.
+      Визуально это «как будто поверх тебя свет» — не путается с основной полосой.
+    </p>
+
+    <div class="stage">
+      <div class="col" style="gap: 20px">
+
+        <div class="col">
+          <span class="variant-label">+3 временного HP поверх 6/8</span>
+          <div class="hp-bar state-healthy" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values">
+              <span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span>
+              <span class="hp-temp-suffix">+3</span>
+            </div>
+            <button class="hp-bar-btn is-damage">−</button>
+            <button class="hp-bar-btn is-heal">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track">
+                <div class="hp-bar-fill" style="width: 75%"></div>
+              </div>
+              <div class="hp-bar-temp" style="left: 75%; width: 25%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">только временное HP (+5), база на нуле</span>
+          <div class="hp-bar state-zero" style="max-width: 420px">
+            <span class="hp-bar-label">HP</span>
+            <div class="hp-bar-values">
+              <span class="hp-current">0</span><span class="hp-sep">/</span><span class="hp-max">8</span>
+              <span class="hp-temp-suffix">+5</span>
+            </div>
+            <button class="hp-bar-btn is-damage">−</button>
+            <button class="hp-bar-btn is-heal">+</button>
+            <div class="hp-bar-track-wrap">
+              <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 0%"></div></div>
+              <div class="hp-bar-temp" style="left: 0%; width: 62%;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Правила убывания.</b> При уроне: сначала съедается временное HP, только
+      потом — основное. При лечении: лечится только основное, временное не
+      регенерируется само.
+    </div>
+  </section>
+
+  <!-- ============ 4. STATUS EFFECTS ============ -->
+  <section class="group">
+    <h2>4. Эффекты на HP (DOT / HOT)</h2>
+    <p class="group-lead">
+      «Яд: −1 за ход», «Регенерация: +1 за ход» — живут <b>строкой чипов
+      под полосой</b>. Это не отдельная панель «статусов» — чипы прямо
+      прикреплены к HpBar, потому что смыслово относятся к здоровью.
+      Тап по чипу открывает детали/снятие.
+    </p>
+
+    <div class="stage">
+      <div class="col" style="gap: 6px; max-width: 420px">
+        <div class="hp-bar state-wounded">
+          <span class="hp-bar-label">HP</span>
+          <div class="hp-bar-values"><span class="hp-current">4</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+          <button class="hp-bar-btn is-damage">−</button>
+          <button class="hp-bar-btn is-heal">+</button>
+          <div class="hp-bar-track-wrap">
+            <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 50%"></div></div>
+          </div>
+        </div>
+        <div class="hp-effects">
+          <span class="hp-effect-chip is-dot">Яд <span class="chip-meta">−1/ход · 3 хода</span></span>
+          <span class="hp-effect-chip is-hot">Регенерация <span class="chip-meta">+1/ход</span></span>
+          <span class="hp-effect-chip is-warn">Горит <span class="chip-meta">1 ход</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. POPOVER ============ -->
+  <section class="group">
+    <h2>5. Popover · урон / лечение</h2>
+    <p class="group-lead">
+      Главная интеракция (не ±1 кнопка!). Тап по полосе или по ±1-кнопке (и подержать)
+      открывает popover. Три таба: <b>Урон · Лечение · Временное HP</b>. По центру —
+      крупное число, снизу — быстрые кубики (d6, 2d6), превью исхода и submit-кнопка
+      в цвет действия.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">A · Урон</p>
+      <div class="hp-demo-wrap">
+        <div class="hp-bar state-healthy" style="max-width: 280px">
+          <span class="hp-bar-label">HP</span>
+          <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+          <button class="hp-bar-btn is-damage">−</button>
+          <button class="hp-bar-btn is-heal">+</button>
+          <div class="hp-bar-track-wrap">
+            <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+          </div>
+        </div>
+        <div class="hp-popover">
+          <div class="hp-pop-head">
+            <span class="hp-pop-title">Изменить HP</span>
+            <span class="hp-pop-sub">6 / 8</span>
+          </div>
+          <div class="hp-pop-tabs">
+            <button class="active tab-damage">Урон</button>
+            <button>Лечение</button>
+            <button>Временное</button>
+          </div>
+          <div class="hp-amount">
+            <button aria-label="меньше">−</button>
+            <input type="number" value="4">
+            <button aria-label="больше">+</button>
+          </div>
+          <div class="hp-dice-quick">
+            <button>d6</button>
+            <button>2d6</button>
+            <button>d8</button>
+            <button>+мод</button>
+          </div>
+          <div class="hp-pop-preview">
+            <b>6</b> → <b>2</b> &nbsp; <span class="delta-neg">−4</span> &nbsp;
+            <span style="color: var(--vtt-danger-bright); font-family: var(--font-mono); font-size: 11px;">
+              state-critical
+            </span>
+          </div>
+          <button class="hp-pop-submit is-damage">Нанести 4 урона</button>
+        </div>
+      </div>
+
+      <p class="stage-title">B · Лечение с броском</p>
+      <div class="hp-demo-wrap">
+        <div class="hp-bar state-wounded" style="max-width: 280px">
+          <span class="hp-bar-label">HP</span>
+          <div class="hp-bar-values"><span class="hp-current">2</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+          <button class="hp-bar-btn is-damage">−</button>
+          <button class="hp-bar-btn is-heal">+</button>
+          <div class="hp-bar-track-wrap">
+            <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 25%"></div></div>
+          </div>
+        </div>
+        <div class="hp-popover">
+          <div class="hp-pop-head">
+            <span class="hp-pop-title">Изменить HP</span>
+            <span class="hp-pop-sub">2 / 8</span>
+          </div>
+          <div class="hp-pop-tabs">
+            <button class="tab-damage">Урон</button>
+            <button class="active tab-heal">Лечение</button>
+            <button>Временное</button>
+          </div>
+          <div class="hp-amount">
+            <button aria-label="меньше">−</button>
+            <input type="number" class="is-heal" value="5">
+            <button aria-label="больше">+</button>
+          </div>
+          <div class="hp-dice-quick">
+            <button>d6</button>
+            <button>2d6</button>
+            <button style="border-color: var(--vtt-success); color: var(--vtt-success); border-style: solid;">🎲 d6+2 = 5</button>
+          </div>
+          <div class="hp-pop-preview">
+            <b>2</b> → <b>7</b> &nbsp; <span class="delta-pos">+5</span>
+          </div>
+          <button class="hp-pop-submit is-heal">Восстановить 5 HP</button>
+        </div>
+      </div>
+
+      <p class="stage-title">C · Временное HP</p>
+      <div class="hp-demo-wrap">
+        <div class="hp-bar state-healthy" style="max-width: 280px">
+          <span class="hp-bar-label">HP</span>
+          <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+          <button class="hp-bar-btn is-damage">−</button>
+          <button class="hp-bar-btn is-heal">+</button>
+          <div class="hp-bar-track-wrap">
+            <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+          </div>
+        </div>
+        <div class="hp-popover">
+          <div class="hp-pop-head">
+            <span class="hp-pop-title">Изменить HP</span>
+            <span class="hp-pop-sub">6 / 8</span>
+          </div>
+          <div class="hp-pop-tabs">
+            <button class="tab-damage">Урон</button>
+            <button class="tab-heal">Лечение</button>
+            <button class="active">Временное</button>
+          </div>
+          <div class="hp-amount">
+            <button aria-label="меньше">−</button>
+            <input type="number" class="is-temp" value="3">
+            <button aria-label="больше">+</button>
+          </div>
+          <div class="hp-pop-preview">
+            <b>6 / 8</b> &nbsp; <span style="color: var(--vtt-accent); font-family: var(--font-mono); font-weight: 600;">+3 временных</span>
+            <div style="font-size: 11px; color: var(--vtt-text-muted); margin-top: 4px;">
+              Источник: «Магический щит» · до конца сцены
+            </div>
+          </div>
+          <button class="hp-pop-submit is-temp">Добавить 3 временных</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Почему именно popover, а не модалка.</b> Урон/лечение — действие в середине
+      боя. Модалка забирает фокус и прерывает ритм. Popover «прилетает» от полосы,
+      не скрывает её, и закрывается как только применили.
+      <br><br>
+      <b>Быстрые кубики.</b> Под инпутом — чипы-кнопки <code>d6</code>, <code>2d6</code> и т.д.
+      Тап — бросок прямо в инпут (цифра обновляется). В WoD 1979 урон оружия — обычно d6,
+      так что это главный путь ввода. Ручной ввод — для «мастер сказал 4 урона» случаев.
+      <br><br>
+      <b>Превью исхода.</b> Строка «6 → 2 · −4 · state-critical» — пользователь видит,
+      что случится <i>до</i> применения. Особенно важно для лечения (не перелить за max)
+      и для временного HP (увидеть новую полосу).
+    </div>
+  </section>
+
+  <!-- ============ 6. MINI (CHARACTERS LIST) ============ -->
+  <section class="group">
+    <h2>6. Mini · для списка персонажей</h2>
+    <p class="group-lead">
+      В списке персонажей HP — справка, не интеракция. Достаточно короткой
+      полоски и цифры. Никаких кнопок, никакого popover'а. Клик уводит в
+      карточку персонажа.
+    </p>
+
+    <div class="stage">
+      <div class="col" style="gap: 10px">
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 10px 14px; background: var(--vtt-bg-surface); border: 1px solid var(--vtt-border-subtle); border-radius: var(--r-sm); max-width: 480px;">
+          <div>
+            <div style="font-family: var(--font-serif); font-size: 18px; color: var(--vtt-accent-soft);">Элара Рассветная</div>
+            <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vtt-accent-deep);">Волшебник · ур. 1</div>
+          </div>
+          <div class="hp-mini">
+            <div class="hp-mini-bar"><div class="hp-bar-fill" style="width: 75%; background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));"></div></div>
+            <span class="hp-mini-val">6 / 8</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 10px 14px; background: var(--vtt-bg-surface); border: 1px solid var(--vtt-border-subtle); border-radius: var(--r-sm); max-width: 480px;">
+          <div>
+            <div style="font-family: var(--font-serif); font-size: 18px; color: var(--vtt-accent-soft);">Куцыкуц</div>
+            <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vtt-accent-deep);">Воин · ур. 3</div>
+          </div>
+          <div class="hp-mini">
+            <div class="hp-mini-bar"><div class="hp-bar-fill" style="width: 20%; background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));"></div></div>
+            <span class="hp-mini-val">2 / 10</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7. BLOCK VARIANT ============ -->
+  <section class="group">
+    <h2>7. Block · на листе персонажа</h2>
+    <p class="group-lead">
+      Большой блок для вкладки «Основное», когда HP — единственное, на что сейчас
+      смотрят. Крупная цифра, полоса под ней, состояние подписью сверху справа.
+    </p>
+    <div class="stage">
+      <div class="hp-block">
+        <div class="hp-block-top">
+          <span class="hp-bar-label">HP</span>
+          <span class="hp-status-chip is-wounded">Ранен</span>
+        </div>
+        <div class="hp-block-center">
+          <div class="hp-bar-values" style="font-size: 48px;">
+            <span class="hp-current">4</span><span class="hp-sep">/</span><span class="hp-max">8</span>
+          </div>
+          <div class="hp-bar-ctrls">
+            <button class="hp-bar-btn is-damage" style="width: 36px; height: 36px;">−</button>
+            <button class="hp-bar-btn is-heal" style="width: 36px; height: 36px;">+</button>
+          </div>
+        </div>
+        <div class="hp-block-bar-wrap">
+          <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 50%; background: linear-gradient(to right, var(--vtt-warning), #D9A45C);"></div></div>
+        </div>
+        <div class="hp-effects">
+          <span class="hp-effect-chip is-dot">Яд <span class="chip-meta">−1/ход · 3 хода</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8. BEFORE / AFTER ============ -->
+  <section class="group">
+    <h2>8. Было / стало</h2>
+    <p class="group-lead">
+      Текущая реализация HP в шапке (<code>in-game-character-base-panel.png</code>):
+      большая строка «HP · − · 6/6 · (i) · +» через всю ширину, без индикатора
+      здоровья, без истории — чисто стэппер.
+    </p>
+
+    <div class="compare">
+      <div class="compare-col">
+        <p class="compare-head bad">Как сейчас · голый стэппер</p>
+        <div class="legacy-hp" style="max-width: 420px">
+          <span class="l-label">HP</span>
+          <button class="l-btn">−</button>
+          <div class="l-val">6 / 8</div>
+          <div style="display: inline-flex; gap: 8px; align-items: center;">
+            <button class="l-info">i</button>
+            <button class="l-btn">+</button>
+          </div>
+        </div>
+        <p class="compare-head">· нет визуального индикатора состояния<br>· ±1 — единственный способ ввода<br>· «урон 4» требует 4 кликов или открытия модалки</p>
+      </div>
+
+      <div class="compare-col">
+        <p class="compare-head ok">Стало · полоса + popover</p>
+        <div class="hp-bar state-healthy" style="max-width: 420px">
+          <span class="hp-bar-label">HP</span>
+          <div class="hp-bar-values"><span class="hp-current">6</span><span class="hp-sep">/</span><span class="hp-max">8</span></div>
+          <button class="hp-bar-btn is-damage">−</button>
+          <button class="hp-bar-btn is-heal">+</button>
+          <div class="hp-bar-track-wrap">
+            <div class="hp-bar-track"><div class="hp-bar-fill" style="width: 75%"></div></div>
+          </div>
+        </div>
+        <p class="compare-head">· состояние видно периферийным зрением<br>· «урон 4» = тап → ввод → apply<br>· место под эффекты и временное HP прямо здесь</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    VTT COMPONENTS · HPBAR v0.1 · основан на design/palette.html
+  </footer>
+
+</div>
+</body>
+</html>

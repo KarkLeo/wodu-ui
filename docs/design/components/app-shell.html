@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>AppShell · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1320px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 720px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 2px;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+
+  /* ================================================================
+     АТОМЫ (мини-копии — StatusHeader упрощён, TabBar, StatusChip)
+     ================================================================ */
+
+  /* ---- StatusHeader (урезанная копия) ---- */
+  .status-header {
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    padding: 14px 20px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "id   id   trio"
+      "hp   hp   hp"
+      "xp   xp   xp";
+    column-gap: 20px;
+    row-gap: 10px;
+  }
+  .sh-id { grid-area: id; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center; min-width: 0; }
+  .sh-id-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .sh-id-line { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex-wrap: wrap; row-gap: 4px; }
+  .sh-back {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    cursor: pointer; flex-shrink: 0;
+  }
+  .sh-back svg { width: 14px; height: 14px; }
+  .sh-name {
+    font-family: var(--font-serif); font-weight: 500; font-size: 22px;
+    color: var(--vtt-accent-soft); line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .sh-meta {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-text-muted); line-height: 1; flex-shrink: 0;
+  }
+  .sh-meta b { color: var(--vtt-text-secondary); font-weight: 600; }
+  .sh-truename {
+    font-family: var(--font-serif); font-style: italic; font-size: 12px;
+    color: var(--vtt-text-muted); line-height: 1.1;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .sh-truename-glyph {
+    width: 10px; height: 10px; color: var(--vtt-accent-deep);
+  }
+  .sh-truename-glyph svg { width: 100%; height: 100%; display: block; }
+
+  .sh-trio { grid-area: trio; justify-self: end; align-self: center; }
+  .sh-hp { grid-area: hp; }
+  .sh-xp { grid-area: xp; }
+
+  /* HpBar ---- */
+  .hp-bar {
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    align-items: center; gap: 12px; min-width: 0;
+  }
+  .hp-bar-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vtt-accent-deep); line-height: 1; }
+  .hp-bar-track-wrap { grid-column: 1 / 5; grid-row: 2; position: relative; height: 8px; }
+  .hp-bar-track { position: absolute; inset: 0; background: var(--vtt-bg-sunken); border: 1px solid var(--vtt-border-subtle); border-radius: var(--r-pill); overflow: hidden; box-shadow: var(--shadow-inset); }
+  .hp-bar-fill { height: 100%; background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent)); border-radius: var(--r-pill); }
+  .hp-bar-values { font-family: var(--font-serif); font-weight: 500; font-size: 20px; color: var(--vtt-accent-soft); line-height: 1; white-space: nowrap; }
+  .hp-bar-values .hp-current { font-weight: 600; }
+  .hp-bar-values .hp-max { color: var(--vtt-text-secondary); font-weight: 400; }
+  .hp-bar-values .hp-sep { color: var(--vtt-text-muted); margin: 0 2px; }
+  .hp-bar-ctrls { display: inline-flex; gap: 6px; }
+  .hp-bar-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill); color: var(--vtt-text-secondary); font-size: 14px; cursor: pointer;
+  }
+
+  /* XpBar ---- */
+  .xp-bar {
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; column-gap: 12px; row-gap: 6px; min-width: 0;
+  }
+  .xp-bar-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--vtt-accent-deep); line-height: 1; }
+  .xp-bar-values { font-family: var(--font-serif); font-size: 13px; color: var(--vtt-text-secondary); line-height: 1; white-space: nowrap; }
+  .xp-bar-values .xp-current { color: var(--vtt-accent-soft); font-weight: 500; }
+  .xp-bar-values .xp-sep { color: var(--vtt-text-muted); margin: 0 2px; }
+  .xp-bar-values .xp-max { color: var(--vtt-text-muted); }
+  .xp-bar-track-wrap { grid-column: 1 / 4; grid-row: 2; position: relative; height: 4px; }
+  .xp-bar-track { position: absolute; inset: 0; background: var(--vtt-bg-sunken); border: 1px solid var(--vtt-border-subtle); border-radius: var(--r-pill); overflow: hidden; box-shadow: var(--shadow-inset); }
+  .xp-bar-fill { height: 100%; background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent)); border-radius: var(--r-pill); }
+  .xp-bar-hint { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vtt-text-muted); line-height: 1; white-space: nowrap; }
+
+  /* StatusChip trio ---- */
+  .status-trio { display: inline-flex; align-items: center; gap: 0; padding: 4px 2px; }
+  .sc-divider { width: 1px; height: 20px; background: var(--vtt-border-subtle); margin: 0 2px; }
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 11px; border-radius: var(--r-xs); cursor: pointer;
+  }
+  .status-chip:hover { background: rgba(228, 201, 160, 0.04); }
+  .status-chip .sc-value {
+    font-family: var(--font-serif); font-weight: 500; font-size: 17px;
+    color: var(--vtt-accent-soft); line-height: 1;
+  }
+  .status-chip .sc-unit {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); line-height: 1;
+  }
+
+  /* ---- TabBar ---- */
+  .tab-bar {
+    display: flex; gap: 2px; padding: 4px;
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    overflow-x: auto; scrollbar-width: none;
+    position: sticky; top: 0; z-index: 2;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-item {
+    position: relative;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    flex: 1 1 auto; min-width: max-content;
+    padding: 10px 18px 12px;
+    background: transparent; border: none;
+    border-radius: var(--r-xs) var(--r-xs) 0 0;
+    color: var(--vtt-text-muted);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer; white-space: nowrap;
+  }
+  .tab-item.is-active { color: var(--vtt-accent-soft); background: var(--vtt-bg-elevated); }
+  .tab-item.is-active::after {
+    content: ""; position: absolute;
+    left: 10px; right: 10px; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));
+    border-radius: 2px 2px 0 0;
+  }
+  .tab-item-dot {
+    width: 6px; height: 6px; border-radius: var(--r-pill);
+    background: var(--vtt-accent);
+    box-shadow: 0 0 6px rgba(212, 168, 87, 0.8);
+    animation: tab-dot-pulse 1.8s ease-in-out infinite;
+  }
+  .tab-item-dot.kind-danger { background: var(--vtt-danger-bright); box-shadow: 0 0 6px rgba(178,59,79,0.7); }
+  @keyframes tab-dot-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+  /* ================================================================
+     APP SHELL — ядро
+     ================================================================ */
+  /*
+    Регионы:
+    ┌─────────────────────────────────────────────┐
+    │  .app-shell                                 │
+    │  ├─ .app-shell-header  (sticky StatusHeader)│
+    │  ├─ .app-shell-tabs    (sticky TabBar)      │
+    │  ├─ .app-shell-content (scroll, main slot)  │
+    │  └─ .app-shell-fab     (absolute — Dice)    │
+    └─────────────────────────────────────────────┘
+  */
+
+  .app-shell {
+    position: relative;
+    display: flex; flex-direction: column;
+    min-height: 560px;
+    background: var(--vtt-bg-base);
+  }
+
+  .app-shell-header {
+    position: sticky; top: 0;
+    z-index: 3;
+  }
+  .app-shell-tabs {
+    position: sticky; top: 0;
+    z-index: 2;
+  }
+
+  .app-shell-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 20px 20px 90px;
+    overflow-y: auto;
+  }
+
+  .app-shell-fab {
+    position: absolute;
+    right: 20px; bottom: 20px;
+    z-index: 5;
+    width: 52px; height: 52px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #A6833E;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    color: #1a1205;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(228,201,160,0.08) inset;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+  }
+  .app-shell-fab:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+    transform: translateY(-1px);
+  }
+  .app-shell-fab svg { width: 22px; height: 22px; }
+
+  /* mobile — тот же каркас + bottom TabBar */
+  .app-shell.variant-mobile {
+    min-height: 720px;
+  }
+  .app-shell.variant-mobile .app-shell-tabs {
+    position: sticky; top: auto; bottom: 0;
+    order: 3;
+  }
+  .app-shell.variant-mobile .app-shell-content { padding: 16px 14px 100px; }
+  .app-shell.variant-mobile .app-shell-fab {
+    right: 14px; bottom: 86px;
+    width: 48px; height: 48px;
+  }
+  .app-shell.variant-mobile .tab-bar {
+    padding: 6px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    border-bottom: none;
+  }
+  .app-shell.variant-mobile .tab-bar .tab-item {
+    flex-direction: column; gap: 4px;
+    padding: 8px 4px;
+    border-radius: var(--r-sm);
+    font-size: 11px;
+  }
+  .app-shell.variant-mobile .tab-bar .tab-item.is-active { background: var(--vtt-bg-elevated); }
+  .app-shell.variant-mobile .tab-bar .tab-item.is-active::after {
+    left: 50%; right: auto; bottom: 2px;
+    transform: translateX(-50%); width: 16px;
+  }
+  .app-shell.variant-mobile .tab-item-glyph { width: 18px; height: 18px; opacity: 0.75; }
+  .app-shell.variant-mobile .tab-item-glyph svg { width: 100%; height: 100%; }
+  .app-shell.variant-mobile .tab-item-dot {
+    position: absolute; top: 6px; right: calc(50% - 14px);
+  }
+
+  /* ================================================================
+     CONTENT PLACEHOLDER (заглушка для демо)
+     ================================================================ */
+  .content-block {
+    margin-bottom: 24px;
+    padding: 16px 18px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+  }
+  .content-block-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 12px;
+  }
+  .content-block-body {
+    color: var(--vtt-text-muted); font-size: 13px; line-height: 1.6;
+  }
+  .content-block-body b { color: var(--vtt-text-secondary); }
+
+  .content-block.is-hollow {
+    background: transparent;
+    border: 1px dashed var(--vtt-border-subtle);
+    text-align: center;
+    color: var(--vtt-text-muted);
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 24px;
+  }
+
+  /* ================================================================
+     VIEWPORT FRAME (обертка для демо-экранов)
+     ================================================================ */
+  .viewport {
+    background: var(--vtt-bg-base);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+  }
+  .viewport-chrome {
+    padding: 8px 14px;
+    background: var(--vtt-bg-sunken);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ================================================================
+     ANATOMY DIAGRAM
+     ================================================================ */
+  .anatomy {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .anatomy { grid-template-columns: 1fr; } }
+
+  .anatomy-labels {
+    display: flex; flex-direction: column; gap: 10px;
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--vtt-text-secondary);
+  }
+  .anatomy-label {
+    padding: 10px 12px;
+    background: var(--vtt-bg-surface);
+    border-left: 3px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  }
+  .anatomy-label b { color: var(--vtt-accent-soft); font-weight: 600; display: block; margin-bottom: 2px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; }
+  .anatomy-label span { font-size: 11px; color: var(--vtt-text-muted); line-height: 1.5; }
+
+  .anatomy .viewport { position: relative; }
+  .anatomy-tag {
+    position: absolute;
+    padding: 2px 6px;
+    background: var(--vtt-accent-deep);
+    color: var(--vtt-bg-base);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    border-radius: var(--r-xs);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* ================================================================
+     BEFORE / AFTER
+     ================================================================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 1100px) { .compare { grid-template-columns: 1fr; } }
+
+  .before-shell {
+    display: flex; flex-direction: column;
+    background: var(--vtt-bg-base);
+    min-height: 560px;
+  }
+  .before-shell-head {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 14px;
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    font-family: var(--font-mono); font-size: 11px; color: var(--vtt-text-secondary);
+  }
+  .before-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .before-row .bbox {
+    padding: 3px 7px; border: 1px solid var(--vtt-danger-bright); border-radius: var(--r-xs);
+    font-size: 10px;
+  }
+  .before-row .bbox b { color: var(--vtt-accent-soft); font-weight: 600; }
+  .before-row .bbtn {
+    padding: 2px 6px; background: transparent; border: 1px solid var(--vtt-border-strong);
+    color: var(--vtt-text-secondary); border-radius: var(--r-xs);
+    font-family: var(--font-mono); font-size: 10px; cursor: pointer;
+  }
+  .before-alert {
+    padding: 5px 8px; background: var(--vtt-warning); color: var(--vtt-bg-base);
+    font-weight: 600; border-radius: var(--r-xs); font-size: 10px;
+  }
+  .before-shell-tabs {
+    display: flex; gap: 3px;
+    padding: 6px;
+    background: var(--vtt-bg-surface);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .before-tab {
+    padding: 6px 10px; background: transparent;
+    border: 1px solid var(--vtt-border-strong); border-radius: 0;
+    color: var(--vtt-text-secondary); font-family: var(--font-mono); font-size: 11px;
+  }
+  .before-tab.is-active { background: var(--vtt-accent-deep); color: var(--vtt-bg-base); }
+  .before-shell-body {
+    flex: 1; padding: 16px; color: var(--vtt-text-muted); font-size: 12px;
+  }
+
+  .diff-table {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px 24px;
+    margin-top: 20px;
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--vtt-text-secondary);
+  }
+  .diff-table .h { color: var(--vtt-accent-deep); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .was { color: var(--vtt-danger-bright); }
+  .now { color: var(--vtt-success); }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Molecule · Screen scaffolding</p>
+  <h1>AppShell</h1>
+  <p class="lead">
+    Каркас экрана листа персонажа. Соединяет <b>StatusHeader</b>, <b>TabBar</b>, контентный слот и
+    плавающий <b>DiceFAB</b>. Закрывает фазу 1 плана — получаем первый «играбельный» экран,
+    в который будут встраиваться блоки характеристик, инвентаря, магии и заметок.
+  </p>
+
+  <!-- ============ §1 ANATOMY ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>Анатомия — четыре региона</h2>
+    <p class="group-lead">
+      Каркас — это не сетка и не layout-хитрость. Это <b>четыре именованные зоны</b> с чёткими правилами.
+      Header и TabBar — sticky, FAB — absolute, контент — единственный скроллируемый регион.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Регионы</p>
+      <div class="anatomy">
+        <div class="viewport" style="max-width: 720px">
+          <div class="viewport-chrome"><span>vtt — экран персонажа</span><span>1280 × 800</span></div>
+          <div class="app-shell" style="position: relative; min-height: 440px;">
+            <span class="anatomy-tag" style="top: 8px; right: 8px;">HEADER</span>
+            <header class="app-shell-header">
+              <div class="status-header">
+                <div class="sh-id">
+                  <button class="sh-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg></button>
+                  <div class="sh-id-text">
+                    <div class="sh-id-line">
+                      <span class="sh-name">Йорик Медвежатник</span>
+                      <span class="sh-meta"><b>Воин</b> · ур. 1</span>
+                    </div>
+                    <span class="sh-truename">
+                      <span class="sh-truename-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg></span>
+                      Варн'каар из Дальнего Леса
+                    </span>
+                  </div>
+                </div>
+                <div class="sh-trio">
+                  <div class="status-trio">
+                    <div class="status-chip"><span class="sc-value">d6</span><span class="sc-unit">Урон</span></div>
+                    <span class="sc-divider"></span>
+                    <div class="status-chip"><span class="sc-value">3</span><span class="sc-unit">Броня</span></div>
+                    <span class="sc-divider"></span>
+                    <div class="status-chip"><span class="sc-value">24</span><span class="sc-unit">Монет</span></div>
+                  </div>
+                </div>
+                <div class="sh-hp">
+                  <div class="hp-bar">
+                    <span class="hp-bar-label">HP</span>
+                    <span class="hp-bar-values"><span class="hp-current">18</span><span class="hp-sep">/</span><span class="hp-max">24</span></span>
+                    <span class="hp-bar-ctrls">
+                      <button class="hp-bar-btn">−</button><button class="hp-bar-btn">+</button>
+                    </span>
+                    <div class="hp-bar-track-wrap"><div class="hp-bar-track"><div class="hp-bar-fill" style="width:75%"></div></div></div>
+                  </div>
+                </div>
+                <div class="sh-xp">
+                  <div class="xp-bar">
+                    <span class="xp-bar-label">XP</span>
+                    <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+                    <span class="xp-bar-hint">до ур. 2</span>
+                    <div class="xp-bar-track-wrap"><div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div></div>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <span class="anatomy-tag" style="top: 180px; right: 8px;">TABS</span>
+            <nav class="app-shell-tabs">
+              <div class="tab-bar">
+                <button class="tab-item is-active">Основное<span class="tab-item-dot"></span></button>
+                <button class="tab-item">Инвентарь</button>
+                <button class="tab-item">Магия<span class="tab-item-dot kind-danger"></span></button>
+                <button class="tab-item">Заметки</button>
+              </div>
+            </nav>
+
+            <span class="anatomy-tag" style="top: 230px; right: 8px;">CONTENT</span>
+            <div class="app-shell-content" style="min-height: 140px;">
+              <div class="content-block is-hollow">Слот контента вкладки</div>
+            </div>
+
+            <span class="anatomy-tag" style="bottom: 82px; right: 8px;">FAB</span>
+            <button class="app-shell-fab" aria-label="Бросить кубик">
+              <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="16" height="16" rx="2"/>
+                <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="anatomy-labels">
+          <div class="anatomy-label"><b>Header</b><span>sticky, z:3. Идентификация + HP + XP + производные. Схлопывается в compact при скролле.</span></div>
+          <div class="anatomy-label"><b>Tabs</b><span>sticky, z:2. Навигация + dot-индикаторы внимания. Всегда видимы.</span></div>
+          <div class="anatomy-label"><b>Content</b><span>scroll, единственный. Слот под контент активной вкладки. 20px паддинг, 90px снизу под FAB.</span></div>
+          <div class="anatomy-label"><b>FAB</b><span>absolute, z:5. Плавающий кубик — действие, а не раздел. Доступен с любой вкладки.</span></div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему два sticky слоя:</b> header и tabs прилипают как единое «колпак-меню». При скролле сначала
+        схлопывается header (высота ↓), потом tabs остаются приклеены к верху — контент уходит вверх под них,
+        не отваливаясь от контекста.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 FULL SCREEN — DESKTOP ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>Desktop — полный экран</h2>
+    <p class="group-lead">
+      Демо того, как экран выглядит с наполнением (пока плейсхолдеры вместо реальных блоков). Header раскрытый,
+      вкладка «Основное» активна, FAB справа внизу, Магия сигналит danger-точкой.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">1280 × 800 · вкладка «Основное»</p>
+
+      <div class="viewport" style="max-width: 1120px">
+        <div class="viewport-chrome"><span>vtt — экран персонажа</span><span>desktop</span></div>
+
+        <div class="app-shell" style="min-height: 640px;">
+          <header class="app-shell-header">
+            <div class="status-header">
+              <div class="sh-id">
+                <button class="sh-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg></button>
+                <div class="sh-id-text">
+                  <div class="sh-id-line">
+                    <span class="sh-name">Йорик Медвежатник</span>
+                    <span class="sh-meta"><b>Воин</b> · ур. 1</span>
+                  </div>
+                  <span class="sh-truename">
+                    <span class="sh-truename-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg></span>
+                    Варн'каар из Дальнего Леса
+                  </span>
+                </div>
+              </div>
+              <div class="sh-trio">
+                <div class="status-trio">
+                  <div class="status-chip"><span class="sc-value">d6</span><span class="sc-unit">Урон</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="status-chip"><span class="sc-value">3</span><span class="sc-unit">Броня</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="status-chip"><span class="sc-value">24</span><span class="sc-unit">Монет</span></div>
+                </div>
+              </div>
+              <div class="sh-hp">
+                <div class="hp-bar">
+                  <span class="hp-bar-label">HP</span>
+                  <span class="hp-bar-values"><span class="hp-current">18</span><span class="hp-sep">/</span><span class="hp-max">24</span></span>
+                  <span class="hp-bar-ctrls"><button class="hp-bar-btn">−</button><button class="hp-bar-btn">+</button></span>
+                  <div class="hp-bar-track-wrap"><div class="hp-bar-track"><div class="hp-bar-fill" style="width:75%"></div></div></div>
+                </div>
+              </div>
+              <div class="sh-xp">
+                <div class="xp-bar">
+                  <span class="xp-bar-label">XP</span>
+                  <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+                  <span class="xp-bar-hint">до ур. 2</span>
+                  <div class="xp-bar-track-wrap"><div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div></div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <nav class="app-shell-tabs">
+            <div class="tab-bar">
+              <button class="tab-item is-active">Основное</button>
+              <button class="tab-item">Инвентарь</button>
+              <button class="tab-item">Магия<span class="tab-item-dot kind-danger"></span></button>
+              <button class="tab-item">Заметки</button>
+            </div>
+          </nav>
+
+          <div class="app-shell-content">
+            <div class="content-block">
+              <p class="content-block-title">Характеристики</p>
+              <div class="content-block-body"><b>StatChip grid (6 в ряд)</b> — следующий компонент (фаза 3).</div>
+            </div>
+            <div class="content-block">
+              <p class="content-block-title">Навыки</p>
+              <div class="content-block-body">ряд ghost-чипов · быстрый бросок по навыку</div>
+            </div>
+            <div class="content-block">
+              <p class="content-block-title">Способности</p>
+              <div class="content-block-body">feature-card аккордеон — развёртка с описанием и действием</div>
+            </div>
+            <div class="content-block is-hollow">↓ скроллим — header и tabs остаются сверху</div>
+          </div>
+
+          <button class="app-shell-fab" aria-label="Бросить кубик">
+            <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="16" height="16" rx="2"/>
+              <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Три фоновых слоя глубины</b> (без теней): <code>bg-base</code> — холст, <code>bg-surface</code> — хедер и
+        контент-блоки, <code>bg-sunken</code> — утопленные элементы (полосы HP/XP). Вкладки на <code>bg-elevated</code>
+        только когда активны. Эта иерархия заменяет бордерные обводки — глаз читает глубину и так.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 MOBILE ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>Mobile — bottom tabs + FAB</h2>
+    <p class="group-lead">
+      На mobile таб-бар переезжает вниз, FAB поднимается над ним (bottom = 86px). Хедер в остальном не меняется —
+      грид сам перестраивается под узкую ширину (трио уходит под имя отдельной строкой).
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">360 × 780</p>
+
+      <div class="viewport" style="width: 380px; margin: 0 auto;">
+        <div class="viewport-chrome"><span>mobile · 360</span><span>portrait</span></div>
+
+        <div class="app-shell variant-mobile" style="min-height: 680px;">
+          <header class="app-shell-header">
+            <div class="status-header" style="grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'id id' 'trio trio' 'hp hp' 'xp xp'; padding: 12px 14px;">
+              <div class="sh-id">
+                <button class="sh-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg></button>
+                <div class="sh-id-text">
+                  <div class="sh-id-line">
+                    <span class="sh-name" style="font-size: 18px;">Йорик Медвежатник</span>
+                    <span class="sh-meta"><b>Воин</b> · ур. 1</span>
+                  </div>
+                  <span class="sh-truename">
+                    <span class="sh-truename-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg></span>
+                    Варн'каар
+                  </span>
+                </div>
+              </div>
+              <div class="sh-trio" style="justify-self: start;">
+                <div class="status-trio">
+                  <div class="status-chip"><span class="sc-value">d6</span><span class="sc-unit">Урон</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="status-chip"><span class="sc-value">3</span><span class="sc-unit">Броня</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="status-chip"><span class="sc-value">24</span><span class="sc-unit">Монет</span></div>
+                </div>
+              </div>
+              <div class="sh-hp">
+                <div class="hp-bar">
+                  <span class="hp-bar-label">HP</span>
+                  <span class="hp-bar-values"><span class="hp-current">18</span><span class="hp-sep">/</span><span class="hp-max">24</span></span>
+                  <span class="hp-bar-ctrls"><button class="hp-bar-btn">−</button><button class="hp-bar-btn">+</button></span>
+                  <div class="hp-bar-track-wrap"><div class="hp-bar-track"><div class="hp-bar-fill" style="width:75%"></div></div></div>
+                </div>
+              </div>
+              <div class="sh-xp">
+                <div class="xp-bar">
+                  <span class="xp-bar-label">XP</span>
+                  <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+                  <span class="xp-bar-hint">до ур. 2</span>
+                  <div class="xp-bar-track-wrap"><div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div></div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div class="app-shell-content">
+            <div class="content-block">
+              <p class="content-block-title">Характеристики</p>
+              <div class="content-block-body">сетка 3×2 · <b>StatChip</b></div>
+            </div>
+            <div class="content-block">
+              <p class="content-block-title">Навыки</p>
+              <div class="content-block-body">ghost-чипы</div>
+            </div>
+            <div class="content-block is-hollow">Способности · ↓</div>
+          </div>
+
+          <nav class="app-shell-tabs">
+            <div class="tab-bar">
+              <button class="tab-item is-active">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+                Основное
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="10"/><path d="M5 4 L5 2 L11 2 L11 4"/></svg></span>
+                Инвент.
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L10 6 L14 6.5 L11 9.5 L12 14 L8 11.5 L4 14 L5 9.5 L2 6.5 L6 6 Z"/></svg></span>
+                Магия
+                <span class="tab-item-dot kind-danger"></span>
+              </button>
+              <button class="tab-item">
+                <span class="tab-item-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12"/><path d="M5 5 L11 5"/><path d="M5 8 L11 8"/></svg></span>
+                Заметки
+              </button>
+            </div>
+          </nav>
+
+          <button class="app-shell-fab" aria-label="Бросить кубик">
+            <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="16" height="16" rx="2"/>
+              <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему FAB над таб-баром, а не сбоку:</b> правое-нижнее — зона естественного большого пальца, но там
+        теперь таб-бар. FAB поднят на 86px = высота bottom-nav + 16 отступ. Так палец «летит» прямо в кубик,
+        не задевая вкладки.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 SCROLL BEHAVIOR ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>Поведение при скролле</h2>
+    <p class="group-lead">
+      Когда контент прокручивается, header схлопывается в compact (одна строка), tabs остаются sticky и приклеиваются
+      к верху. Это сохраняет имя, HP и навигацию в поле зрения всегда.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Scrolled · ~200px вниз</p>
+
+      <div class="viewport" style="max-width: 1120px">
+        <div class="viewport-chrome"><span>↕ прокручено</span><span>sticky</span></div>
+
+        <div class="app-shell" style="min-height: 480px;">
+          <header class="app-shell-header">
+            <div class="status-header" style="padding: 10px 20px; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: 'back name hp trio'; row-gap: 0;">
+              <button class="sh-back" style="grid-area: back;"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg></button>
+              <div style="grid-area: name; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                <div class="sh-id-line">
+                  <span class="sh-name" style="font-size: 16px;">Йорик Медвежатник</span>
+                  <span class="sh-meta" style="font-size: 9px;"><b>Воин</b> · ур. 1</span>
+                </div>
+              </div>
+              <div style="grid-area: hp; min-width: 200px; max-width: 320px;">
+                <div class="hp-bar" style="grid-template-columns: 1fr auto; gap: 8px;">
+                  <span class="hp-bar-values" style="font-size: 16px;"><span class="hp-current">18</span><span class="hp-sep">/</span><span class="hp-max">24</span></span>
+                  <span></span>
+                  <div class="hp-bar-track-wrap" style="height: 5px;"><div class="hp-bar-track"><div class="hp-bar-fill" style="width:75%"></div></div></div>
+                </div>
+              </div>
+              <div style="grid-area: trio; align-self: center;">
+                <div class="status-trio">
+                  <div class="status-chip"><span class="sc-value">d6</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="status-chip"><span class="sc-value">3</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="status-chip"><span class="sc-value">24</span></div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <nav class="app-shell-tabs">
+            <div class="tab-bar">
+              <button class="tab-item is-active">Основное</button>
+              <button class="tab-item">Инвентарь</button>
+              <button class="tab-item">Магия<span class="tab-item-dot kind-danger"></span></button>
+              <button class="tab-item">Заметки</button>
+            </div>
+          </nav>
+
+          <div class="app-shell-content">
+            <div class="content-block">
+              <p class="content-block-title">(прокрученный контент)</p>
+              <div class="content-block-body">содержимое вкладки уехало вверх, но имя, HP и вкладки остаются видимыми</div>
+            </div>
+            <div class="content-block is-hollow">↓ ниже</div>
+            <div class="content-block is-hollow">↓ ниже</div>
+          </div>
+
+          <button class="app-shell-fab" aria-label="Бросить кубик">
+            <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="16" height="16" rx="2"/>
+              <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="notes">
+        В compact-режиме XP и ± HP убираются (см. <code>StatusHeader</code> §3). Остаётся: ← · имя · HP-полоса без label
+        · трио без единиц. Высота колпака: 44px header + 44px tabs = <b>88px</b> против <b>~280px</b> текущей раскрытой
+        шапки «до».
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>До / После — экран целиком</h2>
+    <p class="group-lead">
+      Каркас в сумме даёт <b>в 2–3 раза больше места под контент</b> при той же высоте экрана и при этом
+      <i>не теряет</i> навигацию и показатели из поля зрения.
+    </p>
+
+    <div class="compare">
+      <div>
+        <p class="variant-label">До</p>
+        <div class="viewport">
+          <div class="viewport-chrome"><span>1280 × 800</span><span>текущий</span></div>
+          <div class="before-shell">
+            <div class="before-shell-head">
+              <div class="before-row"><button class="bbtn">← Список</button></div>
+              <div class="before-row"><span class="bbox"><b>Йорик Медвежатник</b></span></div>
+              <div class="before-row"><span class="bbox">Класс: Воин</span><span class="bbox">Уровень: 1</span></div>
+              <div class="before-row"><span class="bbox">Урон: d6 <button class="bbtn">i</button></span><span class="bbox">Броня: 3 <button class="bbtn">i</button></span></div>
+              <div class="before-row"><span class="bbox">HP</span><button class="bbtn">−1</button><span class="bbox"><b>18/24</b></span><button class="bbtn">+1</button><button class="bbtn">i</button></div>
+              <div class="before-row"><span class="bbox">XP</span><button class="bbtn">−10</button><span class="bbox"><b>40/40</b></span><button class="bbtn">+10</button><button class="bbtn">+100</button></div>
+              <div class="before-alert">⚠ Готов к повышению уровня!</div>
+            </div>
+            <div class="before-shell-tabs">
+              <button class="before-tab is-active">Основное</button>
+              <button class="before-tab">Инвентарь</button>
+              <button class="before-tab">Магия</button>
+              <button class="before-tab">Кубики</button>
+              <button class="before-tab">Заметки</button>
+            </div>
+            <div class="before-shell-body">
+              ↓ характеристики, навыки…<br>
+              <span style="color: var(--vtt-danger-bright);">всего ~180px под контент из 800</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">После</p>
+        <div class="viewport">
+          <div class="viewport-chrome"><span>1280 × 800</span><span>новый</span></div>
+          <div class="app-shell" style="min-height: 460px;">
+            <header class="app-shell-header">
+              <div class="status-header">
+                <div class="sh-id">
+                  <button class="sh-back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg></button>
+                  <div class="sh-id-text">
+                    <div class="sh-id-line">
+                      <span class="sh-name">Йорик Медвежатник</span>
+                      <span class="sh-meta"><b>Воин</b> · ур. 1</span>
+                    </div>
+                    <span class="sh-truename">
+                      <span class="sh-truename-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg></span>
+                      Варн'каар
+                    </span>
+                  </div>
+                </div>
+                <div class="sh-trio">
+                  <div class="status-trio">
+                    <div class="status-chip"><span class="sc-value">d6</span><span class="sc-unit">Урон</span></div>
+                    <span class="sc-divider"></span>
+                    <div class="status-chip"><span class="sc-value">3</span><span class="sc-unit">Броня</span></div>
+                    <span class="sc-divider"></span>
+                    <div class="status-chip"><span class="sc-value">24</span><span class="sc-unit">Монет</span></div>
+                  </div>
+                </div>
+                <div class="sh-hp">
+                  <div class="hp-bar">
+                    <span class="hp-bar-label">HP</span>
+                    <span class="hp-bar-values"><span class="hp-current">18</span><span class="hp-sep">/</span><span class="hp-max">24</span></span>
+                    <span class="hp-bar-ctrls"><button class="hp-bar-btn">−</button><button class="hp-bar-btn">+</button></span>
+                    <div class="hp-bar-track-wrap"><div class="hp-bar-track"><div class="hp-bar-fill" style="width:75%"></div></div></div>
+                  </div>
+                </div>
+                <div class="sh-xp">
+                  <div class="xp-bar">
+                    <span class="xp-bar-label">XP</span>
+                    <span class="xp-bar-values"><span class="xp-current">40</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+                    <span class="xp-bar-hint">готов</span>
+                    <div class="xp-bar-track-wrap"><div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%"></div></div></div>
+                  </div>
+                </div>
+              </div>
+            </header>
+            <nav class="app-shell-tabs">
+              <div class="tab-bar">
+                <button class="tab-item is-active">Основное<span class="tab-item-dot"></span></button>
+                <button class="tab-item">Инвентарь</button>
+                <button class="tab-item">Магия<span class="tab-item-dot kind-danger"></span></button>
+                <button class="tab-item">Заметки</button>
+              </div>
+            </nav>
+            <div class="app-shell-content">
+              <div class="content-block">
+                <p class="content-block-title">Характеристики</p>
+                <div class="content-block-body"><b>StatChip grid</b></div>
+              </div>
+              <div class="content-block">
+                <p class="content-block-title">Навыки · Способности</p>
+                <div class="content-block-body" style="color: var(--vtt-success);">~420px под контент из 800</div>
+              </div>
+            </div>
+            <button class="app-shell-fab" aria-label="Бросить кубик">
+              <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="16" height="16" rx="2"/>
+                <circle cx="7.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="14.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="11" cy="11" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="14.5" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="diff-table">
+      <span class="h">параметр</span><span class="h">было</span><span class="h">стало</span>
+
+      <span>Хедер (высота)</span><span class="was">~280 px</span><span class="now">~96 px</span>
+      <span>Вкладки</span><span class="was">5 (вкл. «Кубики»)</span><span class="now">4 + FAB</span>
+      <span>Контент на 800 высоты</span><span class="was">~180 px (22%)</span><span class="now">~420 px (52%)</span>
+      <span>Сигналов внимания</span><span class="was">1 (alert level-up)</span><span class="now">2 типа (точка, бейдж) · на любом табе</span>
+      <span>Дайс-бросок</span><span class="was">таб «Кубики» — сменить контекст</span><span class="now">FAB — не покидая вкладки</span>
+      <span>Фоновых уровней</span><span class="was">1 (всё одно)</span><span class="now">4 (base/surface/elevated/sunken)</span>
+    </div>
+
+    <div class="notes">
+      <b>Главное изменение:</b> экран перестал быть «списком плотно прижатых блоков без приоритета».
+      Появился <b>колпак</b> (identity + navigation — всегда видно), <b>холст</b> (scroll-content — что сейчас важно)
+      и <b>действие</b> (FAB — что всегда доступно). Это три разных роли с разной логикой, и разделить их было главной
+      задачей каркаса.
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

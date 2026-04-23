@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>StatChip · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-success: #6B8E4E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+    --vtt-text-inverse: #0E0B08;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 48px 40px 96px;
+  }
+
+  /* ================ PAGE CHROME ================ */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 48px;
+    letter-spacing: 0.005em;
+    margin: 0 0 12px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.05;
+  }
+  .lead {
+    max-width: 720px;
+    color: var(--vtt-text-secondary);
+    margin: 0 0 40px;
+  }
+  .lead a { color: var(--vtt-accent); text-decoration: none; border-bottom: 1px dotted var(--vtt-accent-deep); }
+
+  section.group {
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 400;
+    margin: 0 0 4px;
+    color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted);
+    font-size: 14px;
+    margin: 0 0 24px;
+    max-width: 720px;
+  }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0 0 20px;
+  }
+  .row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .row-tight { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+
+  .variant-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    margin-bottom: 2px;
+  }
+
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+  .notes code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  /* ================ BASE STATCHIP ================ */
+  /*
+    Атом характеристики персонажа (СИЛ, ЛОВ, ТЕЛ, ИНТ, МУД, ХАР).
+    Ядро: label-caps + big-number-serif. Формула «2d6» — подпись muted
+    или tooltip, чтобы не воровать внимание у значения.
+  */
+
+  .stat-chip {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 68px;
+    padding: 10px 12px 8px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-primary);
+    cursor: pointer;
+    transition: border-color var(--t-fast) var(--ease),
+                background var(--t-fast) var(--ease),
+                transform var(--t-fast) var(--ease);
+    user-select: none;
+  }
+  .stat-chip:hover {
+    border-color: var(--vtt-border-strong);
+    background: var(--vtt-bg-elevated);
+  }
+  .stat-chip:active { transform: translateY(1px); }
+
+  .stat-chip .sc-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    line-height: 1;
+  }
+  .stat-chip .sc-value {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
+  .stat-chip .sc-dice {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--vtt-text-muted);
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* ---- states ---- */
+  .stat-chip.is-zero .sc-value { color: var(--vtt-text-secondary); }
+  .stat-chip.is-positive .sc-value { color: var(--vtt-accent-soft); }
+  .stat-chip.is-high .sc-value { color: var(--vtt-accent); }
+
+  .stat-chip.is-active {
+    border-color: var(--vtt-accent-deep);
+    background: var(--vtt-bg-elevated);
+    box-shadow: 0 0 0 3px rgba(212, 168, 87, 0.12);
+  }
+
+  .stat-chip.is-disabled { opacity: 0.4; cursor: not-allowed; }
+  .stat-chip.is-disabled:hover { border-color: var(--vtt-border-subtle); background: var(--vtt-bg-surface); }
+
+  /* ---- sizes ---- */
+  .stat-chip.sc-sm {
+    min-width: 56px;
+    padding: 6px 10px 5px;
+  }
+  .stat-chip.sc-sm .sc-value { font-size: 20px; }
+  .stat-chip.sc-sm .sc-dice { display: none; }
+
+  .stat-chip.sc-lg {
+    min-width: 88px;
+    padding: 14px 16px 12px;
+    gap: 4px;
+  }
+  .stat-chip.sc-lg .sc-value { font-size: 40px; }
+  .stat-chip.sc-lg .sc-label { font-size: 11px; }
+
+  /* ================ VARIANT A — "minimal" ================ */
+  /* Без бордера — живёт за счёт типографики. Подходит внутри другого контейнера (напр. шапки персонажа). */
+  .stat-chip.v-minimal {
+    background: transparent;
+    border-color: transparent;
+    padding: 6px 10px;
+  }
+  .stat-chip.v-minimal:hover {
+    background: var(--vtt-bg-surface);
+    border-color: transparent;
+  }
+
+  /* ================ VARIANT B — "row" ================ */
+  /* Горизонтальный компоновщик: label · value · dice в одну строку. Для очень плотных мест (инвентарь, floating panel). */
+  .stat-chip.v-row {
+    flex-direction: row;
+    gap: 10px;
+    padding: 6px 12px;
+    min-width: 0;
+  }
+  .stat-chip.v-row .sc-label { letter-spacing: 0.14em; }
+  .stat-chip.v-row .sc-value { font-size: 18px; }
+  .stat-chip.v-row .sc-dice { margin: 0; }
+
+  /* ================ VARIANT C — "hero" (actionable) ================ */
+  /* Кликабельная плитка с hover-отжатием dice-иконки → быстрый бросок. */
+  .stat-chip.v-hero {
+    min-width: 96px;
+    padding: 14px 16px 10px;
+  }
+  .stat-chip.v-hero .sc-value { font-size: 36px; }
+  .stat-chip.v-hero .sc-roll-hint {
+    position: absolute;
+    inset: auto 0 6px 0;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-accent);
+    opacity: 0;
+    transition: opacity var(--t-fast) var(--ease);
+    pointer-events: none;
+  }
+  .stat-chip.v-hero:hover .sc-roll-hint { opacity: 1; }
+  .stat-chip.v-hero:hover .sc-dice { opacity: 0; }
+  .stat-chip.v-hero .sc-dice { transition: opacity var(--t-fast) var(--ease); }
+
+  /* ================ MODIFIER BADGE ================ */
+  /*
+    Показывает временную правку (бафф/дебафф/экипировка/проклятие).
+    На чипе видно: эффективное значение крупно + маленький бейдж-дельта в углу.
+    Источник и база — в tooltip.
+  */
+  .stat-chip.has-mod { border-color: var(--vtt-border-strong); }
+
+  .stat-chip .sc-mod {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: var(--r-pill);
+    background: var(--vtt-bg-base);
+    border: 1px solid var(--vtt-border-strong);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .stat-chip .sc-mod.is-buff {
+    color: var(--vtt-success);
+    border-color: rgba(107, 142, 78, 0.55);
+    background: rgba(107, 142, 78, 0.12);
+  }
+  .stat-chip .sc-mod.is-debuff {
+    color: var(--vtt-danger-bright);
+    border-color: rgba(178, 59, 79, 0.55);
+    background: rgba(58, 24, 32, 0.9);
+  }
+
+  .stat-chip .sc-base {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--vtt-text-muted);
+    line-height: 1;
+    margin-top: 1px;
+  }
+  .stat-chip .sc-base s { text-decoration: line-through; opacity: 0.85; }
+
+  /* когда значение меняется баффом — слегка «подсвечиваем» число */
+  .stat-chip.has-mod.is-buffed .sc-value { color: var(--vtt-success); }
+  .stat-chip.has-mod.is-debuffed .sc-value { color: var(--vtt-danger-bright); }
+
+  /* ================ INLINE EDIT ================ */
+  /*
+    Режим ручной правки. Запускается: tap на значение (или long-press на mobile).
+    Выход: Enter / клик вне / кнопка ✓. Esc отменяет.
+  */
+  .stat-chip.is-editing {
+    padding: 8px 6px 6px;
+    background: var(--vtt-bg-elevated);
+    border-color: var(--vtt-accent-deep);
+    box-shadow: 0 0 0 3px rgba(212, 168, 87, 0.15);
+    cursor: default;
+  }
+  .stat-chip.is-editing .sc-dice { display: none; }
+
+  .sc-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .sc-stepper button {
+    width: 22px; height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .sc-stepper button:hover {
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+  }
+  .sc-stepper input {
+    width: 42px;
+    padding: 4px 0;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    outline: none;
+    box-shadow: var(--shadow-inset);
+    /* hide native spinner */
+    -moz-appearance: textfield;
+  }
+  .sc-stepper input::-webkit-outer-spin-button,
+  .sc-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .sc-stepper input:focus { border-color: var(--vtt-accent-deep); }
+
+  /* «карандашик» hover-подсказка что можно редактировать */
+  .stat-chip[data-editable="true"]:hover::after {
+    content: "✎";
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 10px;
+    color: var(--vtt-text-muted);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* ================ STAT POPOVER ================ */
+  /*
+    Frosted-glass поповер, прилетающий от чипа по тапу.
+    Живёт над контентом, закрывается кликом вне / Esc.
+    Содержит: главный бросок (hero), список активных эффектов, «+эффект»,
+    «поправить базу».
+  */
+  .popover-demo-wrap {
+    position: relative;
+    display: inline-block;
+    padding: 8px 220px 120px 0;
+  }
+  .popover-anchor-line {
+    position: absolute;
+    left: 68px;
+    top: 62px;
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(to right, var(--vtt-border-gold), transparent);
+    opacity: 0.6;
+  }
+
+  .stat-popover {
+    position: relative;
+    display: inline-block;
+    min-width: 280px;
+    max-width: 320px;
+    padding: 14px 16px 12px;
+    background: rgba(36, 28, 21, 0.96);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    color: var(--vtt-text-primary);
+  }
+  .stat-popover::before {
+    /* треугольник-стрелочка (указывает на чип, слева) */
+    content: "";
+    position: absolute;
+    left: -7px;
+    top: 24px;
+    width: 12px;
+    height: 12px;
+    background: rgba(36, 28, 21, 0.96);
+    border-left: 1px solid var(--vtt-border-strong);
+    border-bottom: 1px solid var(--vtt-border-strong);
+    transform: rotate(45deg);
+  }
+
+  .pop-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .pop-title {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    color: var(--vtt-accent-soft);
+    font-weight: 500;
+  }
+  .pop-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+
+  .pop-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: #A6833E;
+    color: #1a1205;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.28));
+  }
+  .pop-hero:hover { background: #BF9A4C; }
+
+  .pop-divider {
+    height: 1px;
+    margin: 12px -16px;
+    background: linear-gradient(to right, transparent, var(--vtt-border-subtle), transparent);
+  }
+
+  .pop-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .pop-section-head .pop-sub { margin: 0; }
+  .pop-section-head a {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--vtt-accent);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+  }
+  .pop-section-head a:hover { color: var(--vtt-accent-soft); }
+
+  .pop-effect {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  .pop-effect:first-of-type { border-top: 0; }
+  .pop-effect-delta {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 32px;
+    text-align: center;
+    padding: 2px 0;
+    border-radius: var(--r-xs);
+  }
+  .pop-effect-delta.is-buff { color: var(--vtt-success); background: rgba(107, 142, 78, 0.1); }
+  .pop-effect-delta.is-debuff { color: var(--vtt-danger-bright); background: rgba(178, 59, 79, 0.1); }
+  .pop-effect-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--vtt-text-primary);
+    line-height: 1.2;
+  }
+  .pop-effect-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--vtt-text-muted);
+    margin-top: 1px;
+    display: block;
+  }
+  .pop-effect-remove {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .pop-effect-remove:hover { color: var(--vtt-danger-bright); border-color: var(--vtt-danger); }
+
+  .pop-empty {
+    font-size: 12px;
+    color: var(--vtt-text-muted);
+    font-style: italic;
+    padding: 4px 0 2px;
+  }
+
+  .pop-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .pop-btn {
+    flex: 1;
+    padding: 8px 10px;
+    background: transparent;
+    color: var(--vtt-text-secondary);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .pop-btn:hover {
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-border-strong);
+  }
+
+  /* --- inline add-effect form --- */
+  .pop-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 0 2px;
+  }
+  .pop-add-form label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 2px 0 -4px;
+  }
+  .pop-add-form input[type="text"] {
+    width: 100%;
+    padding: 7px 10px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    outline: none;
+    box-shadow: var(--shadow-inset);
+  }
+  .pop-add-form input[type="text"]:focus { border-color: var(--vtt-accent-deep); }
+
+  .pop-add-form .delta-stepper {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .pop-add-form .delta-stepper button {
+    width: 28px; height: 28px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .pop-add-form .delta-stepper button:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .pop-add-form .delta-stepper input {
+    width: 52px;
+    padding: 4px 0;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-accent-soft);
+    outline: none;
+    box-shadow: var(--shadow-inset);
+  }
+
+  /* длительность — полноширинный segmented на отдельной строке */
+  .pop-add-form .duration {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    padding: 3px;
+    box-shadow: var(--shadow-inset);
+  }
+  .pop-add-form .duration button {
+    padding: 7px 8px;
+    background: transparent;
+    border: 0;
+    color: var(--vtt-text-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    white-space: nowrap;
+    line-height: 1;
+    transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .pop-add-form .duration button:hover { color: var(--vtt-text-secondary); }
+  .pop-add-form .duration button.active {
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+  }
+
+  .pop-add-form .form-row-submit {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  /* «стрелка назад» в шапке поповера — возвращает к списку эффектов */
+  .pop-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    background: transparent;
+    border: 0;
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    margin-right: 4px;
+    padding: 0;
+  }
+  .pop-back:hover { color: var(--vtt-accent-soft); }
+
+  /* ================ GRIDS ================ */
+  .stat-grid-6 {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stat-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stat-grid-6 > .stat-chip,
+  .stat-grid-3 > .stat-chip { width: 100%; }
+
+  /* ================ BEFORE/AFTER ================ */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .compare-col { display: flex; flex-direction: column; gap: 12px; }
+  .compare-head {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .compare-head.ok { color: var(--vtt-success); }
+  .compare-head.bad { color: var(--vtt-danger-bright); }
+
+  /* имитация «как сейчас» — крупная бордер-карточка */
+  .legacy-chip {
+    background: var(--vtt-bg-base);
+    border: 1px solid var(--vtt-accent-deep);
+    border-radius: var(--r-sm);
+    padding: 16px 20px 14px;
+    min-width: 140px;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .legacy-chip .l-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-soft);
+  }
+  .legacy-chip .l-value {
+    align-self: center;
+    font-family: var(--font-serif);
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--vtt-accent-soft);
+  }
+  .legacy-chip .l-dice {
+    align-self: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-muted);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-xs);
+    padding: 3px 10px;
+  }
+
+  .legacy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  /* ================ FAKE PANEL — in-context preview ================ */
+  .mini-panel {
+    max-width: 420px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-1);
+  }
+  .mini-panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .mini-panel-head h3 {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin: 0;
+    font-weight: 400;
+  }
+  .mini-panel-head a {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--vtt-text-secondary);
+    text-decoration: none;
+  }
+
+  /* Tooltip (frosted) — рудиментарный, из palette */
+  .tooltip-preview {
+    display: inline-block;
+    padding: 10px 14px;
+    background: rgba(36, 28, 21, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    color: var(--vtt-text-secondary);
+    box-shadow: var(--shadow-2);
+    max-width: 240px;
+    position: relative;
+    top: -4px;
+    margin-left: 10px;
+  }
+  .tooltip-preview b {
+    color: var(--vtt-accent-soft);
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 14px;
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+
+  footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--vtt-text-muted);
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <p class="eyebrow">Component · v0.1</p>
+  <h1>StatChip</h1>
+  <p class="lead">
+    Атом характеристики персонажа (<b>СИЛ · ЛОВ · ТЕЛ · ИНТ · МУД · ХАР</b>).
+    Принцип: <b>типографика ведёт, рамка молчит</b>. Label — моно-капс в <code>--vtt-accent-deep</code>,
+    крупное значение — serif в <code>--vtt-accent-soft</code>, формула «2d6» — мелкая подпись muted
+    или уходит в tooltip. Три размера (sm / md / lg) и три варианта
+    (default, minimal, row, hero). Взаимодействие: тап — быстрый бросок 2d6 с этим модификатором.
+  </p>
+
+  <!-- ============ 1. BASE ============ -->
+  <section class="group">
+    <h2>1. База · размеры</h2>
+    <p class="group-lead">
+      Main size — <b>md</b>. Это то, что стоит в сетке «Характеристики» на экране персонажа.
+      <b>sm</b> — для шапки и плотных панелей; <b>lg</b> — для экрана создания персонажа, где
+      статы — главный фокус шага.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Три размера</p>
+      <div class="row" style="align-items: flex-end">
+        <div class="col">
+          <span class="variant-label">sm · 56px</span>
+          <div class="stat-chip sc-sm is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+          </div>
+        </div>
+        <div class="col">
+          <span class="variant-label">md · 68px (default)</span>
+          <div class="stat-chip is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+        </div>
+        <div class="col">
+          <span class="variant-label">lg · 88px</span>
+          <div class="stat-chip sc-lg is-high">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+3</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Значения-модификаторы.</b> В WoD статы 0 / +1 / +2 / +3. Я добавил <code>+</code> перед
+      положительными — так читается яснее, чем «голая» 1. Ноль рисуется как «0»
+      в приглушённом <code>--vtt-text-secondary</code>: глаз сразу выделяет
+      сильные стороны персонажа.
+    </div>
+  </section>
+
+  <!-- ============ 2. STATES ============ -->
+  <section class="group">
+    <h2>2. Состояния значений</h2>
+    <p class="group-lead">
+      Цвет значения показывает силу стата без дополнительных иконок и бордюров.
+      Экономит место — можно читать «где у персонажа провал, где сила» за одну секунду.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Оттенки по силе модификатора</p>
+      <div class="row">
+        <div class="col">
+          <span class="variant-label">0 · secondary</span>
+          <div class="stat-chip is-zero"><span class="sc-label">ЛОВ</span><span class="sc-value">0</span><span class="sc-dice">2d6</span></div>
+        </div>
+        <div class="col">
+          <span class="variant-label">+1 · soft</span>
+          <div class="stat-chip is-positive"><span class="sc-label">ТЕЛ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        </div>
+        <div class="col">
+          <span class="variant-label">+2 · soft</span>
+          <div class="stat-chip is-positive"><span class="sc-label">ИНТ</span><span class="sc-value">+2</span><span class="sc-dice">2d6</span></div>
+        </div>
+        <div class="col">
+          <span class="variant-label">+3 · accent</span>
+          <div class="stat-chip is-high"><span class="sc-label">МУД</span><span class="sc-value">+3</span><span class="sc-dice">2d6</span></div>
+        </div>
+        <div class="col">
+          <span class="variant-label">is-active</span>
+          <div class="stat-chip is-positive is-active"><span class="sc-label">ХАР</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        </div>
+        <div class="col">
+          <span class="variant-label">is-disabled</span>
+          <div class="stat-chip is-positive is-disabled"><span class="sc-label">СИЛ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. VARIANTS ============ -->
+  <section class="group">
+    <h2>3. Варианты компоновки</h2>
+    <p class="group-lead">
+      Один компонент — несколько «шкурок» под разные контексты. Все на тех же токенах,
+      различаются только раскладкой и бордером.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">A. default · B. minimal · C. row · D. hero</p>
+      <div class="row" style="gap: 28px; align-items: flex-start">
+
+        <div class="col">
+          <span class="variant-label">A. default</span>
+          <div class="stat-chip is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+          <span class="variant-label" style="margin-top: 4px">для сетки характеристик</span>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">B. minimal</span>
+          <div class="stat-chip v-minimal is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+          </div>
+          <span class="variant-label" style="margin-top: 4px">внутри другой панели</span>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">C. row</span>
+          <div class="stat-chip v-row is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+          <span class="variant-label" style="margin-top: 4px">для шапки / floating</span>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">D. hero (hover)</span>
+          <div class="stat-chip v-hero is-high">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+3</span>
+            <span class="sc-dice">2d6</span>
+            <span class="sc-roll-hint">бросить</span>
+          </div>
+          <span class="variant-label" style="margin-top: 4px">экран создания · наведи</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Когда что использовать.</b>
+      <br>· <b>default</b> — вкладка «Основное» на шите персонажа.
+      <br>· <b>minimal</b> — если stats показываются внутри уже оформленной карточки
+      (инвентарь, способность с требованием «ТЕЛ+2»).
+      <br>· <b>row</b> — в шапке, в tooltip'ах, в deep-compact режимах.
+      <br>· <b>hero</b> — только на экране создания персонажа: подсказывает действие «бросить».
+    </div>
+  </section>
+
+  <!-- ============ 4. GRID ============ -->
+  <section class="group">
+    <h2>4. В сетке</h2>
+    <p class="group-lead">
+      6 статов в ряд на широком экране, 3×2 на мобиле.
+      Зазор — <code>--s-2 (8px)</code>, никаких внешних бордюров у группы — сцена сама
+      задаёт рамку.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Desktop · 6 в ряд (главная раскладка)</p>
+      <div class="stat-grid-6" style="max-width: 540px">
+        <div class="stat-chip is-positive"><span class="sc-label">СИЛ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-zero"><span class="sc-label">ЛОВ</span><span class="sc-value">0</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-high"><span class="sc-label">ТЕЛ</span><span class="sc-value">+3</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-positive"><span class="sc-label">ИНТ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-positive"><span class="sc-label">МУД</span><span class="sc-value">+2</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-zero"><span class="sc-label">ХАР</span><span class="sc-value">0</span><span class="sc-dice">2d6</span></div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px">Mobile · 3×2</p>
+      <div class="stat-grid-3" style="max-width: 280px">
+        <div class="stat-chip is-positive"><span class="sc-label">СИЛ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-zero"><span class="sc-label">ЛОВ</span><span class="sc-value">0</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-high"><span class="sc-label">ТЕЛ</span><span class="sc-value">+3</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-positive"><span class="sc-label">ИНТ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-positive"><span class="sc-label">МУД</span><span class="sc-value">+2</span><span class="sc-dice">2d6</span></div>
+        <div class="stat-chip is-zero"><span class="sc-label">ХАР</span><span class="sc-value">0</span><span class="sc-dice">2d6</span></div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px">In-context · внутри мини-панели</p>
+      <div class="mini-panel">
+        <div class="mini-panel-head">
+          <h3>Характеристики</h3>
+          <a href="#">Бросить все 2d6 →</a>
+        </div>
+        <div class="stat-grid-3">
+          <div class="stat-chip v-minimal is-positive"><span class="sc-label">СИЛ</span><span class="sc-value">+1</span></div>
+          <div class="stat-chip v-minimal is-zero"><span class="sc-label">ЛОВ</span><span class="sc-value">0</span></div>
+          <div class="stat-chip v-minimal is-high"><span class="sc-label">ТЕЛ</span><span class="sc-value">+3</span></div>
+          <div class="stat-chip v-minimal is-positive"><span class="sc-label">ИНТ</span><span class="sc-value">+1</span></div>
+          <div class="stat-chip v-minimal is-positive"><span class="sc-label">МУД</span><span class="sc-value">+2</span></div>
+          <div class="stat-chip v-minimal is-zero"><span class="sc-label">ХАР</span><span class="sc-value">0</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. WITH TOOLTIP ============ -->
+  <section class="group">
+    <h2>5. С tooltip'ом</h2>
+    <p class="group-lead">
+      Формула «2d6», правила броска и история — всё в tooltip по hover/tap.
+      На чипе физически остаётся только <b>метка</b> и <b>число</b>. Это и есть
+      главная идея: мы не выкидываем данные — мы убираем их с первого уровня.
+    </p>
+    <div class="stage">
+      <p class="stage-title">Hover / tap</p>
+      <div class="row" style="align-items: flex-start">
+        <div class="stat-chip is-high">
+          <span class="sc-label">ТЕЛ</span>
+          <span class="sc-value">+3</span>
+        </div>
+        <div class="tooltip-preview">
+          <b>Телосложение · +3</b>
+          Бросок 2d6 + 3 против целевой сложности.
+          Используется для сопротивления яду, болезням, эффектам ртути.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. BEFORE / AFTER ============ -->
+  <section class="group">
+    <h2>6. Было / стало</h2>
+    <p class="group-lead">
+      Слева — текущая реализация (<code>app-doc/screens/create-character.png</code>):
+      6 крупных бордерных карточек ~140×110, требует вертикального скролла, все
+      элементы претендуют на равное внимание. Справа — новый StatChip.
+    </p>
+
+    <div class="compare">
+      <div class="compare-col">
+        <p class="compare-head bad">Как сейчас · 3 карточки высотой ~330px</p>
+        <div class="legacy-grid" style="max-width: 480px">
+          <div class="legacy-chip">
+            <span class="l-label">СИЛ</span>
+            <span class="l-value">1</span>
+            <span class="l-dice">2d6</span>
+          </div>
+          <div class="legacy-chip">
+            <span class="l-label">ЛОВ</span>
+            <span class="l-value">1</span>
+            <span class="l-dice">2d6</span>
+          </div>
+          <div class="legacy-chip">
+            <span class="l-label">ТЕЛ</span>
+            <span class="l-value">3</span>
+            <span class="l-dice">2d6</span>
+          </div>
+        </div>
+        <p class="compare-head">· каждая карточка обведена бордером акцента<br>· число и 2d6 соревнуются за внимание<br>· занимает втрое больше места, чем нужно</p>
+      </div>
+
+      <div class="compare-col">
+        <p class="compare-head ok">Стало · те же 3 данные, ~120px высотой</p>
+        <div class="stat-grid-3" style="max-width: 280px">
+          <div class="stat-chip is-positive"><span class="sc-label">СИЛ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+          <div class="stat-chip is-positive"><span class="sc-label">ЛОВ</span><span class="sc-value">+1</span><span class="sc-dice">2d6</span></div>
+          <div class="stat-chip is-high"><span class="sc-label">ТЕЛ</span><span class="sc-value">+3</span><span class="sc-dice">2d6</span></div>
+        </div>
+        <p class="compare-head">· бордер выключен, контур — через фон-токен<br>· значение — главное по размеру и цвету<br>· «2d6» живёт как тихая подпись</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7. TEMPORARY MODIFIER ============ -->
+  <section class="group">
+    <h2>7. Временный модификатор</h2>
+    <p class="group-lead">
+      Бафф от духа, дебафф от яда, бонус от экипировки — всё это показывается
+      <b>бейджем-дельтой в углу чипа</b>. На самой плитке отображается
+      <b>эффективное значение</b> (то, с которым игрок бросает), а база
+      и источник — в подписи / tooltip'е. Один взгляд — видно, что стат «не свой».
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояния модификатора</p>
+      <div class="row" style="gap: 28px; align-items: flex-start; padding: 12px 0 4px">
+
+        <div class="col">
+          <span class="variant-label">нет мода (норма)</span>
+          <div class="stat-chip is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">бафф +1 (заклинание)</span>
+          <div class="stat-chip has-mod is-buffed">
+            <span class="sc-mod is-buff">+1</span>
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+2</span>
+            <span class="sc-base">база <s>+1</s></span>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">дебафф −2 (яд)</span>
+          <div class="stat-chip has-mod is-debuffed">
+            <span class="sc-mod is-debuff">−2</span>
+            <span class="sc-label">ТЕЛ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-base">база <s>+3</s></span>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">бафф, размер sm</span>
+          <div class="stat-chip sc-sm has-mod is-buffed">
+            <span class="sc-mod is-buff">+1</span>
+            <span class="sc-label">МУД</span>
+            <span class="sc-value">+3</span>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px">С tooltip — источник и стек эффектов</p>
+      <div class="row" style="align-items: flex-start">
+        <div class="stat-chip has-mod is-buffed">
+          <span class="sc-mod is-buff">+1</span>
+          <span class="sc-label">СИЛ</span>
+          <span class="sc-value">+2</span>
+          <span class="sc-base">база <s>+1</s></span>
+        </div>
+        <div class="tooltip-preview" style="max-width: 280px">
+          <b>Сила · +2 (база +1)</b>
+          <div style="display:flex; justify-content:space-between; margin-top: 6px; color: var(--vtt-text-primary);">
+            <span>· Благословение</span>
+            <span style="color: var(--vtt-success); font-family: var(--font-mono);">+1</span>
+          </div>
+          <div style="font-size: 11px; color: var(--vtt-text-muted); margin-top: 2px;">источник: Дух «Лисовин» · до конца сцены</div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px">Стекающиеся моды · свёрнутый бейдж</p>
+      <div class="row" style="align-items: flex-start; gap: 28px">
+        <div class="col">
+          <span class="variant-label">два мода: +1 и −1 = чистая 0</span>
+          <div class="stat-chip has-mod">
+            <span class="sc-mod">±0</span>
+            <span class="sc-label">ИНТ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-base">2 эффекта</span>
+          </div>
+        </div>
+        <div class="col">
+          <span class="variant-label">три мода: итого −1</span>
+          <div class="stat-chip has-mod is-debuffed">
+            <span class="sc-mod is-debuff">−1</span>
+            <span class="sc-label">ХАР</span>
+            <span class="sc-value">0</span>
+            <span class="sc-base">3 эффекта</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Логика.</b> В чипе хранится и <b>база</b> (из листа персонажа), и массив
+      активных эффектов <code>[{source, delta, expires}]</code>. Отображение:
+      <br>· <b>sc-value</b> = база + сумма дельт (это то, чем бросают);
+      <br>· <b>sc-mod</b> = net-дельта со знаком, зелёный если &gt; 0, красный если &lt; 0, нейтральный если = 0;
+      <br>· <b>sc-base</b> — тихая подпись «база <s>+1</s>» если мод один, или «N эффектов» если стек.
+      <br><br>
+      <b>Почему бейдж в углу, а не inline.</b> Угол не конкурирует с числом:
+      глаз всё равно ловит большое значение в центре. Inline-формат «+1→+2»
+      съедает ширину чипа и плохо читается в сетке из 6.
+    </div>
+  </section>
+
+  <!-- ============ 8. INLINE EDIT ============ -->
+  <section class="group">
+    <h2>8. Ручная правка значения</h2>
+    <p class="group-lead">
+      Мастер сказал «ваша СИЛ навсегда −1» — нужен способ быстро поменять базу.
+      Тап по числу (или long-press на mobile) переводит чип в <b>режим редактирования</b>:
+      появляется stepper «− значение +» прямо внутри плитки. Enter / клик вне — сохранить,
+      Esc — отменить. Никаких модалок.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Жизненный цикл правки</p>
+      <div class="row" style="gap: 24px; align-items: flex-start">
+
+        <div class="col">
+          <span class="variant-label">1. default (hover → карандаш)</span>
+          <div class="stat-chip is-positive" data-editable="true">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+1</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+          <span class="variant-label" style="margin-top: 4px">наведите, чтобы увидеть ✎</span>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">2. is-editing · stepper</span>
+          <div class="stat-chip is-editing">
+            <span class="sc-label">СИЛ</span>
+            <div class="sc-stepper" role="group" aria-label="значение СИЛ">
+              <button aria-label="уменьшить">−</button>
+              <input type="number" value="1" min="-3" max="5" step="1">
+              <button aria-label="увеличить">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">3. сохранено (+2)</span>
+          <div class="stat-chip is-positive">
+            <span class="sc-label">СИЛ</span>
+            <span class="sc-value">+2</span>
+            <span class="sc-dice">2d6</span>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px">Правка базы, когда уже есть временный мод</p>
+      <p style="color: var(--vtt-text-secondary); font-size: 13px; max-width: 640px; margin: 0 0 16px;">
+        Редактируется <b>только база</b>. Stepper показывает базу в белом (accent-soft),
+        а итог с учётом мода — подписью ниже. Когда сохраним, net-значение
+        пересчитается и бейдж-дельта останется на месте.
+      </p>
+      <div class="row" style="gap: 24px; align-items: flex-start">
+        <div class="stat-chip is-editing has-mod is-buffed">
+          <span class="sc-mod is-buff">+1</span>
+          <span class="sc-label">СИЛ</span>
+          <div class="sc-stepper" role="group" aria-label="база СИЛ">
+            <button aria-label="уменьшить">−</button>
+            <input type="number" value="2" min="-3" max="5" step="1">
+            <button aria-label="увеличить">+</button>
+          </div>
+          <span class="sc-base">итог +3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Почему inline, а не модалка.</b> Правка стата — действие на 1 секунду.
+      Модалка — это 300ms анимации появления + 300ms исчезновения + перевод фокуса.
+      Inline stepper занимает столько же места, сколько само значение, и не прерывает
+      просмотр листа персонажа. Разница в ощущении «серьёзная операция» vs «подкрутить».
+      <br><br>
+      <b>Лимиты.</b> В WoD базовый разброс — 0..+3 (с возможными редкими крайностями).
+      Stepper зажат в <code>[−3, +5]</code> — достаточно для всех реалистичных сценариев
+      (дренаж, мегабаффы от артефактов) и не даёт случайно набрать +99 от залипания кнопки.
+      <br><br>
+      <b>Зачем различать «правку базы» и «добавить мод».</b> База меняется редко
+      (level-up, проклятие навсегда). Временный мод — часто (каждое заклинание, бой).
+      Это две разные операции и две разные ментальные модели: stepper = «поменять мой лист»,
+      add modifier = «пришёл эффект извне».
+    </div>
+  </section>
+
+  <!-- ============ 9. POPOVER — ТОЧКА ВЗАИМОДЕЙСТВИЯ ============ -->
+  <section class="group">
+    <h2>9. Popover · как навесить модификатор</h2>
+    <p class="group-lead">
+      Главная точка входа во все операции над статом —
+      <b>тап по чипу открывает Popover</b> (frosted glass, прилетает от чипа).
+      Внутри три уровня: (1) крупная кнопка «Бросить 2d6+N», (2) список активных
+      эффектов с кнопкой удаления, (3) действия «+ Эффект» и «Поправить базу».
+      Закрытие — Esc / клик вне / ещё один тап по чипу.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояние A · эффектов нет</p>
+      <div class="popover-demo-wrap">
+        <div class="stat-chip is-positive is-active" style="vertical-align: top;">
+          <span class="sc-label">СИЛ</span>
+          <span class="sc-value">+1</span>
+          <span class="sc-dice">2d6</span>
+        </div>
+        <span class="popover-anchor-line"></span>
+        <div class="stat-popover" style="margin-left: 36px">
+          <div class="pop-head">
+            <span class="pop-title">Сила · +1</span>
+            <span class="pop-sub">СИЛ</span>
+          </div>
+          <button class="pop-hero">🎲 &nbsp;Бросить 2d6 + 1</button>
+
+          <div class="pop-divider"></div>
+
+          <div class="pop-section-head">
+            <span class="pop-sub">Активные эффекты</span>
+            <a href="#">+ Эффект</a>
+          </div>
+          <div class="pop-empty">Нет активных эффектов</div>
+
+          <div class="pop-actions">
+            <button class="pop-btn">✎ Поправить базу</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 16px">Состояние B · стек эффектов, видно кто и откуда</p>
+      <div class="popover-demo-wrap">
+        <div class="stat-chip has-mod is-buffed is-active" style="vertical-align: top;">
+          <span class="sc-mod is-buff">+1</span>
+          <span class="sc-label">СИЛ</span>
+          <span class="sc-value">+2</span>
+          <span class="sc-base">база <s>+1</s></span>
+        </div>
+        <span class="popover-anchor-line"></span>
+        <div class="stat-popover" style="margin-left: 36px">
+          <div class="pop-head">
+            <span class="pop-title">Сила · +2</span>
+            <span class="pop-sub">база +1</span>
+          </div>
+          <button class="pop-hero">🎲 &nbsp;Бросить 2d6 + 2</button>
+
+          <div class="pop-divider"></div>
+
+          <div class="pop-section-head">
+            <span class="pop-sub">Активные эффекты · 2</span>
+            <a href="#">+ Эффект</a>
+          </div>
+          <div class="pop-effect">
+            <span class="pop-effect-delta is-buff">+2</span>
+            <div class="pop-effect-name">
+              Благословение
+              <span class="pop-effect-meta">дух «Лисовин» · до конца сцены</span>
+            </div>
+            <button class="pop-effect-remove" aria-label="снять эффект">×</button>
+          </div>
+          <div class="pop-effect">
+            <span class="pop-effect-delta is-debuff">−1</span>
+            <div class="pop-effect-name">
+              Усталость
+              <span class="pop-effect-meta">вручную · до отдыха</span>
+            </div>
+            <button class="pop-effect-remove" aria-label="снять эффект">×</button>
+          </div>
+
+          <div class="pop-actions">
+            <button class="pop-btn">✎ Поправить базу</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 16px">Состояние C · «+ Эффект» раскрыл мини-форму</p>
+      <div class="popover-demo-wrap">
+        <div class="stat-chip is-positive is-active" style="vertical-align: top;">
+          <span class="sc-label">ТЕЛ</span>
+          <span class="sc-value">+1</span>
+          <span class="sc-dice">2d6</span>
+        </div>
+        <span class="popover-anchor-line"></span>
+        <div class="stat-popover" style="margin-left: 36px">
+          <div class="pop-head" style="align-items: center;">
+            <span style="display: inline-flex; align-items: center;">
+              <button class="pop-back" aria-label="назад">←</button>
+              <span class="pop-title">Новый эффект</span>
+            </span>
+            <span class="pop-sub">ТЕЛ</span>
+          </div>
+
+          <div class="pop-add-form">
+            <label>Название</label>
+            <input type="text" placeholder="напр. Яд болотной змеи" value="Яд болотной змеи">
+
+            <label>Изменение</label>
+            <div class="delta-stepper">
+              <button aria-label="меньше">−</button>
+              <input type="number" value="-2">
+              <button aria-label="больше">+</button>
+            </div>
+
+            <label>Длительность</label>
+            <div class="duration" role="group" aria-label="длительность">
+              <button>Сцена</button>
+              <button class="active">До&nbsp;отдыха</button>
+              <button>Постоянно</button>
+            </div>
+
+            <div class="form-row-submit">
+              <button class="pop-btn" style="flex: 0 0 auto; padding: 8px 16px;">Отмена</button>
+              <button class="pop-hero" style="flex: 1;">Добавить эффект</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Как это читается пользователем.</b>
+      <br>· <b>Тап</b> по чипу — «я хочу что-то сделать с этим статом». Popover — одно окно для всего.
+      <br>· <b>Hero-кнопка</b> наверху — 95% случаев это ровно то, что нужно («просто бросить»). Остальные действия — ниже и тихие (ghost).
+      <br>· <b>Удалить эффект</b> — крестик рядом с ним. Не надо открывать ещё один уровень.
+      <br>· <b>«Поправить базу»</b> уводит чип в inline-режим редактирования (§8) — popover в этот момент закрывается.
+      <br><br>
+      <b>Почему popover, а не bottom-sheet.</b> Bottom-sheet бьёт контекст — ты теряешь из виду лист персонажа. Popover «растёт» прямо от чипа и не перекрывает соседей (СИЛ всё равно видно, пока смотришь на ТЕЛ). На mobile можно fallback'ом сделать bottom-sheet, но на desktop popover даёт меньше расстройства.
+      <br><br>
+      <b>Альтернативные способы навесить мод</b> (вне StatChip, но важны для целостной картины):
+      <br>· из карточки <b>заклинания/способности</b> — «применить Благословение» → авто-мод на нужный стат;
+      <br>· из карточки <b>экипировки</b> — надел «Перчатки силы» → +1 к СИЛ автоматически, мод исчезает при снятии;
+      <br>· глобальная <b>панель эффектов персонажа</b> — для обзора всего, что сейчас висит. Но это отдельные компоненты, которые мы сделаем позже.
+      <br><br>
+      В StatChip-popover остаётся <b>ручное</b> добавление «от GM» — самый частый случай за игровым столом.
+    </div>
+  </section>
+
+  <footer>
+    VTT COMPONENTS · STATCHIP v0.1 · основан на design/palette.html
+  </footer>
+
+</div>
+
+</body>
+</html>

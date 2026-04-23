@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Inventory · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 760px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 6px; display: block;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ================================================================
+     ITEM ICON — атом (descriptor → glyph)
+     ================================================================ */
+  /*
+    .item-icon         — 28×28 квадрат с глифом в центре
+    .kind-weapon       — меч
+    .kind-armor        — нагрудник
+    .kind-shield       — щит
+    .kind-gear         — мешочек
+    .kind-tool         — молоток/ключ
+    .kind-occult       — колба
+    .kind-custom       — звёздочка
+    .is-equipped       — золотая обводка (для экипированных)
+    .is-consumable     — пунктирная обводка (расходник)
+  */
+  .item-icon {
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-muted);
+    background: var(--vtt-bg-sunken);
+  }
+  .item-icon svg { width: 16px; height: 16px; display: block; }
+  .item-icon.is-equipped {
+    border-color: var(--vtt-border-gold);
+    color: var(--vtt-accent);
+    background: rgba(140, 106, 58, 0.1);
+  }
+  .item-icon.is-consumable {
+    border-style: dashed;
+  }
+
+  /* ================================================================
+     STAT CHIP (оружие/броня на строке предмета)
+     ================================================================ */
+  .item-stat-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--vtt-text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .item-stat-chip.is-damage {
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-accent-deep);
+  }
+  .item-stat-chip.is-armor {
+    color: var(--vtt-info);
+    border-color: rgba(90, 122, 142, 0.45);
+  }
+  .item-stat-chip.is-qty {
+    color: var(--vtt-text-muted);
+    border-color: var(--vtt-border-subtle);
+    border-style: dashed;
+  }
+  .item-stat-chip.is-price {
+    color: var(--vtt-accent);
+    border-color: var(--vtt-accent-deep);
+    background: rgba(140, 106, 58, 0.08);
+  }
+  .item-stat-chip b { color: var(--vtt-accent); font-weight: 600; }
+
+  /* ================================================================
+     INVENTORY ITEM — строка предмета
+     ================================================================ */
+  /*
+    .inv-item                   — базовая строка
+    .inv-item.is-equipped       — золотая левая полоса
+    .inv-item.is-consumable     — "use"-кнопка вместо equip
+    .inv-item.variant-catalog   — для каталога (price справа + "купить")
+  */
+  .inv-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px 10px 14px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .inv-item:hover { border-color: var(--vtt-border-strong); }
+
+  .inv-item.is-equipped {
+    border-left: 2px solid var(--vtt-accent);
+    padding-left: 13px;
+    background: linear-gradient(to right, rgba(140, 106, 58, 0.06), transparent 40%);
+  }
+
+  .inv-item-body { min-width: 0; }
+  .inv-item-name {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.2;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  .inv-item-name .equipped-mark {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vtt-accent);
+    padding: 1px 5px;
+    border: 1px solid var(--vtt-accent-deep);
+    border-radius: var(--r-xs);
+    background: rgba(140, 106, 58, 0.08);
+    line-height: 1.2;
+  }
+  .inv-item-desc {
+    color: var(--vtt-text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .inv-item-desc .qty {
+    color: var(--vtt-accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    margin-right: 6px;
+  }
+
+  .inv-item-stats {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .inv-item-actions {
+    display: flex; gap: 4px; flex-shrink: 0;
+  }
+
+  /* icon-button для действий на строке предмета */
+  .item-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+    padding: 0;
+  }
+  .item-btn svg { width: 14px; height: 14px; }
+  .item-btn:hover {
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+  }
+  .item-btn.is-active {
+    border-color: var(--vtt-border-gold);
+    color: var(--vtt-accent);
+    background: rgba(140, 106, 58, 0.1);
+  }
+  .item-btn.is-danger:hover {
+    border-color: var(--vtt-danger-bright);
+    color: var(--vtt-danger-bright);
+    background: rgba(178, 59, 79, 0.08);
+  }
+  .item-btn.is-use {
+    width: auto; padding: 0 10px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-accent-deep);
+  }
+  .item-btn.is-use:hover { background: rgba(140, 106, 58, 0.15); }
+
+  /* ================================================================
+     COIN BAR — тонкая строка с монетами сверху
+     ================================================================ */
+  .coin-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+  }
+  .coin-bar-icon {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--vtt-accent);
+  }
+  .coin-bar-icon svg { width: 100%; height: 100%; }
+  .coin-bar-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .coin-bar-value {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--vtt-accent-soft);
+    line-height: 1;
+    margin-left: auto;
+    min-width: 0;
+  }
+  .coin-bar-unit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--vtt-text-muted);
+    margin-left: 4px;
+  }
+  .coin-bar-actions {
+    display: flex; gap: 4px;
+  }
+
+  /* ================================================================
+     WARNING BANNER (много оружия / брони экипировано)
+     ================================================================ */
+  .inv-warning {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: rgba(192, 138, 62, 0.08);
+    border: 1px solid rgba(192, 138, 62, 0.35);
+    border-left: 2px solid var(--vtt-warning);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+  }
+  .inv-warning-icon {
+    width: 18px; height: 18px; flex-shrink: 0;
+    color: var(--vtt-warning);
+  }
+  .inv-warning-icon svg { width: 100%; height: 100%; }
+  .inv-warning b { color: var(--vtt-warning); }
+
+  /* ================================================================
+     SECTION (обёртка для группы предметов с заголовком)
+     ================================================================ */
+  .inv-section { padding: 14px 0; }
+  .inv-section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .inv-section-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .inv-section-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--vtt-text-muted);
+  }
+  .inv-list { display: flex; flex-direction: column; gap: 6px; }
+  .inv-empty {
+    padding: 22px 14px;
+    text-align: center;
+    color: var(--vtt-text-muted);
+    font-size: 13px;
+    font-style: italic;
+    border: 1px dashed var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+  }
+
+  /* "Открыть каталог" и "+ Свой предмет" кнопки-тулбар */
+  .inv-toolbar {
+    display: flex; gap: 8px;
+    margin-top: 14px;
+  }
+  .inv-toolbar-btn {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 14px;
+    background: transparent;
+    border: 1px dashed var(--vtt-border-strong);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .inv-toolbar-btn:hover {
+    border-color: var(--vtt-border-gold);
+    color: var(--vtt-accent-soft);
+    background: rgba(140, 106, 58, 0.05);
+  }
+  .inv-toolbar-btn svg { width: 14px; height: 14px; }
+
+  /* ================================================================
+     BOTTOM SHEET
+     ================================================================ */
+  .bottom-sheet {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(26, 21, 16, 0.94);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .bs-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .bs-title {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    color: var(--vtt-accent-soft);
+  }
+  .bs-close {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    cursor: pointer;
+  }
+  .bs-close:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .bs-close svg { width: 12px; height: 12px; }
+  .bs-body {
+    padding: 14px 18px 18px;
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  .bs-foot {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding: 12px 18px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    background: rgba(14, 11, 8, 0.3);
+  }
+
+  /* catalog — search + segmented filter */
+  .catalog-search {
+    position: sticky; top: 0;
+    background: rgba(26, 21, 16, 0.96);
+    backdrop-filter: blur(10px);
+    padding: 2px 0 12px;
+    margin-bottom: 8px;
+    z-index: 2;
+  }
+  .catalog-search-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+  }
+  .catalog-search-input::placeholder { color: var(--vtt-text-muted); }
+  .catalog-search-input:focus {
+    outline: none;
+    border-color: var(--vtt-border-gold);
+    box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
+  }
+
+  .segmented {
+    display: flex; gap: 2px;
+    padding: 3px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    margin-top: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .segmented::-webkit-scrollbar { display: none; }
+  .segmented-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .segmented-btn:hover { color: var(--vtt-accent-soft); }
+  .segmented-btn.is-active {
+    background: var(--vtt-bg-elevated);
+    color: var(--vtt-accent);
+    box-shadow: inset 0 0 0 1px var(--vtt-border-strong);
+  }
+
+  /* catalog item: имя + stat + цена + "купить" */
+  .cat-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .cat-item:last-child { border-bottom: none; }
+  .cat-item-body { min-width: 0; }
+  .cat-item-name {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    color: var(--vtt-accent-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cat-item-desc {
+    font-size: 11px;
+    color: var(--vtt-text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cat-buy {
+    padding: 6px 12px;
+    background: var(--vtt-bg-elevated);
+    border: 1px solid var(--vtt-border-strong);
+    border-radius: var(--r-sm);
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+    flex-shrink: 0;
+  }
+  .cat-buy:hover { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+  .cat-buy.is-locked {
+    color: var(--vtt-text-muted);
+    border-color: var(--vtt-border-subtle);
+    cursor: not-allowed;
+  }
+
+  /* ================================================================
+     CUSTOM ITEM FORM
+     ================================================================ */
+  .form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-row-inline { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-bottom: 14px; }
+  .form-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .form-input, .form-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+  }
+  .form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--vtt-border-gold);
+    box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
+  }
+  .form-textarea { font-family: var(--font-serif); min-height: 72px; resize: vertical; }
+  .form-check {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+  }
+  .form-check-box {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--vtt-border-strong);
+    border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .form-check .form-check-box svg {
+    width: 12px; height: 12px;
+    color: var(--vtt-bg-base);
+    opacity: 0;
+    transition: opacity var(--t-fast) var(--ease);
+  }
+  .form-check.is-checked .form-check-box {
+    background: var(--vtt-accent);
+    border-color: var(--vtt-accent);
+  }
+  .form-check.is-checked .form-check-box svg { opacity: 1; }
+
+  .btn-primary, .btn-hero, .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--r-pill);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+    border: 1px solid transparent;
+  }
+  .btn-ghost { background: transparent; color: var(--vtt-text-secondary); border-color: var(--vtt-border-subtle); }
+  .btn-ghost:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .btn-primary {
+    background: var(--vtt-bg-elevated);
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+  }
+  .btn-primary:hover { background: #2e241a; border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+  .btn-hero {
+    background: #A6833E;
+    color: #1a1205;
+    border-color: #8C6A3A;
+    font-weight: 600;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+  }
+  .btn-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+  .btn-danger-ghost {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .btn-danger-ghost svg { width: 13px; height: 13px; }
+  .btn-danger-ghost:hover {
+    color: var(--vtt-danger-bright);
+    border-color: var(--vtt-border-subtle);
+    background: rgba(178, 59, 79, 0.06);
+  }
+
+  /* ================================================================
+     INSUFFICIENT COINS DIALOG
+     ================================================================ */
+  .coin-dialog {
+    max-width: 400px;
+    text-align: center;
+    padding: 22px 20px 18px;
+  }
+  .coin-dialog-icon {
+    width: 44px; height: 44px;
+    margin: 0 auto 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--vtt-warning);
+    border-radius: var(--r-pill);
+    color: var(--vtt-warning);
+    background: rgba(192, 138, 62, 0.08);
+  }
+  .coin-dialog-icon svg { width: 22px; height: 22px; }
+  .coin-dialog-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+    margin-bottom: 6px;
+  }
+  .coin-dialog-body {
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+  .coin-dialog-body .miss {
+    font-family: var(--font-mono);
+    color: var(--vtt-warning);
+  }
+  .coin-dialog-actions {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  /* ================================================================
+     INVENTORY SCREEN (молекула-страница)
+     ================================================================ */
+  .inv-screen {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* ================================================================
+     BEFORE/AFTER
+     ================================================================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 960px) { .compare { grid-template-columns: 1fr; } }
+
+  .before-wrap {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 16px;
+  }
+  .before-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-danger-bright); margin-bottom: 12px;
+  }
+  .before-row {
+    padding: 8px 12px;
+    border: 1px solid var(--vtt-danger-bright);
+    margin-bottom: 4px;
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border-radius: 0;
+  }
+  .before-row-sub {
+    padding: 4px 12px 10px;
+    color: var(--vtt-text-muted);
+    font-size: 11px;
+    border-left: 1px solid var(--vtt-danger-bright);
+    border-right: 1px solid var(--vtt-danger-bright);
+    border-bottom: 1px solid var(--vtt-danger-bright);
+    margin-bottom: 6px;
+    margin-top: -4px;
+  }
+  .before-catalog-row {
+    padding: 7px 12px;
+    border: 1px solid var(--vtt-danger-bright);
+    margin-bottom: 3px;
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border-radius: 0;
+  }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Atom + molecule · Inventory</p>
+  <h1>Inventory &amp; Items</h1>
+  <p class="lead">
+    Вкладка инвентаря отвечает на три вопроса: <b>что на мне надето</b>, <b>что у меня в котомке</b>,
+    <b>что можно купить или смастерить</b>. Сейчас всё три слоя сразу на экране — 50+ строк одновременно.
+    Решение: <b>что надето / что в котомке</b> — всегда видно (компактным списком), <b>каталог</b> и
+    <b>+свой предмет</b> — по тапу открываются bottom-sheet'ом. В остальном — плоские строки,
+    иконка-дескриптор слева, stat-chip справа, действия мелкими icon-кнопками.
+  </p>
+
+  <!-- ============ §1 ITEM ICON ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>ItemIcon — атом (дескриптор → глиф)</h2>
+    <p class="group-lead">
+      28×28-квадрат с глифом. По умолчанию — muted, у <b>экипированного</b> — золотая обводка и заливка,
+      у <b>расходника</b> — пунктирная рамка (мягкий сигнал «исчезнет при использовании»). Глиф
+      передаёт <code>descriptor.kind</code>: меч / нагрудник / щит / мешочек / молоток / колба / звёздочка.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояния по kind</p>
+      <div class="row" style="align-items: flex-end; gap: 20px;">
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">weapon</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/><path d="M8 4 V13"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">armor</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L12.5 3.5 L12 9 C12 11 10 12.5 8 13.5 C6 12.5 4 11 4 9 L3.5 3.5 Z"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">shield</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6 L11 6 L12 13 L4 13 Z"/><path d="M6 6 C6 4 6.5 3 8 3 C9.5 3 10 4 10 6"/><path d="M6 8.5 L10 8.5"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">gear</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="6" height="3" rx="0.5"/><path d="M9 7.5 L13 4"/><circle cx="13" cy="3.5" r="1.2"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">tool</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 H10 V5 L12 12 C12 13 11 13.5 10 13.5 H6 C5 13.5 4 13 4 12 L6 5 Z"/><path d="M5 10 H11"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">occult</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L9.5 6 L14 6 L10.5 9 L12 13 L8 10.5 L4 13 L5.5 9 L2 6 L6.5 6 Z"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">custom</div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 28px;">Модификаторы состояния</p>
+      <div class="row" style="gap: 20px;">
+        <div style="text-align:center;">
+          <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">is-equipped</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 H10 V5 L12 12 C12 13 11 13.5 10 13.5 H6 C5 13.5 4 13 4 12 L6 5 Z"/><path d="M5 10 H11"/></svg></div>
+          <div class="variant-label" style="margin-top:6px;">is-consumable</div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему глиф, а не просто точка-цвет:</b> у игрока 10+ предметов в инвентаре, глиф даёт быстрое
+        сканирование «где мой меч, где флакон» без чтения. <b>Навязчивая цветовая кодировка</b> (зелёный = броня,
+        красный = оружие) создавала бы шум на и так не-монохромной сцене — остаёмся в золотисто-коричневой гамме.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 INVENTORY ITEM ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>InventoryItem — строка</h2>
+    <p class="group-lead">
+      Одна плоская строка: <b>иконка · имя + описание · stat-chip · actions</b>. Экипированное — с золотой левой
+      полосой и бейджем «надето», поднимается наверх списка. Расходники — вместо <code>equip</code>-тоггла
+      показывают <code>«использовать»</code>. Custom-предмет получает дополнительную icon-кнопку «редактировать».
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Базовые состояния</p>
+      <div class="col" style="max-width: 640px;">
+
+        <div>
+          <span class="variant-label">default · оружие (не экипировано)</span>
+          <div class="inv-item">
+            <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+            <div class="inv-item-body">
+              <div class="inv-item-name">Лёгкое оружие</div>
+              <div class="inv-item-desc">Кинжалы, короткие мечи, ручные топоры. При доп. атаке — 1 раз переброс.</div>
+            </div>
+            <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6</span></div>
+            <div class="inv-item-actions">
+              <button class="item-btn" title="Экипировать"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+              <button class="item-btn is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-equipped · оружие (надето, с золотой полосой)</span>
+          <div class="inv-item is-equipped">
+            <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+            <div class="inv-item-body">
+              <div class="inv-item-name">Боевое оружие <span class="equipped-mark">надето</span></div>
+              <div class="inv-item-desc">Длинные мечи, молоты, топоры, копья.</div>
+            </div>
+            <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6+1</span></div>
+            <div class="inv-item-actions">
+              <button class="item-btn is-active" title="Снять"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+              <button class="item-btn is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-equipped · полный доспех + щит</span>
+          <div class="inv-item is-equipped">
+            <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/><path d="M8 4 V13"/></svg></div>
+            <div class="inv-item-body">
+              <div class="inv-item-name">Полный доспех <span class="equipped-mark">надето</span></div>
+              <div class="inv-item-desc">Бронь 2. Шумный, мешает скрытности и плаванию.</div>
+            </div>
+            <div class="inv-item-stats"><span class="item-stat-chip is-armor">+2 бр.</span></div>
+            <div class="inv-item-actions">
+              <button class="item-btn is-active" title="Снять"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+              <button class="item-btn is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-consumable · расходник с количеством</span>
+          <div class="inv-item">
+            <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 H10 V5 L12 12 C12 13 11 13.5 10 13.5 H6 C5 13.5 4 13 4 12 L6 5 Z"/><path d="M5 10 H11"/></svg></div>
+            <div class="inv-item-body">
+              <div class="inv-item-name">Ртуть (доза)</div>
+              <div class="inv-item-desc">Сильно пси-наркотик. Ярче взрывной эффект, но счётчик. Бросай ТЕЛ каждый раз.</div>
+            </div>
+            <div class="inv-item-stats">
+              <span class="item-stat-chip is-qty">×4</span>
+            </div>
+            <div class="inv-item-actions">
+              <button class="item-btn is-use" title="Использовать">Исп.</button>
+              <button class="item-btn is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">custom · пользовательский предмет (+ кнопка редактирования)</span>
+          <div class="inv-item">
+            <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L9.5 6 L14 6 L10.5 9 L12 13 L8 10.5 L4 13 L5.5 9 L2 6 L6.5 6 Z"/></svg></div>
+            <div class="inv-item-body">
+              <div class="inv-item-name">Медальон матери</div>
+              <div class="inv-item-desc">Серебро, с гравировкой. Напоминает, что есть ради чего возвращаться домой.</div>
+            </div>
+            <div class="inv-item-stats"></div>
+            <div class="inv-item-actions">
+              <button class="item-btn" title="Редактировать"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+              <button class="item-btn is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">снаряжение · щит (равипируется отдельно от доспеха)</span>
+          <div class="inv-item">
+            <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L12.5 3.5 L12 9 C12 11 10 12.5 8 13.5 C6 12.5 4 11 4 9 L3.5 3.5 Z"/></svg></div>
+            <div class="inv-item-body">
+              <div class="inv-item-name">Щит</div>
+              <div class="inv-item-desc">+1 к броне. Несовместим с двуручным оружием.</div>
+            </div>
+            <div class="inv-item-stats"><span class="item-stat-chip is-armor">+1 бр.</span></div>
+            <div class="inv-item-actions">
+              <button class="item-btn" title="Экипировать"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+              <button class="item-btn is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему action-иконки, а не kebab:</b> 99% взаимодействий с предметом — «экипировать / снять» или
+        «использовать». Спрятать это за kebab = +1 тап на каждое действие. Удаление — отдельной danger-иконкой
+        с hover-цветом, это достаточно безопасный способ (confirm-диалог остаётся в логике). Edit для custom
+        живёт здесь же, т.к. не-custom предметам эта кнопка просто не показывается.
+        <br><br>
+        <b>Бейдж «надето»</b> рядом с именем — избыточность для читаемости: золотая рамка иконки + золотая
+        полоса слева + бейдж. Это оправдано: «что на мне» — самый частый вопрос в бою.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 COIN BAR ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>CoinBar — полоса с монетами</h2>
+    <p class="group-lead">
+      Одна тонкая строка сверху вкладки: иконка · лейбл «монеты» · значение (serif-крупно) · <code>±</code>.
+      Редкое взаимодействие (обычно +1 после продажи лута, −N после покупки из каталога) — значит,
+      кнопок ±1/±10/±100 не нужно, это «плоская» цифра с двумя хоткеями.
+    </p>
+
+    <div class="stage">
+      <div class="col" style="max-width: 560px;">
+        <div>
+          <span class="variant-label">default</span>
+          <div class="coin-bar">
+            <div class="coin-bar-icon"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M8 11 A 3 3.5 0 0 0 14 11 A 3 3.5 0 0 0 8 11 Z" fill="currentColor" opacity="0.25"/><path d="M11 7 V15" stroke-linecap="round"/></svg></div>
+            <span class="coin-bar-label">Монеты</span>
+            <span class="coin-bar-value">9 529<span class="coin-bar-unit">с.</span></span>
+            <div class="coin-bar-actions">
+              <button class="item-btn" title="−"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 7 H11"/></svg></button>
+              <button class="item-btn" title="+"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 7 H11"/><path d="M7 3 V11"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <span class="variant-label">низкий баланс (муар-сигнал)</span>
+          <div class="coin-bar">
+            <div class="coin-bar-icon"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M8 11 A 3 3.5 0 0 0 14 11 A 3 3.5 0 0 0 8 11 Z" fill="currentColor" opacity="0.25"/><path d="M11 7 V15" stroke-linecap="round"/></svg></div>
+            <span class="coin-bar-label">Монеты</span>
+            <span class="coin-bar-value" style="color: var(--vtt-warning);">12<span class="coin-bar-unit">с.</span></span>
+            <div class="coin-bar-actions">
+              <button class="item-btn" title="−"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 7 H11"/></svg></button>
+              <button class="item-btn" title="+"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 7 H11"/><path d="M7 3 V11"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        Попап по тапу на значение — ручной ввод (для обмена «дал −250 за услугу», «нашёл +80 в сундуке»).
+        <b>Цветовой переход</b> при coins &lt; цены самого дорогого каталожного — тонкий warning-оттенок,
+        но без алерта: игрок сам решит, когда фармить.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 INVENTORY SCREEN ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>Inventory screen — всё вместе</h2>
+    <p class="group-lead">
+      Вкладка «Инвентарь» целиком. Сверху — <code>CoinBar</code>. При множественной экипировке оружия/брони —
+      <code>inv-warning</code>. Дальше — секция <b>«Экипировано»</b> (если есть), затем <b>«В котомке»</b>.
+      В конце — toolbar с двумя кнопками «Каталог» (bottom-sheet §5) и «+ Свой предмет» (§6).
+    </p>
+
+    <div class="stage" style="max-width: 640px; margin: 0 auto;">
+      <p class="stage-title">Вкладка «Инвентарь»</p>
+      <div class="inv-screen">
+
+        <div class="coin-bar">
+          <div class="coin-bar-icon"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M8 11 A 3 3.5 0 0 0 14 11 A 3 3.5 0 0 0 8 11 Z" fill="currentColor" opacity="0.25"/><path d="M11 7 V15" stroke-linecap="round"/></svg></div>
+          <span class="coin-bar-label">Монеты</span>
+          <span class="coin-bar-value">152<span class="coin-bar-unit">с.</span></span>
+          <div class="coin-bar-actions">
+            <button class="item-btn" title="−"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 7 H11"/></svg></button>
+            <button class="item-btn" title="+"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 7 H11"/><path d="M7 3 V11"/></svg></button>
+          </div>
+        </div>
+
+        <div class="inv-warning">
+          <div class="inv-warning-icon"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L16 14 H2 Z"/><path d="M9 7 V10"/><circle cx="9" cy="12.5" r="0.6" fill="currentColor"/></svg></div>
+          <div><b>Надето два оружия.</b> Эффект работает только от одного — снимите лишнее.</div>
+        </div>
+
+        <div class="inv-section">
+          <div class="inv-section-head">
+            <span class="inv-section-title">Экипировано · 3</span>
+            <span class="inv-section-count">урон d6+1 · броня 3</span>
+          </div>
+          <div class="inv-list">
+            <div class="inv-item is-equipped">
+              <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Боевое оружие <span class="equipped-mark">надето</span></div>
+                <div class="inv-item-desc">Длинные мечи, молоты, топоры.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6+1</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-active"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item is-equipped">
+              <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/><path d="M8 4 V13"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Полный доспех <span class="equipped-mark">надето</span></div>
+                <div class="inv-item-desc">Бронь 2. Мешает скрытности.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-armor">+2 бр.</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-active"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item is-equipped">
+              <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L12.5 3.5 L12 9 C12 11 10 12.5 8 13.5 C6 12.5 4 11 4 9 L3.5 3.5 Z"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Щит <span class="equipped-mark">надето</span></div>
+                <div class="inv-item-desc">+1 к броне.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-armor">+1 бр.</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-active"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-section">
+          <div class="inv-section-head">
+            <span class="inv-section-title">В котомке · 5</span>
+          </div>
+          <div class="inv-list">
+            <div class="inv-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Лёгкое оружие</div>
+                <div class="inv-item-desc">Кинжалы, топоры. +1 переброс при доп. атаке.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6 L11 6 L12 13 L4 13 Z"/><path d="M6 6 C6 4 6.5 3 8 3 C9.5 3 10 4 10 6"/><path d="M6 8.5 L10 8.5"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Капкан</div>
+                <div class="inv-item-desc">Устанавливается на тропе. 1d6 урона + остановка.</div>
+              </div>
+              <div class="inv-item-stats"></div>
+              <div class="inv-item-actions">
+                <button class="item-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item">
+              <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 H10 V5 L12 12 C12 13 11 13.5 10 13.5 H6 C5 13.5 4 13 4 12 L6 5 Z"/><path d="M5 10 H11"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Ртуть (доза)</div>
+                <div class="inv-item-desc">Пси-наркотик. Бросай ТЕЛ каждый раз.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-qty">×4</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-use">Исп.</button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item">
+              <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6 L11 6 L12 13 L4 13 Z"/><path d="M6 6 C6 4 6.5 3 8 3 C9.5 3 10 4 10 6"/><path d="M6 8.5 L10 8.5"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Бинты</div>
+                <div class="inv-item-desc">Останавливают кровотечение, +1d6 HP.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-qty">×2</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-use">Исп.</button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L9.5 6 L14 6 L10.5 9 L12 13 L8 10.5 L4 13 L5.5 9 L2 6 L6.5 6 Z"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Медальон матери</div>
+                <div class="inv-item-desc">Серебро, с гравировкой.</div>
+              </div>
+              <div class="inv-item-stats"></div>
+              <div class="inv-item-actions">
+                <button class="item-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                <button class="item-btn is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-toolbar">
+          <button class="inv-toolbar-btn">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L12 4 L11 11 L3 11 Z"/><circle cx="5.5" cy="13" r="0.6" fill="currentColor"/><circle cx="9" cy="13" r="0.6" fill="currentColor"/></svg>
+            Каталог
+          </button>
+          <button class="inv-toolbar-btn">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7 3 V11"/><path d="M3 7 H11"/></svg>
+            Свой предмет
+          </button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему секция «Экипировано» отдельно:</b> это то, что игрок читает в бою — надо видеть сразу.
+        Без отдельной секции equipped-строки «всплывают» наверх сортировкой, но смешиваются с лутом.
+        Отдельный заголовок «Экипировано · 3 · урон d6+1 · броня 3» — это ещё и <b>итоговая строка</b> по
+        экипировке, не надо считать в голове.
+        <br><br>
+        <b>Инструменты (<code>tool</code>) не экипируются</b> — лежат в «В котомке» без toggle, но с delete.
+        По спеке инструменты тоже могут быть equipped — если нужно, поведение просто такое же, как у оружия.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 CATALOG DRAWER ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>Catalog — bottom-sheet</h2>
+    <p class="group-lead">
+      Открывается из toolbar'а. Sticky-поиск сверху, <code>segmented</code> с 7 категориями, плоский список
+      товаров. У доступных по цене — «купить», у недоступных — цифра цены подсвечена warning'ом
+      и кнопка ведёт на диалог «не хватает монет» (§7). Текущие монеты справа в шапке, чтобы игрок
+      всегда видел, сколько есть.
+    </p>
+
+    <div class="stage" style="display: flex; justify-content: center;">
+      <div class="bottom-sheet">
+        <div class="bs-head">
+          <span class="bs-title">Каталог снаряжения</span>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--vtt-accent);">152 с.</span>
+            <button class="bs-close" aria-label="Закрыть">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L9 9"/><path d="M9 3 L3 9"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="bs-body">
+          <div class="catalog-search">
+            <input class="catalog-search-input" placeholder="Поиск: меч, доспех, бинт...">
+            <div class="segmented">
+              <button class="segmented-btn is-active">Всё</button>
+              <button class="segmented-btn">Оружие</button>
+              <button class="segmented-btn">Броня</button>
+              <button class="segmented-btn">Снаряж.</button>
+              <button class="segmented-btn">Инструм.</button>
+              <button class="segmented-btn">Оккульт.</button>
+              <button class="segmented-btn">Редкие</button>
+              <button class="segmented-btn">Огонь</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="cat-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Лёгкое оружие</div>
+                <div class="cat-item-desc">Кинжалы, топоры, ручные.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6</span><span class="item-stat-chip is-price">10 с.</span></div>
+              <button class="cat-buy">Купить</button>
+            </div>
+            <div class="cat-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Боевое оружие</div>
+                <div class="cat-item-desc">Длинные мечи, молоты, копья.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6+1</span><span class="item-stat-chip is-price">30 с.</span></div>
+              <button class="cat-buy">Купить</button>
+            </div>
+            <div class="cat-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Тяжёлое оружие</div>
+                <div class="cat-item-desc">Двуручные, большие мечи.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6+2</span><span class="item-stat-chip is-price">40 с.</span></div>
+              <button class="cat-buy">Купить</button>
+            </div>
+            <div class="cat-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/><path d="M8 4 V13"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Лёгкий доспех</div>
+                <div class="cat-item-desc">+1 бр., не мешает скрытности.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-armor">+1 бр.</span><span class="item-stat-chip is-price">30 с.</span></div>
+              <button class="cat-buy">Купить</button>
+            </div>
+            <div class="cat-item">
+              <div class="item-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/><path d="M8 4 V13"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Полный доспех</div>
+                <div class="cat-item-desc">+2 бр., шумный.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-armor">+2 бр.</span><span class="item-stat-chip is-price" style="color: var(--vtt-warning); border-color: var(--vtt-warning);">60 с.</span></div>
+              <button class="cat-buy is-locked">Спросить</button>
+            </div>
+            <div class="cat-item">
+              <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 H10 V5 L12 12 C12 13 11 13.5 10 13.5 H6 C5 13.5 4 13 4 12 L6 5 Z"/><path d="M5 10 H11"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Ртуть (доза)</div>
+                <div class="cat-item-desc">Пси-наркотик, взрыв эффекта.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-qty">расх.</span><span class="item-stat-chip is-price">10 с.</span></div>
+              <button class="cat-buy">Купить</button>
+            </div>
+            <div class="cat-item">
+              <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6 L11 6 L12 13 L4 13 Z"/><path d="M6 6 C6 4 6.5 3 8 3 C9.5 3 10 4 10 6"/><path d="M6 8.5 L10 8.5"/></svg></div>
+              <div class="cat-item-body">
+                <div class="cat-item-name">Бинты</div>
+                <div class="cat-item-desc">Останавливают кровотечение, +1d6 HP.</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-qty">расх.</span><span class="item-stat-chip is-price">5 с.</span></div>
+              <button class="cat-buy">Купить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>«Спросить»</b> вместо «Купить» у дорогих предметов — открывает §7-диалог («попроси мастера»).
+      Игрок не застревает на «не хватает», видит прямой путь вперёд. Цена в warning-цвете подсказывает, что
+      покупка невозможна обычным путём.
+      <br><br>
+      <b>Группировка</b> — по категории (segmented), но внутри группы порядок <b>по цене от дешёвого к дорогому</b>
+      (а не алфавит). Игрок на низком балансе сразу видит, что доступно, не скроллит мимо «Полного доспеха за 60с».
+    </div>
+  </section>
+
+  <!-- ============ §6 CUSTOM ITEM FORM ============ -->
+  <section class="group">
+    <p class="eyebrow">§6</p>
+    <h2>Custom item form — bottom-sheet</h2>
+    <p class="group-lead">
+      Отдельный лист, а не inline-форма на вкладке (как сейчас). Поля из спеки: <b>имя · цена · описание · расходник · количество</b>.
+      «Количество» показывается только когда «Расходник» отмечен. Submit — <code>btn-hero</code> «Добавить».
+      Та же форма в режиме <b>edit</b> — с заголовком «Редактировать» и доп. кнопкой «Удалить».
+    </p>
+
+    <div class="stage" style="display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;">
+      <div class="bottom-sheet" style="max-width: 420px;">
+        <div class="bs-head">
+          <span class="bs-title">+ Свой предмет</span>
+          <button class="bs-close"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L9 9"/><path d="M9 3 L3 9"/></svg></button>
+        </div>
+        <div class="bs-body">
+          <div class="form-row">
+            <label class="form-label">Название</label>
+            <input class="form-input" placeholder="Медальон матери" value="Медальон матери">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Описание</label>
+            <textarea class="form-textarea" placeholder="Серебро, с гравировкой. Напоминает, что есть ради чего возвращаться домой.">Серебро, с гравировкой. Напоминает, что есть ради чего возвращаться домой.</textarea>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Цена (серебро)</label>
+            <input class="form-input" placeholder="0" value="">
+          </div>
+          <div class="form-row">
+            <label class="form-check">
+              <span class="form-check-box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7 L6 10 L11 4"/></svg></span>
+              Расходник
+            </label>
+          </div>
+        </div>
+        <div class="bs-foot">
+          <button class="btn-ghost">Отмена</button>
+          <button class="btn-hero">Добавить</button>
+        </div>
+      </div>
+
+      <div class="bottom-sheet" style="max-width: 420px;">
+        <div class="bs-head">
+          <span class="bs-title">Редактировать · расходник</span>
+          <button class="bs-close"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L9 9"/><path d="M9 3 L3 9"/></svg></button>
+        </div>
+        <div class="bs-body">
+          <div class="form-row">
+            <label class="form-label">Название</label>
+            <input class="form-input" value="Травяной отвар">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Описание</label>
+            <textarea class="form-textarea">Горький на вкус. Снимает усталость и лёгкие раны: +1 HP при употреблении.</textarea>
+          </div>
+          <div class="form-row-inline">
+            <div>
+              <label class="form-label">Цена (серебро)</label>
+              <input class="form-input" value="8">
+            </div>
+            <div>
+              <label class="form-label">Количество</label>
+              <input class="form-input" value="3" style="width: 70px;">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-check is-checked">
+              <span class="form-check-box"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7 L6 10 L11 4"/></svg></span>
+              Расходник
+            </label>
+          </div>
+        </div>
+        <div class="bs-foot">
+          <button class="btn-danger-ghost">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg>
+            Удалить
+          </button>
+          <div style="flex: 1"></div>
+          <button class="btn-ghost">Отмена</button>
+          <button class="btn-hero">Сохранить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Одна форма в двух режимах</b> (create / edit) — отличается только заголовком, наличием кнопки «Удалить»
+      и кнопкой submit («Добавить» / «Сохранить»). «Количество» — условное поле: показывается, только если
+      «Расходник» отмечен. В текущем ДО — отдельная панель на вкладке + 4 поля всегда, без условности.
+    </div>
+  </section>
+
+  <!-- ============ §7 INSUFFICIENT COINS ============ -->
+  <section class="group">
+    <p class="eyebrow">§7</p>
+    <h2>Недостаточно монет — диалог</h2>
+    <p class="group-lead">
+      Появляется при покупке дорогого (coins &lt; price) — из §5 при нажатии «Спросить» или если игрок
+      всё же жмёт «Купить» на недоступном. Три исхода: попросить мастера (<code>RECEIVE_ITEM</code>),
+      попробовать скидку, отмена.
+    </p>
+
+    <div class="stage" style="display: flex; justify-content: center;">
+      <div class="bottom-sheet coin-dialog">
+        <div class="coin-dialog-icon">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 6 V11"/><circle cx="11" cy="14.5" r="0.6" fill="currentColor"/></svg>
+        </div>
+        <div class="coin-dialog-title">Не хватает монет</div>
+        <div class="coin-dialog-body">
+          «Полный доспех» стоит <b>60 с.</b><br>
+          У тебя <b>152 с.</b>  <span class="miss">— не хватает 408 с.</span>
+        </div>
+        <div class="coin-dialog-body" style="font-size: 12px; color: var(--vtt-text-muted); margin-top: -10px;">
+          Хочешь обратиться к мастеру за предметом или попробовать договориться о скидке?
+        </div>
+        <div class="coin-dialog-actions">
+          <button class="btn-hero">Попросить мастера</button>
+          <button class="btn-primary">Торговаться (ВЛИ)</button>
+          <button class="btn-ghost">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>«Торговаться»</b> — это бросок на ВЛИ, который может снизить цену (решение мастера). Логика игровая,
+      для дизайна важно: три варианта, у каждого <b>разный вес</b>. «Попросить мастера» — <code>btn-hero</code>
+      (это предполагаемый путь), «Торговаться» — <code>btn-primary</code> (опционально), «Отмена» — ghost.
+    </div>
+  </section>
+
+  <!-- ============ §8 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§8</p>
+    <h2>До / После</h2>
+    <p class="group-lead">
+      Главная победа — <b>каталог ушёл с экрана</b>. В обычном состоянии инвентарь показывает
+      ≤10 строк того, что реально у персонажа, а не 43 товара-опции. Второе — <b>экипированное</b>
+      визуально отделено и даёт итог по броне/урону.
+    </p>
+
+    <div class="compare">
+      <div class="before-wrap">
+        <div class="before-label">ДО</div>
+        <div class="before-row">Монеты · 9529 с.</div>
+        <div class="before-row">⚠ Экипировано несколько видов оружия</div>
+        <div class="before-row">Лёгкое оружие · d6 · 10с</div>
+        <div class="before-row-sub">Кинжалы, короткие мечи</div>
+        <div class="before-row">Боевое оружие · d6+1 · 30с</div>
+        <div class="before-row">Боевое оружие · d6+1 · 30с</div>
+        <div class="before-row">Полный доспех · 60с</div>
+        <div class="before-row">Щит · 10с</div>
+        <div class="before-row">Капкан · 8с</div>
+        <div class="before-row">Ртуть (доза) · ×4 · 10с</div>
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 11px; margin: 10px 0;">— Добавить свой</div>
+        <div class="before-row">Название: ___</div>
+        <div class="before-row">Цена: ___</div>
+        <div class="before-row">Описание: ___</div>
+        <div class="before-row">☐ Расходник</div>
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 11px; margin: 10px 0;">— Каталог</div>
+        <div class="before-catalog-row">Оружие ▶</div>
+        <div class="before-catalog-row">Доспехи и щиты ▶</div>
+        <div class="before-catalog-row">Походное снаряжение ▶</div>
+        <div class="before-catalog-row">Инструменты ▶</div>
+        <div class="before-catalog-row">Оккультные предметы ▼</div>
+        <div class="before-catalog-row" style="margin-left: 12px; font-size: 10px;">Ртуть (доза) · 10с</div>
+        <div class="before-catalog-row" style="margin-left: 12px; font-size: 10px;">Мешочек с костной пылью · 10с</div>
+        <div class="before-catalog-row" style="margin-left: 12px; font-size: 10px;">Пузырёк святой воды · 5с</div>
+        <div class="before-catalog-row">Редкие предметы ▶</div>
+        <div class="before-catalog-row">Огненное масло ▶</div>
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 11px; margin-top: 10px;">
+          ~50 строк одновременно, форма + каталог + инвентарь
+        </div>
+      </div>
+
+      <div>
+        <div class="before-label" style="color: var(--vtt-success);">ПОСЛЕ</div>
+
+        <div class="coin-bar" style="margin-bottom: 8px;">
+          <div class="coin-bar-icon"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M8 11 A 3 3.5 0 0 0 14 11 A 3 3.5 0 0 0 8 11 Z" fill="currentColor" opacity="0.25"/><path d="M11 7 V15" stroke-linecap="round"/></svg></div>
+          <span class="coin-bar-label">Монеты</span>
+          <span class="coin-bar-value">152<span class="coin-bar-unit">с.</span></span>
+        </div>
+
+        <div class="inv-section" style="padding: 6px 0;">
+          <div class="inv-section-head">
+            <span class="inv-section-title">Экипировано · 3</span>
+            <span class="inv-section-count">урон d6+1 · броня 3</span>
+          </div>
+          <div class="inv-list">
+            <div class="inv-item is-equipped">
+              <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2 L13.5 4 L6 11.5 L4 9.5 Z"/><path d="M4 9.5 L2.5 11 L3 11.5 L2 12.5 L3.5 14 L4.5 13 L5 13.5 L6.5 12"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Боевое оружие</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-damage">d6+1</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-active"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+              </div>
+            </div>
+            <div class="inv-item is-equipped">
+              <div class="item-icon is-equipped"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/><path d="M8 4 V13"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Полный доспех</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-armor">+2 бр.</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-active"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 7 L6 10 L11 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-section" style="padding: 6px 0;">
+          <div class="inv-section-head">
+            <span class="inv-section-title">В котомке · 3</span>
+          </div>
+          <div class="inv-list">
+            <div class="inv-item">
+              <div class="item-icon is-consumable"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 H10 V5 L12 12 C12 13 11 13.5 10 13.5 H6 C5 13.5 4 13 4 12 L6 5 Z"/><path d="M5 10 H11"/></svg></div>
+              <div class="inv-item-body">
+                <div class="inv-item-name">Ртуть (доза)</div>
+              </div>
+              <div class="inv-item-stats"><span class="item-stat-chip is-qty">×4</span></div>
+              <div class="inv-item-actions">
+                <button class="item-btn is-use">Исп.</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-toolbar">
+          <button class="inv-toolbar-btn">Каталог</button>
+          <button class="inv-toolbar-btn">Свой предмет</button>
+        </div>
+
+        <div style="color: var(--vtt-success); font-family: var(--font-mono); font-size: 11px; margin-top: 10px;">
+          ≤8 строк, каталог и форма открываются по тапу
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Что изменилось:</b>
+      <br>· <b>Каталог ушёл в bottom-sheet.</b> Покупка — редкое действие (раз в город), значит не должно занимать половину вкладки всегда.
+      <br>· <b>Форма custom — тоже в bottom-sheet.</b> Раньше 4 поля были постоянно видны, будто форма «открыта на редактирование».
+      <br>· <b>Секция «Экипировано»</b> с итоговой строкой <i>«урон d6+1 · броня 3»</i> — заменяет подсчёт в голове во время боя.
+      <br>· <b>Warning про 2 оружия</b> — один раз в верху, не дублируется рядом с каждой строкой оружия.
+      <br>· <b>Расходник</b> теперь — пунктир-иконка + чип <code>×N</code> + кнопка «Исп.», вместо обычного equip-toggle который не работает.
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

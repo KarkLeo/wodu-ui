@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Skills & Abilities · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 760px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 6px; display: block;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ================================================================
+     SKILL CHIP — атом
+     ================================================================ */
+  /*
+    Variants по контексту:
+    .skill-chip                — read-only (in-game, tap = quick roll)
+    .skill-chip.is-auto        — от класса (с меткой-замочком)
+    .skill-chip.is-selected    — выбран (picker или active-state)
+    .skill-chip.is-locked      — недоступен (disabled в picker'е)
+    .skill-chip.mode-pick      — режим выбора (checkbox/radio слева)
+    .skill-chip.mode-pick-multi — чекбокс
+    .skill-chip.mode-pick-single — радио
+  */
+
+  .skill-chip {
+    position: relative;
+    display: inline-flex; align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+    user-select: none;
+    white-space: nowrap;
+  }
+  .skill-chip:hover {
+    border-color: var(--vtt-border-strong);
+    background: var(--vtt-bg-surface);
+    color: var(--vtt-accent-soft);
+  }
+
+  /* auto (от класса) — "замочек" слева, muted border-gold */
+  .skill-chip.is-auto {
+    border-color: var(--vtt-accent-deep);
+    cursor: default;
+  }
+  .skill-chip.is-auto:hover {
+    background: rgba(140, 106, 58, 0.08);
+    color: var(--vtt-accent-soft);
+  }
+  .skill-chip.is-auto .skill-chip-glyph { color: var(--vtt-accent-deep); }
+
+  /* selected — акцентная заливка, чёрный текст */
+  .skill-chip.is-selected {
+    background: var(--vtt-accent-deep);
+    border-color: var(--vtt-accent);
+    color: var(--vtt-bg-base);
+  }
+  .skill-chip.is-selected:hover {
+    background: var(--vtt-accent);
+    color: var(--vtt-bg-base);
+  }
+
+  /* locked (в picker'е недоступен) */
+  .skill-chip.is-locked {
+    border-color: var(--vtt-border-subtle);
+    color: var(--vtt-border-strong);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .skill-chip-glyph {
+    width: 12px; height: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: currentColor; opacity: 0.7;
+    flex-shrink: 0;
+  }
+  .skill-chip-glyph svg { width: 100%; height: 100%; display: block; }
+
+  /* "+" кнопка для добавления навыка в picker'e */
+  .skill-chip-add {
+    border-style: dashed;
+    color: var(--vtt-text-muted);
+    padding: 7px 12px;
+  }
+  .skill-chip-add:hover {
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-border-gold);
+    background: rgba(140,106,58,0.05);
+  }
+
+  /* mode-pick — слева checkbox или radio */
+  .skill-chip.mode-pick {
+    padding-left: 10px;
+  }
+  .skill-pick-mark {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--vtt-border-strong);
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .skill-chip.mode-pick-multi .skill-pick-mark { border-radius: 3px; }
+  .skill-chip.mode-pick-single .skill-pick-mark { border-radius: var(--r-pill); }
+
+  .skill-chip.is-selected .skill-pick-mark {
+    border-color: var(--vtt-bg-base);
+    background: var(--vtt-bg-base);
+  }
+  .skill-chip.is-selected .skill-pick-mark::after {
+    content: "";
+    width: 6px; height: 6px;
+    background: var(--vtt-accent);
+    border-radius: inherit;
+  }
+  .skill-chip.mode-pick-multi.is-selected .skill-pick-mark::after {
+    width: 8px; height: 4px;
+    background: transparent;
+    border: 1.5px solid var(--vtt-accent);
+    border-top: 0; border-right: 0;
+    transform: rotate(-45deg) translate(1px, -1px);
+    border-radius: 0;
+  }
+
+  /* ================================================================
+     ABILITY CARD — атом
+     ================================================================ */
+  /*
+    Variants по контексту:
+    .ability-card                   — read-only (in-game, всегда раскрыт)
+    .ability-card.mode-pick         — режим выбора (checkbox/radio сверху-слева)
+    .ability-card.mode-pick-multi   — чекбокс (create)
+    .ability-card.mode-pick-single  — радио (level-up)
+    .ability-card.is-selected       — выбран
+    .ability-card.is-locked         — недоступен (disabled)
+    .ability-card.variant-reference — компактная строка для popup'a "Все способности"
+  */
+
+  .ability-card {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .ability-card:hover { border-color: var(--vtt-border-strong); }
+  .ability-card.mode-pick { cursor: pointer; }
+
+  .ability-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px 8px;
+    user-select: none;
+  }
+  .ability-card.mode-pick .ability-head { grid-template-columns: auto minmax(0, 1fr); }
+  .ability-card:not(.mode-pick) .ability-head { grid-template-columns: minmax(0, 1fr); }
+  .ability-head-mark {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--vtt-border-strong);
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ability-card.mode-pick-multi .ability-head-mark { border-radius: 3px; }
+  .ability-card.mode-pick-single .ability-head-mark { border-radius: var(--r-pill); }
+  .ability-card:not(.mode-pick) .ability-head-mark { display: none; }
+
+  .ability-head-title {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    min-width: 0;
+    display: flex; align-items: baseline; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ability-head-title-text {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ability-level-badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    padding: 2px 6px;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    flex-shrink: 0;
+    line-height: 1.2;
+  }
+  .ability-body {
+    padding: 0 16px 14px;
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+    display: block;
+  }
+
+  .ability-body-text { margin: 0 0 10px; }
+  .ability-body-text:last-child { margin-bottom: 0; }
+
+  .ability-actions {
+    display: flex; gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    margin-top: 10px;
+  }
+  .ability-btn {
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .ability-btn:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .ability-btn.is-hero {
+    background: #A6833E;
+    border-color: #8C6A3A;
+    color: #1a1205;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+  }
+  .ability-btn.is-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+
+  /* selected (picker) */
+  .ability-card.is-selected {
+    border-color: var(--vtt-border-gold);
+    background: rgba(140, 106, 58, 0.06);
+  }
+  .ability-card.is-selected .ability-head-mark {
+    border-color: var(--vtt-accent);
+    background: var(--vtt-accent);
+  }
+  .ability-card.mode-pick-single.is-selected .ability-head-mark::after {
+    content: ""; width: 8px; height: 8px;
+    background: var(--vtt-bg-base); border-radius: var(--r-pill);
+  }
+  .ability-card.mode-pick-multi.is-selected .ability-head-mark::after {
+    content: "";
+    width: 10px; height: 5px;
+    border: 1.5px solid var(--vtt-bg-base);
+    border-top: 0; border-right: 0;
+    transform: rotate(-45deg) translate(0, -1px);
+  }
+
+  /* locked */
+  .ability-card.is-locked {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .ability-card.is-locked .ability-head-title { color: var(--vtt-text-muted); }
+  .ability-card.is-locked .ability-head-mark { border-style: dashed; }
+
+  /* reference variant — плотный, без chevron'а, всегда раскрытый */
+  .ability-card.variant-reference {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    border-radius: 0;
+  }
+  .ability-card.variant-reference:last-child { border-bottom: none; }
+  .ability-card.variant-reference .ability-head {
+    padding: 10px 0 4px;
+    cursor: default;
+  }
+  .ability-card.variant-reference .ability-body {
+    display: block;
+    padding: 0 0 10px;
+  }
+  .ability-card.variant-reference .ability-head-title { font-size: 14px; }
+  .ability-card.variant-reference .ability-body-text { font-size: 12px; color: var(--vtt-text-muted); }
+
+  /* ================================================================
+     SKILLS SECTION — молекула (row of chips + "+" для добавления)
+     ================================================================ */
+  .skills-section {
+    padding: 16px 0;
+  }
+  .skills-section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .skills-section-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .skills-section-hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--vtt-text-muted);
+  }
+
+  .skills-row {
+    display: flex; gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* ================================================================
+     ABILITIES SECTION — молекула
+     ================================================================ */
+  .abilities-section {
+    padding: 16px 0;
+  }
+  .abilities-section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .abilities-section-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .abilities-section-link {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-text-secondary);
+    text-decoration: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--r-xs);
+    transition: all var(--t-fast) var(--ease);
+  }
+  .abilities-section-link:hover { color: var(--vtt-accent-soft); background: var(--vtt-bg-surface); }
+
+  .abilities-list {
+    display: flex; flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ================================================================
+     PICKER SHELL — молекула для create / level-up
+     ================================================================ */
+  .picker {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 20px;
+  }
+  .picker-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .picker-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+  }
+  .picker-counter {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--vtt-text-muted);
+  }
+  .picker-counter b { color: var(--vtt-accent); font-weight: 600; }
+  .picker-hint {
+    font-size: 13px;
+    color: var(--vtt-text-muted);
+    margin-bottom: 14px;
+  }
+
+  .picker-auto-note {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: rgba(140, 106, 58, 0.06);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    margin-bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-text-secondary);
+  }
+  .picker-auto-note .dot {
+    width: 6px; height: 6px; border-radius: var(--r-pill);
+    background: var(--vtt-accent-deep);
+  }
+
+  /* ================================================================
+     BOTTOM SHEET — "Все способности"
+     ================================================================ */
+  .bottom-sheet {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(26, 21, 16, 0.92);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+  }
+  .bs-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .bs-title {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    color: var(--vtt-accent-soft);
+  }
+  .bs-close {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    cursor: pointer;
+  }
+  .bs-close:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .bs-close svg { width: 12px; height: 12px; }
+  .bs-body {
+    padding: 8px 18px 18px;
+    max-height: 560px;
+    overflow-y: auto;
+  }
+
+  /* ================================================================
+     LEVEL-UP SHELL — молекула-обертка для фазы повышения
+     ================================================================ */
+  .lvl-shell {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 20px;
+  }
+  .lvl-head {
+    display: flex; align-items: baseline; gap: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    margin-bottom: 14px;
+  }
+  .lvl-head-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .lvl-head-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--vtt-accent-soft);
+  }
+  .lvl-head-title b { color: var(--vtt-accent); }
+  .lvl-rewards {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 12px 14px;
+    background: rgba(140, 106, 58, 0.06);
+    border-left: 2px solid var(--vtt-accent);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--vtt-text-secondary);
+  }
+  .lvl-rewards b { color: var(--vtt-accent-soft); font-weight: 500; }
+
+  .lvl-step {
+    margin-bottom: 20px;
+  }
+  .lvl-step:last-child { margin-bottom: 0; }
+  .lvl-step-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin-bottom: 10px;
+  }
+
+  .lvl-actions {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding-top: 14px;
+    margin-top: 18px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+
+  /* ================================================================
+     BEFORE/AFTER
+     ================================================================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 960px) { .compare { grid-template-columns: 1fr; } }
+
+  .before-wrap {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 16px;
+  }
+  .before-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-danger-bright); margin-bottom: 12px;
+  }
+  .before-chip {
+    display: inline-block;
+    padding: 8px 14px;
+    border: 1px solid var(--vtt-danger-bright);
+    border-radius: 0;
+    margin: 0 6px 6px 0;
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .before-accordion {
+    border: 1px solid var(--vtt-danger-bright);
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    border-radius: 0;
+  }
+  .before-accordion-sub {
+    padding: 8px 14px;
+    color: var(--vtt-text-muted);
+    font-size: 12px;
+    border-left: 1px solid var(--vtt-danger-bright);
+    border-right: 1px solid var(--vtt-danger-bright);
+    border-bottom: 1px solid var(--vtt-danger-bright);
+    margin-bottom: 10px;
+  }
+  .before-checkbox-row {
+    padding: 8px 12px;
+    border: 1px solid var(--vtt-danger-bright);
+    margin-bottom: 4px;
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border-radius: 0;
+  }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Atom + molecule · Skills & Abilities</p>
+  <h1>Skills &amp; Abilities</h1>
+  <p class="lead">
+    Две связанные сущности. <b>Навык</b> — короткое слово, быстрый бросок, активно используется в игре.
+    <b>Способность</b> — название + короткое описание, пассивный эффект или триггер. Значит, навык — <b>chip</b> (один тап,
+    минимум места), способность — <b>card</b> (плоская карточка, всегда раскрыта — текст короткий, прятать нечего).
+    Оба живут в четырёх контекстах: <b>на листе · при создании · при level-up · в справке</b>. Примитив один,
+    меняется только mode: <code>display / pick-multi / pick-single / reference</code>.
+  </p>
+
+  <!-- ============ §1 SKILL CHIP ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>SkillChip — атом</h2>
+    <p class="group-lead">
+      Pill-chip с коротким текстом. Четыре визуальных состояния × три режима. В режиме <b>display</b> (in-game)
+      это кнопка «быстрый бросок». В режимах <b>pick-multi</b> и <b>pick-single</b> — слева появляется
+      checkbox/radio-маркер, но визуальная масса не меняется, чтобы строка-лента оставалась плотной.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояния · display</p>
+      <div class="row">
+        <span class="variant-label" style="width: 100%; margin-bottom: 0;">default / auto / selected / locked</span>
+        <button class="skill-chip">Лечение</button>
+        <button class="skill-chip is-auto" title="От класса">
+          <span class="skill-chip-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="5" rx="0.5"/><path d="M4 5 L4 3.5 C4 2.5 4.9 2 6 2 C7.1 2 8 2.5 8 3.5 L8 5"/></svg></span>
+          Знания
+        </button>
+        <button class="skill-chip is-selected">Расшифровка</button>
+        <button class="skill-chip is-locked">Скрытность</button>
+      </div>
+
+      <p class="stage-title" style="margin-top: 28px">Режим · pick-multi (создание персонажа)</p>
+      <div class="row">
+        <button class="skill-chip mode-pick mode-pick-multi is-auto" title="От класса — автоматически">
+          <span class="skill-pick-mark"></span>
+          Атлетика
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi is-auto" title="От класса — автоматически">
+          <span class="skill-pick-mark"></span>
+          Внимательность
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi">
+          <span class="skill-pick-mark"></span>
+          Обман
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi is-selected">
+          <span class="skill-pick-mark"></span>
+          Расшифровка
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi">
+          <span class="skill-pick-mark"></span>
+          Лечение
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi">
+          <span class="skill-pick-mark"></span>
+          Лидерство
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi">
+          <span class="skill-pick-mark"></span>
+          Знания
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi">
+          <span class="skill-pick-mark"></span>
+          Скрытность
+        </button>
+        <button class="skill-chip mode-pick mode-pick-multi">
+          <span class="skill-pick-mark"></span>
+          Выживание
+        </button>
+      </div>
+
+      <p class="stage-title" style="margin-top: 28px">Режим · pick-single (level-up)</p>
+      <div class="row">
+        <button class="skill-chip mode-pick mode-pick-single">
+          <span class="skill-pick-mark"></span>
+          Внимательность
+        </button>
+        <button class="skill-chip mode-pick mode-pick-single">
+          <span class="skill-pick-mark"></span>
+          Обман
+        </button>
+        <button class="skill-chip mode-pick mode-pick-single is-selected">
+          <span class="skill-pick-mark"></span>
+          Лидерство
+        </button>
+        <button class="skill-chip mode-pick mode-pick-single">
+          <span class="skill-pick-mark"></span>
+          Знания
+        </button>
+        <button class="skill-chip mode-pick mode-pick-single">
+          <span class="skill-pick-mark"></span>
+          Скрытность
+        </button>
+        <button class="skill-chip mode-pick mode-pick-single">
+          <span class="skill-pick-mark"></span>
+          Выживание
+        </button>
+      </div>
+
+      <div class="notes">
+        <b>Одни и те же чипы в трёх ролях</b> — это критично: игрок распознаёт «Лечение» и в шапке листа, и в выборе
+        при создании, и в level-up'е как один и тот же элемент. Разница только в маркере слева и в том, что display-чип
+        бросает кубик, pick-чип — переключает состояние. <b>Auto-метка</b> (замочек) — маленький глиф внутри чипа,
+        а не отдельный бейдж: так чипы в ряду остаются одной высоты.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 ABILITY CARD ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>AbilityCard — атом</h2>
+    <p class="group-lead">
+      Плоская карточка: название + уровень-бейдж, всегда виден текст описания. Описания короткие
+      (1–2 строки), прятать нечего — аккордеон был бы лишним тапом. В picker-режимах появляется
+      маркер-радио/чекбокс слева. Reference-вариант — без рамок, для справочного списка.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояния · display (in-game)</p>
+      <div class="col" style="max-width: 560px">
+        <div>
+          <span class="variant-label">default</span>
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title">
+                <span class="ability-head-title-text">Стойкость</span>
+                <span class="ability-level-badge">ур. 1</span>
+              </div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+6 ОЗ.</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <span class="variant-label">с действием (активируемая)</span>
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title">
+                <span class="ability-head-title-text">Удача</span>
+                <span class="ability-level-badge">ур. 1</span>
+              </div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">Раз в день можешь превратить промах в частичный успех.</p>
+              <div class="ability-actions">
+                <button class="ability-btn is-hero">Использовать</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <span class="variant-label">уровень 2 (полученная позже)</span>
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title">
+                <span class="ability-head-title-text">Манёвренность</span>
+                <span class="ability-level-badge">ур. 2</span>
+              </div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 28px">Режим · pick-multi (создание)</p>
+      <div class="col" style="max-width: 560px">
+        <div class="ability-card mode-pick mode-pick-multi is-locked">
+          <div class="ability-head">
+            <span class="ability-head-mark"></span>
+            <div class="ability-head-title"><span class="ability-head-title-text">Исцеление</span></div>
+          </div>
+          <div class="ability-body">
+            <p class="ability-body-text">Можешь нейтрализовать яды, снять проклятия или исцелить раны касанием.</p>
+          </div>
+        </div>
+        <div class="ability-card mode-pick mode-pick-multi">
+          <div class="ability-head">
+            <span class="ability-head-mark"></span>
+            <div class="ability-head-title"><span class="ability-head-title-text">Рубка</span></div>
+          </div>
+          <div class="ability-body">
+            <p class="ability-body-text">+2 к урону в ближнем бою.</p>
+          </div>
+        </div>
+        <div class="ability-card mode-pick mode-pick-multi is-selected">
+          <div class="ability-head">
+            <span class="ability-head-mark"></span>
+            <div class="ability-head-title"><span class="ability-head-title-text">Удар из тени</span></div>
+          </div>
+          <div class="ability-body">
+            <p class="ability-body-text">Атака из укрытия даёт +3 к урону.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 28px">Режим · pick-single (level-up) + reference</p>
+      <div class="row" style="align-items: flex-start; gap: 24px;">
+        <div class="col" style="flex: 1 1 320px; min-width: 0;">
+          <span class="variant-label">pick-single</span>
+          <div class="ability-card mode-pick mode-pick-single">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Стойкость</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+6 ОЗ.</p>
+            </div>
+          </div>
+          <div class="ability-card mode-pick mode-pick-single is-selected">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Удар из тени</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">Атака из укрытия даёт +3 к урону.</p>
+            </div>
+          </div>
+          <div class="ability-card mode-pick mode-pick-single">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Удача</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">Раз в день можешь превратить промах в частичный успех.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col" style="flex: 1 1 320px; min-width: 0;">
+          <span class="variant-label">reference (для попапа «Все»)</span>
+          <div class="bottom-sheet" style="max-width: none;">
+            <div class="bs-body" style="padding: 4px 16px; max-height: none;">
+              <div class="ability-card variant-reference">
+                <div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Стойкость</span></div></div>
+                <div class="ability-body"><p class="ability-body-text">+6 ОЗ.</p></div>
+              </div>
+              <div class="ability-card variant-reference">
+                <div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Манёвренность</span></div></div>
+                <div class="ability-body"><p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p></div>
+              </div>
+              <div class="ability-card variant-reference">
+                <div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Удача</span></div></div>
+                <div class="ability-body"><p class="ability-body-text">Раз в день можешь превратить промах в частичный успех.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему одна карточка в четырёх режимах:</b> описание способности одно и то же, меняется только
+        обвязка — клик-поведение (toggle vs select), маркер слева (chevron vs checkbox vs radio vs none),
+        плотность (сколько paddings). Reference-вариант — это та же карточка без фона и рамки, с уменьшенным
+        шрифтом, чтобы вместить 20+ записей в popover.
+        <br><br>
+        <b>Locked</b> (пунктирный маркер + прозрачность) — для создания: способности вне класса не выбираются, но
+        видны, чтобы игрок понимал, что бывает. Это важный сигнал «это не всё, что есть, это то, что доступно тебе».
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 IN-GAME SECTION ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>In-game — секции «Навыки» и «Способности»</h2>
+    <p class="group-lead">
+      На вкладке «Основное» навыки живут плотным ghost-рядом (тап → быстрый бросок), способности —
+      плоским списком карточек: название · уровень · короткое описание, иногда кнопка действия.
+      Описания короткие — прятать под аккордеон нечего. В шапке секций — моно-капс eyebrow,
+      справа от «Способности» — ссылка «все» (открывает bottom-sheet со справкой из §6).
+    </p>
+
+    <div class="stage" style="max-width: 720px; margin: 0 auto;">
+      <p class="stage-title">Вкладка «Основное» · фрагмент</p>
+
+      <div class="skills-section">
+        <div class="skills-section-head">
+          <span class="skills-section-title">Навыки</span>
+          <span class="skills-section-hint">3 · тап для броска</span>
+        </div>
+        <div class="skills-row">
+          <button class="skill-chip is-auto" title="От класса">
+            <span class="skill-chip-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="5" rx="0.5"/><path d="M4 5 L4 3.5 C4 2.5 4.9 2 6 2 C7.1 2 8 2.5 8 3.5 L8 5"/></svg></span>
+            Лечение
+          </button>
+          <button class="skill-chip is-auto" title="От класса">
+            <span class="skill-chip-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="5" rx="0.5"/><path d="M4 5 L4 3.5 C4 2.5 4.9 2 6 2 C7.1 2 8 2.5 8 3.5 L8 5"/></svg></span>
+            Знания
+          </button>
+          <button class="skill-chip">Расшифровка</button>
+        </div>
+      </div>
+
+      <div style="height: 1px; background: var(--vtt-border-subtle); margin: 8px 0;"></div>
+
+      <div class="abilities-section">
+        <div class="abilities-section-head">
+          <span class="abilities-section-title">Способности</span>
+          <a class="abilities-section-link">все →</a>
+        </div>
+        <div class="abilities-list">
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title">
+                <span class="ability-head-title-text">Стойкость</span>
+                <span class="ability-level-badge">ур. 1</span>
+              </div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+6 ОЗ.</p>
+            </div>
+          </div>
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title">
+                <span class="ability-head-title-text">Удача</span>
+                <span class="ability-level-badge">ур. 1</span>
+              </div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">Раз в день можешь превратить промах в частичный успех.</p>
+              <div class="ability-actions">
+                <button class="ability-btn is-hero">Использовать</button>
+              </div>
+            </div>
+          </div>
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title">
+                <span class="ability-head-title-text">Манёвренность</span>
+                <span class="ability-level-badge">ур. 2</span>
+              </div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему auto-чипы с замочком, а не отдельной строкой «От класса: ...»</b>: игроку всё равно, откуда
+        взялся навык — они все рабочие. Замочек — тихий маркер «не изменить», чтобы при попытке удалить навык
+        UI отвечал корректно. Он не привлекает внимание, просто отличает.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 CREATE CHARACTER PICKER ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>Создание персонажа — picker с чекбоксами</h2>
+    <p class="group-lead">
+      Шаг 2 мастера. Навыки — multi-select с счётчиком «автоматические + выбрано / осталось». Способности —
+      тоже multi (у класса может быть несколько доступных), с видимыми locked-вариантами, чтобы игрок
+      понимал палитру.
+    </p>
+
+    <div class="stage" style="max-width: 720px; margin: 0 auto;">
+      <p class="stage-title">Шаг 2 из 3 · Навыки и способности</p>
+
+      <div class="picker" style="margin-bottom: 20px;">
+        <div class="picker-head">
+          <span class="picker-title">Навыки</span>
+          <span class="picker-counter">выбрано <b>1</b> / осталось <b>0</b></span>
+        </div>
+        <div class="picker-auto-note">
+          <span class="dot"></span>
+          Автоматически от класса: <b style="color: var(--vtt-accent-soft)">Атлетика · Внимательность</b>
+        </div>
+        <p class="picker-hint">Выбери ещё один навык из списка ниже.</p>
+        <div class="skills-row">
+          <button class="skill-chip mode-pick mode-pick-multi">
+            <span class="skill-pick-mark"></span>
+            Обман
+          </button>
+          <button class="skill-chip mode-pick mode-pick-multi is-selected">
+            <span class="skill-pick-mark"></span>
+            Расшифровка
+          </button>
+          <button class="skill-chip mode-pick mode-pick-multi">
+            <span class="skill-pick-mark"></span>
+            Лечение
+          </button>
+          <button class="skill-chip mode-pick mode-pick-multi">
+            <span class="skill-pick-mark"></span>
+            Лидерство
+          </button>
+          <button class="skill-chip mode-pick mode-pick-multi">
+            <span class="skill-pick-mark"></span>
+            Знания
+          </button>
+          <button class="skill-chip mode-pick mode-pick-multi">
+            <span class="skill-pick-mark"></span>
+            Скрытность
+          </button>
+          <button class="skill-chip mode-pick mode-pick-multi">
+            <span class="skill-pick-mark"></span>
+            Выживание
+          </button>
+        </div>
+      </div>
+
+      <div class="picker">
+        <div class="picker-head">
+          <span class="picker-title">Способности</span>
+          <span class="picker-counter">выбрано <b>1</b> / осталось <b>2</b></span>
+        </div>
+        <div class="picker-auto-note">
+          <span class="dot"></span>
+          Автоматически от класса: <b style="color: var(--vtt-accent-soft)">Рубка</b>
+        </div>
+        <p class="picker-hint">Выбери 1 из 3 доступных способностей.</p>
+        <div class="col">
+          <div class="ability-card mode-pick mode-pick-multi">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Стойкость</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+6 ОЗ.</p>
+            </div>
+          </div>
+          <div class="ability-card mode-pick mode-pick-multi">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Прочность</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+1 к броне.</p>
+            </div>
+          </div>
+          <div class="ability-card mode-pick mode-pick-multi is-selected">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Манёвренность</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p>
+            </div>
+          </div>
+          <div class="ability-card mode-pick mode-pick-multi is-locked">
+            <div class="ability-head">
+              <span class="ability-head-mark"></span>
+              <div class="ability-head-title"><span class="ability-head-title-text">Удар из тени</span></div>
+            </div>
+            <div class="ability-body">
+              <p class="ability-body-text">Атака из укрытия даёт +3 к урону. <i>Только для Вора.</i></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>«Автоматически от класса»</b> — отдельная полоска-заметка <i>над</i> выбором, а не смешанные locked-чипы
+        внутри. Так игрок видит: «мне уже дали это, теперь выбираю дополнительно». Текущий экран «до» перечислял
+        все навыки вперемешку с отключёнными чекбоксами — непонятно, что автоматическое, а что выбираемое.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 LEVEL-UP ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>Level-up — wizard с одиночным выбором</h2>
+    <p class="group-lead">
+      При повышении уровня игрок получает разные награды. У уровня 3 это «+1 навык · +1 способность» — значит,
+      два picker'а, в каждом <b>radio</b> (выбрать ровно один). Сверху — свиток наград (что меняется),
+      внизу — btn-hero «Принять».
+    </p>
+
+    <div class="stage" style="max-width: 720px; margin: 0 auto;">
+      <p class="stage-title">Level up · 2 → 3</p>
+
+      <div class="lvl-shell">
+        <div class="lvl-head">
+          <div>
+            <div class="lvl-head-eyebrow">Повышение уровня</div>
+            <div class="lvl-head-title">Уровень 2 <b>→ 3</b></div>
+          </div>
+        </div>
+
+        <div class="lvl-rewards">
+          <div><b>Награды уровня 3:</b></div>
+          <div>· +1 навык (на выбор)</div>
+          <div>· +1 способность (на выбор)</div>
+          <div>· +6 HP (автоматически)</div>
+        </div>
+
+        <div class="lvl-step">
+          <div class="lvl-step-title">Выбери новый навык</div>
+          <div class="skills-row">
+            <button class="skill-chip mode-pick mode-pick-single">
+              <span class="skill-pick-mark"></span>
+              Внимательность
+            </button>
+            <button class="skill-chip mode-pick mode-pick-single">
+              <span class="skill-pick-mark"></span>
+              Обман
+            </button>
+            <button class="skill-chip mode-pick mode-pick-single">
+              <span class="skill-pick-mark"></span>
+              Расшифровка
+            </button>
+            <button class="skill-chip mode-pick mode-pick-single is-selected">
+              <span class="skill-pick-mark"></span>
+              Лидерство
+            </button>
+            <button class="skill-chip mode-pick mode-pick-single">
+              <span class="skill-pick-mark"></span>
+              Знания
+            </button>
+            <button class="skill-chip mode-pick mode-pick-single">
+              <span class="skill-pick-mark"></span>
+              Скрытность
+            </button>
+            <button class="skill-chip mode-pick mode-pick-single">
+              <span class="skill-pick-mark"></span>
+              Выживание
+            </button>
+          </div>
+        </div>
+
+        <div class="lvl-step">
+          <div class="lvl-step-title">Выбери новую способность</div>
+          <div class="col">
+            <div class="ability-card mode-pick mode-pick-single">
+              <div class="ability-head">
+                <span class="ability-head-mark"></span>
+                <div class="ability-head-title"><span class="ability-head-title-text">Стойкость</span></div>
+              </div>
+              <div class="ability-body"><p class="ability-body-text">+6 ОЗ.</p></div>
+            </div>
+            <div class="ability-card mode-pick mode-pick-single is-selected">
+              <div class="ability-head">
+                <span class="ability-head-mark"></span>
+                <div class="ability-head-title"><span class="ability-head-title-text">Манёвренность</span></div>
+              </div>
+              <div class="ability-body"><p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p></div>
+            </div>
+            <div class="ability-card mode-pick mode-pick-single">
+              <div class="ability-head">
+                <span class="ability-head-mark"></span>
+                <div class="ability-head-title"><span class="ability-head-title-text">Прочность</span></div>
+              </div>
+              <div class="ability-body"><p class="ability-body-text">+1 к броне.</p></div>
+            </div>
+            <div class="ability-card mode-pick mode-pick-single">
+              <div class="ability-head">
+                <span class="ability-head-mark"></span>
+                <div class="ability-head-title"><span class="ability-head-title-text">Удача</span></div>
+              </div>
+              <div class="ability-body"><p class="ability-body-text">Раз в день можешь превратить промах в частичный успех.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lvl-actions">
+          <button class="ability-btn">Назад</button>
+          <button class="ability-btn is-hero">Принять</button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Свиток наград</b> (золотая полоска с <code>· +1 навык · +1 способность · +6 HP</code>) — ключевой
+        элемент, которого раньше не было. Он отвечает на «а что именно я сейчас получаю?» <i>до</i> того, как
+        игрок начал кликать. «Автоматически» + «на выбор» разделены прямо в свитке.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §6 ALL ABILITIES ============ -->
+  <section class="group">
+    <p class="eyebrow">§6</p>
+    <h2>«Все способности» — справочный bottom-sheet</h2>
+    <p class="group-lead">
+      Открывается по ссылке «все →» из секции способностей на листе, или из help-меню. Назначение — справочник:
+      что вообще бывает в игре. Плотный список в reference-варианте (без рамок, компактно), с поиском сверху
+      для быстрого перехода.
+    </p>
+
+    <div class="stage" style="display: flex; justify-content: center;">
+      <div class="bottom-sheet">
+        <div class="bs-head">
+          <span class="bs-title">Все способности</span>
+          <button class="bs-close" aria-label="Закрыть">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3 L9 9"/><path d="M9 3 L3 9"/></svg>
+          </button>
+        </div>
+        <div class="bs-body">
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Стойкость</span></div></div><div class="ability-body"><p class="ability-body-text">+6 ОЗ.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Прочность</span></div></div><div class="ability-body"><p class="ability-body-text">+1 к броне.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Манёвренность</span></div></div><div class="ability-body"><p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Рубка</span></div></div><div class="ability-body"><p class="ability-body-text">+2 к урону в ближнем бою.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Удар из тени</span></div></div><div class="ability-body"><p class="ability-body-text">Атака из укрытия даёт +3 к урону.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Удача</span></div></div><div class="ability-body"><p class="ability-body-text">Раз в день можешь превратить промах в частичный успех.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Исцеление</span></div></div><div class="ability-body"><p class="ability-body-text">Можешь нейтрализовать яды, снять проклятия или исцелить раны касанием.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Лидерство</span></div></div><div class="ability-body"><p class="ability-body-text">Союзники в пределах голоса получают +1 к броскам преодоления страха.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Выслеживание</span></div></div><div class="ability-body"><p class="ability-body-text">Читаешь следы и знаки; можешь идти по следу существа день и ночь.</p></div></div>
+          <div class="ability-card variant-reference"><div class="ability-head"><div class="ability-head-title"><span class="ability-head-title-text">Двойной удар</span></div></div><div class="ability-body"><p class="ability-body-text">Раз за бой можешь атаковать дважды за свой ход.</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Почему reference-вариант без рамок:</b> в раскрытом виде каждая карточка с бордером — это «+4 бордера на
+      запись × 20 записей = 80 линий на экране». Reference убирает рамки, оставляя тихий разделитель снизу
+      каждой записи. Текст описания ≤ 12px, serif-title 14px — справочник компактный, на экран помещается 8–10 записей.
+      <br><br>
+      <b>Поиск</b> (не показан в демо, чтобы не усложнять) — sticky-input сверху bs-body.
+    </div>
+  </section>
+
+  <!-- ============ §7 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§7</p>
+    <h2>До / После</h2>
+    <p class="group-lead">
+      Основная победа — ясность ролей (chip vs card) и единообразие выбора. Текущие три picker'а (create, level-up)
+      не похожи друг на друга: где-то чекбоксы, где-то radio, где-то inline-textarea с инициализацией сфер.
+      Теперь — один и тот же примитив в трёх режимах.
+    </p>
+
+    <div class="compare">
+      <div class="before-wrap">
+        <div class="before-label">ДО · in-game</div>
+        <div style="margin-bottom: 12px;">
+          <span class="before-chip">Лечение</span>
+          <span class="before-chip">Знания</span>
+        </div>
+        <div class="before-accordion">Стойкость ▼</div>
+        <div class="before-accordion-sub">+6 ОЗ.</div>
+        <div class="before-accordion">Манёвренность ▶</div>
+
+        <div class="before-label" style="margin-top: 20px;">ДО · level-up</div>
+        <div class="before-checkbox-row">○ Внимательность</div>
+        <div class="before-checkbox-row">○ Обман</div>
+        <div class="before-checkbox-row">○ Расшифровка</div>
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 11px; margin-top: 8px;">
+          — одинаковый вес у всех навыков, нет сигнала «выбирай один»
+        </div>
+      </div>
+
+      <div>
+        <div class="before-label" style="color: var(--vtt-success);">ПОСЛЕ · in-game</div>
+        <div class="skills-section" style="padding: 0 0 12px;">
+          <div class="skills-row">
+            <button class="skill-chip is-auto"><span class="skill-chip-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="5" rx="0.5"/><path d="M4 5 L4 3.5 C4 2.5 4.9 2 6 2 C7.1 2 8 2.5 8 3.5 L8 5"/></svg></span>Лечение</button>
+            <button class="skill-chip is-auto"><span class="skill-chip-glyph"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="5" rx="0.5"/><path d="M4 5 L4 3.5 C4 2.5 4.9 2 6 2 C7.1 2 8 2.5 8 3.5 L8 5"/></svg></span>Знания</button>
+          </div>
+        </div>
+
+        <div class="abilities-list">
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title"><span class="ability-head-title-text">Стойкость</span><span class="ability-level-badge">ур. 1</span></div>
+            </div>
+            <div class="ability-body"><p class="ability-body-text">+6 ОЗ.</p></div>
+          </div>
+          <div class="ability-card">
+            <div class="ability-head">
+              <div class="ability-head-title"><span class="ability-head-title-text">Манёвренность</span><span class="ability-level-badge">ур. 2</span></div>
+            </div>
+            <div class="ability-body"><p class="ability-body-text">+1 к урону, надетый доспех считается на класс легче.</p></div>
+          </div>
+        </div>
+
+        <div class="before-label" style="color: var(--vtt-success); margin-top: 20px;">ПОСЛЕ · level-up</div>
+        <div class="skills-row">
+          <button class="skill-chip mode-pick mode-pick-single"><span class="skill-pick-mark"></span>Внимательность</button>
+          <button class="skill-chip mode-pick mode-pick-single"><span class="skill-pick-mark"></span>Обман</button>
+          <button class="skill-chip mode-pick mode-pick-single is-selected"><span class="skill-pick-mark"></span>Расшифровка</button>
+        </div>
+        <div style="color: var(--vtt-success); font-family: var(--font-mono); font-size: 11px; margin-top: 8px;">
+          — плотный ряд, radio-точка, есть selected-состояние
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Что изменилось:</b>
+      <br>· <b>Одинаковый примитив в 4 контекстах</b>. Раньше chip был одним компонентом, checkbox — другим, radio — третьим. Теперь один <code>skill-chip</code> с <code>mode-pick-*</code>, и один <code>ability-card</code> с <code>mode-pick-*</code>.
+      <br>· <b>Auto-метка вместо locked-чекбокса</b>. Навыки от класса теперь — отдельная полоска «Автоматически от класса», а не disabled-чекбоксы в общем списке.
+      <br>· <b>«Все способности» — bottom-sheet</b>, а не отдельная страница (ссылка «все» из секции открывает overlay без смены контекста).
+      <br>· <b>В level-up ряд чипов вместо списка радио-строк</b> — плотность × 4, сигнал «выбери один» читается с первого взгляда.
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>Magic panel · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 760px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 6px; display: block;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ================================================================
+     SPHERE CHIP — атом (сфера духа)
+     ================================================================ */
+  /*
+    Шесть пресетов: Огонь · Тень · Камень · Молния · Тайны · Страх.
+    Цвет фиксированный, чип узнаваемый с расстояния.
+  */
+  .sphere-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px 3px 6px;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--vtt-text-secondary);
+    background: var(--vtt-bg-elevated);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sphere-chip-dot {
+    width: 6px; height: 6px; border-radius: var(--r-pill);
+    background: var(--vtt-text-muted);
+    flex-shrink: 0;
+  }
+  .sphere-chip.sphere-fire    .sphere-chip-dot { background: #C04A2B; }
+  .sphere-chip.sphere-shadow  .sphere-chip-dot { background: #5A4A6E; }
+  .sphere-chip.sphere-stone   .sphere-chip-dot { background: #7A6A4E; }
+  .sphere-chip.sphere-storm   .sphere-chip-dot { background: #8EA8B8; }
+  .sphere-chip.sphere-secret  .sphere-chip-dot { background: #B0853D; }
+  .sphere-chip.sphere-fear    .sphere-chip-dot { background: #792B3B; }
+  .sphere-chip.sphere-custom  .sphere-chip-dot {
+    background: transparent;
+    border: 1px dashed var(--vtt-text-muted);
+    width: 6px; height: 6px;
+  }
+
+  /* empty slot (при создании пустой ячейки) */
+  .sphere-chip.is-empty {
+    border-style: dashed;
+    color: var(--vtt-text-muted);
+    background: transparent;
+  }
+
+  /* ================================================================
+     SPIRIT CARD — атом (карточка духа)
+     ================================================================ */
+  /*
+    .spirit-card                — read-only карточка
+    .spirit-card.is-editing     — режим редактирования (inline form)
+    .spirit-card.is-empty       — пустой слот (свежесозданный, требует заполнения)
+  */
+  .spirit-card {
+    position: relative;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 14px 16px;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .spirit-card:hover { border-color: var(--vtt-border-strong); }
+
+  .spirit-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .spirit-sigil {
+    width: 34px; height: 34px;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-pill);
+    color: var(--vtt-accent);
+    background: radial-gradient(circle at center, rgba(140, 106, 58, 0.15), transparent 70%);
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-style: italic;
+  }
+  .spirit-name {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.2;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .spirit-actions {
+    display: flex; gap: 4px; flex-shrink: 0;
+  }
+  .spirit-appearance {
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 10px 44px;
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+  .spirit-spheres {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-left: 44px;
+  }
+
+  /* пустой слот */
+  .spirit-card.is-empty {
+    border-style: dashed;
+    background: transparent;
+  }
+  .spirit-card.is-empty:hover { border-color: var(--vtt-border-gold); }
+  .spirit-card.is-empty .spirit-sigil {
+    border-style: dashed;
+    color: var(--vtt-text-muted);
+    background: transparent;
+  }
+  .spirit-card.is-empty .spirit-name {
+    color: var(--vtt-text-muted);
+    font-style: italic;
+  }
+  .spirit-card.is-empty .spirit-appearance {
+    color: var(--vtt-text-muted);
+    opacity: 0.7;
+  }
+
+  /* editing */
+  .spirit-card.is-editing {
+    border-color: var(--vtt-border-gold);
+    background: var(--vtt-bg-elevated);
+  }
+  .spirit-edit-form {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 8px;
+  }
+  .spirit-edit-form .form-row {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .spirit-edit-form .form-row-pair {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .spirit-edit-foot {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    margin-top: 4px;
+  }
+
+  /* ================================================================
+     RITUAL CARD — атом (плоская карточка ритуала)
+     ================================================================ */
+  /*
+    По договорённости — описания абилок-ритуалов плоские, всегда видны.
+    Но описание может быть длинным (фраза 200+ символов), поэтому дадим
+    clamp на 2 строки по умолчанию и tap-to-expand.
+  */
+  .ritual-card {
+    position: relative;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 12px 16px;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .ritual-card:hover { border-color: var(--vtt-border-strong); }
+  .ritual-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .ritual-name {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.2;
+    min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ritual-actions {
+    display: flex; gap: 4px; flex-shrink: 0;
+  }
+  .ritual-desc {
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+    font-family: var(--font-serif);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ritual-card.is-expanded .ritual-desc {
+    -webkit-line-clamp: initial;
+    display: block;
+  }
+  .ritual-card.is-empty {
+    border-style: dashed;
+    background: transparent;
+  }
+  .ritual-card.is-empty .ritual-name {
+    color: var(--vtt-text-muted);
+    font-style: italic;
+  }
+  .ritual-card.is-editing {
+    border-color: var(--vtt-border-gold);
+    background: var(--vtt-bg-elevated);
+  }
+
+  /* ================================================================
+     CANTRIP CHIP — атом (заговор, read-only)
+     ================================================================ */
+  .cantrip-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--vtt-accent-deep);
+    border-radius: var(--r-pill);
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-style: italic;
+    cursor: default;
+  }
+  .cantrip-chip-glyph {
+    width: 10px; height: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--vtt-accent);
+  }
+  .cantrip-chip-glyph svg { width: 100%; height: 100%; }
+
+  /* ================================================================
+     QUICKSILVER COUNTER — атом
+     ================================================================ */
+  /*
+    Визуальный "дайс-счётчик" X/Y. Безопасная зона — золото,
+    overdose (X >= level) — danger с пульсацией.
+  */
+  .qs-counter {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 16px;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .qs-counter.is-overdose {
+    border-color: var(--vtt-danger);
+    background: linear-gradient(to right, rgba(121, 43, 59, 0.14), var(--vtt-bg-surface) 60%);
+  }
+  .qs-dice {
+    width: 62px; height: 62px;
+    display: grid; grid-template-rows: auto 1fr;
+    align-items: center; justify-content: center;
+    border: 1.5px solid var(--vtt-border-gold);
+    border-radius: var(--r-md);
+    background: var(--vtt-bg-sunken);
+    box-shadow: var(--shadow-inset);
+    padding: 6px 0 8px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .qs-counter.is-overdose .qs-dice {
+    border-color: var(--vtt-danger-bright);
+    animation: qs-pulse 2s ease-in-out infinite;
+  }
+  @keyframes qs-pulse {
+    0%, 100% { box-shadow: var(--shadow-inset), 0 0 0 0 rgba(178, 59, 79, 0); }
+    50% { box-shadow: var(--shadow-inset), 0 0 0 4px rgba(178, 59, 79, 0.12); }
+  }
+  .qs-dice-value {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    color: var(--vtt-accent-soft);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .qs-counter.is-overdose .qs-dice-value {
+    color: var(--vtt-danger-bright);
+  }
+  .qs-dice-limit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--vtt-text-muted);
+    letter-spacing: 0.14em;
+    margin-top: 2px;
+  }
+  .qs-dice-limit b {
+    color: var(--vtt-accent-soft);
+    font-weight: 500;
+  }
+  .qs-body { min-width: 0; }
+  .qs-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    margin-bottom: 3px;
+  }
+  .qs-subtitle {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    color: var(--vtt-text-secondary);
+    font-style: italic;
+    line-height: 1.35;
+  }
+  .qs-counter.is-overdose .qs-title {
+    color: var(--vtt-danger-bright);
+  }
+  .qs-warning {
+    display: flex; align-items: flex-start; gap: 6px;
+    font-size: 12px;
+    color: var(--vtt-danger-bright);
+    margin-top: 4px;
+    font-family: var(--font-sans);
+  }
+  .qs-warning svg { width: 12px; height: 12px; flex-shrink: 0; margin-top: 2px; }
+
+  .qs-actions {
+    display: flex; gap: 8px;
+    grid-column: 1 / -1;
+    padding-top: 12px;
+    border-top: 1px solid var(--vtt-border-subtle);
+    margin-top: 4px;
+  }
+
+  /* ================================================================
+     BUTTONS (reuse)
+     ================================================================ */
+  .btn-primary, .btn-hero, .btn-ghost, .btn-danger-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--r-pill);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+    border: 1px solid transparent;
+  }
+  .btn-ghost { background: transparent; color: var(--vtt-text-secondary); border-color: var(--vtt-border-subtle); }
+  .btn-ghost:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .btn-primary {
+    background: var(--vtt-bg-elevated);
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+  }
+  .btn-primary:hover { background: #2e241a; border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+  .btn-hero {
+    background: #A6833E;
+    color: #1a1205;
+    border-color: #8C6A3A;
+    font-weight: 600;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+  }
+  .btn-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+  /* Danger-вариант hero — единственная подтверждающая кнопка в рисковых диалогах («выпить несмотря», «бросить ТЕЛ и выпить»). Плоская заливка, красный drop-shadow вместо бронзового */
+  .btn-hero.is-danger {
+    background: var(--vtt-danger);
+    color: var(--vtt-text-primary);
+    border-color: var(--vtt-danger-bright);
+    filter: drop-shadow(0 0 10px rgba(178, 59, 79, 0.35));
+  }
+  .btn-hero.is-danger:hover {
+    background: var(--vtt-danger-bright);
+    border-color: var(--vtt-danger-bright);
+    filter: drop-shadow(0 0 14px rgba(178, 59, 79, 0.5));
+  }
+  .btn-danger-ghost {
+    padding: 9px 12px;
+    background: transparent;
+    border-color: transparent;
+    color: var(--vtt-text-muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+  .btn-danger-ghost svg { width: 13px; height: 13px; }
+  .btn-danger-ghost:hover {
+    color: var(--vtt-danger-bright);
+    border-color: var(--vtt-border-subtle);
+    background: rgba(178, 59, 79, 0.06);
+  }
+
+  /* Компактная икон-кнопка — для строк списков (заклинания, ритуалы, кантрипы) */
+  .btn-icon-sm {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .btn-icon-sm svg { width: 14px; height: 14px; }
+  .btn-icon-sm:hover {
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+  }
+  .btn-icon-sm.is-danger:hover {
+    border-color: var(--vtt-danger-bright);
+    color: var(--vtt-danger-bright);
+    background: rgba(178, 59, 79, 0.08);
+  }
+
+  /* ================================================================
+     FORM controls
+     ================================================================ */
+  .form-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .form-input, .form-textarea, .form-combo {
+    width: 100%;
+    padding: 8px 11px;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+  }
+  .form-textarea { font-family: var(--font-serif); font-style: italic; min-height: 68px; resize: vertical; }
+  .form-input:focus, .form-textarea:focus, .form-combo:focus {
+    outline: none;
+    border-color: var(--vtt-border-gold);
+    box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
+  }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--vtt-text-muted); font-style: italic; }
+  .form-combo {
+    appearance: none;
+    padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23858484' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+
+  /* sphere suggest pills below combo */
+  .sphere-suggest {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .sphere-suggest-btn {
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px dashed var(--vtt-border-strong);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-muted);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .sphere-suggest-btn:hover {
+    color: var(--vtt-accent-soft);
+    border-color: var(--vtt-border-gold);
+    background: rgba(140, 106, 58, 0.08);
+  }
+
+  /* ================================================================
+     MAGIC PANEL SECTIONS
+     ================================================================ */
+  .mg-panel { display: flex; flex-direction: column; gap: 20px; }
+
+  .mg-section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .mg-section-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .mg-section-title b { color: var(--vtt-text-muted); font-weight: normal; margin-left: 6px; }
+  .mg-section-add {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px dashed var(--vtt-border-strong);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .mg-section-add:hover {
+    border-color: var(--vtt-border-gold);
+    color: var(--vtt-accent-soft);
+    background: rgba(140, 106, 58, 0.05);
+  }
+  .mg-section-add svg { width: 10px; height: 10px; }
+
+  .mg-list { display: flex; flex-direction: column; gap: 8px; }
+  .mg-cantrips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ================================================================
+     BOTTOM SHEET (для overdose)
+     ================================================================ */
+  .bottom-sheet {
+    width: 100%;
+    max-width: 440px;
+    background: rgba(26, 21, 16, 0.94);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+  }
+  .bs-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .bs-body { padding: 18px; }
+
+  .od-dialog { text-align: center; padding: 22px 20px 18px; }
+  .od-icon {
+    width: 44px; height: 44px;
+    margin: 0 auto 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--vtt-danger-bright);
+    border-radius: var(--r-pill);
+    color: var(--vtt-danger-bright);
+    background: rgba(178, 59, 79, 0.08);
+  }
+  .od-icon svg { width: 24px; height: 24px; }
+  .od-title {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--vtt-accent-soft);
+    margin-bottom: 4px;
+  }
+  .od-body {
+    color: var(--vtt-text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 18px;
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+  .od-body b { color: var(--vtt-danger-bright); font-style: normal; font-family: var(--font-sans); font-weight: 600; }
+  .od-actions { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ================================================================
+     BEFORE/AFTER
+     ================================================================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 960px) { .compare { grid-template-columns: 1fr; } }
+
+  .before-wrap {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 16px;
+  }
+  .before-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-danger-bright); margin-bottom: 12px;
+  }
+  .before-input {
+    padding: 9px 12px;
+    border: 1px solid var(--vtt-danger-bright);
+    margin-bottom: 4px;
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border-radius: 0;
+  }
+  .before-input-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px; }
+  .before-input-pair > div {
+    padding: 9px 12px;
+    border: 1px solid var(--vtt-danger-bright);
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Atom + molecule · Magic panel</p>
+  <h1>Magic</h1>
+  <p class="lead">
+    Вкладка «Магия» — самая хрупкая: сейчас каждый дух и ритуал это <b>форма из 4–6 инпутов, всегда
+    открытая на редактирование</b>. В бою игрок хочет <b>прочитать</b>, что его дух умеет, а не видеть
+    6 полей-инпутов на каждого. Решение: духи/ритуалы — <b>карточки</b> (read-only), редактирование —
+    отдельный режим <code>is-editing</code>. Сферы — <b>цветные чипы</b>, не текст-инпут.
+    Ртуть — крупный визуальный счётчик X/Y, меняющий цвет при передозе.
+  </p>
+
+  <!-- ============ §1 SPHERE CHIP ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>SphereChip — атом</h2>
+    <p class="group-lead">
+      Шесть пресетов из спеки: <b>Огонь · Тень · Камень · Молния · Тайны · Страх</b>. Каждая сфера —
+      цветная точка-маркер + моно-капс слово. Сфера «своя» (игрок вводит нестандартную) — с пунктирным
+      маркером. Пустой слот — пунктир-контур.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Все шесть пресетов</p>
+      <div class="row">
+        <span class="sphere-chip sphere-fire"><span class="sphere-chip-dot"></span>Огонь</span>
+        <span class="sphere-chip sphere-shadow"><span class="sphere-chip-dot"></span>Тень</span>
+        <span class="sphere-chip sphere-stone"><span class="sphere-chip-dot"></span>Камень</span>
+        <span class="sphere-chip sphere-storm"><span class="sphere-chip-dot"></span>Молния</span>
+        <span class="sphere-chip sphere-secret"><span class="sphere-chip-dot"></span>Тайны</span>
+        <span class="sphere-chip sphere-fear"><span class="sphere-chip-dot"></span>Страх</span>
+      </div>
+
+      <p class="stage-title" style="margin-top: 24px;">Свой ввод / пустой слот</p>
+      <div class="row">
+        <span class="sphere-chip sphere-custom"><span class="sphere-chip-dot"></span>Сновидения</span>
+        <span class="sphere-chip is-empty"><span class="sphere-chip-dot"></span>Сфера 2</span>
+      </div>
+
+      <div class="notes">
+        <b>Цветной маркер, а не цветной весь чип</b> — заливка съедала бы единообразие золотой гаммы.
+        Точка слева — ровно тот сигнал, который нужен, чтобы отличать Огонь от Тени с расстояния,
+        не разрушая общий тон UI.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 SPIRIT CARD ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>SpiritCard — атом</h2>
+    <p class="group-lead">
+      Read-only карточка духа: <b>сигил · имя · две сферы</b> + курсивом «внешность». Редактирование —
+      явный режим <code>is-editing</code> (border-gold + bg-elevated). Пустой слот — пунктир-рамка со
+      словом «новый дух» и подсказкой заполнить.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояния</p>
+      <div class="col" style="max-width: 560px;">
+
+        <div>
+          <span class="variant-label">default · прочитан</span>
+          <div class="spirit-card">
+            <div class="spirit-head">
+              <div class="spirit-sigil">Ы</div>
+              <div class="spirit-name">Ылкир, Шёпот Углей</div>
+              <div class="spirit-actions">
+                <button class="btn-icon-sm" title="Редактировать"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                <button class="btn-icon-sm is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <p class="spirit-appearance">Старик, чьё лицо покрыто трещинами от жара. В глазницах тлеющий уголь.</p>
+            <div class="spirit-spheres">
+              <span class="sphere-chip sphere-fire"><span class="sphere-chip-dot"></span>Огонь</span>
+              <span class="sphere-chip sphere-secret"><span class="sphere-chip-dot"></span>Тайны</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-empty · свежесозданный слот</span>
+          <div class="spirit-card is-empty">
+            <div class="spirit-head">
+              <div class="spirit-sigil">?</div>
+              <div class="spirit-name">Новый дух</div>
+              <div class="spirit-actions">
+                <button class="btn-icon-sm is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <p class="spirit-appearance">Опиши имя, внешность и две сферы влияния.</p>
+            <div class="spirit-spheres">
+              <span class="sphere-chip is-empty"><span class="sphere-chip-dot"></span>Сфера 1</span>
+              <span class="sphere-chip is-empty"><span class="sphere-chip-dot"></span>Сфера 2</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-editing · режим редактирования</span>
+          <div class="spirit-card is-editing">
+            <div class="spirit-head">
+              <div class="spirit-sigil">В</div>
+              <div class="spirit-name" style="color: var(--vtt-accent);">Редактирование</div>
+              <div class="spirit-actions">
+                <button class="btn-icon-sm is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <div class="spirit-edit-form">
+              <div class="form-row">
+                <label class="form-label">Имя</label>
+                <input class="form-input" value="Варх, Тень под Камнем">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Внешность</label>
+                <textarea class="form-textarea">Худой юноша с каменной кожей. Двигается медленно, но тень его движется быстрее.</textarea>
+              </div>
+              <div class="form-row-pair">
+                <div class="form-row">
+                  <label class="form-label">Сфера 1</label>
+                  <select class="form-combo">
+                    <option>Камень</option>
+                    <option>Огонь</option><option>Тень</option><option>Молния</option><option>Тайны</option><option>Страх</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Сфера 2</label>
+                  <select class="form-combo">
+                    <option>Тень</option>
+                    <option>Огонь</option><option>Камень</option><option>Молния</option><option>Тайны</option><option>Страх</option>
+                  </select>
+                </div>
+              </div>
+              <div class="sphere-suggest">
+                <span style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; margin-right: 4px; align-self: center;">или свою:</span>
+                <button class="sphere-suggest-btn">+ своя сфера</button>
+              </div>
+              <div class="spirit-edit-foot">
+                <button class="btn-ghost">Отмена</button>
+                <button class="btn-primary">Сохранить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Сигил</b> — круг с первой буквой имени курсивом. Это мелкая опора для сканирования: список духов
+        ощущается как «ряд персонажей», а не «строк-форм». Буква — не обязательна, но даёт быстрое
+        визуальное различие Ы / В / М в списке.
+        <br><br>
+        <b>Режим edit</b> — явный переход «карточка → форма». Сейчас обратное: карточка всегда форма,
+        и игроку кажется, что её всегда надо что-то заполнять. Отдельный режим снимает это давление.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 RITUAL CARD ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>RitualCard — атом</h2>
+    <p class="group-lead">
+      Плоская карточка с <b>названием + описанием</b>. Описание по умолчанию обрезано до 2 строк с
+      градиент-edge'ом, тап разворачивает. Edit-режим — тот же inline-form, что у духа (имя + textarea).
+    </p>
+
+    <div class="stage">
+      <div class="col" style="max-width: 560px;">
+        <div>
+          <span class="variant-label">default · 2 строки</span>
+          <div class="ritual-card">
+            <div class="ritual-head">
+              <div class="ritual-name">Запечатывание</div>
+              <div class="ritual-actions">
+                <button class="btn-icon-sm" title="Редактировать"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                <button class="btn-icon-sm is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <p class="ritual-desc">Замыкает дух или демона в предмете на срок до одной луны. Требуется серебро, кровь проводящего и правильно начертанный круг.</p>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-expanded · полный текст</span>
+          <div class="ritual-card is-expanded">
+            <div class="ritual-head">
+              <div class="ritual-name">Призыв ветра</div>
+              <div class="ritual-actions">
+                <button class="btn-icon-sm" title="Редактировать"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                <button class="btn-icon-sm is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <p class="ritual-desc">Три часа непрерывной песни на закате. Ветер прилетает к утру и следует за проводящим в течение суток. Не подчиняется напрямую, но слышит.
+            Требуется: открытая вершина, серебряный свисток, горящее перо сокола.</p>
+          </div>
+        </div>
+
+        <div>
+          <span class="variant-label">is-empty · слот</span>
+          <div class="ritual-card is-empty">
+            <div class="ritual-head">
+              <div class="ritual-name">Новый ритуал</div>
+              <div class="ritual-actions">
+                <button class="btn-icon-sm is-danger" title="Удалить"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+              </div>
+            </div>
+            <p class="ritual-desc" style="color: var(--vtt-text-muted); font-style: italic;">Нажми на карандаш, чтобы описать ритуал.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 CANTRIPS + QUICKSILVER ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>CantripChip &amp; QuicksilverCounter</h2>
+    <p class="group-lead">
+      <b>Заговоры</b> — read-only, всегда три фиксированных из спеки. Просто чипы курсивом. <br>
+      <b>Ртуть</b> — крупный дайс-подобный счётчик <code>X/Y</code>. Безопасная зона — золотая рамка.
+      При <code>X &ge; level</code> — рамка danger, пульсация, красное число и warning-строка.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Cantrip chip</p>
+      <div class="row">
+        <span class="cantrip-chip">
+          <span class="cantrip-chip-glyph"><svg viewBox="0 0 10 10" fill="currentColor"><path d="M5 1 L5 4 L7 4 L5 9 L5 6 L3 6 Z"/></svg></span>
+          Свеча
+        </span>
+        <span class="cantrip-chip">
+          <span class="cantrip-chip-glyph"><svg viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="3" opacity="0.4"/><path d="M5 2 A 3 3 0 0 0 5 8" stroke="currentColor" stroke-width="0.8" fill="none"/></svg></span>
+          Тень
+        </span>
+        <span class="cantrip-chip">
+          <span class="cantrip-chip-glyph"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round"><path d="M2 3 Q 3 5 5 4 Q 7 3 8 5"/><path d="M2 6 Q 3 7.5 5 7 Q 7 6.5 8 7.5"/></svg></span>
+          Чревовещание
+        </span>
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px;">Quicksilver counter · безопасная зона</p>
+      <div style="max-width: 480px;">
+        <div class="qs-counter">
+          <div class="qs-dice">
+            <div class="qs-dice-value">2</div>
+            <div class="qs-dice-limit">из <b>3</b></div>
+          </div>
+          <div class="qs-body">
+            <div class="qs-title">Ртуть · доз сегодня</div>
+            <div class="qs-subtitle">Ещё одна безопасна. Потом — бросок ТЕЛ.</div>
+          </div>
+          <div class="qs-actions">
+            <button class="btn-hero" style="flex: 1;">Выпить ртуть</button>
+            <button class="btn-ghost">Новый день</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="stage-title" style="margin-top: 32px;">Quicksilver counter · передозировка</p>
+      <div style="max-width: 480px;">
+        <div class="qs-counter is-overdose">
+          <div class="qs-dice">
+            <div class="qs-dice-value">6</div>
+            <div class="qs-dice-limit">из <b>1</b></div>
+          </div>
+          <div class="qs-body">
+            <div class="qs-title">Ртуть · передозировка</div>
+            <div class="qs-subtitle">Сверх дневной нормы на <b style="color: var(--vtt-danger-bright); font-style: normal;">5</b>.</div>
+            <div class="qs-warning">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1 L11 10 H1 Z"/><path d="M6 5 V7"/><circle cx="6" cy="9" r="0.5" fill="currentColor"/></svg>
+              Следующая доза — бросок ТЕЛ против эффектов.
+            </div>
+          </div>
+          <div class="qs-actions">
+            <button class="btn-hero is-danger" style="flex: 1;">Выпить несмотря</button>
+            <button class="btn-ghost">Новый день</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему «дайс»-форма</b>: ртуть — это ресурс, и визуально она должна напоминать дайс-счётчик,
+        а не ещё одно «поле с цифрой». Большое число, под ним «из <b>3</b>» мелким моно — читается как
+        «текущее / лимит» без догадок. На передозе рамка и цифра краснеют, пульсируют — один взгляд,
+        игрок знает, что «выпить» — это уже бросок.
+        <br><br>
+        <b>Почему «Выпить ртуть» в самом счётчике</b>: это основной action вкладки, часть механики.
+        Раньше это был пункт в инвентаре — теперь и там (из инвенторя → §inventory.html), и здесь,
+        в контексте магии.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 MAGIC PANEL ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>Вкладка «Магия» — всё вместе</h2>
+    <p class="group-lead">
+      Три опциональных секции, показываются только если у персонажа есть соответствующая способность.
+      Волшебник видит все три. Порядок: <b>Ртуть</b> (всегда сверху — это состояние «здесь и сейчас»),
+      <b>Духи</b>, <b>Ритуалы</b>, <b>Заговоры</b>. У секций «Духи» и «Ритуалы» в заголовке справа —
+      кнопка <code>+</code>. «Заговоры» — без +, список фиксированный.
+    </p>
+
+    <div class="stage" style="max-width: 640px; margin: 0 auto;">
+      <p class="stage-title">Вкладка «Магия» · волшебник ур. 3</p>
+
+      <div class="mg-panel">
+
+        <!-- Ртуть -->
+        <div class="qs-counter">
+          <div class="qs-dice">
+            <div class="qs-dice-value">1</div>
+            <div class="qs-dice-limit">из <b>3</b></div>
+          </div>
+          <div class="qs-body">
+            <div class="qs-title">Ртуть · доз сегодня</div>
+            <div class="qs-subtitle">В пределах нормы.</div>
+          </div>
+          <div class="qs-actions">
+            <button class="btn-hero" style="flex: 1;">Выпить ртуть</button>
+            <button class="btn-ghost">Новый день</button>
+          </div>
+        </div>
+
+        <!-- Духи -->
+        <div>
+          <div class="mg-section-head">
+            <span class="mg-section-title">Духи <b>· 2</b></span>
+            <button class="mg-section-add">
+              <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M5 2 V8"/><path d="M2 5 H8"/></svg>
+              Дух
+            </button>
+          </div>
+          <div class="mg-list">
+            <div class="spirit-card">
+              <div class="spirit-head">
+                <div class="spirit-sigil">Ы</div>
+                <div class="spirit-name">Ылкир, Шёпот Углей</div>
+                <div class="spirit-actions">
+                  <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                  <button class="btn-icon-sm is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+                </div>
+              </div>
+              <p class="spirit-appearance">Старик, чьё лицо покрыто трещинами от жара. В глазницах тлеющий уголь.</p>
+              <div class="spirit-spheres">
+                <span class="sphere-chip sphere-fire"><span class="sphere-chip-dot"></span>Огонь</span>
+                <span class="sphere-chip sphere-secret"><span class="sphere-chip-dot"></span>Тайны</span>
+              </div>
+            </div>
+            <div class="spirit-card">
+              <div class="spirit-head">
+                <div class="spirit-sigil">В</div>
+                <div class="spirit-name">Варх, Тень под Камнем</div>
+                <div class="spirit-actions">
+                  <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                  <button class="btn-icon-sm is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+                </div>
+              </div>
+              <p class="spirit-appearance">Худой юноша с каменной кожей. Двигается медленно, но тень его — быстрее.</p>
+              <div class="spirit-spheres">
+                <span class="sphere-chip sphere-stone"><span class="sphere-chip-dot"></span>Камень</span>
+                <span class="sphere-chip sphere-shadow"><span class="sphere-chip-dot"></span>Тень</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ритуалы -->
+        <div>
+          <div class="mg-section-head">
+            <span class="mg-section-title">Ритуалы <b>· 2</b></span>
+            <button class="mg-section-add">
+              <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M5 2 V8"/><path d="M2 5 H8"/></svg>
+              Ритуал
+            </button>
+          </div>
+          <div class="mg-list">
+            <div class="ritual-card">
+              <div class="ritual-head">
+                <div class="ritual-name">Запечатывание</div>
+                <div class="ritual-actions">
+                  <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                  <button class="btn-icon-sm is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+                </div>
+              </div>
+              <p class="ritual-desc">Замыкает дух или демона в предмете на срок до одной луны. Требуется серебро, кровь проводящего и правильно начертанный круг.</p>
+            </div>
+            <div class="ritual-card">
+              <div class="ritual-head">
+                <div class="ritual-name">Призыв ветра</div>
+                <div class="ritual-actions">
+                  <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5 L11.5 4.5"/><path d="M10.5 1.5 L3.5 8.5 L3 11 L5.5 10.5 L12.5 3.5 Z"/></svg></button>
+                  <button class="btn-icon-sm is-danger"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 4 H11"/><path d="M5 4 V2.5 H9 V4"/><path d="M4 4 L4.5 12 H9.5 L10 4"/></svg></button>
+                </div>
+              </div>
+              <p class="ritual-desc">Три часа непрерывной песни на закате. Ветер прилетает к утру и следует за проводящим в течение суток.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Заговоры -->
+        <div>
+          <div class="mg-section-head">
+            <span class="mg-section-title">Заговоры <b>· 3</b></span>
+          </div>
+          <div class="mg-cantrips">
+            <span class="cantrip-chip">
+              <span class="cantrip-chip-glyph"><svg viewBox="0 0 10 10" fill="currentColor"><path d="M5 1 L5 4 L7 4 L5 9 L5 6 L3 6 Z"/></svg></span>
+              Свеча
+            </span>
+            <span class="cantrip-chip">
+              <span class="cantrip-chip-glyph"><svg viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="3" opacity="0.4"/><path d="M5 2 A 3 3 0 0 0 5 8" stroke="currentColor" stroke-width="0.8" fill="none"/></svg></span>
+              Тень
+            </span>
+            <span class="cantrip-chip">
+              <span class="cantrip-chip-glyph"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round"><path d="M2 3 Q 3 5 5 4 Q 7 3 8 5"/><path d="M2 6 Q 3 7.5 5 7 Q 7 6.5 8 7.5"/></svg></span>
+              Чревовещание
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Порядок</b>: ртуть сверху, т.к. это <i>состояние</i> (сколько доз сегодня уже использовано),
+        а не «справочник». Духи и ритуалы — справочник, читают по потребности. Заговоры — последними,
+        они и всегда одинаковые, и read-only.
+        <br><br>
+        <b>Условный рендер</b>: у не-волшебника без `ritual` ability секция «Ритуалы» просто не
+        рендерится. У не-`incantations` — нет «Заговоров». У не-`summoning` — нет «Духов» и ртути
+        (ртуть привязана к системе магии в целом).
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §6 OVERDOSE DIALOG ============ -->
+  <section class="group">
+    <p class="eyebrow">§6</p>
+    <h2>Overdose — диалог передозировки</h2>
+    <p class="group-lead">
+      Появляется при попытке выпить ртуть когда <code>count &ge; level</code>. Три исхода из спеки:
+      <b>отмена · новый день (сброс счётчика) · бросок ТЕЛ и выпить</b>. Каждая кнопка с разным
+      весом: главная — «бросить ТЕЛ» (hero-danger), альтернатива — «новый день», отмена — ghost.
+    </p>
+
+    <div class="stage" style="display: flex; justify-content: center;">
+      <div class="bottom-sheet od-dialog">
+        <div class="od-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L22 20 H2 Z"/><path d="M12 9 V14"/><circle cx="12" cy="17" r="0.8" fill="currentColor"/></svg>
+        </div>
+        <div class="od-title">Передозировка ртутью</div>
+        <div class="od-body">
+          Уже <b>6</b> доз сегодня при дневной норме <b>1</b>.<br>
+          Следующая может стать последней.
+        </div>
+        <div class="od-actions">
+          <button class="btn-hero is-danger">Бросить ТЕЛ и выпить</button>
+          <button class="btn-primary">Новый день · сброс счётчика</button>
+          <button class="btn-ghost">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>«Новый день · сброс счётчика»</b> — та же команда <code>RESET_QUICKSILVER</code>, что и кнопка
+      в панели. Здесь повторена для удобства: «ой, забыл нажать утром» — игрок делает это прямо из диалога,
+      не закрывая его.
+    </div>
+  </section>
+
+  <!-- ============ §7 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§7</p>
+    <h2>До / После</h2>
+
+    <div class="compare">
+      <div class="before-wrap">
+        <div class="before-label">ДО</div>
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;">Духи · + Дух</div>
+
+        <div style="border: 1px solid var(--vtt-danger-bright); padding: 10px; margin-bottom: 10px; border-radius: 0;">
+          <div class="before-input">ыфв</div>
+          <div class="before-input">фывфы</div>
+          <div class="before-input-pair"><div>ФЫВ</div><div>фыв</div></div>
+          <div style="color: var(--vtt-danger-bright); text-align: center; font-family: var(--font-mono); font-size: 11px; margin-top: 4px;">Удалить</div>
+        </div>
+
+        <div style="border: 1px solid var(--vtt-danger-bright); padding: 10px; margin-bottom: 10px; border-radius: 0;">
+          <div class="before-input">фыв</div>
+          <div class="before-input">фыВ</div>
+          <div class="before-input-pair"><div>фыВ</div><div>фыв</div></div>
+          <div style="color: var(--vtt-danger-bright); text-align: center; font-family: var(--font-mono); font-size: 11px; margin-top: 4px;">Удалить</div>
+        </div>
+
+        <div style="color: var(--vtt-danger-bright); font-family: var(--font-mono); font-size: 13px; margin: 10px 0;">Ртуть · <b>6 / 1</b></div>
+        <div style="color: var(--vtt-accent-soft); font-family: var(--font-mono); font-size: 11px; margin-bottom: 4px;">Новый день</div>
+        <div style="color: var(--vtt-danger-bright); font-family: var(--font-mono); font-size: 11px; margin-bottom: 12px;">⚠ Бросок ТЕЛ — сопротивление эффектам ртути</div>
+
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;">Ритуалы · + Ритуал</div>
+        <div style="border: 1px solid var(--vtt-danger-bright); padding: 10px; border-radius: 0;">
+          <div class="before-input">фыВ</div>
+          <div class="before-input" style="min-height: 50px;">Описание</div>
+        </div>
+
+        <div style="color: var(--vtt-text-muted); font-family: var(--font-mono); font-size: 11px; margin-top: 10px;">
+          Каждый дух/ритуал — полотно инпутов. Сферы — текстовые поля без подсказок. Ртуть — просто цифра.
+        </div>
+      </div>
+
+      <div>
+        <div class="before-label" style="color: var(--vtt-success);">ПОСЛЕ</div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="qs-counter is-overdose">
+            <div class="qs-dice">
+              <div class="qs-dice-value">6</div>
+              <div class="qs-dice-limit">из <b>1</b></div>
+            </div>
+            <div class="qs-body">
+              <div class="qs-title">Ртуть · передоз</div>
+              <div class="qs-subtitle">Следующая — бросок ТЕЛ.</div>
+            </div>
+            <div class="qs-actions">
+              <button class="btn-hero is-danger" style="flex: 1;">Выпить несмотря</button>
+              <button class="btn-ghost">Новый день</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="mg-section-head">
+              <span class="mg-section-title">Духи · 2</span>
+              <button class="mg-section-add">+ Дух</button>
+            </div>
+            <div class="mg-list">
+              <div class="spirit-card">
+                <div class="spirit-head">
+                  <div class="spirit-sigil">Ы</div>
+                  <div class="spirit-name">Ылкир, Шёпот Углей</div>
+                </div>
+                <p class="spirit-appearance" style="margin-left: 0;">Старик с тлеющими угольями в глазницах.</p>
+                <div class="spirit-spheres" style="margin-left: 0;">
+                  <span class="sphere-chip sphere-fire"><span class="sphere-chip-dot"></span>Огонь</span>
+                  <span class="sphere-chip sphere-secret"><span class="sphere-chip-dot"></span>Тайны</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="color: var(--vtt-success); font-family: var(--font-mono); font-size: 11px; margin-top: 10px;">
+          Карточка читается как справочник. Ртуть — крупный визуальный сигнал. Сферы — цветные чипы.
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Что изменилось:</b>
+      <br>· <b>Духи и ритуалы — карточки, а не формы.</b> Edit — отдельный режим. В покое игрок читает, не правит.
+      <br>· <b>Сферы — цветные чипы из пресетов.</b> Раньше — два пустых инпута, в которые игрок писал «Огонь» руками; теперь — select с 6 пресетами + возможность «своя».
+      <br>· <b>Ртуть — визуальный счётчик</b>, не красная строка под ритуалами. Состояние «здесь и сейчас» поднято наверх.
+      <br>· <b>Диалог overdose</b> с явными тремя исходами из спеки — раньше был просто warning.
+      <br>· <b>Пустой слот</b> — пунктир-карточка с подсказкой «опиши имя, внешность и сферы» вместо шести пустых инпутов.
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

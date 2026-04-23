@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>XpBar · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 40px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 720px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 720px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 32px;
+  }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 12px; }
+
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 2px;
+  }
+
+  .notes {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  /* ================ XP BAR — ядро ================ */
+  /*
+    Анатомия:
+    .xp-bar            — контейнер
+    .xp-bar-label      — "XP" (моно-капс)
+    .xp-bar-track-wrap — обёртка полосы + tick'и порогов уровней
+    .xp-bar-track      — утопленная полоса (тонкая, 4px — тише чем HP)
+    .xp-bar-fill       — заливка, бронза
+    .xp-bar-values     — "34 / 40" serif; опционально ур. N
+    .xp-bar-hint       — маленький "до ур. N" или "готов" (моно)
+    .xp-bar-ctrls      — ± кнопки (в развёрнутом виде)
+  */
+
+  .xp-bar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 6px;
+    min-width: 240px;
+  }
+
+  .xp-bar-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+    line-height: 1;
+  }
+
+  .xp-bar-values {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--vtt-text-secondary);
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .xp-bar-values .xp-current {
+    color: var(--vtt-accent-soft);
+    font-weight: 500;
+  }
+  .xp-bar-values .xp-sep { color: var(--vtt-text-muted); margin: 0 2px; }
+  .xp-bar-values .xp-max { color: var(--vtt-text-muted); }
+
+  .xp-bar-track-wrap {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    position: relative;
+    height: 4px;
+  }
+  .xp-bar-track {
+    position: absolute; inset: 0;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    box-shadow: var(--shadow-inset);
+  }
+  .xp-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));
+    border-radius: var(--r-pill);
+    transition: width var(--t-med) var(--ease);
+  }
+
+  /* ticks — "риски уровней" внутри полосы: 25/50/75% — чисто визуальные маркеры прогресса */
+  .xp-bar-ticks {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(25% - 1px),
+      rgba(14, 11, 8, 0.8) calc(25% - 1px),
+      rgba(14, 11, 8, 0.8) 25%
+    );
+    opacity: 0.55;
+    border-radius: var(--r-pill);
+  }
+
+  .xp-bar-hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* ================ STATES ================ */
+
+  /* нормальное накопление */
+  .xp-bar.state-growing .xp-bar-fill {
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));
+  }
+
+  /* близко к уровню (≥80%) — чуть ярче, намёк */
+  .xp-bar.state-close .xp-bar-fill {
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent-soft));
+  }
+  .xp-bar.state-close .xp-bar-hint { color: var(--vtt-accent-deep); }
+
+  /* готов к подъёму — заливка пульсирует + золотая точка + бейдж */
+  .xp-bar.state-ready .xp-bar-fill {
+    background: linear-gradient(to right, var(--vtt-accent), var(--vtt-accent-soft));
+    animation: xp-pulse 2s ease-in-out infinite;
+  }
+  .xp-bar.state-ready .xp-bar-hint {
+    color: var(--vtt-accent);
+    font-weight: 600;
+  }
+
+  /* максимальный уровень — заливка замершая, полная */
+  .xp-bar.state-cap .xp-bar-fill {
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent-deep));
+    opacity: 0.6;
+  }
+  .xp-bar.state-cap .xp-bar-hint { color: var(--vtt-text-muted); }
+
+  @keyframes xp-pulse {
+    0%, 100% { filter: brightness(1); box-shadow: none; }
+    50% { filter: brightness(1.2) drop-shadow(0 0 6px rgba(212, 168, 87, 0.6)); }
+  }
+
+  /* золотая точка-индикатор "готов" — ставится справа от values */
+  .xp-bar .xp-ready-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--vtt-accent);
+    box-shadow: 0 0 6px rgba(212, 168, 87, 0.8);
+    margin-left: 6px;
+    vertical-align: middle;
+    animation: xp-dot-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes xp-dot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ================ SIZES ================ */
+  .xp-bar.xp-sm { gap: 8px; row-gap: 4px; min-width: 140px; }
+  .xp-bar.xp-sm .xp-bar-track-wrap { height: 3px; }
+  .xp-bar.xp-sm .xp-bar-values { font-size: 13px; }
+  .xp-bar.xp-sm .xp-bar-hint { display: none; }
+
+  .xp-bar.xp-lg { gap: 14px; row-gap: 8px; min-width: 320px; }
+  .xp-bar.xp-lg .xp-bar-track-wrap { height: 6px; }
+  .xp-bar.xp-lg .xp-bar-values { font-size: 20px; }
+
+  /* ================ DEMO WRAP ================ */
+  .xp-demo-wrap {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 16px 20px;
+    min-width: 320px;
+  }
+
+  /* ================ POPOVER ================ */
+  .xp-pop-wrap {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .xp-popover {
+    position: static; /* для демо */
+    margin-top: 16px;
+    width: 340px;
+    min-width: 0;
+    max-width: 360px;
+    flex-shrink: 0;
+    background: rgba(26, 21, 16, 0.88);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    padding: 16px 18px;
+    font-family: var(--font-sans);
+    color: var(--vtt-text-primary);
+    text-align: left;
+  }
+
+  .xp-pop-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .xp-pop-head-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--vtt-accent-soft);
+    letter-spacing: 0.01em;
+  }
+  .xp-pop-head-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+
+  /* быстрые шаги ±10 / ±100 */
+  .xp-pop-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .xp-step-btn {
+    height: 34px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .xp-step-btn:hover {
+    border-color: var(--vtt-border-strong);
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+  }
+  .xp-step-btn.is-minus:hover { border-color: var(--vtt-danger); color: var(--vtt-danger-bright); }
+  .xp-step-btn.is-plus:hover { border-color: var(--vtt-success); color: var(--vtt-success); }
+
+  /* ручной ввод */
+  .xp-pop-manual {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--vtt-border-subtle);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+    margin-bottom: 14px;
+  }
+  .xp-pop-manual-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .xp-pop-manual input {
+    width: 100%;
+    min-width: 0;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-accent-soft);
+    font-family: var(--font-serif);
+    font-size: 18px;
+    text-align: center;
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .xp-pop-manual input:focus { border-color: var(--vtt-border-gold); }
+  .xp-pop-manual-total {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--vtt-text-muted);
+    white-space: nowrap;
+  }
+
+  /* level-up тоггл */
+  .xp-pop-levelup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(212, 168, 87, 0.08);
+    border: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-sm);
+  }
+  .xp-pop-levelup-text {
+    flex: 1;
+    font-size: 13px;
+    color: var(--vtt-accent-soft);
+    line-height: 1.35;
+  }
+  .xp-pop-levelup-text b { color: var(--vtt-accent); font-weight: 600; }
+  .xp-pop-levelup-btn {
+    padding: 10px 20px;
+    background: #A6833E;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    color: #1a1205;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+    white-space: nowrap;
+  }
+  .xp-pop-levelup-btn:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+  .xp-pop-levelup.is-locked {
+    background: transparent;
+    border-color: var(--vtt-border-subtle);
+  }
+  .xp-pop-levelup.is-locked .xp-pop-levelup-text { color: var(--vtt-text-muted); }
+  .xp-pop-levelup.is-locked .xp-pop-levelup-btn {
+    background: transparent;
+    border-color: var(--vtt-border-subtle);
+    color: var(--vtt-text-muted);
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: none;
+  }
+
+  /* ================ BEFORE / AFTER ================ */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 760px) { .compare { grid-template-columns: 1fr; } }
+
+  .compare-col {
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    padding: 20px;
+  }
+  .compare-col .variant-label { margin-bottom: 12px; }
+
+  /* before — грубый макет текущего UI */
+  .xp-before {
+    display: flex; flex-direction: column; gap: 8px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--vtt-text-secondary);
+  }
+  .xp-before .xp-row-bad {
+    display: flex; gap: 6px; align-items: center;
+    padding: 6px 10px;
+    border: 1px solid var(--vtt-danger-bright);
+    border-radius: var(--r-xs);
+  }
+  .xp-before .xp-row-bad button {
+    padding: 4px 8px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-strong);
+    color: var(--vtt-text-secondary);
+    border-radius: var(--r-xs);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .xp-before .xp-bad-bar {
+    height: 6px; background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-danger-bright);
+    border-radius: 0;
+  }
+  .xp-before .xp-bad-bar > div {
+    width: 50%; height: 100%; background: var(--vtt-danger);
+  }
+  .xp-before .xp-bad-alert {
+    padding: 8px 10px;
+    background: var(--vtt-warning);
+    color: var(--vtt-bg-base);
+    border-radius: 0;
+    font-weight: 600;
+  }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Atom · Vitality</p>
+  <h1>XpBar</h1>
+  <p class="lead">
+    Тонкий индикатор прогресса уровня. В отличие от <code>HpBar</code>, здесь нет ±-кнопок снаружи —
+    XP меняется редко и <b>шагами</b> (+10 за сессию, −10 за штраф, +100 за крупную находку), поэтому вся правка живёт в
+    popover'е. Главная задача компонента — <b>тихо показывать прогресс</b>, но громко сигналить, когда персонаж
+    <b>готов к подъёму уровня</b>.
+  </p>
+
+  <!-- ============ §1 BASE & SIZES ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>Базовая шкала и размеры</h2>
+    <p class="group-lead">
+      Три размера. <b>sm</b> — строка в списке персонажей (только полоса + «34/40»). <b>md</b> — в шапке листа.
+      <b>lg</b> — отдельный блок на вкладке «Основное».
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Размеры</p>
+      <div class="row">
+        <div class="col">
+          <span class="variant-label">sm · список</span>
+          <div class="xp-demo-wrap" style="min-width:200px">
+            <div class="xp-bar xp-sm state-growing">
+              <span class="xp-bar-label">XP</span>
+              <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+              <span></span>
+              <div class="xp-bar-track-wrap">
+                <div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">md · default (шапка)</span>
+          <div class="xp-demo-wrap">
+            <div class="xp-bar state-growing">
+              <span class="xp-bar-label">XP</span>
+              <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+              <span class="xp-bar-hint">до ур. 2</span>
+              <div class="xp-bar-track-wrap">
+                <div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div>
+                <div class="xp-bar-ticks"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">lg · блок в шите</span>
+          <div class="xp-demo-wrap" style="min-width:360px">
+            <div class="xp-bar xp-lg state-growing">
+              <span class="xp-bar-label">Опыт</span>
+              <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+              <span class="xp-bar-hint">до ур. 2 · 6 XP</span>
+              <div class="xp-bar-track-wrap">
+                <div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div>
+                <div class="xp-bar-ticks"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Высота полосы</b> тоньше, чем у HP-bar (4px vs 8px): XP — вторичная информация в шапке, нельзя перетягивать
+        внимание от HP. <b>Ticks</b> делят шкалу на четверти — это чисто визуальный ритм, не привязан к игровой механике.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 STATES ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>Состояния</h2>
+    <p class="group-lead">
+      Четыре состояния: <b>growing</b> (обычное накопление), <b>close</b> (≥80%, заливка чуть светлее — тихий намёк),
+      <b>ready</b> (достигнут порог, пульсация + золотая точка), <b>cap</b> (максимальный уровень, заливка тише).
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Линейка состояний</p>
+      <div class="col" style="gap:16px">
+
+        <div class="xp-demo-wrap">
+          <span class="variant-label" style="margin-bottom:8px; display:block">growing · 34 / 40 (85%)</span>
+          <div class="xp-bar state-growing">
+            <span class="xp-bar-label">XP</span>
+            <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+            <span class="xp-bar-hint">до ур. 2</span>
+            <div class="xp-bar-track-wrap">
+              <div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div>
+              <div class="xp-bar-ticks"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xp-demo-wrap">
+          <span class="variant-label" style="margin-bottom:8px; display:block">close · 38 / 40 (95%) — заливка тянет к soft</span>
+          <div class="xp-bar state-close">
+            <span class="xp-bar-label">XP</span>
+            <span class="xp-bar-values"><span class="xp-current">38</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+            <span class="xp-bar-hint">почти</span>
+            <div class="xp-bar-track-wrap">
+              <div class="xp-bar-track"><div class="xp-bar-fill" style="width:95%"></div></div>
+              <div class="xp-bar-ticks"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xp-demo-wrap">
+          <span class="variant-label" style="margin-bottom:8px; display:block">ready · 40 / 40 — пульсация + золотая точка</span>
+          <div class="xp-bar state-ready">
+            <span class="xp-bar-label">XP</span>
+            <span class="xp-bar-values">
+              <span class="xp-current">40</span><span class="xp-sep">/</span><span class="xp-max">40</span>
+              <span class="xp-ready-dot" aria-label="готов к подъёму"></span>
+            </span>
+            <span class="xp-bar-hint">готов</span>
+            <div class="xp-bar-track-wrap">
+              <div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%"></div></div>
+              <div class="xp-bar-ticks"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xp-demo-wrap">
+          <span class="variant-label" style="margin-bottom:8px; display:block">cap · максимальный уровень — прогресса нет</span>
+          <div class="xp-bar state-cap">
+            <span class="xp-bar-label">XP</span>
+            <span class="xp-bar-values"><span class="xp-current">—</span></span>
+            <span class="xp-bar-hint">ур. 10 · макс</span>
+            <div class="xp-bar-track-wrap">
+              <div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%"></div></div>
+              <div class="xp-bar-ticks"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Зачем разный сигнал close vs ready:</b> в игре между «почти достаточно» и «уже достаточно» граница важная —
+        игрок может решить, стоит ли рисковать ради +2 XP. Поэтому <b>close</b> — мягкий оттенок без движения,
+        <b>ready</b> — движение + точка + золотой hint. Максимум, один раз в партию.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 POPOVER ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>Popover — вся правка XP</h2>
+    <p class="group-lead">
+      По тапу на полосу открывается frosted-glass popover с тремя блоками: <b>быстрые шаги</b> (±10 / ±100),
+      <b>ручной ввод</b> итогового значения, <b>level-up</b> (разблокируется когда порог достигнут).
+      Это заменяет текущие <code>−10 · 30/40 · +10 · +100</code> в шапке и отдельный alert «Поднять уровень».
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Состояния popover'а</p>
+
+      <div class="row">
+
+        <div class="col">
+          <span class="variant-label">A · обычное накопление</span>
+          <div class="xp-demo-wrap">
+            <div class="xp-bar state-growing">
+              <span class="xp-bar-label">XP</span>
+              <span class="xp-bar-values"><span class="xp-current">34</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+              <span class="xp-bar-hint">до ур. 2</span>
+              <div class="xp-bar-track-wrap">
+                <div class="xp-bar-track"><div class="xp-bar-fill" style="width:85%"></div></div>
+                <div class="xp-bar-ticks"></div>
+              </div>
+            </div>
+            <div class="xp-popover">
+              <div class="xp-pop-head">
+                <span class="xp-pop-head-title">Опыт</span>
+                <span class="xp-pop-head-meta">ур. 1 · +6 до 2</span>
+              </div>
+              <div class="xp-pop-steps">
+                <button class="xp-step-btn is-minus">−100</button>
+                <button class="xp-step-btn is-minus">−10</button>
+                <button class="xp-step-btn is-plus">+10</button>
+                <button class="xp-step-btn is-plus">+100</button>
+              </div>
+              <div class="xp-pop-manual">
+                <span class="xp-pop-manual-label">итого</span>
+                <input type="text" value="34">
+                <span class="xp-pop-manual-total">/ 40</span>
+              </div>
+              <div class="xp-pop-levelup is-locked">
+                <span class="xp-pop-levelup-text">Нужно ещё <b>6 XP</b> до следующего уровня</span>
+                <button class="xp-pop-levelup-btn" disabled>Поднять</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <span class="variant-label">B · готов к подъёму</span>
+          <div class="xp-demo-wrap">
+            <div class="xp-bar state-ready">
+              <span class="xp-bar-label">XP</span>
+              <span class="xp-bar-values">
+                <span class="xp-current">40</span><span class="xp-sep">/</span><span class="xp-max">40</span>
+                <span class="xp-ready-dot"></span>
+              </span>
+              <span class="xp-bar-hint">готов</span>
+              <div class="xp-bar-track-wrap">
+                <div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%"></div></div>
+                <div class="xp-bar-ticks"></div>
+              </div>
+            </div>
+            <div class="xp-popover">
+              <div class="xp-pop-head">
+                <span class="xp-pop-head-title">Опыт</span>
+                <span class="xp-pop-head-meta">ур. 1 → 2</span>
+              </div>
+              <div class="xp-pop-steps">
+                <button class="xp-step-btn is-minus">−100</button>
+                <button class="xp-step-btn is-minus">−10</button>
+                <button class="xp-step-btn is-plus">+10</button>
+                <button class="xp-step-btn is-plus">+100</button>
+              </div>
+              <div class="xp-pop-manual">
+                <span class="xp-pop-manual-label">итого</span>
+                <input type="text" value="40">
+                <span class="xp-pop-manual-total">/ 40</span>
+              </div>
+              <div class="xp-pop-levelup">
+                <span class="xp-pop-levelup-text">Порог достигнут — <b>поднять до ур. 2</b></span>
+                <button class="xp-pop-levelup-btn">Поднять</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <b>Почему popover, а не всегда-видимые кнопки:</b> XP меняется редко (раз в сессию). Держать <code>−10 +10 +100</code>
+        в шапке — значит отдавать им внимание каждый раз, когда игрок смотрит на лист. Popover схлопывает это в одну
+        точку входа и оставляет в шапке только чистый прогресс. <b>Level-up — главное действие</b>, поэтому это единственная
+        кнопка с золотой заливкой в popover'е (btn-hero из palette).
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>До / После</h2>
+    <p class="group-lead">
+      Слева — как XP выглядит сейчас в шапке (много бордеров, alert отдельной строкой, дублирование значений).
+      Справа — новая плотность: одна тонкая полоса и один сигнал.
+    </p>
+
+    <div class="compare">
+      <div class="compare-col">
+        <p class="variant-label">До</p>
+        <div class="xp-before">
+          <div class="xp-row-bad">
+            <span>XP</span>
+            <button>−10</button>
+            <span style="color:var(--vtt-danger-bright); font-weight:600">30/40</span>
+            <button>+10</button>
+            <button>+100</button>
+          </div>
+          <div class="xp-bad-bar"><div></div></div>
+          <div class="xp-bad-alert">⚠ Готов к повышению уровня!</div>
+        </div>
+      </div>
+      <div class="compare-col">
+        <p class="variant-label">После · обычное</p>
+        <div class="xp-demo-wrap" style="background:transparent; border:none; padding:0; min-width:0">
+          <div class="xp-bar state-growing">
+            <span class="xp-bar-label">XP</span>
+            <span class="xp-bar-values"><span class="xp-current">30</span><span class="xp-sep">/</span><span class="xp-max">40</span></span>
+            <span class="xp-bar-hint">до ур. 2</span>
+            <div class="xp-bar-track-wrap">
+              <div class="xp-bar-track"><div class="xp-bar-fill" style="width:75%"></div></div>
+              <div class="xp-bar-ticks"></div>
+            </div>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        <p class="variant-label">После · готов</p>
+        <div class="xp-demo-wrap" style="background:transparent; border:none; padding:0; min-width:0">
+          <div class="xp-bar state-ready">
+            <span class="xp-bar-label">XP</span>
+            <span class="xp-bar-values">
+              <span class="xp-current">40</span><span class="xp-sep">/</span><span class="xp-max">40</span>
+              <span class="xp-ready-dot"></span>
+            </span>
+            <span class="xp-bar-hint">готов</span>
+            <div class="xp-bar-track-wrap">
+              <div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%"></div></div>
+              <div class="xp-bar-ticks"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <b>Что исчезло:</b> внешняя рамка «XP-блока», отдельная кнопка ±100 рядом с ±10 (ушла в popover), alert-строка
+      «Готов к повышению» (стала пульсацией заливки + золотой точкой + hint'ом «готов»). <b>Вертикальный выигрыш</b> в
+      шапке: ≈ 3 строки → 2 строки (values + полоса).
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

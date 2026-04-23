@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<title>GameLayout · VTT components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vtt-bg-base: #0E0B08;
+    --vtt-bg-surface: #1A1510;
+    --vtt-bg-elevated: #241C15;
+    --vtt-bg-sunken: #07050A;
+    --vtt-border-subtle: #2E251C;
+    --vtt-border-strong: #4A3A28;
+    --vtt-border-gold: #8C6A3A;
+    --vtt-accent: #D4A857;
+    --vtt-accent-soft: #E4C9A0;
+    --vtt-accent-deep: #8C6A3A;
+    --vtt-danger: #792B3B;
+    --vtt-danger-bright: #B23B4F;
+    --vtt-danger-soft: #3A1820;
+    --vtt-success: #6B8E4E;
+    --vtt-warning: #C08A3E;
+    --vtt-info: #5A7A8E;
+    --vtt-text-primary: #E4C9A0;
+    --vtt-text-secondary: #B6A893;
+    --vtt-text-muted: #858484;
+
+    --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+    --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+
+    --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t-med: 240ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--vtt-bg-base);
+    color: var(--vtt-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px; line-height: 1.5;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1400px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--font-serif); font-weight: 500; font-size: 48px;
+    letter-spacing: 0.005em; margin: 0 0 12px;
+    color: var(--vtt-accent-soft); line-height: 1.05;
+  }
+  .lead { max-width: 760px; color: var(--vtt-text-secondary); margin: 0 0 40px; }
+  .lead b { color: var(--vtt-text-primary); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-accent); }
+
+  section.group {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--vtt-border-subtle);
+  }
+  section.group h2 {
+    font-family: var(--font-serif); font-size: 26px; font-weight: 400;
+    margin: 0 0 4px; color: var(--vtt-accent-soft);
+  }
+  section.group .group-lead {
+    color: var(--vtt-text-muted); font-size: 14px; margin: 0 0 24px; max-width: 760px;
+  }
+  section.group .group-lead b { color: var(--vtt-text-secondary); }
+
+  .stage {
+    background:
+      radial-gradient(ellipse at center, rgba(140,106,58,0.05), transparent 70%),
+      var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+    padding: 24px;
+  }
+  .stage + .stage { margin-top: 20px; }
+  .stage-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 20px;
+  }
+  .variant-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin-bottom: 6px;
+  }
+  .notes {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: var(--vtt-bg-surface);
+    border-left: 2px solid var(--vtt-accent-deep);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    color: var(--vtt-text-secondary); font-size: 13px; line-height: 1.6;
+  }
+  .notes b { color: var(--vtt-text-primary); font-weight: 600; }
+
+  /* ================================================================
+     ОБЩИЕ ПРИМИТИВЫ (btn, segmented, chip) — мини-копии
+     ================================================================ */
+  .btn-hero {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    background: #A6833E;
+    border: 1px solid #8C6A3A;
+    border-radius: var(--r-pill);
+    color: #1a1205;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.02em; line-height: 1;
+    cursor: pointer; white-space: nowrap;
+    filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+  }
+  .btn-hero:hover {
+    background: #BF9A4C;
+    border-color: #A6833E;
+    filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  }
+  .btn-hero svg { width: 14px; height: 14px; }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.02em; line-height: 1;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .btn-ghost:hover { color: var(--vtt-accent-soft); border-color: var(--vtt-border-strong); }
+  .btn-ghost svg { width: 14px; height: 14px; }
+
+  /* Компактная икон-кнопка — плотные панели (коллапсы, закрытия, нижний бар) */
+  .btn-icon-sm {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+    transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .btn-icon-sm:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
+  .btn-icon-sm svg { width: 14px; height: 14px; }
+
+  .segmented {
+    display: inline-flex;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+    padding: 2px; gap: 2px;
+  }
+  .segmented button {
+    padding: 5px 10px;
+    background: transparent; border: none;
+    border-radius: var(--r-xs);
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    cursor: pointer;
+  }
+  .segmented button.is-active {
+    color: var(--vtt-accent-soft);
+    background: var(--vtt-bg-elevated);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* ================================================================
+     GAME LAYOUT — каркас верхнего уровня
+     ================================================================ */
+  /*
+     Лёгкая раскладка без рамок: сцена-фон в центре, панели «дышат»
+     тёмными градиентами от краёв. Никаких box-in-box-in-box.
+     ┌───────────────────────────────────────────────────────────┐
+     │  .gl-top  (только текст + gradient-фон сверху)            │
+     ├───────────┬───────────────────────────────┬───────────────┤
+     │  .gl-left │   .gl-center (scene bg)       │  .gl-right    │
+     │  gradient │   таверна / ландшафт          │  gradient     │
+     │  игроки   │   + колонки листов            │  кубики+лог   │
+     └───────────┴───────────────────────────────┴───────────────┘
+  */
+  .gl-shell {
+    --gl-left-w: 280px;
+    --gl-right-w: 340px;
+    --gl-top-h: 52px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--gl-top-h) minmax(0, 1fr);
+    min-height: 720px;
+    position: relative;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background-image:
+      linear-gradient(to bottom, rgba(7,5,10,0.35), rgba(7,5,10,0.15) 40%, rgba(7,5,10,0.55)),
+      url("../../bg.png");
+    background-size: cover;
+    background-position: center;
+    color: var(--vtt-text-primary);
+  }
+  .gl-shell:has(.gl-left.is-collapsed) { --gl-left-w: 56px; }
+  .gl-shell:has(.gl-right.is-collapsed) { --gl-right-w: 56px; }
+  /* когда панели целиком отсутствуют (e.g. пустое состояние центра) */
+  .gl-shell:not(:has(.gl-left)) { --gl-left-w: 0px; }
+  .gl-shell:not(:has(.gl-right)) { --gl-right-w: 0px; }
+
+  /* ── TOP BAR ─────────────────────────────────────────── */
+  .gl-top {
+    grid-column: 1; grid-row: 1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s-4);
+    padding: 0 var(--s-4);
+    background: linear-gradient(to bottom, rgba(7,5,10,0.72), rgba(7,5,10,0));
+    z-index: 3;
+  }
+  .gl-top-title {
+    font-family: var(--font-serif); font-size: 17px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1;
+    display: inline-flex; align-items: center; gap: 10px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .gl-top-title svg {
+    width: 16px; height: 16px;
+    color: var(--vtt-accent);
+    flex-shrink: 0;
+  }
+  .gl-top-meta {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-text-secondary); justify-self: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  }
+  .gl-top-meta b { color: var(--vtt-accent-soft); font-weight: 500; }
+  .gl-top-actions {
+    display: inline-flex; gap: var(--s-2); align-items: center;
+  }
+  .gl-presence {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-secondary);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .gl-presence::before {
+    content: ""; width: 6px; height: 6px; border-radius: var(--r-pill);
+    background: var(--vtt-success);
+    box-shadow: 0 0 6px rgba(107,142,78,0.9);
+  }
+
+  /* ── LEFT PANEL ──────────────────────────────────────── */
+  /* ::before — градиентно-затухающая стеклянная подложка (blur + tint).
+     Контент поверх остаётся чётким. */
+  .gl-left {
+    position: absolute;
+    top: var(--gl-top-h); left: 0; bottom: 0;
+    width: var(--gl-left-w);
+    display: flex; flex-direction: column;
+    min-height: 0;
+    z-index: 2;
+    transition: width var(--t-med) var(--ease);
+  }
+  .gl-left::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(7,5,10,0.78);
+    backdrop-filter: blur(22px) saturate(1.1);
+    -webkit-backdrop-filter: blur(22px) saturate(1.1);
+    -webkit-mask-image: linear-gradient(to right,
+      rgba(0,0,0,1) 0%,
+      rgba(0,0,0,1) 55%,
+      rgba(0,0,0,0.6) 80%,
+      rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to right,
+      rgba(0,0,0,1) 0%,
+      rgba(0,0,0,1) 55%,
+      rgba(0,0,0,0.6) 80%,
+      rgba(0,0,0,0) 100%);
+    z-index: -1;
+    pointer-events: none;
+  }
+  .gl-left.is-collapsed { width: 56px; }
+  .gl-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--s-3) var(--s-4) var(--s-2);
+  }
+  .gl-panel-head .eyebrow { margin: 0; color: var(--vtt-accent-deep); }
+  .gl-panel-segments { padding: 0 var(--s-4) var(--s-3); }
+  .gl-panel-list {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto;
+    padding: 0 var(--s-3) var(--s-3);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .gl-panel-list::-webkit-scrollbar { width: 4px; }
+  .gl-panel-list::-webkit-scrollbar-thumb { background: var(--vtt-border-strong); border-radius: var(--r-pill); }
+  .gl-panel-foot {
+    padding: var(--s-3) var(--s-4) var(--s-3);
+  }
+  .gl-panel-group-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    padding: var(--s-3) var(--s-2) var(--s-1);
+  }
+
+  /* .player-row — атом списка игроков (без рамок) */
+  .player-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease);
+    position: relative;
+  }
+  .player-row:hover { background: rgba(228,201,160,0.04); }
+  .player-row.is-active {
+    background: rgba(212,168,87,0.08);
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  }
+  .player-row.is-active::before {
+    content: ""; position: absolute;
+    left: -12px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 22px;
+    background: var(--vtt-accent);
+    border-radius: 0 var(--r-pill) var(--r-pill) 0;
+    box-shadow: 0 0 8px rgba(212,168,87,0.5);
+  }
+  .player-row.is-offline { opacity: 0.5; }
+
+  /* Плоская аватарка: диагональный тёплый градиент + тонкий обод-намёк. */
+  .pr-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(58,45,33,0.9) 0%, rgba(26,21,16,0.9) 100%);
+    box-shadow: inset 0 0 0 1px rgba(228,201,160,0.12);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 17px; font-weight: 500;
+    line-height: 1;
+    color: var(--vtt-accent-soft);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .player-row.is-active .pr-avatar {
+    background: linear-gradient(135deg, rgba(140,106,58,0.55) 0%, rgba(74,58,40,0.75) 100%);
+    box-shadow: inset 0 0 0 1px rgba(228,201,160,0.28);
+    color: var(--vtt-accent);
+  }
+  .pr-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .pr-name {
+    font-family: var(--font-serif); font-size: 15px;
+    color: var(--vtt-accent-soft);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .pr-nick {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--vtt-text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pr-hp {
+    height: 2px; margin-top: 5px;
+    background: rgba(7,5,10,0.6);
+    border-radius: var(--r-pill); overflow: hidden;
+    grid-column: 2 / 4;
+  }
+  .pr-hp-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
+    border-radius: var(--r-pill);
+  }
+  .pr-status { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .pr-dot {
+    width: 7px; height: 7px; border-radius: var(--r-pill);
+    background: var(--vtt-success);
+    box-shadow: 0 0 5px rgba(107,142,78,0.6);
+  }
+  .player-row.is-offline .pr-dot {
+    background: var(--vtt-text-muted); box-shadow: none;
+  }
+  .pr-gm-chip {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-bg-base);
+    background: linear-gradient(to bottom, var(--vtt-accent), var(--vtt-accent-deep));
+    border-radius: var(--r-xs);
+    padding: 2px 6px;
+    font-weight: 700;
+  }
+
+  /* LEFT rail (свёрнутая) */
+  .gl-rail {
+    display: flex; flex-direction: column; align-items: center;
+    padding: var(--s-3) 0;
+    width: 56px; height: 100%;
+    gap: var(--s-3);
+  }
+  .gl-rail-btn {
+    width: 34px; height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--vtt-text-secondary);
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    background: transparent; border: none;
+  }
+  .gl-rail-btn:hover { color: var(--vtt-accent); background: rgba(228,201,160,0.06); }
+  .gl-rail-btn svg { width: 16px; height: 16px; }
+  .gl-rail-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    margin: var(--s-3) 0;
+    white-space: nowrap;
+  }
+  .gl-rail-avatars {
+    display: flex; flex-direction: column; gap: 8px; margin-top: auto;
+  }
+  .gl-rail-avatars .pr-avatar { width: 30px; height: 30px; font-size: 12px; position: relative; }
+  .gl-rail-avatars .pr-avatar .pr-dot {
+    position: absolute; right: -1px; bottom: -1px;
+    width: 7px; height: 7px; border: 1.5px solid rgba(14,11,8,0.9);
+  }
+  .gl-rail-last {
+    font-family: var(--font-serif); font-size: 17px; font-weight: 500;
+    color: var(--vtt-accent-soft);
+    padding: 4px 10px;
+    margin-top: auto;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  }
+  .gl-rail-last.is-crit { color: var(--vtt-accent); text-shadow: 0 0 12px rgba(212,168,87,0.6); }
+  .gl-rail-last.is-fail { color: var(--vtt-danger-bright); }
+
+  /* ── RIGHT PANEL ─────────────────────────────────────── */
+  .gl-right {
+    position: absolute;
+    top: var(--gl-top-h); right: 0; bottom: 0;
+    width: var(--gl-right-w);
+    display: grid;
+    grid-template-rows: auto 1fr auto auto auto;
+    min-height: 0;
+    z-index: 2;
+    transition: width var(--t-med) var(--ease);
+  }
+  .gl-right::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(7,5,10,0.78);
+    backdrop-filter: blur(22px) saturate(1.1);
+    -webkit-backdrop-filter: blur(22px) saturate(1.1);
+    -webkit-mask-image: linear-gradient(to left,
+      rgba(0,0,0,1) 0%,
+      rgba(0,0,0,1) 55%,
+      rgba(0,0,0,0.6) 80%,
+      rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to left,
+      rgba(0,0,0,1) 0%,
+      rgba(0,0,0,1) 55%,
+      rgba(0,0,0,0.6) 80%,
+      rgba(0,0,0,0) 100%);
+    z-index: -1;
+    pointer-events: none;
+  }
+  .gl-right.is-collapsed { width: 56px; }
+
+  .dice-log {
+    overflow-y: auto;
+    padding: 0 var(--s-3) var(--s-3);
+  }
+  .dice-log::-webkit-scrollbar { width: 4px; }
+  .dice-log::-webkit-scrollbar-thumb { background: var(--vtt-border-strong); border-radius: var(--r-pill); }
+
+  .dice-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 10px; align-items: center;
+    padding: 10px 12px;
+    background: rgba(36,28,21,0.55);
+    border-radius: var(--r-md);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .dice-row + .dice-row { margin-top: 6px; }
+  .dice-row-glyph {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--vtt-text-muted); flex-shrink: 0;
+  }
+  .dice-row-glyph svg { width: 15px; height: 15px; }
+  .dice-row-body { min-width: 0; }
+  .dice-row-meta {
+    display: flex; gap: 6px; align-items: center;
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; }
+  .dice-row-meta .dot {
+    width: 3px; height: 3px; border-radius: var(--r-pill);
+    background: var(--vtt-text-muted); opacity: 0.6;
+  }
+  .dice-row-formula {
+    font-family: var(--font-serif); font-size: 13px;
+    color: var(--vtt-text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dice-row-formula .f-expr { color: var(--vtt-text-primary); font-weight: 500; }
+  .dice-row-formula .f-rolls { color: var(--vtt-text-muted); font-style: italic; margin: 0 4px; }
+  .dice-row-formula .f-rolls em { color: var(--vtt-text-secondary); font-style: normal; }
+  .dice-row-result {
+    min-width: 40px; height: 40px; padding: 0 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(7,5,10,0.45);
+    border-radius: var(--r-md);
+    font-family: var(--font-serif); font-size: 20px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1;
+    flex-shrink: 0;
+  }
+  .dice-row.is-crit {
+    background: linear-gradient(to right, rgba(140,106,58,0.22), rgba(36,28,21,0.55) 60%);
+    box-shadow: inset 0 0 0 1px rgba(212,168,87,0.25);
+  }
+  .dice-row.is-crit .dice-row-result {
+    background: var(--vtt-accent); border-color: transparent;
+    color: var(--vtt-bg-base);
+    box-shadow: 0 0 14px rgba(212,168,87,0.35);
+  }
+  .dice-row.is-crit .dice-row-glyph { color: var(--vtt-accent); }
+  .dice-row.is-fail {
+    background: rgba(121,43,59,0.18);
+  }
+  .dice-row.is-fail .dice-row-result {
+    border-color: transparent;
+    color: var(--vtt-danger-bright);
+    background: rgba(121,43,59,0.2);
+  }
+  .dice-row.is-damage .dice-row-glyph { color: var(--vtt-danger-bright); }
+  @keyframes dice-row-fresh {
+    0%   { box-shadow: 0 0 0 2px rgba(212,168,87,0.25); }
+    100% { box-shadow: 0 0 0 2px rgba(212,168,87,0); }
+  }
+  .dice-row.is-fresh { animation: dice-row-fresh 1600ms var(--ease); }
+
+  .dice-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 10px 4px 6px;
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .dice-divider::before, .dice-divider::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, var(--vtt-border-subtle), transparent);
+  }
+
+  .dice-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px;
+    min-height: 140px;
+    color: var(--vtt-text-muted); text-align: center;
+    padding: 0 20px;
+    font-family: var(--font-serif); font-style: italic; font-size: 13px;
+  }
+  .dice-empty svg { width: 32px; height: 32px; opacity: 0.4; color: var(--vtt-accent-deep); }
+
+  /* quick rolls + skill chips + input (без разделителей — воздух) */
+  .dice-quick, .dice-skills {
+    padding: var(--s-2) var(--s-3);
+  }
+  .dice-input {
+    padding: var(--s-3);
+  }
+  .dice-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-text-muted); margin: 0 0 8px;
+  }
+  .dice-label.is-empty { color: var(--vtt-accent-deep); }
+  .qr-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .qr-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 30px; padding: 0 6px;
+    background: rgba(36,28,21,0.55);
+    border: none;
+    border-radius: var(--r-sm);
+    color: var(--vtt-text-secondary);
+    font-family: var(--font-mono); font-size: 11px;
+    cursor: pointer;
+    transition: all var(--t-fast) var(--ease);
+  }
+  .qr-chip:hover {
+    color: var(--vtt-accent); background: rgba(140,106,58,0.2);
+  }
+  .qr-chip.is-highlight {
+    color: var(--vtt-accent);
+    background: rgba(140,106,58,0.25);
+  }
+
+  .skill-row {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+  }
+  .skill-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 2px;
+    height: 42px;
+    background: rgba(36,28,21,0.55);
+    border: none;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease);
+  }
+  .skill-chip:hover { background: rgba(140,106,58,0.2); }
+  .skill-chip .sk-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.14em;
+    color: var(--vtt-text-muted); line-height: 1;
+  }
+  .skill-chip .sk-value {
+    font-family: var(--font-serif); font-size: 14px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1;
+  }
+  .skill-chip.is-disabled { opacity: 0.4; cursor: default; }
+  .skill-chip.is-disabled:hover { background: rgba(36,28,21,0.55); }
+
+  .dice-input {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px; align-items: stretch;
+  }
+  .dice-input input {
+    font-family: var(--font-mono); font-size: 13px;
+    padding: 10px 16px;
+    background: rgba(7,5,10,0.55);
+    border: 1px solid rgba(140,106,58,0.3);
+    border-radius: var(--r-pill);
+    color: var(--vtt-text-primary);
+    outline: none;
+    transition: border-color var(--t-fast) var(--ease);
+  }
+  .dice-input input::placeholder { color: var(--vtt-text-muted); }
+  .dice-input input:focus { border-color: var(--vtt-border-gold); }
+
+  /* ── CENTER ──────────────────────────────────────────── */
+  /* Центр занимает всю ширину под топбаром — панели плавают над ним.
+     Листы уезжают под панели при скролле и просвечивают сквозь blur. */
+  .gl-center {
+    grid-column: 1; grid-row: 2;
+    display: flex; align-items: stretch;
+    justify-content: safe center;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    padding-left: calc(var(--gl-left-w) + var(--s-4));
+    padding-right: calc(var(--gl-right-w) + var(--s-4));
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    background: transparent;
+    transition: padding var(--t-med) var(--ease);
+  }
+  .gl-center::-webkit-scrollbar { height: 6px; }
+  .gl-center::-webkit-scrollbar-thumb { background: rgba(212,168,87,0.3); border-radius: var(--r-pill); }
+  .gl-center::-webkit-scrollbar-track { background: transparent; }
+
+  .gl-empty {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px;
+    color: var(--vtt-text-secondary); text-align: center;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  }
+  .gl-empty-seal {
+    width: 84px; height: 84px; border-radius: var(--r-pill);
+    background: radial-gradient(circle, rgba(212,168,87,0.2), rgba(212,168,87,0.04) 70%, transparent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 38px; color: var(--vtt-accent);
+    text-shadow: 0 0 20px rgba(212,168,87,0.5);
+  }
+  .gl-empty h3 {
+    font-family: var(--font-serif); font-weight: 400; font-size: 22px;
+    color: var(--vtt-accent-soft); margin: 4px 0 2px;
+  }
+  .gl-empty p { margin: 0; font-size: 13px; max-width: 320px; color: var(--vtt-text-muted); }
+
+  /* sheet-column — обёртка листа. «Стекло» над сценой. */
+  .sheet-column {
+    width: 440px; flex: 0 0 440px;
+    display: flex; flex-direction: column;
+    background: linear-gradient(to bottom, rgba(36,28,21,0.78), rgba(26,21,16,0.82));
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border-radius: var(--r-lg);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(140,106,58,0.2);
+    overflow: hidden;
+    scroll-snap-align: start;
+    position: relative;
+  }
+  .sheet-column.is-active {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px var(--vtt-border-gold), 0 0 24px rgba(212,168,87,0.1);
+  }
+  .sheet-column-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px var(--s-2) 4px var(--s-3);
+    height: 26px;
+  }
+  .sheet-column-owner {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sheet-column-owner b { color: var(--vtt-text-secondary); font-weight: 600; }
+  .sheet-column-bar .btn-icon { width: 22px; height: 22px; color: var(--vtt-text-muted); }
+
+  /* app-shell превью внутри колонки (воздушная версия) */
+  .mini-shell { display: flex; flex-direction: column; flex: 1 1 auto; position: relative; min-height: 0; }
+  .mini-shell-header {
+    padding: 4px 16px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .mini-name {
+    font-family: var(--font-serif); font-size: 17px; font-weight: 500;
+    color: var(--vtt-accent-soft); line-height: 1.15;
+  }
+  .mini-meta {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .mini-meta b { color: var(--vtt-text-secondary); font-weight: 600; }
+  .mini-hpline {
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 8px; align-items: center;
+  }
+  .mini-hpline .hp-lbl {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--vtt-accent-deep);
+  }
+  .mini-hpline .hp-val {
+    font-family: var(--font-serif); font-size: 15px;
+    color: var(--vtt-accent-soft);
+  }
+  .mini-hpline .hp-val .hp-max { color: var(--vtt-text-muted); font-size: 12px; }
+  .mini-hp-track {
+    height: 4px;
+    background: rgba(7,5,10,0.55);
+    border-radius: var(--r-pill); overflow: hidden;
+  }
+  .mini-hp-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));
+    border-radius: var(--r-pill);
+  }
+  .mini-trio { display: inline-flex; align-items: center; gap: 0; margin-top: 4px; }
+  .mini-trio .sc-divider { width: 1px; height: 14px; background: rgba(140,106,58,0.35); margin: 0 6px; }
+  .mini-chip {
+    display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 6px;
+  }
+  .mini-chip .v { font-family: var(--font-serif); font-size: 14px; color: var(--vtt-accent-soft); line-height: 1; }
+  .mini-chip .u { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vtt-text-muted); line-height: 1; }
+
+  .mini-tabs {
+    display: flex; gap: 4px; padding: 0 12px;
+  }
+  .mini-tabs .mt {
+    flex: 1; padding: 8px 6px 10px;
+    font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.04em;
+    background: transparent; border: none;
+    color: var(--vtt-text-muted);
+    cursor: pointer; position: relative;
+  }
+  .mini-tabs .mt.is-active { color: var(--vtt-accent-soft); }
+  .mini-tabs .mt.is-active::after {
+    content: ""; position: absolute;
+    left: 30%; right: 30%; bottom: 2px;
+    height: 2px;
+    background: var(--vtt-accent);
+    border-radius: var(--r-pill);
+  }
+  .mini-tabs .mt-dot {
+    width: 5px; height: 5px; border-radius: var(--r-pill);
+    background: var(--vtt-danger-bright);
+    display: inline-block; margin-left: 4px; vertical-align: middle;
+  }
+
+  .mini-content {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto;
+    padding: var(--s-4) var(--s-4) 56px;
+  }
+  .mini-content::-webkit-scrollbar { width: 4px; }
+  .mini-content::-webkit-scrollbar-thumb { background: rgba(140,106,58,0.3); border-radius: var(--r-pill); }
+
+  .mini-block {
+    margin-bottom: 18px;
+  }
+  .mini-block:last-child { margin-bottom: 0; }
+  .mini-block .mini-block-title {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--vtt-accent-deep); margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mini-block .mini-block-title::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(to right, rgba(140,106,58,0.25), transparent);
+  }
+  .mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+  .mini-stat {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 8px 4px;
+    border-radius: var(--r-sm);
+    transition: background var(--t-fast) var(--ease);
+    cursor: pointer;
+  }
+  .mini-stat:hover { background: rgba(140,106,58,0.08); }
+  .mini-stat .ms-l { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--vtt-text-muted); }
+  .mini-stat .ms-v { font-family: var(--font-serif); font-size: 20px; color: var(--vtt-accent-soft); font-weight: 500; line-height: 1; }
+  .mini-stat .ms-m { font-family: var(--font-mono); font-size: 10px; color: var(--vtt-text-muted); }
+  .mini-row-list { display: flex; flex-direction: column; }
+  .mini-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 4px;
+    font-size: 13px; color: var(--vtt-text-secondary);
+    cursor: pointer;
+    transition: color var(--t-fast) var(--ease);
+  }
+  .mini-line + .mini-line {
+    border-top: 1px solid rgba(140,106,58,0.12);
+  }
+  .mini-line:hover .t { color: var(--vtt-accent-soft); }
+  .mini-line .t { font-family: var(--font-serif); font-size: 14px; color: var(--vtt-text-primary); }
+  .mini-line .m { font-family: var(--font-mono); font-size: 10px; color: var(--vtt-text-muted); letter-spacing: 0.06em; }
+
+  .mini-fab {
+    position: absolute; right: 12px; bottom: 12px;
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(7,5,10,0.6);
+    border: none;
+    border-radius: var(--r-pill);
+    color: var(--vtt-accent);
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease);
+  }
+  .mini-fab:hover { background: rgba(140,106,58,0.25); }
+  .mini-fab svg { width: 16px; height: 16px; }
+
+  /* ================================================================
+     MOBILE — .gl-shell.variant-mobile
+     ================================================================ */
+  .gl-shell.variant-mobile {
+    grid-template-columns: 1fr;
+    grid-template-rows: 44px minmax(0, 1fr);
+    min-height: 720px;
+    position: relative;
+    overflow: hidden;
+  }
+  .gl-shell.variant-mobile .gl-top {
+    grid-column: 1; grid-row: 1;
+    padding: 0 10px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .gl-shell.variant-mobile .gl-top-title { font-size: 14px; }
+  .gl-shell.variant-mobile .gl-top-meta { font-size: 9px; letter-spacing: 0.16em; }
+
+  .gl-shell.variant-mobile .gl-left,
+  .gl-shell.variant-mobile .gl-right { display: none; }
+
+  .gl-shell.variant-mobile .gl-center {
+    grid-column: 1; grid-row: 2;
+    padding: 10px 0 60px;
+    gap: 0;
+    scroll-snap-type: x mandatory;
+    position: relative;
+  }
+  .gl-shell.variant-mobile .sheet-column {
+    width: calc(100vw - 40px);
+    min-width: 280px; max-width: 360px;
+    flex: 0 0 calc(100vw - 40px);
+    scroll-snap-align: center;
+    margin: 0 10px;
+  }
+  @media (max-width: 440px) {
+    .gl-shell.variant-mobile .sheet-column {
+      width: calc(100% - 40px); flex-basis: calc(100% - 40px);
+    }
+  }
+
+  /* мобильные доп.слои */
+  .gl-mob-topbar {
+    grid-column: 1; grid-row: 1;
+    display: grid; grid-template-columns: 36px 1fr 36px;
+    align-items: center; gap: 8px;
+    padding: 0 8px;
+    background: var(--vtt-bg-elevated);
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .gl-mob-topbar .btn-icon { width: 32px; height: 32px; border-radius: var(--r-pill); }
+  .gl-mob-center-title {
+    text-align: center;
+    display: flex; flex-direction: column; gap: 1px; min-width: 0;
+  }
+  .gl-mob-center-title .t {
+    font-family: var(--font-serif); font-size: 15px;
+    color: var(--vtt-accent-soft); line-height: 1.1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gl-mob-center-title .o {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+  }
+  .sheet-slider-dots {
+    display: flex; gap: 5px; justify-content: center;
+    position: absolute; left: 0; right: 0; bottom: 18px;
+    z-index: 3;
+  }
+  .sheet-slider-dots .d {
+    width: 5px; height: 5px; border-radius: var(--r-pill);
+    background: var(--vtt-text-muted); opacity: 0.45;
+  }
+  .sheet-slider-dots .d.is-active {
+    background: var(--vtt-accent); opacity: 1;
+    box-shadow: 0 0 6px rgba(212,168,87,0.6);
+    width: 16px;
+  }
+
+  /* мобильный bottom-sheet (правая панель) */
+  .mob-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    max-height: 85%;
+    background:
+      linear-gradient(to bottom, rgba(26,21,16,0.96), rgba(14,11,8,0.98)),
+      var(--vtt-bg-surface);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border-top: 1px solid var(--vtt-border-gold);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column;
+    z-index: 5;
+  }
+  .mob-sheet-handle {
+    width: 36px; height: 4px; border-radius: var(--r-pill);
+    background: var(--vtt-border-strong);
+    margin: 8px auto;
+  }
+  .mob-sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 14px 10px;
+    border-bottom: 1px solid var(--vtt-border-subtle);
+  }
+  .mob-sheet-title {
+    font-family: var(--font-serif); font-size: 17px;
+    color: var(--vtt-accent-soft);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .mob-sheet-body { overflow-y: auto; padding: 10px 12px; }
+
+  /* мобильный side-sheet (левая панель) */
+  .mob-side {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 82%; max-width: 320px;
+    background:
+      linear-gradient(to right, rgba(26,21,16,0.97), rgba(14,11,8,0.99)),
+      var(--vtt-bg-surface);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border-right: 1px solid var(--vtt-border-gold);
+    box-shadow: 8px 0 32px rgba(0,0,0,0.55);
+    display: flex; flex-direction: column;
+    z-index: 5;
+  }
+  .mob-overlay {
+    position: absolute; inset: 0;
+    background: rgba(7,5,10,0.5);
+    z-index: 4;
+  }
+
+  /* ================================================================
+     Responsive — десктоп-стейдж сжимается
+     ================================================================ */
+  @media (max-width: 1100px) {
+    .gl-shell { min-height: 640px; }
+    .gl-left { width: 240px; }
+    .gl-right { width: 300px; }
+    .sheet-column { width: 380px; flex-basis: 380px; }
+  }
+
+  /* ================================================================
+     BEFORE / AFTER
+     ================================================================ */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 1100px) { .compare { grid-template-columns: 1fr; } }
+  .compare-before {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 12px;
+    background: var(--vtt-bg-surface);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-md);
+  }
+  .compare-before-row {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--vtt-text-secondary);
+    padding: 6px 8px;
+    border: 1px dashed var(--vtt-border-subtle);
+    border-radius: var(--r-xs);
+  }
+  .compare-before-row b { color: var(--vtt-danger-bright); font-weight: 600; }
+  .compare-shot {
+    aspect-ratio: 16 / 10;
+    background: var(--vtt-bg-sunken);
+    border: 1px solid var(--vtt-border-subtle);
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--vtt-text-muted);
+    text-align: center; padding: 16px;
+  }
+
+  .diff-table {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px 24px;
+    margin-top: 20px;
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--vtt-text-secondary);
+  }
+  .diff-table .h { color: var(--vtt-accent-deep); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .was { color: var(--vtt-danger-bright); }
+  .now { color: var(--vtt-success); }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="eyebrow">Organism · Game screen scaffold</p>
+  <h1>GameLayout</h1>
+  <p class="lead">
+    Каркас игрового экрана — общий лейаут, в котором живут все ранее собранные компоненты.
+    <b>Центр</b> — сцена-фон (временно <code>bg.png</code>) с колонками листов персонажа поверх.
+    <b>Слева</b> — кто сейчас за столом. <b>Справа</b> — кубики и история бросков.
+    Зеркальная схема относительно референса <code>ref/screens/ref-scereen-layout.jpeg</code>:
+    игроки — слева, кубики — справа. <b>Без рамок-в-рамках</b>: панели «тают» в сцену тёмным
+    градиентом, элементы внутри отделяются типографикой и воздухом, а не обводками.
+  </p>
+
+  <!-- ============ §1 SCAFFOLD ============ -->
+  <section class="group">
+    <p class="eyebrow">§1</p>
+    <h2>Сетка — четыре зоны</h2>
+    <p class="group-lead">
+      Грид верхнего уровня: одна строка хедера + одна строка контента, три колонки. Боковые панели —
+      <code>width: auto</code>, центр — <code>1fr</code>. Свёрнутое состояние — та же колонка, но 48px.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Scaffold · развёрнутое</p>
+      <div class="gl-shell" style="min-height: 420px;">
+        <div class="gl-top">
+          <div class="gl-top-title">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg>
+            Таверна «Разбитый Щит»
+          </div>
+          <div class="gl-top-meta">сессия 12 · <b>22 апр</b></div>
+          <div class="gl-top-actions">
+            <span class="gl-presence">5 за столом</span>
+            <button class="btn-icon-sm" aria-label="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2"/><path d="M8 1.5 L8 3 M8 13 L8 14.5 M1.5 8 L3 8 M13 8 L14.5 8 M3.3 3.3 L4.4 4.4 M11.6 11.6 L12.7 12.7 M3.3 12.7 L4.4 11.6 M11.6 4.4 L12.7 3.3"/></svg></button>
+          </div>
+        </div>
+        <aside class="gl-left" style="align-items: center; justify-content: center;">
+          <div style="padding: 14px; color: var(--vtt-text-secondary); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,0.7);">
+            .gl-left · 280px<br><span style="color: var(--vtt-accent-soft);">игроки</span>
+          </div>
+        </aside>
+        <div class="gl-center" style="align-items: center; justify-content: center;">
+          <div style="color: var(--vtt-accent-soft); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+            .gl-center · 1fr · сцена-фон<br><span style="color: var(--vtt-text-muted);">колонки листов</span>
+          </div>
+        </div>
+        <aside class="gl-right" style="grid-template-rows: 1fr; align-items: center; justify-content: center;">
+          <div style="padding: 14px; text-align: center; color: var(--vtt-text-secondary); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,0.7);">
+            .gl-right · 340px<br><span style="color: var(--vtt-accent-soft);">кубики</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="notes">
+        <b>Принцип:</b> боковые панели — содержимое <i>вокруг</i> листа, не над ним. Лист — это актёр;
+        панели — зрители и инструменты. Поэтому лист всегда в центре, панели сворачиваются в рейл,
+        а не наоборот.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §2 LEFT PANEL ============ -->
+  <section class="group">
+    <p class="eyebrow">§2</p>
+    <h2>Левая панель — игроки</h2>
+    <p class="group-lead">
+      Сегментированный переключатель <b>Партия / NPC</b> (для мастера — плюс <b>Мои NPC</b>).
+      Ниже — строки игроков: аватар, имя персонажа, ник игрока, статус (онлайн/оффлайн/GM), тонкий
+      HP-микробар. Активная строка подсвечена золотым border-left.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Варианты строк</p>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+        <div>
+          <p class="variant-label">развёрнутая · 280px</p>
+          <div style="width: 280px; background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9)); border-radius: var(--r-md); padding: var(--s-3);">
+            <div class="gl-panel-head" style="padding: 0 0 var(--s-2);">
+              <p class="eyebrow" style="margin: 0;">За столом</p>
+              <button class="btn-icon-sm" aria-label="Свернуть"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 L5 7 L9 11"/></svg></button>
+            </div>
+            <div class="gl-panel-segments" style="padding: 0 0 var(--s-3);">
+              <div class="segmented">
+                <button class="is-active">Партия</button>
+                <button>NPC</button>
+              </div>
+            </div>
+            <div class="player-row is-active">
+              <div class="pr-avatar">Й</div>
+              <div class="pr-body"><span class="pr-name">Йорик Медвежатник</span><span class="pr-nick">kark</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+            <div class="player-row">
+              <div class="pr-avatar">Т</div>
+              <div class="pr-body"><span class="pr-name">Тарн Искрогрив</span><span class="pr-nick">ivan.p</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+            <div class="player-row is-offline">
+              <div class="pr-avatar">М</div>
+              <div class="pr-body"><span class="pr-name">Маэль Серебристая</span><span class="pr-nick">svetlana</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 90%"></div></div></div>
+            <div class="player-row">
+              <div class="pr-avatar">Д</div>
+              <div class="pr-body"><span class="pr-name">Дрен</span><span class="pr-nick">pavel</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 12%"></div></div></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="variant-label">с мастером · GM-чип</p>
+          <div style="width: 280px; background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9)); border-radius: var(--r-md); padding: var(--s-3);">
+            <div class="gl-panel-head" style="padding: 0 0 var(--s-2);">
+              <p class="eyebrow" style="margin: 0;">За столом</p>
+              <button class="btn-icon-sm" aria-label="Свернуть"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 L5 7 L9 11"/></svg></button>
+            </div>
+            <p class="gl-panel-group-label" style="padding: 0 0 var(--s-1);">Мастер</p>
+            <div class="player-row">
+              <div class="pr-avatar">В</div>
+              <div class="pr-body"><span class="pr-name">Владыка Пепла</span><span class="pr-nick">gm.eva</span></div>
+              <div class="pr-status"><span class="pr-gm-chip">GM</span></div>
+            </div>
+            <p class="gl-panel-group-label" style="padding: var(--s-3) 0 var(--s-1);">Партия</p>
+            <div class="player-row is-active">
+              <div class="pr-avatar">Й</div>
+              <div class="pr-body"><span class="pr-name">Йорик Медвежатник</span><span class="pr-nick">kark</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+            <div class="player-row">
+              <div class="pr-avatar">Т</div>
+              <div class="pr-body"><span class="pr-name">Тарн Искрогрив</span><span class="pr-nick">ivan.p</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="variant-label">свёрнутая · 48px (рейл)</p>
+          <div style="width: 56px; background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9)); border-radius: var(--r-md); height: 380px;">
+            <div class="gl-rail">
+              <button class="gl-rail-btn" aria-label="Развернуть">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><path d="M1.5 13.5 C1.5 10.5 3.5 9 6 9 C8.5 9 10.5 10.5 10.5 13.5"/><circle cx="12" cy="5" r="1.8"/></svg>
+              </button>
+              <span class="gl-rail-label">Игроки · 4</span>
+              <div class="gl-rail-avatars">
+                <div class="pr-avatar" title="Йорик">Й<span class="pr-dot"></span></div>
+                <div class="pr-avatar" title="Тарн">Т<span class="pr-dot"></span></div>
+                <div class="pr-avatar" title="Маэль">М<span class="pr-dot" style="background: var(--vtt-text-muted); box-shadow: none;"></span></div>
+                <div class="pr-avatar" title="Дрен">Д<span class="pr-dot"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <b>Почему border-left вместо заливки:</b> активная строка подсвечивается золотой вертикальной
+        линией слева + мягким elevated-фоном. Так глаз легко цепляется за «какой лист сейчас в центре»,
+        не перегружая список яркими плашками.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §3 RIGHT PANEL ============ -->
+  <section class="group">
+    <p class="eyebrow">§3</p>
+    <h2>Правая панель — кубики</h2>
+    <p class="group-lead">
+      Лог бросков сверху (прокручивается), quick-rolls, ряд чипов атрибутов активного персонажа
+      и поле формулы с единственным на экран <code>btn-hero</code> «Бросить».
+      Паттерн скопирован из <code>dice-drawer</code>, но без фроста — это встроенная панель, не overlay.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Варианты</p>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start;">
+
+        <div>
+          <p class="variant-label">развёрнутая, с активным листом</p>
+          <div style="width: 340px; height: 560px; background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9)); border-radius: var(--r-md);" class="gl-right">
+            <div class="gl-panel-head">
+              <p class="eyebrow" style="margin: 0;">Кубики</p>
+              <button class="btn-icon-sm" aria-label="Свернуть"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L9 7 L5 11"/></svg></button>
+            </div>
+            <div class="dice-log">
+              <div class="dice-divider">Сегодня · 14:20</div>
+              <div class="dice-row">
+                <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>Тарн<span class="dot"></span>14:22</div>
+                  <div class="dice-row-formula"><span class="f-expr">2d6+1</span><span class="f-rolls">· <em>4</em> + <em>3</em></span><span class="f-mod">+ 1</span></div>
+                </div>
+                <div class="dice-row-result">8</div>
+              </div>
+              <div class="dice-row is-crit">
+                <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>Йорик<span class="dot"></span>14:24</div>
+                  <div class="dice-row-formula"><span class="f-expr">2d6</span><span class="f-rolls">· <em>6</em> + <em>6</em></span></div>
+                </div>
+                <div class="dice-row-result">12</div>
+              </div>
+              <div class="dice-row is-damage">
+                <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1 C5 5 3 8 3 10.5 C3 13 5.2 15 8 15 C10.8 15 13 13 13 10.5 C13 8 11 5 8 1 Z"/></svg></span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>Урон</b><span class="dot"></span>лук<span class="dot"></span>14:28</div>
+                  <div class="dice-row-formula"><span class="f-expr">d8+1</span><span class="f-rolls">· <em>6</em></span><span class="f-mod">+ 1</span></div>
+                </div>
+                <div class="dice-row-result">7</div>
+              </div>
+              <div class="dice-row is-fail is-fresh">
+                <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>ИНТ</b><span class="dot"></span>Йорик<span class="dot"></span>14:31</div>
+                  <div class="dice-row-formula"><span class="f-expr">2d6</span><span class="f-rolls">· <em>2</em> + <em>3</em></span></div>
+                </div>
+                <div class="dice-row-result">5</div>
+              </div>
+            </div>
+            <div class="dice-quick">
+              <p class="dice-label">Быстрые</p>
+              <div class="qr-grid">
+                <button class="qr-chip">d4</button>
+                <button class="qr-chip">d6</button>
+                <button class="qr-chip">d8</button>
+                <button class="qr-chip">d10</button>
+                <button class="qr-chip">d20</button>
+                <button class="qr-chip is-highlight">2d6</button>
+              </div>
+            </div>
+            <div class="dice-skills">
+              <p class="dice-label">Йорик · 2d6 по атрибуту</p>
+              <div class="skill-row">
+                <button class="skill-chip"><span class="sk-label">СИЛ</span><span class="sk-value">+2</span></button>
+                <button class="skill-chip"><span class="sk-label">ЛОВ</span><span class="sk-value">+1</span></button>
+                <button class="skill-chip"><span class="sk-label">ВЫН</span><span class="sk-value">+2</span></button>
+                <button class="skill-chip"><span class="sk-label">ИНТ</span><span class="sk-value">0</span></button>
+                <button class="skill-chip"><span class="sk-label">МДР</span><span class="sk-value">+1</span></button>
+                <button class="skill-chip"><span class="sk-label">ХАР</span><span class="sk-value">0</span></button>
+              </div>
+            </div>
+            <div class="dice-input">
+              <input type="text" placeholder="2d6+1" value="2d6">
+              <button class="btn-hero">Бросить</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="variant-label">без активного листа</p>
+          <div style="width: 340px; height: 560px; background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9)); border-radius: var(--r-md);" class="gl-right">
+            <div class="gl-panel-head">
+              <p class="eyebrow" style="margin: 0;">Кубики</p>
+              <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L9 7 L5 11"/></svg></button>
+            </div>
+            <div class="dice-log">
+              <div class="dice-empty">
+                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M16 3 L28 10 L28 22 L16 29 L4 22 L4 10 Z"/></svg>
+                Бросков ещё не было
+              </div>
+            </div>
+            <div class="dice-quick">
+              <p class="dice-label">Быстрые</p>
+              <div class="qr-grid">
+                <button class="qr-chip">d4</button>
+                <button class="qr-chip">d6</button>
+                <button class="qr-chip">d8</button>
+                <button class="qr-chip">d10</button>
+                <button class="qr-chip">d20</button>
+                <button class="qr-chip is-highlight">2d6</button>
+              </div>
+            </div>
+            <div class="dice-skills">
+              <p class="dice-label is-empty">Выбери персонажа слева</p>
+              <div class="skill-row">
+                <button class="skill-chip is-disabled"><span class="sk-label">СИЛ</span><span class="sk-value">—</span></button>
+                <button class="skill-chip is-disabled"><span class="sk-label">ЛОВ</span><span class="sk-value">—</span></button>
+                <button class="skill-chip is-disabled"><span class="sk-label">ВЫН</span><span class="sk-value">—</span></button>
+                <button class="skill-chip is-disabled"><span class="sk-label">ИНТ</span><span class="sk-value">—</span></button>
+                <button class="skill-chip is-disabled"><span class="sk-label">МДР</span><span class="sk-value">—</span></button>
+                <button class="skill-chip is-disabled"><span class="sk-label">ХАР</span><span class="sk-value">—</span></button>
+              </div>
+            </div>
+            <div class="dice-input">
+              <input type="text" placeholder="2d6">
+              <button class="btn-hero">Бросить</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="variant-label">свёрнутая · 48px (рейл)</p>
+          <div style="width: 56px; height: 560px; background: linear-gradient(to bottom, rgba(26,21,16,0.85), rgba(14,11,8,0.9)); border-radius: var(--r-md);">
+            <div class="gl-rail">
+              <button class="gl-rail-btn" aria-label="Развернуть">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg>
+              </button>
+              <span class="gl-rail-label">Кубики</span>
+              <div class="gl-rail-last is-crit" title="Последний бросок">12</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §4 CENTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§4</p>
+    <h2>Центр — колонки листов</h2>
+    <p class="group-lead">
+      Каждая колонка — обёртка <code>.sheet-column</code> вокруг <b>app-shell</b>. Ширина 440px, между
+      колонками <code>--s-4</code>. Активная колонка обведена золотым bord. Кнопка «×» сверху закрывает
+      лист. При переполнении включается горизонтальный scroll-snap.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Пустое состояние</p>
+      <div class="gl-shell" style="min-height: 420px;">
+        <div class="gl-top">
+          <div class="gl-top-title"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg>Таверна «Разбитый Щит»</div>
+          <div class="gl-top-meta">сессия 12</div>
+          <div class="gl-top-actions"><button class="btn-ghost">Выйти</button></div>
+        </div>
+        <aside class="gl-left">
+          <div class="gl-panel-head"><p class="eyebrow" style="margin:0;">За столом</p><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 L5 7 L9 11"/></svg></button></div>
+          <div class="gl-panel-segments"><div class="segmented"><button class="is-active">Партия</button><button>NPC</button></div></div>
+          <div class="gl-panel-list">
+            <div class="player-row"><div class="pr-avatar">Й</div><div class="pr-body"><span class="pr-name">Йорик</span><span class="pr-nick">kark</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+            <div class="player-row"><div class="pr-avatar">Т</div><div class="pr-body"><span class="pr-name">Тарн</span><span class="pr-nick">ivan</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+            <div class="player-row is-offline"><div class="pr-avatar">М</div><div class="pr-body"><span class="pr-name">Маэль</span><span class="pr-nick">sv</span></div><div class="pr-status"><span class="pr-dot"></span></div></div>
+          </div>
+        </aside>
+        <div class="gl-center">
+          <div class="gl-empty">
+            <div class="gl-empty-seal">⚄</div>
+            <h3>Стол пуст</h3>
+            <p>Кликни по игроку слева, чтобы открыть его лист. Можно открыть несколько сразу.</p>
+          </div>
+        </div>
+        <aside class="gl-right is-collapsed">
+          <div class="gl-rail">
+            <button class="gl-rail-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg></button>
+            <span class="gl-rail-label">Кубики</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="notes">
+        <b>Когда центр пуст</b>, левую панель нельзя свернуть — без персонажей у экрана нет смысла, а
+        список — единственный способ что-то открыть. Правая панель и тут может быть свёрнута.
+      </div>
+    </div>
+
+    <div class="stage">
+      <p class="stage-title">Один лист в центре</p>
+      <div class="gl-shell" style="min-height: 540px;">
+        <div class="gl-top">
+          <div class="gl-top-title"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg>Таверна «Разбитый Щит»</div>
+          <div class="gl-top-meta">сессия 12 · <b>22 апр</b></div>
+          <div class="gl-top-actions"><span class="gl-presence">5 за столом</span></div>
+        </div>
+        <aside class="gl-left">
+          <div class="gl-panel-head"><p class="eyebrow" style="margin:0;">За столом</p><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 L5 7 L9 11"/></svg></button></div>
+          <div class="gl-panel-segments"><div class="segmented"><button class="is-active">Партия</button><button>NPC</button></div></div>
+          <div class="gl-panel-list">
+            <div class="player-row is-active"><div class="pr-avatar">Й</div><div class="pr-body"><span class="pr-name">Йорик</span><span class="pr-nick">kark</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+            <div class="player-row"><div class="pr-avatar">Т</div><div class="pr-body"><span class="pr-name">Тарн</span><span class="pr-nick">ivan</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+            <div class="player-row is-offline"><div class="pr-avatar">М</div><div class="pr-body"><span class="pr-name">Маэль</span><span class="pr-nick">sv</span></div><div class="pr-status"><span class="pr-dot"></span></div></div>
+          </div>
+        </aside>
+        <div class="gl-center">
+          <article class="sheet-column is-active">
+            <div class="sheet-column-bar">
+              <span class="sheet-column-owner"><b>Kark</b> · играет</span>
+              <button class="btn-icon-sm" aria-label="Закрыть"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            </div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Йорик Медвежатник</span>
+                  <span class="mini-meta"><b>Воин</b> · ур. 1</span>
+                </div>
+                <div class="mini-hpline">
+                  <span class="hp-lbl">HP</span>
+                  <div class="mini-hp-track"><div class="mini-hp-fill" style="width:75%"></div></div>
+                  <span class="hp-val">18<span class="hp-max"> / 24</span></span>
+                </div>
+                <div class="mini-trio">
+                  <div class="mini-chip"><span class="v">d6</span><span class="u">Урон</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="mini-chip"><span class="v">3</span><span class="u">Броня</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="mini-chip"><span class="v">24</span><span class="u">Монет</span></div>
+                </div>
+              </header>
+              <nav class="mini-tabs">
+                <button class="mt is-active">Основное</button>
+                <button class="mt">Инвент.</button>
+                <button class="mt">Магия<span class="mt-dot"></span></button>
+                <button class="mt">Заметки</button>
+              </nav>
+              <div class="mini-content">
+                <div class="mini-block">
+                  <p class="mini-block-title">Характеристики</p>
+                  <div class="mini-stats">
+                    <div class="mini-stat"><span class="ms-l">СИЛ</span><span class="ms-v">10</span><span class="ms-m">+2</span></div>
+                    <div class="mini-stat"><span class="ms-l">ЛОВ</span><span class="ms-v">8</span><span class="ms-m">+1</span></div>
+                    <div class="mini-stat"><span class="ms-l">ВЫН</span><span class="ms-v">11</span><span class="ms-m">+2</span></div>
+                    <div class="mini-stat"><span class="ms-l">ИНТ</span><span class="ms-v">6</span><span class="ms-m">0</span></div>
+                    <div class="mini-stat"><span class="ms-l">МДР</span><span class="ms-v">7</span><span class="ms-m">+1</span></div>
+                    <div class="mini-stat"><span class="ms-l">ХАР</span><span class="ms-v">5</span><span class="ms-m">0</span></div>
+                  </div>
+                </div>
+                <div class="mini-block">
+                  <p class="mini-block-title">Навыки</p>
+                  <div class="mini-row-list">
+                    <div class="mini-line"><span class="t">Охота</span><span class="m">2d6 + ЛОВ</span></div>
+                    <div class="mini-line"><span class="t">Выживание</span><span class="m">2d6 + ВЫН</span></div>
+                  </div>
+                </div>
+                <div class="mini-block">
+                  <p class="mini-block-title">Способности</p>
+                  <div class="mini-row-list">
+                    <div class="mini-line"><span class="t">Рукопашная стойкость</span><span class="m">›</span></div>
+                    <div class="mini-line"><span class="t">Зов зверя</span><span class="m">›</span></div>
+                  </div>
+                </div>
+              </div>
+              <button class="mini-fab" aria-label="Бросить кубик">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg>
+              </button>
+            </div>
+          </article>
+        </div>
+        <aside class="gl-right is-collapsed">
+          <div class="gl-rail">
+            <button class="gl-rail-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg></button>
+            <span class="gl-rail-label">Кубики</span>
+            <div class="gl-rail-last">8</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §5 FULL COMPOSITION — desktop ============ -->
+  <section class="group">
+    <p class="eyebrow">§5</p>
+    <h2>Desktop — полная композиция</h2>
+    <p class="group-lead">
+      Две панели развёрнуты, в центре — два листа рядом, третий уехал за край. Единственный
+      <code>btn-hero</code> на экране — «Бросить» в правой панели.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">1440 × 820 · две панели, два листа, третий peek</p>
+
+      <div class="gl-shell" style="min-height: 720px;">
+        <div class="gl-top">
+          <div class="gl-top-title">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg>
+            Таверна «Разбитый Щит»
+          </div>
+          <div class="gl-top-meta">сессия 12 · <b>22 апр 2026</b> · 14:42</div>
+          <div class="gl-top-actions">
+            <span class="gl-presence">5 за столом</span>
+            <button class="btn-icon-sm" aria-label="Настройки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2"/><path d="M8 1.5 L8 3 M8 13 L8 14.5 M1.5 8 L3 8 M13 8 L14.5 8"/></svg></button>
+            <button class="btn-icon-sm" aria-label="Выйти"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L13 3 L13 13 L10 13 M8 8 L13 8 M10 5 L13 8 L10 11"/></svg></button>
+          </div>
+        </div>
+
+        <aside class="gl-left">
+          <div class="gl-panel-head">
+            <p class="eyebrow" style="margin: 0;">За столом</p>
+            <button class="btn-icon-sm" aria-label="Свернуть"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 L5 7 L9 11"/></svg></button>
+          </div>
+          <div class="gl-panel-segments">
+            <div class="segmented">
+              <button class="is-active">Партия</button>
+              <button>NPC</button>
+            </div>
+          </div>
+          <div class="gl-panel-list">
+            <p class="gl-panel-group-label">Мастер</p>
+            <div class="player-row">
+              <div class="pr-avatar">В</div>
+              <div class="pr-body"><span class="pr-name">Владыка Пепла</span><span class="pr-nick">gm.eva</span></div>
+              <div class="pr-status"><span class="pr-gm-chip">GM</span></div>
+            </div>
+            <p class="gl-panel-group-label">Партия</p>
+            <div class="player-row is-active">
+              <div class="pr-avatar">Й</div>
+              <div class="pr-body"><span class="pr-name">Йорик Медвежатник</span><span class="pr-nick">kark</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+            <div class="player-row is-active">
+              <div class="pr-avatar">Т</div>
+              <div class="pr-body"><span class="pr-name">Тарн Искрогрив</span><span class="pr-nick">ivan.p</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+            <div class="player-row">
+              <div class="pr-avatar">М</div>
+              <div class="pr-body"><span class="pr-name">Маэль Серебристая</span><span class="pr-nick">svetlana</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 90%"></div></div></div>
+            <div class="player-row is-offline">
+              <div class="pr-avatar">Д</div>
+              <div class="pr-body"><span class="pr-name">Дрен</span><span class="pr-nick">pavel</span></div>
+              <div class="pr-status"><span class="pr-dot"></span></div>
+              
+            <div class="pr-hp"><div class="pr-hp-fill" style="width: 12%"></div></div></div>
+          </div>
+          <div class="gl-panel-foot">
+            <button class="btn-ghost" style="width: 100%; justify-content: center;">+ Пригласить</button>
+          </div>
+        </aside>
+
+        <div class="gl-center">
+          <!-- Лист 1 (активный) -->
+          <article class="sheet-column is-active">
+            <div class="sheet-column-bar">
+              <span class="sheet-column-owner"><b>Kark</b> · играет</span>
+              <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            </div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Йорик Медвежатник</span>
+                  <span class="mini-meta"><b>Воин</b> · ур. 1</span>
+                </div>
+                <div class="mini-hpline">
+                  <span class="hp-lbl">HP</span>
+                  <div class="mini-hp-track"><div class="mini-hp-fill" style="width:75%"></div></div>
+                  <span class="hp-val">18<span class="hp-max"> / 24</span></span>
+                </div>
+                <div class="mini-trio">
+                  <div class="mini-chip"><span class="v">d6</span><span class="u">Урон</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="mini-chip"><span class="v">3</span><span class="u">Броня</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="mini-chip"><span class="v">24</span><span class="u">Монет</span></div>
+                </div>
+              </header>
+              <nav class="mini-tabs">
+                <button class="mt is-active">Основное</button>
+                <button class="mt">Инвент.</button>
+                <button class="mt">Магия</button>
+                <button class="mt">Заметки</button>
+              </nav>
+              <div class="mini-content">
+                <div class="mini-block">
+                  <p class="mini-block-title">Характеристики</p>
+                  <div class="mini-stats">
+                    <div class="mini-stat"><span class="ms-l">СИЛ</span><span class="ms-v">10</span><span class="ms-m">+2</span></div>
+                    <div class="mini-stat"><span class="ms-l">ЛОВ</span><span class="ms-v">8</span><span class="ms-m">+1</span></div>
+                    <div class="mini-stat"><span class="ms-l">ВЫН</span><span class="ms-v">11</span><span class="ms-m">+2</span></div>
+                    <div class="mini-stat"><span class="ms-l">ИНТ</span><span class="ms-v">6</span><span class="ms-m">0</span></div>
+                    <div class="mini-stat"><span class="ms-l">МДР</span><span class="ms-v">7</span><span class="ms-m">+1</span></div>
+                    <div class="mini-stat"><span class="ms-l">ХАР</span><span class="ms-v">5</span><span class="ms-m">0</span></div>
+                  </div>
+                </div>
+                <div class="mini-block">
+                  <p class="mini-block-title">Навыки</p>
+                  <div class="mini-row-list">
+                    <div class="mini-line"><span class="t">Охота</span><span class="m">2d6 + ЛОВ</span></div>
+                    <div class="mini-line"><span class="t">Выживание</span><span class="m">2d6 + ВЫН</span></div>
+                  </div>
+                </div>
+              </div>
+              <button class="mini-fab"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg></button>
+            </div>
+          </article>
+
+          <!-- Лист 2 -->
+          <article class="sheet-column">
+            <div class="sheet-column-bar">
+              <span class="sheet-column-owner"><b>Ivan</b> · играет</span>
+              <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            </div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Тарн Искрогрив</span>
+                  <span class="mini-meta"><b>Волшеб.</b> · ур. 2</span>
+                </div>
+                <div class="mini-hpline">
+                  <span class="hp-lbl">HP</span>
+                  <div class="mini-hp-track"><div class="mini-hp-fill" style="width:45%; background: linear-gradient(to right, var(--vtt-danger-bright), var(--vtt-accent));"></div></div>
+                  <span class="hp-val">6<span class="hp-max"> / 14</span></span>
+                </div>
+                <div class="mini-trio">
+                  <div class="mini-chip"><span class="v">d4</span><span class="u">Урон</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="mini-chip"><span class="v">1</span><span class="u">Броня</span></div>
+                  <span class="sc-divider"></span>
+                  <div class="mini-chip"><span class="v">18</span><span class="u">Монет</span></div>
+                </div>
+              </header>
+              <nav class="mini-tabs">
+                <button class="mt">Основное</button>
+                <button class="mt">Инвент.</button>
+                <button class="mt is-active">Магия<span class="mt-dot"></span></button>
+                <button class="mt">Заметки</button>
+              </nav>
+              <div class="mini-content">
+                <div class="mini-block">
+                  <p class="mini-block-title">Ртуть</p>
+                  <div class="mini-line"><span class="t">Квиксильвер</span><span class="m">1 / 2</span></div>
+                </div>
+                <div class="mini-block">
+                  <p class="mini-block-title">Духи</p>
+                  <div class="mini-row-list">
+                    <div class="mini-line"><span class="t">Иллас из Искр</span><span class="m">огонь · воздух</span></div>
+                    <div class="mini-line"><span class="t">Гурн-хладный</span><span class="m">лёд · вода</span></div>
+                  </div>
+                </div>
+                <div class="mini-block">
+                  <p class="mini-block-title">Ритуалы</p>
+                  <div class="mini-row-list">
+                    <div class="mini-line"><span class="t">Шёпот камня</span><span class="m">›</span></div>
+                  </div>
+                </div>
+              </div>
+              <button class="mini-fab"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg></button>
+            </div>
+          </article>
+
+          <!-- Лист 3 (peek — частично виден при скролле) -->
+          <article class="sheet-column">
+            <div class="sheet-column-bar">
+              <span class="sheet-column-owner"><b>Svetlana</b> · играет</span>
+              <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            </div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Маэль Серебристая</span>
+                  <span class="mini-meta"><b>Вор</b> · ур. 1</span>
+                </div>
+                <div class="mini-hpline">
+                  <span class="hp-lbl">HP</span>
+                  <div class="mini-hp-track"><div class="mini-hp-fill" style="width:90%"></div></div>
+                  <span class="hp-val">17<span class="hp-max"> / 19</span></span>
+                </div>
+              </header>
+              <nav class="mini-tabs">
+                <button class="mt is-active">Основное</button>
+                <button class="mt">Инвент.</button>
+                <button class="mt">Заметки</button>
+              </nav>
+              <div class="mini-content">
+                <div class="mini-block">
+                  <p class="mini-block-title">→ скрытая часть</p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <aside class="gl-right">
+          <div class="gl-panel-head">
+            <p class="eyebrow" style="margin: 0;">Кубики</p>
+            <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L9 7 L5 11"/></svg></button>
+          </div>
+          <div class="dice-log">
+            <div class="dice-divider">Сегодня · 14:20</div>
+            <div class="dice-row">
+              <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+              <div class="dice-row-body">
+                <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>Тарн<span class="dot"></span>14:22</div>
+                <div class="dice-row-formula"><span class="f-expr">2d6+1</span><span class="f-rolls">· <em>4</em> + <em>3</em></span><span class="f-mod">+ 1</span></div>
+              </div>
+              <div class="dice-row-result">8</div>
+            </div>
+            <div class="dice-row is-crit">
+              <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+              <div class="dice-row-body">
+                <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>Йорик<span class="dot"></span>14:24</div>
+                <div class="dice-row-formula"><span class="f-expr">2d6</span><span class="f-rolls">· <em>6</em> + <em>6</em></span></div>
+              </div>
+              <div class="dice-row-result">12</div>
+            </div>
+            <div class="dice-row is-damage">
+              <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1 C5 5 3 8 3 10.5 C3 13 5.2 15 8 15 C10.8 15 13 13 13 10.5 C13 8 11 5 8 1 Z"/></svg></span>
+              <div class="dice-row-body">
+                <div class="dice-row-meta"><b>Урон</b><span class="dot"></span>лук<span class="dot"></span>14:28</div>
+                <div class="dice-row-formula"><span class="f-expr">d8+1</span><span class="f-rolls">· <em>6</em></span><span class="f-mod">+ 1</span></div>
+              </div>
+              <div class="dice-row-result">7</div>
+            </div>
+            <div class="dice-row is-fail is-fresh">
+              <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+              <div class="dice-row-body">
+                <div class="dice-row-meta"><b>ИНТ</b><span class="dot"></span>Йорик<span class="dot"></span>14:31</div>
+                <div class="dice-row-formula"><span class="f-expr">2d6</span><span class="f-rolls">· <em>2</em> + <em>3</em></span></div>
+              </div>
+              <div class="dice-row-result">5</div>
+            </div>
+          </div>
+          <div class="dice-quick">
+            <p class="dice-label">Быстрые</p>
+            <div class="qr-grid">
+              <button class="qr-chip">d4</button>
+              <button class="qr-chip">d6</button>
+              <button class="qr-chip">d8</button>
+              <button class="qr-chip">d10</button>
+              <button class="qr-chip">d20</button>
+              <button class="qr-chip is-highlight">2d6</button>
+            </div>
+          </div>
+          <div class="dice-skills">
+            <p class="dice-label">Йорик · по атрибуту</p>
+            <div class="skill-row">
+              <button class="skill-chip"><span class="sk-label">СИЛ</span><span class="sk-value">+2</span></button>
+              <button class="skill-chip"><span class="sk-label">ЛОВ</span><span class="sk-value">+1</span></button>
+              <button class="skill-chip"><span class="sk-label">ВЫН</span><span class="sk-value">+2</span></button>
+              <button class="skill-chip"><span class="sk-label">ИНТ</span><span class="sk-value">0</span></button>
+              <button class="skill-chip"><span class="sk-label">МДР</span><span class="sk-value">+1</span></button>
+              <button class="skill-chip"><span class="sk-label">ХАР</span><span class="sk-value">0</span></button>
+            </div>
+          </div>
+          <div class="dice-input">
+            <input type="text" placeholder="2d6+1" value="2d6">
+            <button class="btn-hero">Бросить</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="notes">
+        <b>Два активных листа</b> — редкий, но полезный кейс: игрок играет парой (например, маг +
+        его фамильяр-NPC), или мастер дёрнул два NPC параллельно. Обе колонки с золотым border,
+        в левой панели обе строки подсвечены. Лог бросков общий — кто чей бросок, видно по meta-строке.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §6 COLLAPSED RAILS ============ -->
+  <section class="group">
+    <p class="eyebrow">§6</p>
+    <h2>Desktop — обе панели свёрнуты</h2>
+    <p class="group-lead">
+      Та же сцена, но обе панели — 48px рейлы. Центру становится шире на ~540px — легко помещается
+      три листа, а четвёртый peek-ает.
+    </p>
+
+    <div class="stage">
+      <p class="stage-title">Рейлы слева и справа · три листа видны</p>
+
+      <div class="gl-shell" style="min-height: 620px;">
+        <div class="gl-top">
+          <div class="gl-top-title"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg>Таверна «Разбитый Щит»</div>
+          <div class="gl-top-meta">сессия 12 · <b>22 апр</b> · 14:42</div>
+          <div class="gl-top-actions"><span class="gl-presence">5 за столом</span></div>
+        </div>
+
+        <aside class="gl-left is-collapsed">
+          <div class="gl-rail">
+            <button class="gl-rail-btn" aria-label="Развернуть"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><path d="M1.5 13.5 C1.5 10.5 3.5 9 6 9 C8.5 9 10.5 10.5 10.5 13.5"/><circle cx="12" cy="5" r="1.8"/></svg></button>
+            <span class="gl-rail-label">Игроки · 4</span>
+            <div class="gl-rail-avatars">
+              <div class="pr-avatar">Й<span class="pr-dot"></span></div>
+              <div class="pr-avatar">Т<span class="pr-dot"></span></div>
+              <div class="pr-avatar">М<span class="pr-dot"></span></div>
+              <div class="pr-avatar">Д<span class="pr-dot" style="background: var(--vtt-text-muted); box-shadow: none;"></span></div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="gl-center">
+          <article class="sheet-column is-active">
+            <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Kark</b> · играет</span><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button></div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Йорик Медвежатник</span>
+                  <span class="mini-meta"><b>Воин</b> · ур. 1</span>
+                </div>
+                <div class="mini-hpline"><span class="hp-lbl">HP</span><div class="mini-hp-track"><div class="mini-hp-fill" style="width:75%"></div></div><span class="hp-val">18<span class="hp-max"> / 24</span></span></div>
+              </header>
+              <nav class="mini-tabs"><button class="mt is-active">Основное</button><button class="mt">Инвент.</button><button class="mt">Магия</button><button class="mt">Заметки</button></nav>
+              <div class="mini-content">
+                <div class="mini-block"><p class="mini-block-title">Характеристики</p><div class="mini-stats"><div class="mini-stat"><span class="ms-l">СИЛ</span><span class="ms-v">10</span><span class="ms-m">+2</span></div><div class="mini-stat"><span class="ms-l">ЛОВ</span><span class="ms-v">8</span><span class="ms-m">+1</span></div><div class="mini-stat"><span class="ms-l">ВЫН</span><span class="ms-v">11</span><span class="ms-m">+2</span></div><div class="mini-stat"><span class="ms-l">ИНТ</span><span class="ms-v">6</span><span class="ms-m">0</span></div><div class="mini-stat"><span class="ms-l">МДР</span><span class="ms-v">7</span><span class="ms-m">+1</span></div><div class="mini-stat"><span class="ms-l">ХАР</span><span class="ms-v">5</span><span class="ms-m">0</span></div></div></div>
+              </div>
+            </div>
+          </article>
+          <article class="sheet-column">
+            <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Ivan</b> · играет</span><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button></div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Тарн Искрогрив</span>
+                  <span class="mini-meta"><b>Волшеб.</b> · ур. 2</span>
+                </div>
+                <div class="mini-hpline"><span class="hp-lbl">HP</span><div class="mini-hp-track"><div class="mini-hp-fill" style="width:45%; background: linear-gradient(to right, var(--vtt-danger-bright), var(--vtt-accent));"></div></div><span class="hp-val">6<span class="hp-max"> / 14</span></span></div>
+              </header>
+              <nav class="mini-tabs"><button class="mt">Основное</button><button class="mt is-active">Магия<span class="mt-dot"></span></button><button class="mt">Заметки</button></nav>
+              <div class="mini-content">
+                <div class="mini-block"><p class="mini-block-title">Духи</p><div class="mini-row-list"><div class="mini-line"><span class="t">Иллас из Искр</span><span class="m">огонь · воздух</span></div><div class="mini-line"><span class="t">Гурн-хладный</span><span class="m">лёд · вода</span></div></div></div>
+              </div>
+            </div>
+          </article>
+          <article class="sheet-column">
+            <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Svetlana</b> · играет</span><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button></div>
+            <div class="mini-shell">
+              <header class="mini-shell-header">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <span class="mini-name">Маэль Серебристая</span>
+                  <span class="mini-meta"><b>Вор</b> · ур. 1</span>
+                </div>
+                <div class="mini-hpline"><span class="hp-lbl">HP</span><div class="mini-hp-track"><div class="mini-hp-fill" style="width:90%"></div></div><span class="hp-val">17<span class="hp-max"> / 19</span></span></div>
+              </header>
+              <nav class="mini-tabs"><button class="mt is-active">Основное</button><button class="mt">Инвент.</button></nav>
+              <div class="mini-content"><div class="mini-block"><p class="mini-block-title">Навыки</p><div class="mini-row-list"><div class="mini-line"><span class="t">Воровство</span><span class="m">2d6 + ЛОВ</span></div><div class="mini-line"><span class="t">Скрытность</span><span class="m">2d6 + ЛОВ</span></div></div></div></div>
+            </div>
+          </article>
+        </div>
+
+        <aside class="gl-right is-collapsed">
+          <div class="gl-rail">
+            <button class="gl-rail-btn" aria-label="Развернуть"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg></button>
+            <span class="gl-rail-label">Кубики</span>
+            <div class="gl-rail-last is-crit">12</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §7 MOBILE ============ -->
+  <section class="group">
+    <p class="eyebrow">§7</p>
+    <h2>Mobile — слайдер листов + bottom-sheet</h2>
+    <p class="group-lead">
+      На узком экране панели скрываются под топ-бар (44px): бургер слева (игроки), кубик справа
+      (лог и броски). Центр — свайп-слайдер листов со snap-центрированием. Внизу — точки пагинации.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start;">
+
+      <div class="stage" style="padding: 16px;">
+        <p class="stage-title">360 · слайдер, 2 листа</p>
+        <div class="gl-shell variant-mobile" style="width: 360px; min-height: 640px;">
+          <div class="gl-mob-topbar">
+            <button class="btn-icon-sm" aria-label="Игроки"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 4 L14 4 M2 8 L14 8 M2 12 L14 12"/></svg></button>
+            <div class="gl-mob-center-title">
+              <span class="t">Йорик Медвежатник</span>
+              <span class="o">играет <b style="color: var(--vtt-text-secondary);">Kark</b></span>
+            </div>
+            <button class="btn-icon-sm" aria-label="Кубики"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg></button>
+          </div>
+          <div class="gl-center" style="position: relative;">
+            <article class="sheet-column is-active">
+              <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Kark</b> · играет</span><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button></div>
+              <div class="mini-shell">
+                <header class="mini-shell-header">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                    <span class="mini-name">Йорик Медвежатник</span>
+                    <span class="mini-meta"><b>Воин</b></span>
+                  </div>
+                  <div class="mini-hpline"><span class="hp-lbl">HP</span><div class="mini-hp-track"><div class="mini-hp-fill" style="width:75%"></div></div><span class="hp-val">18<span class="hp-max"> / 24</span></span></div>
+                </header>
+                <nav class="mini-tabs"><button class="mt is-active">Осн.</button><button class="mt">Инв.</button><button class="mt">Магия</button><button class="mt">Зам.</button></nav>
+                <div class="mini-content">
+                  <div class="mini-block"><p class="mini-block-title">Характеристики</p><div class="mini-stats"><div class="mini-stat"><span class="ms-l">СИЛ</span><span class="ms-v">10</span><span class="ms-m">+2</span></div><div class="mini-stat"><span class="ms-l">ЛОВ</span><span class="ms-v">8</span><span class="ms-m">+1</span></div><div class="mini-stat"><span class="ms-l">ВЫН</span><span class="ms-v">11</span><span class="ms-m">+2</span></div></div></div>
+                </div>
+              </div>
+            </article>
+            <article class="sheet-column">
+              <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Ivan</b> · играет</span><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button></div>
+              <div class="mini-shell">
+                <header class="mini-shell-header">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                    <span class="mini-name">Тарн</span>
+                    <span class="mini-meta"><b>Волш.</b></span>
+                  </div>
+                  <div class="mini-hpline"><span class="hp-lbl">HP</span><div class="mini-hp-track"><div class="mini-hp-fill" style="width:45%"></div></div><span class="hp-val">6<span class="hp-max"> / 14</span></span></div>
+                </header>
+              </div>
+            </article>
+            <div class="sheet-slider-dots">
+              <span class="d is-active"></span>
+              <span class="d"></span>
+              <span class="d"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage" style="padding: 16px;">
+        <p class="stage-title">360 · открыта левая панель</p>
+        <div class="gl-shell variant-mobile" style="width: 360px; min-height: 640px; position: relative;">
+          <div class="gl-mob-topbar">
+            <button class="btn-icon-sm"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            <div class="gl-mob-center-title"><span class="t">Йорик</span><span class="o">играет Kark</span></div>
+            <button class="btn-icon-sm"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg></button>
+          </div>
+          <div class="gl-center" style="filter: brightness(0.5);">
+            <article class="sheet-column is-active">
+              <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Kark</b></span></div>
+              <div class="mini-shell"><header class="mini-shell-header"><span class="mini-name">Йорик</span></header></div>
+            </article>
+          </div>
+          <div class="mob-overlay"></div>
+          <aside class="mob-side">
+            <div class="gl-panel-head">
+              <p class="eyebrow" style="margin: 0;">За столом</p>
+              <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            </div>
+            <div class="gl-panel-segments"><div class="segmented"><button class="is-active">Партия</button><button>NPC</button></div></div>
+            <div class="gl-panel-list">
+              <p class="gl-panel-group-label">Мастер</p>
+              <div class="player-row"><div class="pr-avatar">В</div><div class="pr-body"><span class="pr-name">Владыка Пепла</span><span class="pr-nick">gm.eva</span></div><div class="pr-status"><span class="pr-gm-chip">GM</span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+              <p class="gl-panel-group-label">Партия</p>
+              <div class="player-row is-active"><div class="pr-avatar">Й</div><div class="pr-body"><span class="pr-name">Йорик</span><span class="pr-nick">kark</span></div><div class="pr-status"><span class="pr-dot"></span></div></div>
+              <div class="player-row"><div class="pr-avatar">Т</div><div class="pr-body"><span class="pr-name">Тарн</span><span class="pr-nick">ivan</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+              <div class="player-row is-offline"><div class="pr-avatar">М</div><div class="pr-body"><span class="pr-name">Маэль</span><span class="pr-nick">sv</span></div><div class="pr-status"><span class="pr-dot"></span></div></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="stage" style="padding: 16px;">
+        <p class="stage-title">360 · открыт bottom-sheet «Кубики»</p>
+        <div class="gl-shell variant-mobile" style="width: 360px; min-height: 640px; position: relative;">
+          <div class="gl-mob-topbar">
+            <button class="btn-icon-sm"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 4 L14 4 M2 8 L14 8 M2 12 L14 12"/></svg></button>
+            <div class="gl-mob-center-title"><span class="t">Йорик</span><span class="o">играет Kark</span></div>
+            <button class="btn-icon-sm" style="color: var(--vtt-accent);"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg></button>
+          </div>
+          <div class="gl-center" style="filter: brightness(0.45);">
+            <article class="sheet-column is-active">
+              <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Kark</b></span></div>
+              <div class="mini-shell"><header class="mini-shell-header"><span class="mini-name">Йорик</span></header></div>
+            </article>
+          </div>
+          <aside class="mob-sheet">
+            <div class="mob-sheet-handle"></div>
+            <div class="mob-sheet-head">
+              <div class="mob-sheet-title">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="1.5"/><circle cx="6" cy="6" r="0.7" fill="currentColor"/><circle cx="10" cy="6" r="0.7" fill="currentColor"/><circle cx="8" cy="8" r="0.7" fill="currentColor"/><circle cx="6" cy="10" r="0.7" fill="currentColor"/><circle cx="10" cy="10" r="0.7" fill="currentColor"/></svg>
+                Кубики
+              </div>
+              <button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button>
+            </div>
+            <div class="mob-sheet-body">
+              <div class="dice-row is-crit">
+                <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>Йорик</div>
+                  <div class="dice-row-formula"><span class="f-expr">2d6</span><span class="f-rolls">· <em>6</em> + <em>6</em></span></div>
+                </div>
+                <div class="dice-row-result">12</div>
+              </div>
+              <div class="dice-row">
+                <span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span>
+                <div class="dice-row-body">
+                  <div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>Тарн</div>
+                  <div class="dice-row-formula"><span class="f-expr">2d6+1</span></div>
+                </div>
+                <div class="dice-row-result">8</div>
+              </div>
+              <div style="margin-top: 14px;">
+                <p class="dice-label">Йорик · по атрибуту</p>
+                <div class="skill-row">
+                  <button class="skill-chip"><span class="sk-label">СИЛ</span><span class="sk-value">+2</span></button>
+                  <button class="skill-chip"><span class="sk-label">ЛОВ</span><span class="sk-value">+1</span></button>
+                  <button class="skill-chip"><span class="sk-label">ВЫН</span><span class="sk-value">+2</span></button>
+                  <button class="skill-chip"><span class="sk-label">ИНТ</span><span class="sk-value">0</span></button>
+                  <button class="skill-chip"><span class="sk-label">МДР</span><span class="sk-value">+1</span></button>
+                  <button class="skill-chip"><span class="sk-label">ХАР</span><span class="sk-value">0</span></button>
+                </div>
+              </div>
+              <div class="dice-input" style="padding: 14px 0 0; background: transparent; border: none;">
+                <input type="text" placeholder="2d6" value="2d6">
+                <button class="btn-hero">Бросить</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes" style="margin-top: 24px;">
+      <b>Правило одного <code>btn-hero</code> сохраняется.</b> На мобилке он живёт в bottom-sheet — видно,
+      только когда sheet открыт. В закрытом состоянии экрана hero-кнопки нет вовсе; кубик в топ-баре —
+      это просто btn-icon, открывающий sheet.
+    </div>
+  </section>
+
+  <!-- ============ §8 BEFORE / AFTER ============ -->
+  <section class="group">
+    <p class="eyebrow">§8</p>
+    <h2>Было / стало</h2>
+    <p class="group-lead">
+      До редизайна экран игры — это <b>один лист персонажа на весь экран</b> (см. скриншоты в
+      <code>app-doc/screens/in-game-character-base-panel.png</code> и <code>…-dises-history.png</code>).
+      Не видно кто за столом, нет одновременных листов, история бросков — отдельная вкладка внутри
+      своего листа. После — полноценный игровой «стол».
+    </p>
+
+    <div class="compare">
+      <div>
+        <p class="variant-label">Было · один лист = весь экран</p>
+        <div class="compare-before">
+          <div class="compare-shot">app-doc/screens/<br>in-game-character-base-panel.png</div>
+          <div class="compare-shot">app-doc/screens/<br>in-game-character-dises-history.png</div>
+          <div class="compare-before-row">Партии <b>не видно</b>. Нельзя переключиться между листами.</div>
+          <div class="compare-before-row">История бросков — <b>отдельный таб внутри моего листа</b>. Чужих бросков в ней нет.</div>
+          <div class="compare-before-row">Нет ощущения «стола». Каждый игрок в своём пузыре.</div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">Стало · стол, панели, колонки листов</p>
+        <div class="gl-shell" style="min-height: 480px;">
+          <div class="gl-top">
+            <div class="gl-top-title" style="font-size: 14px;"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg>Таверна «Разб. Щит»</div>
+            <div class="gl-top-meta" style="font-size: 9px;">сес. 12</div>
+            <div class="gl-top-actions"><span class="gl-presence">5</span></div>
+          </div>
+          <aside class="gl-left" style="width: 220px;">
+            <div class="gl-panel-head"><p class="eyebrow" style="margin:0;">За столом</p></div>
+            <div class="gl-panel-list">
+              <div class="player-row is-active"><div class="pr-avatar">Й</div><div class="pr-body"><span class="pr-name">Йорик</span><span class="pr-nick">kark</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 75%"></div></div></div>
+              <div class="player-row"><div class="pr-avatar">Т</div><div class="pr-body"><span class="pr-name">Тарн</span><span class="pr-nick">ivan</span></div><div class="pr-status"><span class="pr-dot"></span></div><div class="pr-hp"><div class="pr-hp-fill" style="width: 45%"></div></div></div>
+              <div class="player-row"><div class="pr-avatar">М</div><div class="pr-body"><span class="pr-name">Маэль</span><span class="pr-nick">sv</span></div><div class="pr-status"><span class="pr-dot"></span></div></div>
+            </div>
+          </aside>
+          <div class="gl-center">
+            <article class="sheet-column is-active" style="width: 320px; flex-basis: 320px;">
+              <div class="sheet-column-bar"><span class="sheet-column-owner"><b>Kark</b></span><button class="btn-icon-sm"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 3 L11 11 M11 3 L3 11"/></svg></button></div>
+              <div class="mini-shell"><header class="mini-shell-header"><div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><span class="mini-name">Йорик</span><span class="mini-meta"><b>Воин</b></span></div><div class="mini-hpline"><span class="hp-lbl">HP</span><div class="mini-hp-track"><div class="mini-hp-fill" style="width:75%"></div></div><span class="hp-val">18<span class="hp-max"> / 24</span></span></div></header><nav class="mini-tabs"><button class="mt is-active">Осн.</button><button class="mt">Инв.</button></nav><div class="mini-content"><div class="mini-block"><p class="mini-block-title">Харак-ки</p></div></div></div>
+            </article>
+          </div>
+          <aside class="gl-right" style="width: 260px;">
+            <div class="gl-panel-head"><p class="eyebrow" style="margin:0;">Кубики</p></div>
+            <div class="dice-log" style="padding: 0 10px 10px;">
+              <div class="dice-row is-crit"><span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span><div class="dice-row-body"><div class="dice-row-meta"><b>СИЛ</b><span class="dot"></span>Йорик</div><div class="dice-row-formula"><span class="f-expr">2d6</span></div></div><div class="dice-row-result">12</div></div>
+              <div class="dice-row"><span class="dice-row-glyph"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/></svg></span><div class="dice-row-body"><div class="dice-row-meta"><b>ВЫН</b><span class="dot"></span>Тарн</div><div class="dice-row-formula"><span class="f-expr">2d6+1</span></div></div><div class="dice-row-result">8</div></div>
+            </div>
+            <div class="dice-input"><input type="text" placeholder="2d6" value="2d6"><button class="btn-hero">Бросить</button></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="diff-table">
+      <span class="h">параметр</span><span class="h">было</span><span class="h">стало</span>
+
+      <span>Одновременно открытых листов</span><span class="was">1</span><span class="now">∞ (колонки)</span>
+      <span>Кто за столом виден</span><span class="was">нет — только свой лист</span><span class="now">всегда, в левой панели</span>
+      <span>История бросков</span><span class="was">таб внутри листа, только свои</span><span class="now">общий лог справа, все игроки</span>
+      <span>Переключение между своими персонажами</span><span class="was">кнопка «← Список»</span><span class="now">клик в левой панели</span>
+      <span>Панели на десктопе</span><span class="was">—</span><span class="now">сворачиваются в 48px рейл</span>
+      <span>Мобильная раскладка</span><span class="was">тот же один лист</span><span class="now">слайдер листов + bottom-sheet</span>
+      <span>Единственный <code>btn-hero</code></span><span class="was">нет выделенного</span><span class="now">«Бросить» в правой панели</span>
+    </div>
+
+    <div class="notes">
+      <b>Главное изменение — роль экрана.</b> Было: «мой лист персонажа на весь экран». Стало:
+      «игровой стол, где мой лист — один из нескольких открытых». Это не косметика, это смена жанра:
+      одиночный редактор → совместная сцена.
+    </div>
+  </section>
+
+</main>
+</body>
+</html>
