@@ -247,6 +247,15 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       }
       break
     }
+    case 'FINALIZE_CHARACTER': {
+      next = { ...char, status: 'active' }
+      changes.push({
+        kind: 'create',
+        label: `Персонаж создан: ${next.name || '—'}`,
+        sourceCommand: cmd.type,
+      })
+      break
+    }
     default: {
       const _exhaustive: never = cmd
       return { character: _exhaustive, changes: [] }

@@ -26,6 +26,11 @@ export const useRollHistoryStore = defineStore('rollHistory', {
       this.records = []
       log.debug('clearAll', { removed: before })
     },
+    removeByCharacter(characterId: string) {
+      const before = this.records.length
+      this.records = this.records.filter(r => r.characterId !== characterId)
+      log.debug('removeByCharacter', { characterId, removed: before - this.records.length })
+    },
   },
   persist: {
     key: 'wod.rollHistory.v1',

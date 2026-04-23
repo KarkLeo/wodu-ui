@@ -3,15 +3,20 @@ import { ref, computed } from 'vue'
 import type { Character, InventoryItem } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
-import { GEAR_CATALOG, GEAR_CATEGORIES, findGearTemplate } from '@/data/gear'
+import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { GEAR_CATEGORIES, findGearTemplate, getItemsByCategory } from '@/data/gear'
 import { isConsumable } from '@/domain/inventory'
 import { isQuicksilverOverdose } from '@/utils/derived'
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('inventory')
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
 const inv = useInventory(props.dispatch)
+const { rollStat } = useDiceRoller()
 
 const showCatalog = ref(false)
 const openCat = ref<string | null>('weapon')
@@ -136,7 +141,8 @@ function cancelEdit() {
 const overdosePendingItemId = ref<string | null>(null)
 
 function useItemSafe(item: InventoryItem) {
-  if (item.templateId === 'mercury' && isQuicksilverOverdose(props.char)) {
+  const tpl = item.templateId ? findGearTemplate(item.templateId) : undefined
+  if (tpl?.useEffect === 'quicksilver' && isQuicksilverOverdose(props.char)) {
     overdosePendingItemId.value = item.id
     return
   }
@@ -147,20 +153,19 @@ function overdoseReset() {
   props.dispatch({ type: 'RESET_QUICKSILVER' })
   overdosePendingItemId.value = null
 }
-function overdoseRoll() {
-  inv.use(overdosePendingItemId.value!)
+async function overdoseRoll() {
+  const itemId = overdosePendingItemId.value
+  if (!itemId) return
+  try {
+    await rollStat(props.char.id, props.char.name, 'con', 'ТЕЛ (сопротивление ртути)', props.char.stats.con)
+  } catch (err) {
+    log.error('overdose roll failed', err)
+  }
+  inv.use(itemId)
   overdosePendingItemId.value = null
 }
 
-const itemsByCategory = computed(() => {
-  const out: Record<string, typeof GEAR_CATALOG> = {}
-  for (const cat of GEAR_CATEGORIES) out[cat.id] = []
-  for (const item of GEAR_CATALOG) {
-    const cat = item.category ?? 'gear'
-    out[cat].push(item)
-  }
-  return out
-})
+const itemsByCategory = getItemsByCategory()
 </script>
 
 <template>
@@ -261,7 +266,7 @@ const itemsByCategory = computed(() => {
       <div class="gm-dialog__actions">
         <button class="btn-ghost" @click="overdoseCancel">Отмена</button>
         <button class="btn-ghost" @click="overdoseReset">Сбросить счётчик</button>
-        <button class="btn-primary" @click="overdoseRoll">Бросить кубы ТЕЛ</button>
+        <button class="btn-primary" :disabled="isRolling" @click="overdoseRoll">Бросить кубы ТЕЛ</button>
       </div>
     </div>
 

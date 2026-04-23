@@ -9,6 +9,7 @@ import AbilitiesPanel from './components/AbilitiesPanel.vue'
 import InventoryPanel from './components/InventoryPanel.vue'
 import MagicPanel from './components/MagicPanel.vue'
 import NotesPanel from './components/NotesPanel.vue'
+import { hasMagicAbility } from '@/data/abilities'
 
 type Tab = 'main' | 'inventory' | 'magic' | 'notes'
 
@@ -20,9 +21,7 @@ const { id, char, dispatch } = useActiveCharacter(() => props.id)
 
 const activeTab = ref<Tab>('main')
 
-const hasMagic = computed(() =>
-  !!char.value?.abilityIds?.some(id => id === 'summoning' || id === 'ritual'),
-)
+const hasMagic = computed(() => hasMagicAbility(char.value?.abilityIds ?? []))
 const tabs = computed<{ id: Tab; label: string }[]>(() => {
   const base: { id: Tab; label: string }[] = [
     { id: 'main', label: 'Основное' },

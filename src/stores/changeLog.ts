@@ -22,5 +22,10 @@ export const useChangeLogStore = defineStore('changeLog', {
     clearAll() {
       this.entries = []
     },
+    removeByCharacter(characterId: string) {
+      const before = this.entries.length
+      this.entries = this.entries.filter(e => e.characterId !== characterId)
+      log.debug('removeByCharacter', { characterId, removed: before - this.entries.length })
+    },
   },
 })

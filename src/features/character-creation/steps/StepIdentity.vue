@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Character, ClassId, StatKey } from '@/types/character'
+import type { CharacterCommand } from '@/domain/commands'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
 import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 
-const props = defineProps<{ draft: Character }>()
+const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
 const emit = defineEmits<{ patch: [Partial<Character>]; next: [] }>()
 
 const { roll } = useDiceRoller()
@@ -27,7 +28,8 @@ async function rollAll() {
     if (!result) return
     rolls[key] = result.diceTotal
     stats[key] = statBonusFrom2d6(result.diceTotal)
-    emit('patch', { statRolls: { ...rolls }, stats: { ...stats } })
+    emit('patch', { statRolls: { ...rolls } })
+    props.dispatch({ type: 'UPDATE_STATS', stats: { ...stats } })
   }
 }
 
@@ -41,15 +43,13 @@ async function rerollOne(key: StatKey) {
   })
   if (!result) return
   const r = result.diceTotal
-  emit('patch', {
-    statRolls: { ...props.draft.statRolls, [key]: r },
-    stats: { ...props.draft.stats, [key]: statBonusFrom2d6(r) },
-  })
+  emit('patch', { statRolls: { ...props.draft.statRolls, [key]: r } })
+  props.dispatch({ type: 'UPDATE_STATS', stats: { ...props.draft.stats, [key]: statBonusFrom2d6(r) } })
 }
 
 function setStatManual(key: StatKey, value: number) {
   const v = Math.max(0, Math.min(3, value))
-  emit('patch', { stats: { ...props.draft.stats, [key]: v } })
+  props.dispatch({ type: 'UPDATE_STATS', stats: { ...props.draft.stats, [key]: v } })
 }
 
 function selectClass(id: ClassId) {
