@@ -507,8 +507,8 @@ describe('applyCommand: LEVEL_UP', () => {
   it('patch полностью заменяет skillIds, abilityIds и damageBonusDice', () => {
     const char = makeCharacter({
       level: 1,
-      skillIds: ['old-skill'],
-      abilityIds: ['old-ability'],
+      skillIds: ['athletics'],
+      abilityIds: ['sturdy'],
       damageBonusDice: 0,
     })
     const patch: LevelUpPatch = {
@@ -517,14 +517,14 @@ describe('applyCommand: LEVEL_UP', () => {
       currentHp: 20,
       hitDice: 4,
       hpHistory: [],
-      skillIds: ['new-skill-1', 'new-skill-2'],
-      abilityIds: ['new-ability'],
+      skillIds: ['awareness', 'healing'],
+      abilityIds: ['luck'],
       stats: char.stats,
       damageBonusDice: 2,
     }
     const { character, changes } = applyCommand(char, { type: 'LEVEL_UP', patch })
-    expect(character.skillIds).toEqual(['new-skill-1', 'new-skill-2'])
-    expect(character.abilityIds).toEqual(['new-ability'])
+    expect(character.skillIds).toEqual(['awareness', 'healing'])
+    expect(character.abilityIds).toEqual(['luck'])
     expect(character.damageBonusDice).toBe(2)
     expect(character.hitDice).toBe(4)
     expect(changes[0].delta).toBe('+4 ур.')
