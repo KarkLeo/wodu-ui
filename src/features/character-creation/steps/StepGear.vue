@@ -21,6 +21,7 @@ async function rollHp() {
     label: `Очки здоровья (${numDice}d6, оставить ${level})`,
     purpose: { kind: 'hp-init', level, numDice, kept: level },
     characterId: props.draft.id,
+    characterName: props.draft.name || 'Новый персонаж',
   })
   if (!result) return
   const sorted = [...result.dice.map(d => d.value)].sort((a, b) => b - a)

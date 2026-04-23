@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 
-const props = defineProps<{ numDice: number; targetLevel: number; characterId: string }>()
+const props = defineProps<{ numDice: number; targetLevel: number; characterId: string; characterName?: string }>()
 const emit = defineEmits<{ done: [newMaxHp: number] }>()
 
 const { roll } = useDiceRoller()
@@ -20,6 +20,7 @@ async function doRoll() {
       kept: props.targetLevel,
     },
     characterId: props.characterId,
+    characterName: props.characterName,
   })
   if (!result) return
   rolls.value = result.dice.map(d => d.value).sort((a, b) => b - a)

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
 import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
@@ -9,7 +8,6 @@ type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
-const route = useRoute()
 const { rollStat, isRolling } = useDiceRoller()
 
 function setStat(key: StatKey, value: number) {
@@ -19,7 +17,7 @@ function setStat(key: StatKey, value: number) {
 
 async function handleRollStat(key: StatKey) {
   try {
-    await rollStat(route.params.id as string, key, STAT_LABELS[key], props.char.stats[key])
+    await rollStat(props.char.id, props.char.name, key, STAT_LABELS[key], props.char.stats[key])
   } catch (err) {
     console.error('Бросок характеристики не удался:', err)
   }

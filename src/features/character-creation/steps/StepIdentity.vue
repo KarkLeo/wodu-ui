@@ -22,6 +22,7 @@ async function rollAll() {
       label: `${STAT_LABELS[key]} (2d6)`,
       purpose: { kind: 'stat', statKey: key, statBonus: 0 },
       characterId: props.draft.id,
+      characterName: props.draft.name || 'Новый персонаж',
     })
     if (!result) return
     rolls[key] = result.diceTotal
@@ -36,6 +37,7 @@ async function rerollOne(key: StatKey) {
     label: `${STAT_LABELS[key]} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
     characterId: props.draft.id,
+    characterName: props.draft.name || 'Новый персонаж',
   })
   if (!result) return
   const r = result.diceTotal
