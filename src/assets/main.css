@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;500;600;700&display=swap');
-
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -7,106 +5,132 @@
 }
 
 :root {
-  --color-bg: #1a1208;
-  --color-bg-dark: #0d0a04;
-  --color-bg-elevated: #2a1f0a;
-  --color-accent: #d4a853;
-  --color-border: #8b6914;
-  --color-text: #d4a853;
-  --color-text-muted: #8b6914;
-  --color-danger: #c0392b;
+  /* Background / Surface */
+  --vtt-bg-base: #0E0B08;
+  --vtt-bg-surface: #1A1510;
+  --vtt-bg-elevated: #241C15;
+  --vtt-bg-sunken: #07050A;
 
-  --font-family: 'Commissioner', sans-serif;
-  --border-radius: 2px;
+  /* Border */
+  --vtt-border-subtle: #2E251C;
+  --vtt-border-strong: #4A3A28;
+  --vtt-border-gold: #8C6A3A;
+
+  /* Accent */
+  --vtt-accent: #D4A857;
+  --vtt-accent-soft: #E4C9A0;
+  --vtt-accent-deep: #8C6A3A;
+
+  /* Danger */
+  --vtt-danger: #792B3B;
+  --vtt-danger-bright: #B23B4F;
+  --vtt-danger-soft: #3A1820;
+
+  /* Semantic */
+  --vtt-success: #6B8E4E;
+  --vtt-warning: #C08A3E;
+  --vtt-info: #5A7A8E;
+
+  /* Text */
+  --vtt-text-primary: #E4C9A0;
+  --vtt-text-secondary: #B6A893;
+  --vtt-text-muted: #858484;
+  --vtt-text-inverse: #0E0B08;
+
+  /* Fonts */
+  --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* Spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* Elevation */
+  --shadow-1: 0 1px 0 rgba(228, 201, 160, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 1px 0 rgba(228, 201, 160, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 1px 0 rgba(228, 201, 160, 0.06) inset, 0 4px 10px rgba(0, 0, 0, 0.45), 0 16px 32px rgba(0, 0, 0, 0.55);
+  --shadow-4: 0 1px 0 rgba(228, 201, 160, 0.08) inset, 0 10px 30px rgba(0, 0, 0, 0.6), 0 30px 60px rgba(0, 0, 0, 0.55);
+  --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+
+  /* Glow */
+  --glow-accent: 0 0 0 1px rgba(212, 168, 87, 0.45), 0 0 18px rgba(212, 168, 87, 0.35), 0 0 48px rgba(212, 168, 87, 0.15);
+  --glow-accent-strong: 0 0 0 1px rgba(212, 168, 87, 0.6), 0 0 24px rgba(212, 168, 87, 0.55), 0 0 64px rgba(212, 168, 87, 0.25);
+  --glow-danger: 0 0 0 1px rgba(178, 59, 79, 0.5), 0 0 20px rgba(178, 59, 79, 0.4), 0 0 56px rgba(178, 59, 79, 0.18);
+  --glow-success: 0 0 0 1px rgba(107, 142, 78, 0.45), 0 0 18px rgba(107, 142, 78, 0.35);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 120ms;
+  --t-med: 240ms;
+  --t-slow: 480ms;
 }
 
 html, body, #app {
   min-height: 100%;
-  background: var(--color-bg-dark);
-  color: var(--color-text);
+  background: var(--vtt-bg-base);
+  color: var(--vtt-text-primary);
 }
 
 body {
-  font-family: var(--font-family);
-  font-feature-settings: "locl" 1;
-  font-language-override: "BGR";
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+  min-height: 100vh;
 }
 
-/* Контейнер контента — мобильная ширина */
-.content-wrap {
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--color-bg);
-  min-height: 100dvh;
+/* ============================================================
+   Keyframes — низкоуровневые, переиспользуются компонентами
+   ============================================================ */
+
+@keyframes tab-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
-/* Кнопки */
-.btn-primary {
-  background: var(--color-border);
-  color: var(--color-bg);
-  border: none;
-  padding: 10px 24px;
-  font-family: var(--font-family);
-  font-feature-settings: "locl" 1;
-  font-language-override: "BGR";
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  letter-spacing: 0.5px;
-}
-.btn-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.btn-ghost {
-  background: transparent;
-  color: var(--color-text-muted);
-  border: none;
-  padding: 10px 16px;
-  font-family: var(--font-family);
-  font-size: 13px;
-  cursor: pointer;
+@keyframes dice-row-fresh {
+  0%   { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.25); }
+  100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
 }
 
-/* Текстовые метки */
-.label {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--color-text-muted);
+@keyframes qs-pulse {
+  0%, 100% { box-shadow: var(--shadow-inset), 0 0 0 0 rgba(178, 59, 79, 0); }
+  50%      { box-shadow: var(--shadow-inset), 0 0 0 4px rgba(178, 59, 79, 0.12); }
 }
 
-/* Разделитель */
-.divider {
-  height: 1px;
-  background: var(--color-border);
-  opacity: 0.4;
+@keyframes lu-die-roll {
+  0%   { transform: translateY(0) rotate(-4deg); }
+  100% { transform: translateY(-3px) rotate(4deg); }
 }
 
-/* Форматирование описаний ходов */
-.fmt-roll    { color: var(--color-accent); font-weight: 700; }
-.fmt-success { color: #e8c87a; font-weight: 600; }
-.fmt-partial { color: #c4a055; font-weight: 600; }
-.fmt-fail    { color: var(--color-danger); font-weight: 600; }
+/* TODO: verify with mock — критического попадания пока нет в docs/design,
+   используем glow-accent-strong как базу; уточним на шаге 11 (dice-drawer). */
+@keyframes crit-glow {
+  0%, 100% { box-shadow: var(--glow-accent); }
+  50%      { box-shadow: var(--glow-accent-strong); }
+}
 
-.fmt-trigger { display: block; margin-bottom: 6px; }
-.fmt-tiers {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.fmt-tiers li {
-  display: flex;
-  gap: 4px;
-}
-.fmt-tiers li::before {
-  content: '✶';
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  margin-top: 1px;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
