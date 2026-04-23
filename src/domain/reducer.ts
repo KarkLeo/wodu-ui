@@ -80,6 +80,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       break
     }
     case 'EDIT_CUSTOM_ITEM': {
+      const item = findItem(char, cmd.itemId)
+      if (!item || item.descriptor.kind !== 'custom') break
       next = inv.editCustomItem(char, cmd.itemId, cmd)
       changes.push({
         kind: 'inventory-edit',
