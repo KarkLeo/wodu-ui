@@ -77,9 +77,3 @@ export function findGearTemplate(templateId: string): GearTemplate | undefined {
   return GEAR_CATALOG.find(g => g.templateId === templateId)
 }
 
-export function getItemsByCategory(): Record<string, GearTemplate[]> {
-  const out: Record<string, GearTemplate[]> = {}
-  for (const cat of GEAR_CATEGORIES) out[cat.id] = []
-  for (const item of GEAR_CATALOG) (out[item.category] ??= []).push(item)
-  return out
-}
