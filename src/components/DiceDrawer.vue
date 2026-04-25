@@ -12,7 +12,14 @@ import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import { useGameLayout } from '@/components/layout/gameLayoutContext'
+
+const filterOptions = computed<Array<{ value: LogFilter; label: string }>>(() => [
+  { value: 'rolls', label: t('diceDrawer.filter.rolls') },
+  { value: 'changes', label: t('diceDrawer.filter.changes') },
+  { value: 'all', label: t('diceDrawer.filter.all') },
+])
 
 const log = createLogger('dice-drawer')
 
@@ -225,11 +232,7 @@ function logMeta(e: ChangeEntry): string {
     </div>
 
     <div class="drawer-filter">
-      <div class="segmented">
-        <button type="button" :class="{ 'is-active': filter === 'rolls' }" @click="filter = 'rolls'">{{ t('diceDrawer.filter.rolls') }}</button>
-        <button type="button" :class="{ 'is-active': filter === 'changes' }" @click="filter = 'changes'">{{ t('diceDrawer.filter.changes') }}</button>
-        <button type="button" :class="{ 'is-active': filter === 'all' }" @click="filter = 'all'">{{ t('diceDrawer.filter.all') }}</button>
-      </div>
+      <SegmentedFilter v-model="filter" :options="filterOptions" variant="pill" full-width />
     </div>
 
     <div class="drawer-log">
@@ -390,35 +393,6 @@ function logMeta(e: ChangeEntry): string {
 
 .drawer-filter {
   padding: 0 var(--s-4) var(--s-3);
-}
-.segmented {
-  display: flex;
-  width: 100%;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  padding: 2px;
-  gap: 2px;
-}
-.segmented button {
-  flex: 1;
-  padding: 6px 12px;
-  background: transparent;
-  border: none;
-  border-radius: var(--r-pill);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.segmented button:hover { color: var(--vtt-text-secondary); }
-.segmented button.is-active {
-  color: var(--vtt-accent-soft);
-  background: var(--vtt-bg-elevated);
-  box-shadow: var(--shadow-1);
 }
 
 .drawer-log {

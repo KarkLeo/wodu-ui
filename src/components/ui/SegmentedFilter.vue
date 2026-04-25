@@ -1,13 +1,25 @@
-<script setup lang="ts">
-defineProps<{
-  options: Array<{ value: string; label: string }>
-}>()
+<script setup lang="ts" generic="T extends string">
+withDefaults(defineProps<{
+  options: Array<{ value: T; label: string }>
+  variant?: 'block' | 'pill'
+  fullWidth?: boolean
+}>(), {
+  variant: 'block',
+  fullWidth: false,
+})
 
-const model = defineModel<string>({ required: true })
+const model = defineModel<T>({ required: true })
 </script>
 
 <template>
-  <div class="segmented" role="tablist">
+  <div
+    :class="[
+      'segmented',
+      `is-${variant}`,
+      { 'is-full': fullWidth },
+    ]"
+    role="tablist"
+  >
     <button
       v-for="opt in options"
       :key="opt.value"
@@ -34,6 +46,7 @@ const model = defineModel<string>({ required: true })
   scrollbar-width: none;
 }
 .segmented::-webkit-scrollbar { display: none; }
+.segmented.is-full { width: 100%; }
 
 .segmented-btn {
   padding: 6px 10px;
@@ -49,10 +62,27 @@ const model = defineModel<string>({ required: true })
   white-space: nowrap;
   transition: all var(--t-fast) var(--ease);
 }
+.segmented.is-full .segmented-btn { flex: 1; }
 .segmented-btn:hover { color: var(--vtt-accent-soft); }
 .segmented-btn.is-active {
   background: var(--vtt-bg-elevated);
   color: var(--vtt-accent);
   box-shadow: inset 0 0 0 1px var(--vtt-border-strong);
+}
+
+.segmented.is-pill {
+  padding: 2px;
+  border-radius: var(--r-pill);
+}
+.segmented.is-pill .segmented-btn {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.14em;
+}
+.segmented.is-pill .segmented-btn:hover { color: var(--vtt-text-secondary); }
+.segmented.is-pill .segmented-btn.is-active {
+  color: var(--vtt-accent-soft);
+  background: var(--vtt-bg-elevated);
+  box-shadow: var(--shadow-1);
 }
 </style>
