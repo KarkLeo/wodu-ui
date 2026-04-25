@@ -3,10 +3,9 @@ import { computed, ref } from 'vue'
 import type { Character, InventoryItem } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
-import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { useMercury } from '@/composables/useMercury'
+import { isRolling } from '@/composables/useDiceRoller'
 import { findGearTemplate } from '@/data/gear'
-import { isQuicksilverOverdose, effectiveStat } from '@/utils/derived'
-import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
 
 import InvWarning from './inventory/InvWarning.vue'
@@ -18,14 +17,17 @@ import CustomItemSheet, { type CustomPayload } from './inventory/CustomItemSheet
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 
-const log = createLogger('inventory')
-
 type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
 const inv = useInventory(props.dispatch)
-const { rollStat } = useDiceRoller()
+const {
+  overdoseOpen,
+  drink: drinkQuicksilver,
+  reset: resetQuicksilver,
+  rollOverdose,
+} = useMercury(() => props.char, props.dispatch)
 
 const catalogOpen = ref(false)
 const customOpen = ref(false)
@@ -36,12 +38,6 @@ const gmPending = computed(() => gmPendingId.value ? findGearTemplate(gmPendingI
 const gmOpen = computed({
   get: () => gmPendingId.value !== null,
   set: v => { if (!v) gmPendingId.value = null },
-})
-
-const overdoseId = ref<string | null>(null)
-const overdoseOpen = computed({
-  get: () => overdoseId.value !== null,
-  set: v => { if (!v) overdoseId.value = null },
 })
 
 const equipped = computed(() => props.char.inventory.filter(i => i.equipped))
@@ -75,8 +71,8 @@ function onToggleEquip(item: InventoryItem) {
 
 function onUse(item: InventoryItem) {
   const tpl = item.templateId ? findGearTemplate(item.templateId) : undefined
-  if (tpl?.useEffect === 'quicksilver' && isQuicksilverOverdose(props.char)) {
-    overdoseId.value = item.id
+  if (tpl?.useEffect === 'quicksilver') {
+    drinkQuicksilver(item.id)
     return
   }
   inv.use(item.id)
@@ -113,23 +109,6 @@ function gmApprove() {
   gmPendingId.value = null
 }
 function gmCancel() { gmPendingId.value = null }
-
-function overdoseCancel() { overdoseId.value = null }
-function overdoseReset() {
-  props.dispatch({ type: 'RESET_QUICKSILVER' })
-  overdoseId.value = null
-}
-async function overdoseRoll() {
-  const id = overdoseId.value
-  if (!id) return
-  try {
-    await rollStat(props.char.id, props.char.name, 'con', t('inGame.inventory.overdose.rollLabel'), effectiveStat(props.char, 'con'))
-  } catch (err) {
-    log.error('overdose roll failed', err)
-  }
-  inv.use(id)
-  overdoseId.value = null
-}
 
 function onSaveCustom(payload: CustomPayload) {
   if (editingItem.value) {
@@ -240,13 +219,13 @@ function openAddCustom() {
         {{ t('inGame.inventory.overdose.body', { count: char.quicksilverCount ?? 0, level: char.level }) }}
       </p>
       <template #actions>
-        <Button variant="hero" :disabled="isRolling" @click="overdoseRoll">
+        <Button variant="hero" :disabled="isRolling" @click="rollOverdose">
           {{ t('inGame.inventory.overdose.roll') }}
         </Button>
-        <Button variant="primary" @click="overdoseReset">
+        <Button variant="primary" @click="resetQuicksilver">
           {{ t('inGame.inventory.overdose.reset') }}
         </Button>
-        <Button variant="ghost" @click="overdoseCancel">{{ t('common.cancel') }}</Button>
+        <Button variant="ghost" @click="overdoseOpen = false">{{ t('common.cancel') }}</Button>
       </template>
     </ConfirmSheet>
   </section>

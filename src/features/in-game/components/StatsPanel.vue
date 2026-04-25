@@ -256,26 +256,26 @@ function stopEdit() {
 </style>
 
 <style>
-.stat-popover .pop-hero {
+.info-popover .pop-hero {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
-.stat-popover .pop-hero :deep(svg) { width: 14px; height: 14px; }
-.stat-popover .pop-hero:disabled { opacity: 0.6; cursor: not-allowed; }
+.info-popover .pop-hero :deep(svg) { width: 14px; height: 14px; }
+.info-popover .pop-hero:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.stat-popover .pop-edit {
+.info-popover .pop-edit {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 4px 0;
 }
-.stat-popover .pop-edit .pop-sub { flex-shrink: 0; }
-.stat-popover .pop-btn-done { flex: 0 0 auto; }
+.info-popover .pop-edit .pop-sub { flex-shrink: 0; }
+.info-popover .pop-btn-done { flex: 0 0 auto; }
 
-.stat-popover .pop-link {
+.info-popover .pop-link {
   background: transparent;
   border: 0;
   padding: 0;
@@ -286,21 +286,21 @@ function stopEdit() {
   color: var(--vtt-text-muted);
   cursor: pointer;
 }
-.stat-popover .pop-link:hover { color: var(--vtt-danger-bright); }
+.info-popover .pop-link:hover { color: var(--vtt-danger-bright); }
 
-.stat-popover .pop-effects {
+.info-popover .pop-effects {
   display: flex;
   flex-direction: column;
   margin-bottom: 8px;
 }
 
-.stat-popover .pop-add {
+.info-popover .pop-add {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 8px;
 }
-.stat-popover .pop-add input[type="text"] {
+.info-popover .pop-add input[type="text"] {
   flex: 1;
   min-width: 0;
   padding: 6px 8px;
@@ -313,21 +313,21 @@ function stopEdit() {
   outline: none;
   box-shadow: var(--shadow-inset);
 }
-.stat-popover .pop-add input[type="text"]::placeholder {
+.info-popover .pop-add input[type="text"]::placeholder {
   color: var(--vtt-text-muted);
   opacity: 0.7;
 }
-.stat-popover .pop-add input[type="text"]:focus {
+.info-popover .pop-add input[type="text"]:focus {
   border-color: var(--vtt-accent-deep);
 }
-.stat-popover .pop-btn-add {
+.info-popover .pop-btn-add {
   flex: 0 0 auto;
   width: 28px;
   padding: 6px 0;
   font-size: 14px;
   line-height: 1;
 }
-.stat-popover .pop-btn-add:disabled {
+.info-popover .pop-btn-add:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

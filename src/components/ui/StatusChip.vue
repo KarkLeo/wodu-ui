@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
+import InfoPopover from './InfoPopover.vue'
 
 type Kind = 'damage' | 'armor' | 'coin' | 'dim'
 type Size = 'sm' | 'base' | 'lg'
@@ -31,8 +31,8 @@ const modClass = computed(() => {
 </script>
 
 <template>
-  <PopoverRoot v-if="hasPopover" @update:open="emit('open', $event)">
-    <PopoverTrigger as-child>
+  <InfoPopover v-if="hasPopover" side="bottom" align="start" @open="emit('open', $event)">
+    <template #trigger>
       <button
         type="button"
         :class="[
@@ -49,18 +49,9 @@ const modClass = computed(() => {
         <span v-if="meta" class="sc-meta">{{ meta }}</span>
         <span v-if="mod" :class="['sc-mod', modClass]">{{ mod }}</span>
       </button>
-    </PopoverTrigger>
-    <PopoverPortal>
-      <PopoverContent
-        class="sc-popover"
-        :side-offset="8"
-        side="bottom"
-        align="start"
-      >
-        <slot name="popover" />
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+    </template>
+    <slot name="popover" />
+  </InfoPopover>
 
   <div
     v-else
@@ -195,32 +186,17 @@ const modClass = computed(() => {
 </style>
 
 <style>
-.sc-popover {
-  position: relative;
-  width: 300px;
-  padding: 14px 16px;
-  background: rgba(36, 28, 21, 0.96);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border: 1px solid var(--vtt-border-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-2);
-  z-index: 200;
-  font-family: var(--font-sans);
-  color: var(--vtt-text-primary);
-}
-
-.sc-popover .breakdown-row .br-source {
+.info-popover .breakdown-row .br-source {
   display: block;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--vtt-text-muted);
   margin-top: 1px;
 }
-.sc-popover .breakdown-row .br-value.is-buff { color: var(--vtt-success); }
-.sc-popover .breakdown-row .br-value.is-debuff { color: var(--vtt-danger-bright); }
+.info-popover .breakdown-row .br-value.is-buff { color: var(--vtt-success); }
+.info-popover .breakdown-row .br-value.is-debuff { color: var(--vtt-danger-bright); }
 
-.sc-popover .breakdown-total {
+.info-popover .breakdown-total {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: baseline;
@@ -228,21 +204,21 @@ const modClass = computed(() => {
   border-top: 1px solid var(--vtt-border-strong);
   margin-top: 4px;
 }
-.sc-popover .breakdown-total .bt-label {
+.info-popover .breakdown-total .bt-label {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--vtt-accent-deep);
 }
-.sc-popover .breakdown-total .bt-value {
+.info-popover .breakdown-total .bt-value {
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 600;
   color: var(--vtt-accent);
 }
 
-.sc-popover .pop-hero-roll {
+.info-popover .pop-hero-roll {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -261,5 +237,5 @@ const modClass = computed(() => {
   cursor: pointer;
   filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.28));
 }
-.sc-popover .pop-hero-roll:hover { background: #BF9A4C; }
+.info-popover .pop-hero-roll:hover { background: #BF9A4C; }
 </style>

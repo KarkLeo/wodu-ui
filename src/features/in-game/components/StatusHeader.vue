@@ -427,12 +427,12 @@ async function handleRollDamage() {
 </style>
 
 <style>
-.sc-popover .sh-pop-empty {
+.info-popover .sh-pop-empty {
   font-size: 13px;
   color: var(--vtt-text-muted);
   padding: 8px 0;
 }
-.sc-popover .sh-pop-note {
+.info-popover .sh-pop-note {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--vtt-border-subtle);
@@ -441,20 +441,20 @@ async function handleRollDamage() {
   line-height: 1.45;
   font-style: italic;
 }
-.sc-popover .pop-hero-roll svg { width: 14px; height: 14px; }
-.sc-popover .pop-hero-roll:disabled { opacity: 0.6; cursor: not-allowed; }
+.info-popover .pop-hero-roll svg { width: 14px; height: 14px; }
+.info-popover .pop-hero-roll:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.sc-popover .sh-pop-coin-edit {
+.info-popover .sh-pop-coin-edit {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 6px 0 2px;
 }
-.sc-popover .sh-pop-coin-edit .sc-stepper input {
+.info-popover .sh-pop-coin-edit .sc-stepper input {
   width: 140px;
 }
 
-.sc-popover .sh-pop-mod {
+.info-popover .sh-pop-mod {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -462,7 +462,7 @@ async function handleRollDamage() {
   padding-top: 10px;
   border-top: 1px solid var(--vtt-border-subtle);
 }
-.sc-popover .sh-pop-mod-label {
+.info-popover .sh-pop-mod-label {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -470,7 +470,7 @@ async function handleRollDamage() {
   color: var(--vtt-text-muted);
   flex: 1;
 }
-.sc-popover .sh-pop-mod-reset {
+.info-popover .sh-pop-mod-reset {
   background: transparent;
   border: 0;
   padding: 0;
@@ -481,7 +481,7 @@ async function handleRollDamage() {
   color: var(--vtt-text-muted);
   cursor: pointer;
 }
-.sc-popover .sh-pop-mod-reset:hover { color: var(--vtt-danger-bright); }
+.info-popover .sh-pop-mod-reset:hover { color: var(--vtt-danger-bright); }
 
 .status-chip .sh-val-tail.is-buff,
 .status-chip .sh-val-armor.is-buff {
