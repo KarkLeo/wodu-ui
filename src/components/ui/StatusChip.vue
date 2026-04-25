@@ -41,13 +41,11 @@ const modClass = computed(() => {
           size === 'sm' ? 'sc-sm' : size === 'lg' ? 'sc-lg' : '',
         ]"
       >
-        <span class="sc-label">{{ label }}</span>
-        <span class="sc-value-row">
-          <span v-if="$slots.symbol" class="sc-symbol" aria-hidden="true">
-            <slot name="symbol" />
-          </span>
-          <span class="sc-value">{{ value }}</span>
+        <span v-if="$slots.symbol" class="sc-glyph" aria-hidden="true">
+          <slot name="symbol" />
         </span>
+        <span class="sc-value">{{ value }}</span>
+        <span class="sc-unit">{{ label }}</span>
         <span v-if="meta" class="sc-meta">{{ meta }}</span>
         <span v-if="mod" :class="['sc-mod', modClass]">{{ mod }}</span>
       </button>
@@ -72,13 +70,11 @@ const modClass = computed(() => {
       size === 'sm' ? 'sc-sm' : size === 'lg' ? 'sc-lg' : '',
     ]"
   >
-    <span class="sc-label">{{ label }}</span>
-    <span class="sc-value-row">
-      <span v-if="$slots.symbol" class="sc-symbol" aria-hidden="true">
-        <slot name="symbol" />
-      </span>
-      <span class="sc-value">{{ value }}</span>
+    <span v-if="$slots.symbol" class="sc-glyph" aria-hidden="true">
+      <slot name="symbol" />
     </span>
+    <span class="sc-value">{{ value }}</span>
+    <span class="sc-unit">{{ label }}</span>
     <span v-if="meta" class="sc-meta">{{ meta }}</span>
     <span v-if="mod" :class="['sc-mod', modClass]">{{ mod }}</span>
   </div>
@@ -87,60 +83,52 @@ const modClass = computed(() => {
 <style scoped>
 .status-chip {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  min-width: 68px;
-  padding: 6px 14px 8px;
+  gap: 8px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-xs);
   cursor: pointer;
   transition: background var(--t-fast) var(--ease);
   user-select: none;
   position: relative;
   color: inherit;
   font-family: inherit;
-}
-.status-chip:hover { background: var(--vtt-bg-surface); }
-
-.status-chip .sc-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
   line-height: 1;
 }
+.status-chip:hover { background: rgba(228, 201, 160, 0.04); }
 
-.status-chip .sc-value-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  line-height: 1;
-}
-.status-chip .sc-value {
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 22px;
-  color: var(--vtt-accent-soft);
-  letter-spacing: 0.01em;
-}
-.status-chip .sc-symbol {
+.status-chip .sc-glyph {
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  color: var(--vtt-text-muted);
-  opacity: 0.9;
+  flex-shrink: 0;
+  color: var(--vtt-accent-deep);
 }
-.status-chip .sc-symbol :deep(svg) {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
+.status-chip .sc-glyph :deep(svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.status-chip .sc-value {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--vtt-accent-soft);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.status-chip .sc-unit {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
 }
 
 .status-chip .sc-meta {
@@ -149,32 +137,26 @@ const modClass = computed(() => {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--vtt-text-muted);
-  line-height: 1;
-  margin-top: 2px;
+  opacity: 0.8;
 }
 
-.status-chip.kind-damage .sc-value { color: var(--vtt-accent-soft); }
-.status-chip.kind-damage .sc-symbol { color: var(--vtt-danger); }
+.status-chip.kind-damage .sc-glyph { color: var(--vtt-danger-bright); }
+.status-chip.kind-armor  .sc-glyph { color: var(--vtt-info); }
+.status-chip.kind-coin   .sc-glyph { color: var(--vtt-accent); }
+.status-chip.kind-coin   .sc-value { color: var(--vtt-accent); }
+.status-chip.kind-dim    .sc-glyph { color: var(--vtt-text-muted); opacity: 0.5; }
+.status-chip.kind-dim    .sc-value { color: var(--vtt-text-muted); }
 
-.status-chip.kind-armor .sc-value { color: var(--vtt-accent-soft); }
-.status-chip.kind-armor .sc-symbol { color: var(--vtt-info); }
+.status-chip.sc-sm { padding: 4px 8px; gap: 6px; }
+.status-chip.sc-sm .sc-glyph { width: 14px; height: 14px; }
+.status-chip.sc-sm .sc-value { font-size: 14px; }
+.status-chip.sc-sm .sc-unit  { font-size: 9px; letter-spacing: 0.12em; }
+.status-chip.sc-sm .sc-meta  { display: none; }
 
-.status-chip.kind-coin .sc-value { color: var(--vtt-accent); }
-.status-chip.kind-coin .sc-symbol { color: var(--vtt-accent-deep); }
-
-.status-chip.kind-dim .sc-value { color: var(--vtt-text-muted); }
-.status-chip.kind-dim .sc-symbol { color: var(--vtt-text-muted); opacity: 0.5; }
-
-.status-chip.sc-sm { min-width: 48px; padding: 4px 10px 5px; gap: 2px; }
-.status-chip.sc-sm .sc-value { font-size: 16px; }
-.status-chip.sc-sm .sc-label { font-size: 9px; letter-spacing: 0.16em; }
-.status-chip.sc-sm .sc-meta { display: none; }
-.status-chip.sc-sm .sc-symbol { width: 12px; height: 12px; }
-.status-chip.sc-sm .sc-symbol :deep(svg) { width: 11px; height: 11px; }
-
-.status-chip.sc-lg { min-width: 104px; padding: 10px 18px 12px; gap: 4px; }
-.status-chip.sc-lg .sc-value { font-size: 34px; }
-.status-chip.sc-lg .sc-label { font-size: 11px; }
+.status-chip.sc-lg { padding: 8px 16px; gap: 10px; }
+.status-chip.sc-lg .sc-glyph { width: 22px; height: 22px; }
+.status-chip.sc-lg .sc-value { font-size: 24px; }
+.status-chip.sc-lg .sc-unit  { font-size: 11px; }
 
 .status-chip.is-active {
   background: var(--vtt-bg-elevated);

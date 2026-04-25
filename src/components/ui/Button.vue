@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-type Variant = 'primary' | 'hero' | 'ghost' | 'danger-ghost' | 'icon'
+type Variant = 'primary' | 'hero' | 'hero-danger' | 'ghost' | 'danger-ghost' | 'icon'
 type Size = 'sm' | 'base' | 'lg'
 
 const props = withDefaults(defineProps<{
@@ -104,6 +104,19 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   background: #BF9A4C;
   border-color: #A6833E;
   filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+}
+
+.v-hero-danger {
+  background: var(--vtt-danger);
+  color: var(--vtt-text-primary);
+  border-color: var(--vtt-danger-bright);
+  font-weight: 600;
+  filter: drop-shadow(0 0 10px rgba(178, 59, 79, 0.35));
+}
+.v-hero-danger:hover:not(:disabled) {
+  background: var(--vtt-danger-bright);
+  border-color: var(--vtt-danger-bright);
+  filter: drop-shadow(0 0 14px rgba(178, 59, 79, 0.5));
 }
 
 .v-danger-ghost {

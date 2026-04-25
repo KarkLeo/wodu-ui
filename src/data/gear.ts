@@ -20,12 +20,12 @@ export type GearTemplate = Omit<InventoryItem, 'id'> & {
 
 export const GEAR_CATALOG: GearTemplate[] = [
   // Оружие
-  { templateId: 'light_weapon',  name: 'Лёгкое оружие',  price: 10, descriptor: { kind: 'weapon', melee: true },  damage: 'd6',   category: 'weapon', notes: 'Кинжалы, короткие мечи, ручные топоры. Как доп. оружие — 1 раз за атаку перебросить урон.' },
-  { templateId: 'battle_weapon', name: 'Боевое оружие',  price: 30, descriptor: { kind: 'weapon', melee: true },  damage: 'd6+1', category: 'weapon', notes: 'Длинные мечи, молоты, топоры, копья.' },
-  { templateId: 'heavy_weapon',  name: 'Тяжёлое оружие', price: 40, descriptor: { kind: 'weapon', melee: true },  damage: 'd6+2', category: 'weapon', notes: 'Двуручные мечи, боевые топоры, древковое оружие.' },
-  { templateId: 'short_bow',     name: 'Короткий лук',   price: 10, descriptor: { kind: 'weapon', melee: false }, damage: 'd6',   category: 'weapon', notes: 'Пращи и т.п.' },
-  { templateId: 'bow',           name: 'Лук',            price: 30, descriptor: { kind: 'weapon', melee: false }, damage: 'd6+1', category: 'weapon', notes: 'Арбалеты, пистолеты и т.п.' },
-  { templateId: 'heavy_bow',     name: 'Тяжёлый лук / огнестрел', price: 50, descriptor: { kind: 'weapon', melee: false }, damage: 'd6+2', category: 'weapon', notes: 'С места. Арбалеты и мушкеты.' },
+  { templateId: 'light_weapon',  name: 'Лёгкое оружие',  price: 10, descriptor: { kind: 'weapon', melee: true },  damage: '1d6',   category: 'weapon', notes: 'Кинжалы, короткие мечи, ручные топоры. Как доп. оружие — 1 раз за атаку перебросить урон.' },
+  { templateId: 'battle_weapon', name: 'Боевое оружие',  price: 30, descriptor: { kind: 'weapon', melee: true },  damage: '1d6+1', category: 'weapon', notes: 'Длинные мечи, молоты, топоры, копья.' },
+  { templateId: 'heavy_weapon',  name: 'Тяжёлое оружие', price: 40, descriptor: { kind: 'weapon', melee: true },  damage: '1d6+2', category: 'weapon', notes: 'Двуручные мечи, боевые топоры, древковое оружие.' },
+  { templateId: 'short_bow',     name: 'Короткий лук',   price: 10, descriptor: { kind: 'weapon', melee: false }, damage: '1d6',   category: 'weapon', notes: 'Пращи и т.п.' },
+  { templateId: 'bow',           name: 'Лук',            price: 30, descriptor: { kind: 'weapon', melee: false }, damage: '1d6+1', category: 'weapon', notes: 'Арбалеты, пистолеты и т.п.' },
+  { templateId: 'heavy_bow',     name: 'Тяжёлый лук / огнестрел', price: 50, descriptor: { kind: 'weapon', melee: false }, damage: '1d6+2', category: 'weapon', notes: 'С места. Арбалеты и мушкеты.' },
   // Доспехи
   { templateId: 'light_armor', name: 'Лёгкий доспех', price: 30, descriptor: { kind: 'armor', class: 'light' }, category: 'armor', notes: 'Броня 1.' },
   { templateId: 'full_armor',  name: 'Полный доспех', price: 60, descriptor: { kind: 'armor', class: 'full' },  category: 'armor', notes: 'Броня 2. Всегда со шлемом. Мешает бегать, скрываться, плавать.' },

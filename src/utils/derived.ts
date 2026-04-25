@@ -98,6 +98,26 @@ export function rollHitDice(numDice: number, level: number): { rolls: number[]; 
 
 export const STAT_ORDER: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
+export function statModifierTotal(char: Pick<Character, 'modifiers'>, key: StatKey): number {
+  const list = char.modifiers ?? []
+  let sum = 0
+  for (const m of list) if (m.statKey === key) sum += m.amount
+  return sum
+}
+
+export function effectiveStat(char: Pick<Character, 'stats' | 'modifiers'>, key: StatKey): number {
+  return char.stats[key] + statModifierTotal(char, key)
+}
+
+export function statModifierLines(
+  char: Pick<Character, 'modifiers'>,
+  key: StatKey,
+): { id: string; amount: number; label: string }[] {
+  return (char.modifiers ?? [])
+    .filter(m => m.statKey === key)
+    .map(m => ({ id: m.id, amount: m.amount, label: m.label }))
+}
+
 export function parseDamageNotation(formula: string): string {
   const head = formula.split(/[\s(]/)[0]
   return head.replace(/^d/i, '1d')
@@ -129,19 +149,38 @@ export function damageAbilityBonus(
   return bonus
 }
 
+export function damageFormulaCompact(
+  char: Pick<Character, 'abilityIds' | 'damageBonusDice'>,
+  weapon: InventoryItem,
+): string {
+  if (!weapon.damage) return '—'
+  const m = weapon.damage.trim().match(/^(\d*)d(\d+)(?:\s*([+-])\s*(\d+))?$/i)
+  if (!m) return weapon.damage
+  const count = m[1] ? Number(m[1]) : 1
+  const side = Number(m[2])
+  const baseFlat = m[3] ? (m[3] === '-' ? -Number(m[4]) : Number(m[4])) : 0
+  const flatSum = baseFlat + damageAbilityBonus(char, weapon)
+  const bonusDice = char.damageBonusDice > 0 ? char.damageBonusDice : 0
+  const sameSide = side === 6
+  const totalCount = sameSide ? count + bonusDice : count
+  const bonusDiceStr = !sameSide && bonusDice > 0 ? `+${bonusDice}d6` : ''
+  const flatStr = flatSum > 0 ? `+${flatSum}` : flatSum < 0 ? String(flatSum) : ''
+  return `${totalCount}d${side}${flatStr}${bonusDiceStr}`
+}
+
 export function damageBreakdownLines(
   char: Pick<Character, 'abilityIds' | 'damageBonusDice'>,
   weapon: InventoryItem,
 ): BreakdownLine[] {
   if (!weapon.damage) return []
-  const lines: BreakdownLine[] = [{ value: weapon.damage, label: 'оружие' }]
+  const lines: BreakdownLine[] = [{ value: parseDamageNotation(weapon.damage), label: 'Оружие' }]
   const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
   const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
   const abilityIds = char.abilityIds ?? []
   if (abilityIds.includes('skirmish')) lines.push({ value: '+1', label: 'Манёвренность' })
   if (melee && abilityIds.includes('hewing')) lines.push({ value: '+2', label: 'Рубка' })
   if (ranged && abilityIds.includes('volley')) lines.push({ value: '+2', label: 'Залп' })
-  if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'бонус уровня' })
+  if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'Бонус уровня' })
   return lines
 }
 

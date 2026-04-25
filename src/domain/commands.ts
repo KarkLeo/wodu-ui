@@ -1,4 +1,4 @@
-import type { InventoryItem, Magic, Stats, SkillId, AbilityId } from '@/types/character'
+import type { InventoryItem, Magic, Stats, SkillId, AbilityId, StatKey } from '@/types/character'
 
 export interface LevelUpPatch {
   level: number
@@ -30,6 +30,10 @@ export type CharacterCommand =
   // Прогрессия
   | { type: 'GAIN_XP'; amount: number }
   | { type: 'LEVEL_UP'; patch: LevelUpPatch }
+  // Модификаторы характеристик (временные баффы/дебаффы)
+  | { type: 'ADD_STAT_MODIFIER'; statKey: StatKey; amount: number; label: string }
+  | { type: 'REMOVE_STAT_MODIFIER'; modifierId: string }
+  | { type: 'CLEAR_STAT_MODIFIERS'; statKey?: StatKey }
   // Разное
   | { type: 'UPDATE_MAGIC'; magic: Magic }
   | { type: 'UPDATE_STATS'; stats: Stats }
