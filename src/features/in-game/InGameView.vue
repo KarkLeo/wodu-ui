@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
-import HeaderStrip from './components/HeaderStrip.vue'
+import AppShell from '@/components/AppShell.vue'
+import TabBar from '@/components/ui/TabBar.vue'
+import StatusHeader from './components/StatusHeader.vue'
 import StatsPanel from './components/StatsPanel.vue'
 import SkillsPanel from './components/SkillsPanel.vue'
 import AbilitiesPanel from './components/AbilitiesPanel.vue'
@@ -10,66 +11,62 @@ import InventoryPanel from './components/InventoryPanel.vue'
 import MagicPanel from './components/MagicPanel.vue'
 import NotesPanel from './components/NotesPanel.vue'
 import { hasMagicAbility } from '@/data/abilities'
+import { t } from '@/locales'
 
 type Tab = 'main' | 'inventory' | 'magic' | 'notes'
 
 const props = defineProps<{ id?: string }>()
-const emit = defineEmits<{ close: [] }>()
 
-const router = useRouter()
 const { id, char, dispatch } = useActiveCharacter(() => props.id)
 
 const activeTab = ref<Tab>('main')
 
 const hasMagic = computed(() => hasMagicAbility(char.value?.abilityIds ?? []))
-const tabs = computed<{ id: Tab; label: string }[]>(() => {
-  const base: { id: Tab; label: string }[] = [
-    { id: 'main', label: 'Основное' },
-    { id: 'inventory', label: 'Инвентарь' },
+const tabs = computed<{ value: Tab; label: string }[]>(() => {
+  const base: { value: Tab; label: string }[] = [
+    { value: 'main', label: t('inGame.tabs.main') },
+    { value: 'inventory', label: t('inGame.tabs.inventory') },
   ]
-  if (hasMagic.value) base.push({ id: 'magic', label: 'Магия' })
-  base.push({ id: 'notes', label: 'Заметки' })
+  if (hasMagic.value) base.push({ value: 'magic', label: t('inGame.tabs.magic') })
+  base.push({ value: 'notes', label: t('inGame.tabs.notes') })
   return base
+})
+const tabModel = computed<string>({
+  get: () => activeTab.value,
+  set: (v) => { activeTab.value = v as Tab },
 })
 </script>
 
 <template>
-  <div v-if="char" class="content-wrap">
-    <HeaderStrip
-      :char="char"
-      :dispatch="dispatch"
-      @level-up="router.push(`/character/${id}/levelup`)"
-      @back="emit('close')"
-    />
-
-    <nav class="tabs">
-      <button
-        v-for="t in tabs"
-        :key="t.id"
-        class="tab"
-        :class="{ 'tab--active': activeTab === t.id }"
-        @click="activeTab = t.id"
-      >{{ t.label }}</button>
-    </nav>
-
-    <div v-if="activeTab === 'main'">
+  <AppShell v-if="char" variant="top">
+    <template #header="{ compact }">
+      <StatusHeader :id="id" :compact="compact" />
       <StatsPanel :char="char" :dispatch="dispatch" />
+    </template>
+
+    <template v-if="activeTab === 'main'">
       <SkillsPanel :char="char" />
       <AbilitiesPanel :char="char" />
-    </div>
-    <InventoryPanel v-else-if="activeTab === 'inventory'" :char="char" :dispatch="dispatch" />
+    </template>
+    <InventoryPanel
+      v-else-if="activeTab === 'inventory'"
+      :char="char"
+      :dispatch="dispatch"
+    />
     <MagicPanel
       v-else-if="activeTab === 'magic'"
       :char="char"
       :ability-ids="char.abilityIds"
       :dispatch="dispatch"
     />
-    <NotesPanel v-else-if="activeTab === 'notes'" :char="char" :dispatch="dispatch" />
-  </div>
-</template>
+    <NotesPanel
+      v-else-if="activeTab === 'notes'"
+      :char="char"
+      :dispatch="dispatch"
+    />
 
-<style scoped>
-.tabs { display: flex; border-bottom: 1px solid var(--color-border); background: var(--color-bg-dark); position: sticky; top: 0; z-index: 10; }
-.tab { flex: 1; padding: 12px 0; background: none; border: none; border-bottom: 2px solid transparent; color: var(--color-text-muted); font-family: inherit; font-size: 13px; cursor: pointer; }
-.tab--active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
-</style>
+    <template #tabs>
+      <TabBar v-model="tabModel" :tabs="tabs" variant="top" />
+    </template>
+  </AppShell>
+</template>

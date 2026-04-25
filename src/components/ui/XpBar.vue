@@ -371,6 +371,15 @@ function onInput(e: Event) {
   transition: border-color var(--t-fast) var(--ease);
 }
 .xp-popover .xp-pop-manual input:focus { border-color: var(--vtt-border-gold); }
+.xp-popover .xp-pop-manual input::-webkit-outer-spin-button,
+.xp-popover .xp-pop-manual input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.xp-popover .xp-pop-manual input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 .xp-popover .xp-pop-manual-total {
   font-family: var(--font-mono);
   font-size: 11px;

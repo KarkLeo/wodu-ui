@@ -4,6 +4,7 @@ import type { ChangeDraft } from '@/types/changeLog'
 import * as inv from './inventory'
 import * as combat from './combat'
 import * as prog from './progression'
+import * as mods from './modifiers'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('domain')
@@ -210,6 +211,50 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
         delta: `+${next.level - beforeLevel} ур.`,
         sourceCommand: cmd.type,
       })
+      break
+    }
+    case 'ADD_STAT_MODIFIER': {
+      const before = char.modifiers ?? []
+      next = mods.addModifier(char, cmd.statKey, cmd.amount, cmd.label)
+      const after = next.modifiers ?? []
+      const added = after.find(m => !before.some(b => b.id === m.id))
+      if (added) {
+        const sign = added.amount > 0 ? `+${added.amount}` : String(added.amount)
+        changes.push({
+          kind: 'modifier',
+          label: `Эффект на ${STAT_LABEL[added.statKey]}: ${added.label} ${sign}`,
+          delta: `${sign} ${STAT_LABEL[added.statKey]}`,
+          sourceCommand: cmd.type,
+        })
+      }
+      break
+    }
+    case 'REMOVE_STAT_MODIFIER': {
+      const target = (char.modifiers ?? []).find(m => m.id === cmd.modifierId)
+      next = mods.removeModifier(char, cmd.modifierId)
+      if (target) {
+        const sign = target.amount > 0 ? `+${target.amount}` : String(target.amount)
+        changes.push({
+          kind: 'modifier',
+          label: `Снят эффект: ${target.label} (${STAT_LABEL[target.statKey]} ${sign})`,
+          delta: `−эффект ${STAT_LABEL[target.statKey]}`,
+          sourceCommand: cmd.type,
+        })
+      }
+      break
+    }
+    case 'CLEAR_STAT_MODIFIERS': {
+      const before = char.modifiers ?? []
+      next = mods.clearModifiers(char, cmd.statKey)
+      const removed = before.length - (next.modifiers ?? []).length
+      if (removed > 0) {
+        const scope = cmd.statKey ? STAT_LABEL[cmd.statKey] : 'все статы'
+        changes.push({
+          kind: 'modifier',
+          label: `Сняты эффекты: ${scope} (${removed})`,
+          sourceCommand: cmd.type,
+        })
+      }
       break
     }
     case 'UPDATE_MAGIC': {

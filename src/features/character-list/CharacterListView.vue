@@ -1,175 +1,166 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
-import { useCharacterCreation } from '@/composables/useCharacterCreation'
-import { CLASSES } from '@/data/classes'
+import { t } from '@/locales'
+import IconDice from '@/components/ui/icons/IconDice.vue'
 
 const router = useRouter()
 const characters = useCharactersStore()
 const creation = useCreationStore()
-const { createDraft } = useCharacterCreation()
 
 const activeChars = computed(() => characters.list.filter(c => c.status === 'active'))
 const draftChars = computed(() => characters.list.filter(c => c.status === 'draft'))
-
-const selected = ref<Set<string>>(new Set())
-
-function toggleSelected(id: string, ev: Event) {
-  ev.stopPropagation()
-  if (selected.value.has(id)) selected.value.delete(id)
-  else selected.value.add(id)
-  selected.value = new Set(selected.value)
-}
-
-function openSelected() {
-  const ids = activeChars.value.map(c => c.id).filter(id => selected.value.has(id))
-  if (ids.length === 0) return
-  router.push(`/party/${ids.join(',')}`)
-}
-
-function openCharacter(id: string) {
-  router.push(`/party/${id}`)
-}
 
 function resumeCreation(id: string) {
   creation.setDraft(id)
   router.push('/character/new')
 }
-
-function startNew() {
-  creation.reset()  // очищаем старый draftId если был
-  createDraft()
-  router.push('/character/new')
-}
-
-function hpPercent(current: number, max: number) {
-  return Math.max(0, Math.min(100, (current / max) * 100))
-}
-
-function resetAllState() {
-  if (!confirm('Удалить всех персонажей и очистить стейт? Действие необратимо.')) return
-  characters.clearAll()
-  creation.reset()
-}
 </script>
 
 <template>
-  <div class="content-wrap">
-    <div class="list-header">
-      <span class="label">Персонажи</span>
-      <div class="list-header__actions">
-        <button
-          v-if="selected.size > 0"
-          class="btn-primary"
-          @click="openSelected"
-        >Открыть ({{ selected.size }})</button>
-        <button class="btn-primary" @click="startNew">+ Новый</button>
-      </div>
-    </div>
-
-    <!-- Активные персонажи -->
-    <div v-if="activeChars.length > 0" class="char-list">
-      <button
-        v-for="char in activeChars"
-        :key="char.id"
-        class="char-card"
-        :class="{ 'char-card--selected': selected.has(char.id) }"
-        @click="openCharacter(char.id)"
-      >
-        <div class="char-card__top">
-          <div
-            class="char-card__check"
-            :class="{ 'char-card__check--on': selected.has(char.id) }"
-            role="checkbox"
-            :aria-checked="selected.has(char.id)"
-            @click="toggleSelected(char.id, $event)"
-          >{{ selected.has(char.id) ? '✓' : '' }}</div>
-          <div class="char-card__title">
-            <div class="char-card__name">{{ char.name }}</div>
-            <div class="label">{{ char.classId === 'custom' ? (char.customClassName ?? 'Свой класс') : (CLASSES[char.classId]?.name ?? char.classId) }} · Уровень {{ char.level }}</div>
-          </div>
-          <div class="char-card__hp">
-            <span class="label">HP</span>
-            <span>{{ char.currentHp }} / {{ char.maxHp }}</span>
-          </div>
-        </div>
-        <div class="char-card__hp-bar">
-          <div
-            class="char-card__hp-fill"
-            :style="{ width: hpPercent(char.currentHp, char.maxHp) + '%' }"
-          />
-        </div>
-      </button>
-    </div>
-
-    <!-- Черновики -->
-    <div v-if="draftChars.length > 0" class="draft-section">
-      <div class="label" style="padding: 12px 16px 8px">Не завершены</div>
+  <div class="content-wrap cl-screen">
+    <section v-if="draftChars.length > 0" class="cl-drafts">
+      <div class="cl-drafts__label">{{ t('characterList.drafts') }}</div>
       <button
         v-for="char in draftChars"
         :key="char.id"
-        class="char-card char-card--draft"
+        type="button"
+        class="cl-card cl-card--draft"
         @click="resumeCreation(char.id)"
       >
-        <div class="char-card__name">{{ char.name || 'Без имени' }}</div>
-        <div class="label">Продолжить создание →</div>
+        <div class="cl-card__main">
+          <div class="cl-card__name">{{ char.name || t('characterList.draftUnnamed') }}</div>
+          <div class="cl-card__meta cl-card__meta--resume">{{ t('characterList.resume') }} →</div>
+        </div>
       </button>
+    </section>
+
+    <div v-if="activeChars.length === 0 && draftChars.length === 0" class="cl-empty">
+      <div class="cl-empty__icon">
+        <IconDice />
+      </div>
+      <div class="cl-empty__title">{{ t('characterList.empty.title') }}</div>
+      <div class="cl-empty__hint">{{ t('characterList.empty.hint') }}</div>
     </div>
 
-    <!-- Пусто -->
-    <div v-if="activeChars.length === 0 && draftChars.length === 0" class="empty-state">
-      <p>Нет персонажей.</p>
-      <p class="label" style="margin-top: 8px">Нажми «+ Новый» чтобы начать</p>
-    </div>
-
-    <div class="dev-tools">
-      <button class="btn-danger" @click="resetAllState">Полный сброс стейта</button>
+    <div v-else-if="activeChars.length > 0" class="cl-hint">
+      {{ t('characterList.pickFromSidebar') }}
     </div>
   </div>
 </template>
 
 <style scoped>
-.list-header {
+.cl-screen {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
+  flex-direction: column;
+  gap: 20px;
 }
-.char-list { display: flex; flex-direction: column; }
-.char-card {
+
+.cl-drafts { display: flex; flex-direction: column; gap: 10px; }
+.cl-drafts__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
+  padding-left: 4px;
+}
+
+.cl-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
   width: 100%;
-  background: none;
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  padding: 14px 16px 10px;
+  padding: 14px 16px;
   text-align: left;
-  cursor: pointer;
-  color: var(--color-text);
+  background: var(--vtt-bg-surface);
+  border: 1px solid var(--vtt-border-subtle);
+  border-radius: var(--r-md);
+  color: inherit;
   font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
-.char-card:hover { background: var(--color-bg-elevated); }
-.char-card--draft { opacity: 0.6; }
-.char-card__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
-.char-card__title { flex: 1; min-width: 0; }
-.char-card--selected { background: var(--color-bg-elevated); }
-.char-card__check {
-  width: 22px; height: 22px; border: 1px solid var(--color-border);
-  border-radius: 3px; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; line-height: 1; color: var(--color-accent); flex-shrink: 0;
-  margin-top: 2px;
+.cl-card:hover {
+  border-color: var(--vtt-border-strong);
+  background: var(--vtt-bg-elevated);
 }
-.char-card__check--on { border-color: var(--color-accent); }
-.list-header__actions { display: flex; gap: 8px; }
-.char-card__name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-.char-card__hp { text-align: right; font-size: 14px; }
-.char-card__hp-bar { height: 4px; background: var(--color-bg-elevated); border-radius: 2px; overflow: hidden; }
-.char-card__hp-fill { height: 100%; background: var(--color-accent); border-radius: 2px; transition: width 0.3s; }
-.draft-section { border-top: 1px solid var(--color-border); }
-.empty-state { padding: 48px 16px; text-align: center; color: var(--color-text-muted); font-size: 14px; }
-.dev-tools { padding: 24px 16px; display: flex; justify-content: center; }
-.btn-danger { background: none; border: 1px solid var(--color-danger, #e05252); color: var(--color-danger, #e05252); padding: 8px 14px; border-radius: 3px; font-family: inherit; font-size: 12px; cursor: pointer; }
-.btn-danger:hover { background: var(--color-danger, #e05252); color: var(--color-bg-dark); }
+.cl-card__main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.cl-card__name {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--vtt-text-primary);
+  line-height: 1.15;
+}
+.cl-card__meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
+}
+.cl-card__meta--resume { color: var(--vtt-accent-soft); }
+
+.cl-card--draft {
+  opacity: 0.7;
+  border-style: dashed;
+  background: transparent;
+}
+.cl-card--draft:hover { opacity: 1; background: var(--vtt-bg-surface); }
+
+.cl-empty {
+  margin: 32px auto;
+  padding: 40px 20px;
+  text-align: center;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.cl-empty__icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vtt-border-subtle);
+  border-radius: var(--r-pill);
+  color: var(--vtt-accent-deep);
+}
+.cl-empty__icon :deep(svg) { width: 22px; height: 22px; }
+.cl-empty__title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  color: var(--vtt-accent-soft);
+}
+.cl-empty__hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
+}
+
+.cl-hint {
+  margin: 48px auto;
+  padding: 24px;
+  text-align: center;
+  max-width: 320px;
+  color: var(--vtt-text-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.55;
+}
 </style>

@@ -91,14 +91,17 @@ function onClick() {
 }
 
 .skill-chip.is-auto {
-  border-color: var(--vtt-accent-deep);
   cursor: default;
 }
-.skill-chip.is-auto:hover {
-  background: rgba(140, 106, 58, 0.08);
-  color: var(--vtt-accent-soft);
-}
 .skill-chip.is-auto .skill-chip-glyph { color: var(--vtt-accent-deep); }
+
+.skill-chip.mode-display { cursor: default; }
+.skill-chip.mode-display:hover:not(:disabled):not(.is-auto),
+.skill-chip.mode-display:hover {
+  border-color: var(--vtt-border-subtle);
+  background: transparent;
+  color: var(--vtt-text-primary);
+}
 
 .skill-chip.is-selected {
   background: var(--vtt-accent-deep);

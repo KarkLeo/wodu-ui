@@ -72,6 +72,11 @@ export const useCharactersStore = defineStore('characters', {
       useChangeLogStore().removeByCharacter(id)
     },
     setActive(id: string | null) {
+      if (id && !this.list.some(c => c.id === id)) {
+        log.warn('setActive: unknown id', { id })
+        this.activeId = null
+        return
+      }
       log.debug('setActive', { prev: this.activeId, next: id })
       this.activeId = id
     },

@@ -14,6 +14,7 @@ export type ChangeKind =
   | 'unequip'
   | 'coins'
   | 'magic'
+  | 'modifier'
   | 'quicksilver-reset'
   | 'create'
 
