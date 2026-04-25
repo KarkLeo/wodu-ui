@@ -4,8 +4,6 @@ import { useRouter } from 'vue-router'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useCreationStore } from '@/stores/creation'
 import { useCharactersStore } from '@/stores/characters'
-import { STAT_KEYS } from '@/data/xpTable'
-import { CLASSES } from '@/data/classes'
 import { t } from '@/locales'
 import StepIdentity from './steps/StepIdentity.vue'
 import StepTraining from './steps/StepTraining.vue'
@@ -14,7 +12,7 @@ import StepGear from './steps/StepGear.vue'
 const router = useRouter()
 const creation = useCreationStore()
 const characters = useCharactersStore()
-const { draft, step, patch, dispatch, next, back, finish } = useCharacterCreation()
+const { draft, step, isStepValid, allRolled, next, back, finish } = useCharacterCreation()
 
 const stepComponents = [StepIdentity, StepTraining, StepGear]
 const currentStepComponent = computed(() => stepComponents[step.value - 1])
@@ -31,36 +29,13 @@ const className = computed(() => {
   return t(`characterCreation.classNames.${draft.value.classId}`)
 })
 
-const rolled = computed(() => draft.value && STAT_KEYS.every(k => draft.value!.statRolls[k] > 0))
-
-const canContinue = computed(() => {
-  if (!draft.value) return false
-  const d = draft.value
-  if (step.value === 1) {
-    if (!d.name.trim() || !rolled.value) return false
-    if (d.classId === 'custom' && !d.customClassName?.trim()) return false
-    return true
-  }
-  if (step.value === 2) {
-    const cls = CLASSES[d.classId]
-    const autoSkills = cls.grantedSkillIds
-    const autoAbilities = cls.autoAbilityIds ?? []
-    const pickedSkills = d.skillIds.filter(id => !autoSkills.includes(id))
-    const pickedAbilities = d.abilityIds.filter(id => !autoAbilities.includes(id))
-    const neededSkills = Math.max(0, 2 - autoSkills.length)
-    const neededAbilities = 2 - autoAbilities.length
-    return pickedSkills.length === neededSkills && pickedAbilities.length === neededAbilities
-  }
-  return d.maxHp > 0
-})
-
 const footerHint = computed(() => {
   if (!draft.value) return ''
   const d = draft.value
   if (step.value === 1) {
     if (!d.name.trim()) return t('characterCreation.footerHint.needName')
     if (d.classId === 'custom' && !d.customClassName?.trim()) return t('characterCreation.footerHint.needCustomClass')
-    if (!rolled.value) return t('characterCreation.footerHint.needStats')
+    if (!allRolled.value) return t('characterCreation.footerHint.needStats')
     return t('characterCreation.footerHint.s1Ready', { name: d.name.split(' ')[0] || d.name, className: className.value })
   }
   if (step.value === 2) {
@@ -127,12 +102,7 @@ onMounted(() => {
     </div>
 
     <div class="cc-content">
-      <component
-        :is="currentStepComponent"
-        :draft="draft"
-        :dispatch="dispatch"
-        @patch="patch"
-      />
+      <component :is="currentStepComponent" />
     </div>
 
     <div class="cc-footer">
@@ -147,7 +117,7 @@ onMounted(() => {
       <button
         type="button"
         class="cc-foot-hero"
-        :disabled="!canContinue"
+        :disabled="!isStepValid"
         @click="onNextOrFinish"
       >
         <template v-if="step === 3">

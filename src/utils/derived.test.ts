@@ -171,10 +171,10 @@ describe('damageBreakdownLines', () => {
       makeWeapon({ melee: true, damage: 'd6+1' }),
     )
     expect(lines).toEqual([
-      { value: 'd6+1', label: 'оружие' },
+      { value: 'd6+1', label: 'Оружие' },
       { value: '+1', label: 'Манёвренность' },
       { value: '+2', label: 'Рубка' },
-      { value: '+1d6', label: 'бонус уровня' },
+      { value: '+1d6', label: 'Бонус уровня' },
     ])
   })
   it('ranged weapon + volley — Залп присутствует, Рубка отсутствует', () => {
@@ -183,7 +183,7 @@ describe('damageBreakdownLines', () => {
       makeWeapon({ melee: false, damage: 'd6' }),
     )
     expect(lines).toEqual([
-      { value: 'd6', label: 'оружие' },
+      { value: 'd6', label: 'Оружие' },
       { value: '+2', label: 'Залп' },
     ])
   })

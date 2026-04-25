@@ -5,6 +5,7 @@ import * as inv from './inventory'
 import * as combat from './combat'
 import * as prog from './progression'
 import * as mods from './modifiers'
+import * as creation from './creation'
 import { findGearTemplate } from '@/data/gear'
 import { createLogger } from '@/utils/logger'
 
@@ -15,23 +16,14 @@ export interface ApplyResult {
   changes: ChangeDraft[]
 }
 
-const STAT_LABEL: Record<StatKey, string> = {
-  str: 'СИЛ',
-  dex: 'ЛВК',
-  con: 'ТЕЛ',
-  int: 'ИНТ',
-  wis: 'МУД',
-  cha: 'ХАР',
-}
+const STAT_KEYS: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
-function statsDiff(before: Stats, after: Stats): string {
-  const parts: string[] = []
-  for (const key of Object.keys(STAT_LABEL) as StatKey[]) {
-    if (before[key] !== after[key]) {
-      parts.push(`${STAT_LABEL[key]} ${before[key]}→${after[key]}`)
-    }
+function statsChanges(before: Stats, after: Stats) {
+  const out: { key: StatKey; before: number; after: number }[] = []
+  for (const key of STAT_KEYS) {
+    if (before[key] !== after[key]) out.push({ key, before: before[key], after: after[key] })
   }
-  return parts.join(', ')
+  return out
 }
 
 function findItem(char: Character, id: string) {
@@ -51,9 +43,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
         const name = findGearTemplate(cmd.templateId)?.name ?? '—'
         const cost = before.coins - next.coins
         changes.push({
-          kind: 'inventory-add',
-          label: cost > 0 ? `Куплено: ${name} (−${cost} м)` : `Куплено: ${name}`,
-          delta: `+${name}`,
+          payload: { kind: 'inventory-add', itemName: name, cost, source: 'buy' },
           sourceCommand: cmd.type,
         })
       }
@@ -62,20 +52,15 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
     case 'RECEIVE_ITEM': {
       next = inv.receiveItem(char, cmd.item)
       changes.push({
-        kind: 'inventory-add',
-        label: `Получено: ${cmd.item.name}`,
-        delta: `+${cmd.item.name}`,
+        payload: { kind: 'inventory-add', itemName: cmd.item.name, source: 'receive' },
         sourceCommand: cmd.type,
       })
       break
     }
     case 'ADD_CUSTOM_ITEM': {
       next = inv.addCustomItem(char, cmd.name, cmd.price, cmd.notes, cmd.consumable, cmd.quantity)
-      const cost = cmd.price ?? 0
       changes.push({
-        kind: 'inventory-add',
-        label: cost > 0 ? `Добавлено: ${cmd.name} (−${cost} м)` : `Добавлено: ${cmd.name}`,
-        delta: `+${cmd.name}`,
+        payload: { kind: 'inventory-add', itemName: cmd.name, cost: cmd.price, source: 'custom' },
         sourceCommand: cmd.type,
       })
       break
@@ -85,8 +70,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       if (!item || item.descriptor.kind !== 'custom') break
       next = inv.editCustomItem(char, cmd.itemId, cmd)
       changes.push({
-        kind: 'inventory-edit',
-        label: `Изменён предмет: ${cmd.name}`,
+        payload: { kind: 'inventory-edit', itemName: cmd.name },
         sourceCommand: cmd.type,
       })
       break
@@ -96,9 +80,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.removeItem(char, cmd.itemId)
       if (item) {
         changes.push({
-          kind: 'inventory-remove',
-          label: `Удалено: ${item.name}`,
-          delta: `−${item.name}`,
+          payload: { kind: 'inventory-remove', itemName: item.name },
           sourceCommand: cmd.type,
         })
       }
@@ -110,13 +92,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       if (item) {
         const before = item.quantity ?? 1
         const after = Math.max(0, before - 1)
-        const label = before > 1
-          ? `Использовано: ${item.name} (x${before} → x${after})`
-          : `Использовано: ${item.name}`
         changes.push({
-          kind: 'inventory-use',
-          label,
-          delta: `−1 ${item.name}`,
+          payload: { kind: 'inventory-use', itemName: item.name, quantityBefore: before, quantityAfter: after },
           sourceCommand: cmd.type,
         })
       }
@@ -127,8 +104,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.equipItem(char, cmd.itemId)
       if (item) {
         changes.push({
-          kind: 'equip',
-          label: `Надето: ${item.name}`,
+          payload: { kind: 'equip', itemName: item.name },
           sourceCommand: cmd.type,
         })
       }
@@ -139,8 +115,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.unequipItem(char, cmd.itemId)
       if (item) {
         changes.push({
-          kind: 'unequip',
-          label: `Снято: ${item.name}`,
+          payload: { kind: 'unequip', itemName: item.name },
           sourceCommand: cmd.type,
         })
       }
@@ -150,11 +125,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const before = char.coins
       next = inv.setCoins(char, cmd.amount)
       if (next.coins !== before) {
-        const diff = next.coins - before
         changes.push({
-          kind: 'coins',
-          label: `Монеты: ${before} → ${next.coins}`,
-          delta: `${diff > 0 ? '+' : ''}${diff} м`,
+          payload: { kind: 'coins', before, after: next.coins },
           sourceCommand: cmd.type,
         })
       }
@@ -167,20 +139,9 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const tempAfter = next.tempHp ?? 0
       const fromTemp = tempBefore - tempAfter
       const fromHp = hpBefore - next.currentHp
-      const total = fromTemp + fromHp
-      if (total > 0) {
-        let label: string
-        if (fromTemp > 0 && fromHp > 0) {
-          label = `Урон ${cmd.amount} (врем. ${tempBefore}→${tempAfter}, HP ${hpBefore}→${next.currentHp})`
-        } else if (fromTemp > 0) {
-          label = `Урон ${cmd.amount} (врем. ${tempBefore}→${tempAfter})`
-        } else {
-          label = `Урон ${cmd.amount} (HP ${hpBefore} → ${next.currentHp})`
-        }
+      if (fromTemp + fromHp > 0) {
         changes.push({
-          kind: 'hp-damage',
-          label,
-          delta: `−${total} HP`,
+          payload: { kind: 'hp-damage', amount: cmd.amount, tempBefore, tempAfter, hpBefore, hpAfter: next.currentHp },
           sourceCommand: cmd.type,
         })
       }
@@ -189,12 +150,9 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
     case 'HEAL': {
       const before = char.currentHp
       next = combat.heal(char, cmd.amount)
-      const actual = next.currentHp - before
-      if (actual > 0) {
+      if (next.currentHp > before) {
         changes.push({
-          kind: 'hp-heal',
-          label: `Лечение ${cmd.amount} (HP ${before} → ${next.currentHp})`,
-          delta: `+${actual} HP`,
+          payload: { kind: 'hp-heal', amount: cmd.amount, before, after: next.currentHp },
           sourceCommand: cmd.type,
         })
       }
@@ -205,13 +163,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = combat.setTempHp(char, cmd.amount)
       const after = next.tempHp ?? 0
       if (after !== before) {
-        const diff = after - before
         changes.push({
-          kind: 'hp-temp',
-          label: after === 0
-            ? `Врем. HP сброшено (было ${before})`
-            : `Врем. HP: ${before} → ${after}`,
-          delta: `${diff > 0 ? '+' : ''}${diff} врем.`,
+          payload: { kind: 'hp-temp', before, after },
           sourceCommand: cmd.type,
         })
       }
@@ -222,14 +175,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = combat.setArmorMod(char, cmd.amount)
       const after = next.armorMod ?? 0
       if (after !== before) {
-        const diff = after - before
-        const fmt = (v: number) => (v > 0 ? `+${v}` : String(v))
         changes.push({
-          kind: 'armor-mod',
-          label: after === 0
-            ? `Мод. брони сброшен (было ${fmt(before)})`
-            : `Мод. брони: ${fmt(before)} → ${fmt(after)}`,
-          delta: `${diff > 0 ? '+' : ''}${diff} брон.`,
+          payload: { kind: 'armor-mod', before, after },
           sourceCommand: cmd.type,
         })
       }
@@ -240,14 +187,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = combat.setDamageMod(char, cmd.amount)
       const after = next.damageMod ?? 0
       if (after !== before) {
-        const diff = after - before
-        const fmt = (v: number) => (v > 0 ? `+${v}` : String(v))
         changes.push({
-          kind: 'damage-mod',
-          label: after === 0
-            ? `Мод. урона сброшен (было ${fmt(before)})`
-            : `Мод. урона: ${fmt(before)} → ${fmt(after)}`,
-          delta: `${diff > 0 ? '+' : ''}${diff} ур.`,
+          payload: { kind: 'damage-mod', before, after },
           sourceCommand: cmd.type,
         })
       }
@@ -257,23 +198,18 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const before = char.xp
       next = prog.gainXp(char, cmd.amount)
       if (next.xp !== before) {
-        const diff = next.xp - before
         changes.push({
-          kind: 'xp-gain',
-          label: diff >= 0 ? `Получено ${diff} XP` : `Потеряно ${-diff} XP`,
-          delta: `${diff > 0 ? '+' : ''}${diff} XP`,
+          payload: { kind: 'xp-gain', before, after: next.xp },
           sourceCommand: cmd.type,
         })
       }
       break
     }
     case 'LEVEL_UP': {
-      const beforeLevel = char.level
+      const before = char.level
       next = prog.levelUp(char, cmd.patch)
       changes.push({
-        kind: 'level-up',
-        label: `Уровень ${beforeLevel} → ${next.level}`,
-        delta: `+${next.level - beforeLevel} ур.`,
+        payload: { kind: 'level-up', before, after: next.level },
         sourceCommand: cmd.type,
       })
       break
@@ -284,11 +220,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const after = next.modifiers ?? []
       const added = after.find(m => !before.some(b => b.id === m.id))
       if (added) {
-        const sign = added.amount > 0 ? `+${added.amount}` : String(added.amount)
         changes.push({
-          kind: 'modifier',
-          label: `Эффект на ${STAT_LABEL[added.statKey]}: ${added.label} ${sign}`,
-          delta: `${sign} ${STAT_LABEL[added.statKey]}`,
+          payload: { kind: 'modifier-add', statKey: added.statKey, label: added.label, amount: added.amount },
           sourceCommand: cmd.type,
         })
       }
@@ -298,11 +231,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const target = (char.modifiers ?? []).find(m => m.id === cmd.modifierId)
       next = mods.removeModifier(char, cmd.modifierId)
       if (target) {
-        const sign = target.amount > 0 ? `+${target.amount}` : String(target.amount)
         changes.push({
-          kind: 'modifier',
-          label: `Снят эффект: ${target.label} (${STAT_LABEL[target.statKey]} ${sign})`,
-          delta: `−эффект ${STAT_LABEL[target.statKey]}`,
+          payload: { kind: 'modifier-remove', statKey: target.statKey, label: target.label, amount: target.amount },
           sourceCommand: cmd.type,
         })
       }
@@ -313,10 +243,8 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = mods.clearModifiers(char, cmd.statKey)
       const removed = before.length - (next.modifiers ?? []).length
       if (removed > 0) {
-        const scope = cmd.statKey ? STAT_LABEL[cmd.statKey] : 'все статы'
         changes.push({
-          kind: 'modifier',
-          label: `Сняты эффекты: ${scope} (${removed})`,
+          payload: { kind: 'modifier-clear', statKey: cmd.statKey, count: removed },
           sourceCommand: cmd.type,
         })
       }
@@ -325,19 +253,17 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
     case 'UPDATE_MAGIC': {
       next = { ...char, magic: cmd.magic }
       changes.push({
-        kind: 'magic',
-        label: 'Обновлена магия',
+        payload: { kind: 'magic' },
         sourceCommand: cmd.type,
       })
       break
     }
     case 'UPDATE_STATS': {
       next = { ...char, stats: cmd.stats }
-      const diff = statsDiff(char.stats, cmd.stats)
-      if (diff) {
+      const diff = statsChanges(char.stats, cmd.stats)
+      if (diff.length) {
         changes.push({
-          kind: 'stats',
-          label: `Характеристики: ${diff}`,
+          payload: { kind: 'stats', changes: diff },
           sourceCommand: cmd.type,
         })
       }
@@ -352,8 +278,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.resetQuicksilver(char)
       if (before > 0) {
         changes.push({
-          kind: 'quicksilver-reset',
-          label: `Сброс ртути (было ${before})`,
+          payload: { kind: 'quicksilver-reset', before },
           sourceCommand: cmd.type,
         })
       }
@@ -362,12 +287,35 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
     case 'FINALIZE_CHARACTER': {
       next = { ...char, status: 'active' }
       changes.push({
-        kind: 'create',
-        label: `Персонаж создан: ${next.name || '—'}`,
+        payload: { kind: 'create', characterName: next.name || '—' },
         sourceCommand: cmd.type,
       })
       break
     }
+    case 'SET_NAME':
+      next = creation.setName(char, cmd.name)
+      break
+    case 'SET_TRUE_NAME':
+      next = creation.setTrueName(char, cmd.trueName)
+      break
+    case 'SET_CLASS':
+      next = creation.setClass(char, cmd.classId)
+      break
+    case 'SET_CUSTOM_CLASS_NAME':
+      next = creation.setCustomClassName(char, cmd.name)
+      break
+    case 'SET_STAT_ROLL':
+      next = creation.setStatRoll(char, cmd.key, cmd.roll, cmd.bonus)
+      break
+    case 'TOGGLE_SKILL':
+      next = creation.toggleSkill(char, cmd.id)
+      break
+    case 'TOGGLE_ABILITY':
+      next = creation.toggleAbility(char, cmd.id)
+      break
+    case 'SET_HIT_DICE_RESULT':
+      next = creation.setHitDiceResult(char, cmd.hitDice, cmd.maxHp, cmd.currentHp, cmd.hpHistory)
+      break
     default: {
       const _exhaustive: never = cmd
       return { character: _exhaustive, changes: [] }

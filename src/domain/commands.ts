@@ -1,4 +1,6 @@
-import type { InventoryItem, Magic, Stats, SkillId, AbilityId, StatKey } from '@/types/character'
+import type { InventoryItem, Magic, Stats, SkillId, AbilityId, StatKey, ClassId } from '@/types/character'
+
+export type HpHistoryEntry = NonNullable<import('@/types/character').Character['hpHistory']>[number]
 
 export interface LevelUpPatch {
   level: number
@@ -43,3 +45,12 @@ export type CharacterCommand =
   | { type: 'UPDATE_NOTES'; notes: string }
   | { type: 'RESET_QUICKSILVER' }
   | { type: 'FINALIZE_CHARACTER' }
+  // Создание персонажа (только для draft-статуса)
+  | { type: 'SET_NAME'; name: string }
+  | { type: 'SET_TRUE_NAME'; trueName: string }
+  | { type: 'SET_CLASS'; classId: ClassId }
+  | { type: 'SET_CUSTOM_CLASS_NAME'; name: string }
+  | { type: 'SET_STAT_ROLL'; key: StatKey; roll: number; bonus: number }
+  | { type: 'TOGGLE_SKILL'; id: SkillId }
+  | { type: 'TOGGLE_ABILITY'; id: AbilityId }
+  | { type: 'SET_HIT_DICE_RESULT'; hitDice: number; maxHp: number; currentHp: number; hpHistory: HpHistoryEntry[] }
