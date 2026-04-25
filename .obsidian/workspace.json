@@ -185,6 +185,8 @@
   },
   "active": "6d2e0de2b2834c5f",
   "lastOpenFiles": [
+    "docs/dice-system-plan.md",
+    "docs/architecture-review-2026-04-26.md",
     "dist/assets/bg-DNvetVao.jpeg",
     "dist/assets/Dice-DqNwDKjU.js",
     "dist/assets/world.onscreen-X1sNtXgD.js",
@@ -223,7 +225,6 @@
     "node_modules/strip-ansi-cjs/node_modules/ansi-regex/readme.md",
     "node_modules/strip-ansi-cjs/readme.md",
     "node_modules/ast-v8-to-istanbul/node_modules/estree-walker/README.md",
-    "node_modules/ast-v8-to-istanbul/README.md",
     "src/assets/typescript.svg",
     "src/assets/vite.svg",
     "src/assets/hero.png",
