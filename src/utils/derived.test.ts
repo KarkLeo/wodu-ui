@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   totalArmor,
-  armorTypeLabel,
   damageFormula,
   damageAbilityBonus,
   damageBreakdownLines,
@@ -66,36 +65,6 @@ describe('totalArmor', () => {
     expect(
       totalArmor(makeCharacter({ inventory: [makeShield({ equipped: false })] })),
     ).toBe(0)
-  })
-})
-
-describe('armorTypeLabel', () => {
-  it('пусто', () => {
-    expect(armorTypeLabel(makeCharacter())).toBe('')
-  })
-  it('лёгкий', () => {
-    expect(armorTypeLabel(makeCharacter({ inventory: [makeArmor('light')] }))).toBe('лёгкий')
-  })
-  it('полный', () => {
-    expect(armorTypeLabel(makeCharacter({ inventory: [makeArmor('full')] }))).toBe('полный')
-  })
-  it('только щит', () => {
-    expect(armorTypeLabel(makeCharacter({ inventory: [makeShield()] }))).toBe('щит')
-  })
-  it('лёгкий + щит', () => {
-    expect(
-      armorTypeLabel(makeCharacter({ inventory: [makeArmor('light'), makeShield()] })),
-    ).toBe('лёгкий + щит')
-  })
-  it('полный + щит', () => {
-    expect(
-      armorTypeLabel(makeCharacter({ inventory: [makeArmor('full'), makeShield()] })),
-    ).toBe('полный + щит')
-  })
-  it('не-equipped щит не попадает в лейбл', () => {
-    expect(
-      armorTypeLabel(makeCharacter({ inventory: [makeShield({ equipped: false })] })),
-    ).toBe('')
   })
 })
 

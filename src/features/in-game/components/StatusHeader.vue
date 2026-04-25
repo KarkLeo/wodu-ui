@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { PopoverClose } from 'reka-ui'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
@@ -219,15 +220,17 @@ async function handleRollDamage() {
                 @click="damageModModel = 0"
               >{{ t('inGame.statusHeader.modReset') }}</button>
             </div>
-            <button
-              type="button"
-              class="pop-hero-roll"
-              :disabled="isRolling"
-              @click="handleRollDamage"
-            >
-              <IconDice />
-              <span>{{ t('inGame.statusHeader.trio.damageRoll', { formula: dmgFormulaStr }) }}</span>
-            </button>
+            <PopoverClose as-child>
+              <button
+                type="button"
+                class="pop-hero-roll"
+                :disabled="isRolling"
+                @click="handleRollDamage"
+              >
+                <IconDice />
+                <span>{{ t('inGame.statusHeader.trio.damageRoll', { formula: dmgFormulaStr }) }}</span>
+              </button>
+            </PopoverClose>
           </template>
         </StatusChip>
         <StatusChip
