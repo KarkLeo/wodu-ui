@@ -7,6 +7,7 @@ import type { RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
 import { STAT_LABELS } from '@/data/xpTable'
 import { t } from '@/locales'
+import { formatChangeLabel, formatChangeDelta, isCoinSpend } from '@/utils/changeFormat'
 import { createLogger } from '@/utils/logger'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
@@ -141,25 +142,32 @@ const LOG_CLASS_MAP: Record<ChangeKind, string> = {
   unequip: 'is-unequip',
   coins: 'is-coin-earn',
   magic: 'is-magic',
-  modifier: 'is-attr',
+  'modifier-add': 'is-attr',
+  'modifier-remove': 'is-attr',
+  'modifier-clear': 'is-attr',
   'quicksilver-reset': 'is-magic',
   create: '',
 }
 
 function logClass(e: ChangeEntry): string {
-  const base = LOG_CLASS_MAP[e.kind] ?? ''
-  // монета: знак в delta определяет earn/spend
-  if (e.kind === 'coins' && e.delta?.startsWith('-')) return 'is-coin-spend'
+  const base = LOG_CLASS_MAP[e.payload.kind] ?? ''
+  if (isCoinSpend(e.payload)) return 'is-coin-spend'
   return base + (e.id === recentId.value ? ' is-fresh' : '')
 }
 
 function logMeta(e: ChangeEntry): string {
-  switch (e.kind) {
+  switch (e.payload.kind) {
     case 'hp-damage':
-    case 'hp-heal': return t('diceDrawer.meta.hp')
+    case 'hp-heal':
+    case 'hp-temp': return t('diceDrawer.meta.hp')
     case 'xp-gain': return t('diceDrawer.meta.xp')
     case 'level-up': return t('diceDrawer.meta.level')
-    case 'stats': return t('diceDrawer.meta.attr')
+    case 'stats':
+    case 'modifier-add':
+    case 'modifier-remove':
+    case 'modifier-clear':
+    case 'armor-mod':
+    case 'damage-mod': return t('diceDrawer.meta.attr')
     case 'inventory-add':
     case 'inventory-remove':
     case 'inventory-use':
@@ -171,6 +179,14 @@ function logMeta(e: ChangeEntry): string {
     case 'quicksilver-reset': return t('diceDrawer.meta.magic')
     default: return ''
   }
+}
+
+function logLabel(e: ChangeEntry): string {
+  return formatChangeLabel(e.payload)
+}
+
+function logDelta(e: ChangeEntry): string | undefined {
+  return formatChangeDelta(e.payload)
 }
 </script>
 
@@ -295,9 +311,9 @@ function logMeta(e: ChangeEntry): string {
               <span class="dot"></span><span>{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
               <span class="dot"></span><span>{{ formatTime(item.payload.timestamp) }}</span>
             </div>
-            <div class="log-row-label">{{ item.payload.label }}</div>
+            <div class="log-row-label">{{ logLabel(item.payload) }}</div>
           </div>
-          <div v-if="item.payload.delta" class="log-row-delta">{{ item.payload.delta }}</div>
+          <div v-if="logDelta(item.payload)" class="log-row-delta">{{ logDelta(item.payload) }}</div>
         </div>
       </template>
     </div>

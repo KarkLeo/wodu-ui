@@ -34,15 +34,6 @@ export const useCharactersStore = defineStore('characters', {
       this.list.push(character)
       return character
     },
-    update(id: string, patch: Partial<Omit<Character, 'id' | 'createdAt'>>) {
-      const idx = this.list.findIndex(c => c.id === id)
-      if (idx === -1) {
-        log.warn('update: not found', { id })
-        return
-      }
-      log.debug('update', { id, keys: Object.keys(patch) })
-      this.list[idx] = { ...this.list[idx], ...patch }
-    },
     dispatch(id: string, cmd: CharacterCommand) {
       const idx = this.list.findIndex(c => c.id === id)
       if (idx === -1) {

@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Character, ClassId, StatKey } from '@/types/character'
-import type { CharacterCommand } from '@/domain/commands'
+import type { ClassId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
 import { SKILLS } from '@/types/character'
 import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { t } from '@/locales'
 
-const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll } = useCharacterCreation()
 
 const { roll } = useDiceRoller()
 const freshKey = ref<StatKey | null>(null)
@@ -30,27 +29,26 @@ async function rollAll() {
 }
 
 async function rerollOne(key: StatKey) {
+  const d = draft.value
+  if (!d) return
   const result = await roll({
     notation: '2d6',
     label: `${STAT_LABELS[key]} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
-    characterId: props.draft.id,
-    characterName: props.draft.name || 'Новый персонаж',
+    characterId: d.id,
+    characterName: d.name || 'Новый персонаж',
   })
   if (!result) return
   const r = result.diceTotal
-  const values = result.dice.map(d => d.value)
+  const values = result.dice.map(dv => dv.value)
   if (values.length === 2) diceTraces.value[key] = [values[0], values[1]]
-  emit('patch', { statRolls: { ...props.draft.statRolls, [key]: r } })
-  props.dispatch({ type: 'UPDATE_STATS', stats: { ...props.draft.stats, [key]: statBonusFrom2d6(r) } })
+  setStatRoll(key, r, statBonusFrom2d6(r))
   markFresh(key)
 }
 
 function selectClass(id: ClassId) {
-  if (id === props.draft.classId) return
-  const patch: Partial<Character> = { classId: id, skillIds: [], abilityIds: [], magic: undefined }
-  if (id !== 'custom') patch.customClassName = undefined
-  emit('patch', patch)
+  if (!draft.value || id === draft.value.classId) return
+  pickClass(id)
 }
 
 function skillName(id: string): string {
@@ -69,7 +67,7 @@ function rollTrace(key: StatKey): { a: number; b: number } | null {
   return { a: trace[0], b: trace[1] }
 }
 function rollTotal(key: StatKey): number {
-  return props.draft.statRolls[key] ?? 0
+  return draft.value?.statRolls[key] ?? 0
 }
 
 const CLASS_GLYPHS: Record<ClassId, string> = {
@@ -83,6 +81,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 </script>
 
 <template>
+  <template v-if="draft">
   <section class="cc-section cc-section--names">
     <div class="cc-field">
       <label class="cc-field-label" for="cc-name-input">
@@ -94,7 +93,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         type="text"
         :placeholder="t('characterCreation.identity.namePlaceholder')"
         :value="draft.name"
-        @input="emit('patch', { name: ($event.target as HTMLInputElement).value })"
+        @input="setName(($event.target as HTMLInputElement).value)"
       />
     </div>
     <div class="cc-field">
@@ -108,7 +107,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         type="text"
         :placeholder="t('characterCreation.identity.trueNamePlaceholder')"
         :value="draft.trueName ?? ''"
-        @input="emit('patch', { trueName: ($event.target as HTMLInputElement).value })"
+        @input="setTrueName(($event.target as HTMLInputElement).value)"
       />
       <span class="cc-field-hint">
         <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg>
@@ -194,9 +193,10 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
       type="text"
       :placeholder="t('characterCreation.identity.classCustomNamePlaceholder')"
       :value="draft.customClassName ?? ''"
-      @input="emit('patch', { customClassName: ($event.target as HTMLInputElement).value })"
+      @input="setCustomClassName(($event.target as HTMLInputElement).value)"
     />
   </section>
+  </template>
 </template>
 
 <style scoped>

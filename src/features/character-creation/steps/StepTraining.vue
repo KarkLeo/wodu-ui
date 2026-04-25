@@ -1,136 +1,76 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import type { Character, SkillId, AbilityId, Spirit, Magic, Ritual } from '@/types/character'
+import { computed } from 'vue'
+import type { SkillId, AbilityId, Spirit, Ritual } from '@/types/character'
 import { SKILLS, ABILITIES } from '@/types/character'
-import type { CharacterCommand } from '@/domain/commands'
-import { CLASSES, MAGIC_ABILITY_IDS } from '@/data/classes'
-import { getAbilityEffect, hasMagicAbility } from '@/data/abilities'
+import { hasMagicAbility } from '@/data/abilities'
+import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import SpiritCard from '@/features/in-game/components/magic/SpiritCard.vue'
 import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
 import { t } from '@/locales'
 
-const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+const {
+  draft,
+  classData,
+  autoSkills,
+  autoAbilities,
+  requiredSkillPicks,
+  requiredAbilityPicks,
+  toggleSkill,
+  toggleAbility,
+  updateMagic,
+} = useCharacterCreation()
 
-const classData = computed(() => CLASSES[props.draft.classId])
-
-const autoSkills = computed<SkillId[]>(() => classData.value.grantedSkillIds)
-const requiredSkillPicks = computed(() => Math.max(0, 2 - autoSkills.value.length))
-const autoAbilities = computed<AbilityId[]>(() => classData.value.autoAbilityIds ?? [])
-const requiredAbilityPicks = computed(() => 2 - autoAbilities.value.length)
-const abilityPool = computed<AbilityId[]>(() => classData.value.abilityPool)
+const abilityPool = computed<AbilityId[]>(() => classData.value?.abilityPool ?? [])
 
 const pickedSkills = computed(() =>
-  props.draft.skillIds.filter(id => !autoSkills.value.includes(id)),
+  (draft.value?.skillIds ?? []).filter(id => !autoSkills.value.includes(id)),
 )
 const pickedAbilities = computed(() =>
-  props.draft.abilityIds.filter(id => !autoAbilities.value.includes(id)),
+  (draft.value?.abilityIds ?? []).filter(id => !autoAbilities.value.includes(id)),
 )
 
 const abilitySlotsFull = computed(() => pickedAbilities.value.length >= requiredAbilityPicks.value)
 const skillSlotsFull = computed(() => pickedSkills.value.length >= requiredSkillPicks.value)
 
-function toggleSkill(id: SkillId) {
-  if (autoSkills.value.includes(id)) return
-  if (requiredSkillPicks.value === 0) return
-  const has = props.draft.skillIds.includes(id)
-  let nextPicked: SkillId[]
-  if (has) {
-    nextPicked = pickedSkills.value.filter(x => x !== id)
-  } else {
-    if (skillSlotsFull.value) return
-    nextPicked = [...pickedSkills.value, id]
-  }
-  emit('patch', { skillIds: [...autoSkills.value, ...nextPicked] })
-}
-
-function toggleAbility(id: AbilityId) {
-  if (autoAbilities.value.includes(id)) return
-  if (!abilityPool.value.includes(id)) return
-  const has = props.draft.abilityIds.includes(id)
-  let nextPicked: AbilityId[]
-  if (has) {
-    nextPicked = pickedAbilities.value.filter(x => x !== id)
-  } else {
-    if (abilitySlotsFull.value) return
-    nextPicked = [...pickedAbilities.value, id]
-  }
-  const patch: Partial<Character> = { abilityIds: [...autoAbilities.value, ...nextPicked] }
-  const effect = getAbilityEffect(id)
-  if (effect?.initMagicOnAcquire && !has && !props.draft.magic) {
-    patch.magic = ensureMagic()
-  } else if (effect?.initMagicOnAcquire && has && props.draft.classId !== 'wizard') {
-    const remainingMagicIds = nextPicked.filter(a => (MAGIC_ABILITY_IDS as readonly string[]).includes(a))
-    if (remainingMagicIds.length === 0) patch.magic = undefined
-  }
-  const cantrips = effect?.startingCantrips
-  if (cantrips && !has) {
-    const base = patch.magic ?? props.draft.magic ?? ensureMagic()
-    patch.magic = { ...base, cantrips }
-  }
-  emit('patch', patch)
-}
-
-function ensureMagic(): Magic {
-  if (props.draft.magic) return props.draft.magic
-  const spirits: Spirit[] = props.draft.classId === 'wizard'
-    ? [
-        { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' },
-        { id: crypto.randomUUID(), name: '', appearance: '', sphere1: '', sphere2: '' },
-      ]
-    : []
-  return { spirits, rituals: [], cantrips: [] }
-}
-
 function updateSpirit(idx: number, patchSp: Partial<Spirit>) {
-  const magic = ensureMagic()
+  const magic = draft.value?.magic
+  if (!magic) return
   const spirits = magic.spirits.map((s, i) => (i === idx ? { ...s, ...patchSp } : s))
-  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits } })
+  updateMagic({ ...magic, spirits })
 }
 function removeSpirit(idx: number) {
-  const magic = ensureMagic()
+  const magic = draft.value?.magic
+  if (!magic) return
   const spirits = magic.spirits.filter((_, i) => i !== idx)
-  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, spirits } })
+  updateMagic({ ...magic, spirits })
 }
 
 function updateRitual(idx: number, patchRit: Partial<Ritual>) {
-  const magic = ensureMagic()
+  const magic = draft.value?.magic
+  if (!magic) return
   const rituals = [...(magic.rituals ?? [])]
   while (rituals.length < 2) rituals.push({ name: '', description: '' })
   rituals[idx] = { ...rituals[idx], ...patchRit }
-  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals } })
+  updateMagic({ ...magic, rituals })
 }
 function removeRitual(idx: number) {
-  const magic = ensureMagic()
+  const magic = draft.value?.magic
+  if (!magic) return
   const rituals = (magic.rituals ?? []).filter((_, i) => i !== idx)
-  props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic, rituals } })
+  updateMagic({ ...magic, rituals })
 }
 
 const showMagic = computed(() =>
-  props.draft.classId === 'wizard' || hasMagicAbility(props.draft.abilityIds),
+  draft.value?.classId === 'wizard' || hasMagicAbility(draft.value?.abilityIds ?? []),
 )
-const startingCantrips = computed<string[]>(() => {
-  for (const id of pickedAbilities.value) {
-    const eff = getAbilityEffect(id)
-    if (eff?.startingCantrips?.length) return eff.startingCantrips
-  }
-  return props.draft.magic?.cantrips ?? []
-})
+const cantrips = computed<string[]>(() => draft.value?.magic?.cantrips ?? [])
 const hasRitualAbility = computed(() => pickedAbilities.value.includes('ritual'))
 
 const visibleAbilities = computed(() => {
   const allowed = new Set<AbilityId>([...autoAbilities.value, ...abilityPool.value])
   return ABILITIES.filter(a => allowed.has(a.id))
 })
-
-function syncAutos() {
-  const skills = Array.from(new Set([...autoSkills.value, ...pickedSkills.value]))
-  const abilities = Array.from(
-    new Set([...autoAbilities.value, ...pickedAbilities.value.filter(a => abilityPool.value.includes(a))]),
-  )
-  emit('patch', { skillIds: skills, abilityIds: abilities })
-}
 
 const abilitiesCounterText = computed(() =>
   t('characterCreation.training.abilitiesCounter', {
@@ -168,7 +108,7 @@ const skillsHint = computed(() => {
 
 function abilState(id: AbilityId): { selected: boolean; auto: boolean; disabled: boolean } {
   const auto = autoAbilities.value.includes(id)
-  const selected = props.draft.abilityIds.includes(id)
+  const selected = draft.value?.abilityIds.includes(id) ?? false
   const inPool = abilityPool.value.includes(id) || auto
   const disabled = !auto && (!inPool || (!selected && abilitySlotsFull.value))
   return { selected, auto, disabled }
@@ -184,19 +124,20 @@ function skillIsLocked(id: SkillId): boolean {
   return autoSkills.value.includes(id)
 }
 
-onMounted(() => {
-  syncAutos()
-  const cantrips = startingCantrips.value
-  if (showMagic.value && !props.draft.magic) {
-    const magic = ensureMagic()
-    emit('patch', { magic: cantrips.length ? { ...magic, cantrips } : magic })
-  } else if (showMagic.value && props.draft.magic && cantrips.length && !props.draft.magic.cantrips?.length) {
-    emit('patch', { magic: { ...props.draft.magic, cantrips } })
-  }
-})
+function onSkillClick(id: SkillId) {
+  if (skillIsLocked(id)) return
+  if (!draft.value?.skillIds.includes(id) && skillSlotsFull.value) return
+  toggleSkill(id)
+}
+function onAbilityClick(id: AbilityId) {
+  const st = abilState(id)
+  if (st.auto || st.disabled) return
+  toggleAbility(id)
+}
 </script>
 
 <template>
+  <template v-if="draft">
   <section class="cc-section">
     <div class="cc-section-head">
       <span class="cc-section-label">{{ t('characterCreation.training.skillsLabel') }}</span>
@@ -216,7 +157,7 @@ onMounted(() => {
           },
         ]"
         :disabled="skillIsLocked(sk.id) || (!draft.skillIds.includes(sk.id) && skillSlotsFull)"
-        @click="toggleSkill(sk.id)"
+        @click="onSkillClick(sk.id)"
       >
         <span v-if="skillIsLocked(sk.id)" class="lock-glyph">
           <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="4.5" width="6" height="4" rx="0.5"/><path d="M3.5 4.5 L3.5 3 C3.5 1.8 4.2 1.2 5 1.2 C5.8 1.2 6.5 1.8 6.5 3 L6.5 4.5"/></svg>
@@ -247,8 +188,8 @@ onMounted(() => {
         role="checkbox"
         :aria-checked="abilState(ab.id).selected"
         :tabindex="abilState(ab.id).disabled || abilState(ab.id).auto ? -1 : 0"
-        @click="!abilState(ab.id).disabled && !abilState(ab.id).auto && toggleAbility(ab.id)"
-        @keydown.space.prevent="!abilState(ab.id).disabled && !abilState(ab.id).auto && toggleAbility(ab.id)"
+        @click="onAbilityClick(ab.id)"
+        @keydown.space.prevent="onAbilityClick(ab.id)"
       >
         <span class="cc-check">
           <svg v-if="abilState(ab.id).selected" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
@@ -301,13 +242,14 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-if="startingCantrips.length" class="cc-magic-group">
+    <div v-if="cantrips.length" class="cc-magic-group">
       <span class="cc-magic-sub">{{ t('characterCreation.training.cantripsSection') }}</span>
       <div class="cc-cantrips-row">
-        <CantripChip v-for="c in startingCantrips" :key="c" :name="c" />
+        <CantripChip v-for="c in cantrips" :key="c" :name="c" />
       </div>
     </div>
   </section>
+  </template>
 </template>
 
 <style scoped>
