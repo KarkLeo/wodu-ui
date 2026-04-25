@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Character, InventoryItem } from '@/types/character'
-import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { findGearTemplate } from '@/data/gear'
 import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
 import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
@@ -14,11 +14,10 @@ import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import { t } from '@/locales'
 
-const props = defineProps<{ draft: Character; dispatch: (cmd: CharacterCommand) => void }>()
-const emit = defineEmits<{ patch: [Partial<Character>] }>()
+const { draft, dispatch, setHitDiceResult } = useCharacterCreation()
 
 const { roll } = useDiceRoller()
-const inv = useInventory(props.dispatch)
+const inv = useInventory(dispatch)
 
 const catalogOpen = ref(false)
 const customOpen = ref(false)
@@ -31,12 +30,12 @@ const gmOpen = computed({
   set: v => { if (!v) gmPendingId.value = null },
 })
 
-const numDice = computed(() => hitDiceCount(props.draft.stats.con))
-const hasSturdy = computed(() => props.draft.abilityIds.includes('sturdy'))
-const hpRolled = computed(() => props.draft.maxHp > 0)
+const numDice = computed(() => hitDiceCount(draft.value?.stats.con ?? 0))
+const hasSturdy = computed(() => draft.value?.abilityIds.includes('sturdy') ?? false)
+const hpRolled = computed(() => (draft.value?.maxHp ?? 0) > 0)
 
 const hpFormulaLines = computed(() => {
-  const hist = props.draft.hpHistory ?? []
+  const hist = draft.value?.hpHistory ?? []
   const diceEntry = hist.find(h => h.level === 1 && h.source === 'dice')
   const sturdyEntry = hist.find(h => h.level === 1 && h.source === 'sturdy')
   if (!diceEntry) return null
@@ -44,23 +43,25 @@ const hpFormulaLines = computed(() => {
 })
 
 async function rollHp() {
+  const d = draft.value
+  if (!d) return
   const result = await roll({
     notation: `${numDice.value}d6`,
     label: `Очки здоровья (${numDice.value}d6, оставить 1)`,
     purpose: { kind: 'hp-init', level: 1, numDice: numDice.value, kept: 1 },
-    characterId: props.draft.id,
-    characterName: props.draft.name || 'Новый персонаж',
+    characterId: d.id,
+    characterName: d.name || 'Новый персонаж',
   })
   if (!result) return
-  const rolls = result.dice.map(d => d.value)
+  const rolls = result.dice.map(dv => dv.value)
   const top = Math.max(...rolls)
-  const sturdyBonus = sturdinessBonus(props.draft.abilityIds)
+  const sturdyBonus = sturdinessBonus(d.abilityIds)
   const hp = top + sturdyBonus
   const hpHistory: NonNullable<Character['hpHistory']> = [
     { level: 1, roll: top, source: 'dice' },
     ...(sturdyBonus > 0 ? [{ level: 1, roll: 6, source: 'sturdy' as const }] : []),
   ]
-  emit('patch', { hitDice: numDice.value, maxHp: hp, currentHp: hp, hpHistory })
+  setHitDiceResult(numDice.value, hp, hp, hpHistory)
 }
 
 function removeItem(id: string) { inv.remove(id) }
@@ -117,6 +118,7 @@ function onUse(item: InventoryItem) {
 </script>
 
 <template>
+  <template v-if="draft">
   <section class="cc-section">
     <div class="cc-section-head">
       <span class="cc-section-label">{{ t('characterCreation.gear.hpLabel') }}</span>
@@ -204,6 +206,7 @@ function onUse(item: InventoryItem) {
       <Button variant="ghost" @click="gmCancel">{{ t('inGame.inventory.gm.discuss') }}</Button>
     </template>
   </ConfirmSheet>
+  </template>
 </template>
 
 <style scoped>

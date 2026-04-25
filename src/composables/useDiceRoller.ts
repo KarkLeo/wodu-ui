@@ -77,13 +77,25 @@ export function useDiceRoller() {
   ) {
     const cleanDamage = parseDamageNotation(baseDamage)
     const weaponFull = damageBonusDice > 0 ? `${cleanDamage}+${damageBonusDice}d6` : cleanDamage
-    const diceTerms: string[] = []
+    const diceCounts = new Map<number, number>()
     let fixedMod = 0
     for (const raw of weaponFull.split(/(?=[+\-])/)) {
       const term = raw.trim()
       if (!term) continue
-      if (/d\d+/i.test(term)) diceTerms.push(term.replace(/^\+/, ''))
-      else fixedMod += Number(term)
+      const m = term.match(/^([+\-]?)(\d*)d(\d+)$/i)
+      if (m) {
+        const sign = m[1] === '-' ? -1 : 1
+        const count = (m[2] ? Number(m[2]) : 1) * sign
+        const sides = Number(m[3])
+        diceCounts.set(sides, (diceCounts.get(sides) ?? 0) + count)
+      } else {
+        fixedMod += Number(term)
+      }
+    }
+    const diceTerms: string[] = []
+    for (const [sides, count] of diceCounts) {
+      if (count === 0) continue
+      diceTerms.push(`${count}d${sides}`)
     }
     const notation = diceTerms.join('+').replace(/\+\-/g, '-')
     const modifier = fixedMod + flatBonus

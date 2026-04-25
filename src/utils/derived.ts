@@ -1,21 +1,74 @@
 import type { AbilityId, Character, InventoryItem, StatKey } from '@/types/character'
+import { ABILITIES } from '@/types/character'
 import { XP_THRESHOLDS } from '@/data/xpTable'
+import { getAbilityEffect } from '@/data/abilities'
 
 export interface BreakdownLine {
   value: string
   label: string
 }
 
-export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds' | 'armorMod'>): number {
+interface EquippedArmorState {
+  hasFull: boolean
+  hasLight: boolean
+  hasShield: boolean
+}
+
+function getEquippedArmor(char: Pick<Character, 'inventory'>): EquippedArmorState {
   const equipped = (char.inventory ?? []).filter(i => i.equipped)
-  const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
-  const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
-  const hasShield = equipped.some(i => i.descriptor.kind === 'shield')
+  return {
+    hasFull: equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full'),
+    hasLight: equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light'),
+    hasShield: equipped.some(i => i.descriptor.kind === 'shield'),
+  }
+}
+
+function abilityName(id: AbilityId): string {
+  return ABILITIES.find(a => a.id === id)?.name ?? id
+}
+
+const ABILITY_SHORT_NAME: Partial<Record<AbilityId, string>> = {
+  skirmish: 'Манёвр.',
+  hewing: 'Рубка',
+  volley: 'Залп',
+}
+
+function abilityShortName(id: AbilityId): string {
+  return ABILITY_SHORT_NAME[id] ?? abilityName(id)
+}
+
+function weaponScope(weapon: InventoryItem): 'melee' | 'ranged' | null {
+  if (weapon.descriptor.kind !== 'weapon') return null
+  if (weapon.descriptor.melee === true) return 'melee'
+  if (weapon.descriptor.melee === false) return 'ranged'
+  return null
+}
+
+function damageBonusesForWeapon(
+  abilityIds: readonly AbilityId[],
+  weapon: InventoryItem,
+): { id: AbilityId; amount: number }[] {
+  const scope = weaponScope(weapon)
+  const out: { id: AbilityId; amount: number }[] = []
+  for (const id of abilityIds) {
+    const bonus = getAbilityEffect(id)?.damageBonus
+    if (!bonus) continue
+    if (bonus.scope !== 'all' && bonus.scope !== scope) continue
+    out.push({ id, amount: bonus.amount })
+  }
+  return out
+}
+
+export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds' | 'armorMod'>): number {
+  const { hasFull, hasLight, hasShield } = getEquippedArmor(char)
   const base = hasFull ? 2 : hasLight ? 1 : 0
   const shield = hasShield ? 1 : 0
-  const toughness = (char.abilityIds ?? []).includes('toughness') ? 1 : 0
+  let abilityBonus = 0
+  for (const id of char.abilityIds ?? []) {
+    abilityBonus += getAbilityEffect(id)?.armorBonus ?? 0
+  }
   const mod = char.armorMod ?? 0
-  return Math.max(0, base + shield + toughness + mod)
+  return Math.max(0, base + shield + abilityBonus + mod)
 }
 
 export function isWeapon(item: InventoryItem): boolean {
@@ -24,15 +77,11 @@ export function isWeapon(item: InventoryItem): boolean {
 
 export function damageFormula(char: Pick<Character, 'abilityIds' | 'damageBonusDice'>, weapon: InventoryItem): string {
   if (!weapon.damage) return '—'
-  const bonuses: string[] = []
-  const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
-  const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
-  const abilityIds = char.abilityIds ?? []
-  if (abilityIds.includes('skirmish')) bonuses.push('+1 Манёвр.')
-  if (melee && abilityIds.includes('hewing')) bonuses.push('+2 Рубка')
-  if (ranged && abilityIds.includes('volley')) bonuses.push('+2 Залп')
+  const bonuses = damageBonusesForWeapon(char.abilityIds ?? [], weapon)
   const bonusDice = char.damageBonusDice > 0 ? ` +${char.damageBonusDice}d6` : ''
-  const extras = bonuses.length ? ' (' + bonuses.join(', ') + ')' : ''
+  const extras = bonuses.length
+    ? ' (' + bonuses.map(b => `+${b.amount} ${abilityShortName(b.id)}`).join(', ') + ')'
+    : ''
   return `${weapon.damage}${bonusDice}${extras}`
 }
 
@@ -119,7 +168,7 @@ export function hpBreakdownLines(hpHistory: Character['hpHistory']): BreakdownLi
   if (!hpHistory?.length) return []
   return hpHistory.map(entry => ({
     value: entry.source === 'sturdy' ? '+6' : String(entry.roll),
-    label: entry.source === 'sturdy' ? 'Стойкость' : `ур. ${entry.level}, бросок к6`,
+    label: entry.source === 'sturdy' ? abilityName('sturdy') : `ур. ${entry.level}, бросок к6`,
   }))
 }
 
@@ -127,14 +176,7 @@ export function damageAbilityBonus(
   char: Pick<Character, 'abilityIds'>,
   weapon: InventoryItem,
 ): number {
-  const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
-  const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
-  const abilityIds = char.abilityIds ?? []
-  let bonus = 0
-  if (abilityIds.includes('skirmish')) bonus += 1
-  if (melee && abilityIds.includes('hewing')) bonus += 2
-  if (ranged && abilityIds.includes('volley')) bonus += 2
-  return bonus
+  return damageBonusesForWeapon(char.abilityIds ?? [], weapon).reduce((sum, b) => sum + b.amount, 0)
 }
 
 export function damageFormulaCompact(
@@ -189,13 +231,10 @@ export function damageBreakdownLines(
   weapon: InventoryItem,
 ): BreakdownLine[] {
   if (!weapon.damage) return []
-  const lines: BreakdownLine[] = [{ value: parseDamageNotation(weapon.damage), label: 'Оружие' }]
-  const melee = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === true
-  const ranged = weapon.descriptor.kind === 'weapon' && weapon.descriptor.melee === false
-  const abilityIds = char.abilityIds ?? []
-  if (abilityIds.includes('skirmish')) lines.push({ value: '+1', label: 'Манёвренность' })
-  if (melee && abilityIds.includes('hewing')) lines.push({ value: '+2', label: 'Рубка' })
-  if (ranged && abilityIds.includes('volley')) lines.push({ value: '+2', label: 'Залп' })
+  const lines: BreakdownLine[] = [{ value: weapon.damage, label: 'Оружие' }]
+  for (const b of damageBonusesForWeapon(char.abilityIds ?? [], weapon)) {
+    lines.push({ value: `+${b.amount}`, label: abilityName(b.id) })
+  }
   if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'Бонус уровня' })
   const mod = char.damageMod ?? 0
   if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: 'Эффекты' })
@@ -206,18 +245,21 @@ export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'ability
   lines: BreakdownLine[]
   note?: string
 } {
-  const equipped = (char.inventory ?? []).filter(i => i.equipped)
-  const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
-  const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
-  const hasShield = equipped.some(i => i.descriptor.kind === 'shield')
+  const { hasFull, hasLight, hasShield } = getEquippedArmor(char)
   const lines: BreakdownLine[] = []
   if (hasFull) lines.push({ value: '2', label: 'полный доспех' })
   else if (hasLight) lines.push({ value: '1', label: 'лёгкий доспех' })
   if (hasShield) lines.push({ value: '+1', label: 'щит' })
   const abilityIds = char.abilityIds ?? []
-  if (abilityIds.includes('toughness')) lines.push({ value: '+1', label: 'Прочность' })
+  for (const id of abilityIds) {
+    const bonus = getAbilityEffect(id)?.armorBonus
+    if (bonus) lines.push({ value: `+${bonus}`, label: abilityName(id) })
+  }
   const mod = char.armorMod ?? 0
   if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: 'Эффекты' })
-  const note = abilityIds.includes('skirmish') ? 'доспех считается лёгким (Манёвренность)' : undefined
+  const lighterAbilityId = abilityIds.find(id => getAbilityEffect(id)?.armorTreatedAsLighter)
+  const note = lighterAbilityId
+    ? `доспех считается лёгким (${abilityName(lighterAbilityId)})`
+    : undefined
   return { lines, note }
 }
