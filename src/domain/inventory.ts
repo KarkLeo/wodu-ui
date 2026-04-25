@@ -1,10 +1,9 @@
-import type { Character, InventoryItem } from '@/types/character'
+import type { Character, InventoryItem, ItemDescriptor } from '@/types/character'
 import { findGearTemplate } from '@/data/gear'
 
-export function isConsumable(item: InventoryItem): boolean {
+export function isConsumable(item: { descriptor: ItemDescriptor }): boolean {
   const d = item.descriptor
-  if (d.kind === 'gear' || d.kind === 'occult') return d.consumable === true
-  if (d.kind === 'custom') return d.consumable === true
+  if (d.kind === 'gear' || d.kind === 'occult' || d.kind === 'custom') return d.consumable === true
   return false
 }
 
@@ -24,9 +23,7 @@ export function buyItem(char: Character, templateId: string): Character {
   const tpl = findGearTemplate(templateId)
   if (!tpl) return char
   const cost = tpl.price ?? 0
-  const descriptor = tpl.descriptor
-  const consumable = (descriptor.kind === 'gear' || descriptor.kind === 'occult') && descriptor.consumable
-  if (consumable) {
+  if (isConsumable(tpl)) {
     const stacked = stackConsumable(char, tpl.templateId)
     if (stacked) {
       return { ...stacked, coins: Math.max(0, char.coins - cost) }
