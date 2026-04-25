@@ -5,6 +5,7 @@ import * as inv from './inventory'
 import * as combat from './combat'
 import * as prog from './progression'
 import * as mods from './modifiers'
+import { findGearTemplate } from '@/data/gear'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('domain')
@@ -47,8 +48,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const before = char
       next = inv.buyItem(char, cmd.templateId)
       if (next !== before) {
-        const added = next.inventory.find(i => !before.inventory.some(b => b.id === i.id))
-        const name = added?.name ?? '—'
+        const name = findGearTemplate(cmd.templateId)?.name ?? '—'
         const cost = before.coins - next.coins
         changes.push({
           kind: 'inventory-add',
