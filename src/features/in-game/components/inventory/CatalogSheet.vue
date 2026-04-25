@@ -4,15 +4,10 @@ import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } f
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import { GEAR_CATEGORIES, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
+import { isConsumable } from '@/domain/inventory'
 import ItemIcon from './ItemIcon.vue'
 import ItemStatChip from './ItemStatChip.vue'
 import { t } from '@/locales'
-
-function isTplConsumable(tpl: GearTemplate): boolean {
-  const d = tpl.descriptor
-  if (d.kind === 'gear' || d.kind === 'occult' || d.kind === 'custom') return d.consumable === true
-  return false
-}
 
 const props = defineProps<{ coins: number }>()
 const emit = defineEmits<{
@@ -89,7 +84,7 @@ function onBuyClick(tpl: GearTemplate) {
               <div v-for="tpl in filtered" :key="tpl.templateId" class="cat-item">
                 <ItemIcon
                   :kind="tpl.descriptor.kind"
-                  :consumable="isTplConsumable(tpl)"
+                  :consumable="isConsumable(tpl)"
                 />
                 <div class="cat-item-body">
                   <div class="cat-item-name">{{ tpl.name }}</div>
@@ -99,7 +94,7 @@ function onBuyClick(tpl: GearTemplate) {
                   <ItemStatChip v-if="tpl.damage" variant="damage">{{ tpl.damage }}</ItemStatChip>
                   <ItemStatChip v-if="armorChip(tpl)" variant="armor">{{ armorChip(tpl) }}</ItemStatChip>
                   <ItemStatChip
-                    v-if="isTplConsumable(tpl)"
+                    v-if="isConsumable(tpl)"
                     variant="qty"
                   >{{ t('inGame.inventory.catalog.consumableShort') }}</ItemStatChip>
                   <ItemStatChip
