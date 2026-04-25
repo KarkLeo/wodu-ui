@@ -19,7 +19,6 @@ const emit = defineEmits<{
 const over = computed(() => Math.max(0, props.count - props.limit))
 const subtitle = computed(() => {
   if (props.overdose) return t('inGame.magic.quicksilver.overdoseAmount', { over: over.value })
-  if (props.count >= props.limit - 1 && props.limit > 0) return t('inGame.magic.quicksilver.nextIsRoll')
   return t('inGame.magic.quicksilver.safe')
 })
 const title = computed(() =>

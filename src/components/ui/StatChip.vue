@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
+import InfoPopover from './InfoPopover.vue'
 import Stepper from './Stepper.vue'
 
 type Variant = 'default' | 'row' | 'hero' | 'minimal'
@@ -47,8 +47,8 @@ function fmtMod(m: number): string {
 </script>
 
 <template>
-  <PopoverRoot v-if="hasPopover" @update:open="emit('open', $event)">
-    <PopoverTrigger as-child>
+  <InfoPopover v-if="hasPopover" side="right" align="start" @open="emit('open', $event)">
+    <template #trigger>
       <button
         type="button"
         :class="[
@@ -79,18 +79,9 @@ function fmtMod(m: number): string {
         </span>
         <span v-if="variant === 'hero' && rollHint" class="sc-roll-hint">{{ rollHint }}</span>
       </button>
-    </PopoverTrigger>
-    <PopoverPortal>
-      <PopoverContent
-        class="stat-popover"
-        :side-offset="8"
-        side="right"
-        align="start"
-      >
-        <slot name="popover" />
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+    </template>
+    <slot name="popover" />
+  </InfoPopover>
 
   <button
     v-else
@@ -324,25 +315,7 @@ function fmtMod(m: number): string {
 
 <style>
 /* Portal — глобальные стили для popover-контента */
-.stat-popover {
-  position: relative;
-  display: inline-block;
-  min-width: 280px;
-  max-width: 320px;
-  padding: 14px 16px 12px;
-  background: rgba(36, 28, 21, 0.96);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border: 1px solid var(--vtt-border-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-2);
-  color: var(--vtt-text-primary);
-  z-index: 200;
-  font-family: var(--font-sans);
-  font-size: 13px;
-}
-
-.stat-popover .pop-hero {
+.info-popover .pop-hero {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -360,31 +333,31 @@ function fmtMod(m: number): string {
   cursor: pointer;
   filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.28));
 }
-.stat-popover .pop-hero:hover { background: #BF9A4C; }
+.info-popover .pop-hero:hover { background: #BF9A4C; }
 
-.stat-popover .pop-divider {
+.info-popover .pop-divider {
   height: 1px;
   margin: 12px -16px;
   background: linear-gradient(to right, transparent, var(--vtt-border-subtle), transparent);
 }
 
-.stat-popover .pop-section-head {
+.info-popover .pop-section-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: 6px;
 }
-.stat-popover .pop-section-head .pop-sub { margin: 0; }
+.info-popover .pop-section-head .pop-sub { margin: 0; }
 
-.stat-popover .pop-effect {
+.info-popover .pop-effect {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 7px 0;
   border-top: 1px solid var(--vtt-border-subtle);
 }
-.stat-popover .pop-effect:first-of-type { border-top: 0; }
-.stat-popover .pop-effect-delta {
+.info-popover .pop-effect:first-of-type { border-top: 0; }
+.info-popover .pop-effect-delta {
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: 13px;
@@ -393,28 +366,28 @@ function fmtMod(m: number): string {
   padding: 2px 0;
   border-radius: var(--r-xs);
 }
-.stat-popover .pop-effect-delta.is-buff {
+.info-popover .pop-effect-delta.is-buff {
   color: var(--vtt-success);
   background: rgba(107, 142, 78, 0.1);
 }
-.stat-popover .pop-effect-delta.is-debuff {
+.info-popover .pop-effect-delta.is-debuff {
   color: var(--vtt-danger-bright);
   background: rgba(178, 59, 79, 0.1);
 }
-.stat-popover .pop-effect-name {
+.info-popover .pop-effect-name {
   flex: 1;
   font-size: 13px;
   color: var(--vtt-text-primary);
   line-height: 1.2;
 }
-.stat-popover .pop-effect-meta {
+.info-popover .pop-effect-meta {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--vtt-text-muted);
   margin-top: 1px;
   display: block;
 }
-.stat-popover .pop-effect-remove {
+.info-popover .pop-effect-remove {
   width: 22px;
   height: 22px;
   display: inline-flex;
@@ -428,24 +401,24 @@ function fmtMod(m: number): string {
   line-height: 1;
   cursor: pointer;
 }
-.stat-popover .pop-effect-remove:hover {
+.info-popover .pop-effect-remove:hover {
   color: var(--vtt-danger-bright);
   border-color: var(--vtt-danger);
 }
 
-.stat-popover .pop-empty {
+.info-popover .pop-empty {
   font-size: 12px;
   color: var(--vtt-text-muted);
   font-style: italic;
   padding: 4px 0 2px;
 }
 
-.stat-popover .pop-actions {
+.info-popover .pop-actions {
   display: flex;
   gap: 8px;
   margin-top: 12px;
 }
-.stat-popover .pop-btn {
+.info-popover .pop-btn {
   flex: 1;
   padding: 8px 10px;
   background: transparent;
@@ -458,7 +431,7 @@ function fmtMod(m: number): string {
   cursor: pointer;
   line-height: 1;
 }
-.stat-popover .pop-btn:hover {
+.info-popover .pop-btn:hover {
   color: var(--vtt-accent-soft);
   border-color: var(--vtt-border-strong);
 }

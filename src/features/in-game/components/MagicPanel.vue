@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { Character, Ritual, Spirit, Magic, AbilityId } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
-import { useInventory } from '@/composables/useInventory'
-import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { useMercury } from '@/composables/useMercury'
+import { isRolling } from '@/composables/useDiceRoller'
 import { grantsSection } from '@/data/abilities'
-import { isQuicksilverOverdose, effectiveStat } from '@/utils/derived'
-import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
 
 import SpiritCard from './magic/SpiritCard.vue'
@@ -17,14 +15,20 @@ import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
-const log = createLogger('magic')
-
 type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; abilityIds: AbilityId[]; dispatch: Dispatcher }>()
 
-const inv = useInventory(props.dispatch)
-const { rollStat } = useDiceRoller()
+const {
+  count: quicksilverCount,
+  limit: quicksilverLimit,
+  isOverdose: overdose,
+  mercuryItem,
+  overdoseOpen,
+  drink,
+  reset: resetQuicksilver,
+  rollOverdose,
+} = useMercury(() => props.char, props.dispatch)
 
 const EMPTY_MAGIC: Magic = { spirits: [], rituals: [], cantrips: [] }
 const magic = computed<Magic>(() => props.char.magic ?? EMPTY_MAGIC)
@@ -34,16 +38,7 @@ const hasRituals = computed(() => grantsSection(props.abilityIds, 'rituals'))
 const hasCantrips = computed(() => grantsSection(props.abilityIds, 'cantrips'))
 const hasQuicksilver = computed(() => hasSpirits.value)
 
-const quicksilverCount = computed(() => props.char.quicksilverCount ?? 0)
-const quicksilverLimit = computed(() => props.char.level)
-const overdose = computed(() => isQuicksilverOverdose(props.char))
-
-const mercuryItem = computed(() =>
-  props.char.inventory.find(i => i.templateId === 'mercury' && (i.quantity ?? 1) > 0) ?? null,
-)
 const canDrink = computed(() => mercuryItem.value !== null)
-
-const overdoseOpen = ref(false)
 
 function updateMagic(patch: Partial<Magic>) {
   props.dispatch({ type: 'UPDATE_MAGIC', magic: { ...magic.value, ...patch } })
@@ -78,40 +73,8 @@ function removeRitual(idx: number) {
 
 function onDrink() {
   if (!mercuryItem.value) return
-  if (overdose.value) {
-    overdoseOpen.value = true
-    return
-  }
-  inv.use(mercuryItem.value.id)
+  drink(mercuryItem.value.id)
 }
-
-function onResetQuicksilver() {
-  props.dispatch({ type: 'RESET_QUICKSILVER' })
-}
-
-function overdoseReset() {
-  props.dispatch({ type: 'RESET_QUICKSILVER' })
-  overdoseOpen.value = false
-}
-
-async function overdoseRoll() {
-  const item = mercuryItem.value
-  if (!item) { overdoseOpen.value = false; return }
-  try {
-    await rollStat(
-      props.char.id,
-      props.char.name,
-      'con',
-      t('inGame.inventory.overdose.rollLabel'),
-      effectiveStat(props.char, 'con'),
-    )
-  } catch (err) {
-    log.error('overdose roll failed', err)
-  }
-  inv.use(item.id)
-  overdoseOpen.value = false
-}
-
 </script>
 
 <template>
@@ -123,7 +86,7 @@ async function overdoseRoll() {
       :overdose="overdose"
       :can-drink="canDrink"
       @drink="onDrink"
-      @reset="onResetQuicksilver"
+      @reset="resetQuicksilver"
     />
 
     <div v-if="hasSpirits" class="mg-section">
@@ -191,10 +154,10 @@ async function overdoseRoll() {
         {{ t('inGame.magic.overdose.body', { count: quicksilverCount, level: quicksilverLimit }) }}
       </p>
       <template #actions>
-        <Button variant="hero-danger" :disabled="isRolling" @click="overdoseRoll">
+        <Button variant="hero-danger" :disabled="isRolling" @click="rollOverdose">
           {{ t('inGame.magic.overdose.roll') }}
         </Button>
-        <Button variant="primary" @click="overdoseReset">
+        <Button variant="primary" @click="resetQuicksilver">
           {{ t('inGame.magic.overdose.reset') }}
         </Button>
         <Button variant="ghost" @click="overdoseOpen = false">{{ t('common.cancel') }}</Button>
