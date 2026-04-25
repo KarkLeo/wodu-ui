@@ -185,17 +185,18 @@
   },
   "active": "6d2e0de2b2834c5f",
   "lastOpenFiles": [
-    "dist/assets/Dice-D99vTumT.js",
-    "dist/assets/world.onscreen-CnuLtkW4.js",
-    "dist/assets/useActiveCharacter-CbESj7sE.js",
-    "dist/assets/world.none-CGMEw2PV.js",
-    "dist/assets/PrimitivesPreviewView-Caj2vOVg.js",
-    "dist/assets/IconStar.vue_vue_type_script_setup_true_lang-x_qoKuIl.js",
-    "dist/assets/LevelUpView-Dd5r_hTm.js",
-    "dist/assets/PartyView-Qi-yjtz4.js",
-    "dist/assets/index-BpOGMGfC.js",
-    "dist/assets/BottomSheet.vue_vue_type_style_index_0_lang-Bpeo8VxC.js",
-    "dist/assets/CustomItemSheet-DUczuc7c.js",
+    "dist/assets/Dice-BCX-upWL.js",
+    "dist/assets/world.onscreen-hucAMXec.js",
+    "dist/assets/PartyView-La-ZaqBy.js",
+    "dist/assets/world.none-DN0B65gk.js",
+    "dist/assets/index-cGDAnbx8.js",
+    "dist/assets/useActiveCharacter-D6WSJ3OQ.js",
+    "dist/assets/BottomSheet.vue_vue_type_style_index_0_lang-DHvEKeAf.js",
+    "dist/assets/LevelUpView-CRtzIOpC.js",
+    "dist/assets/IconStar.vue_vue_type_script_setup_true_lang-BtLvs0Hi.js",
+    "dist/assets/PrimitivesPreviewView-BzXYUamt.js",
+    "dist/assets/CustomItemSheet-CDsJxCwD.js",
+    "dist/assets/bg-DNvetVao.jpeg",
     "docs/architecture-review-2026-04-25.md",
     "node_modules/happy-dom/README.md",
     "node_modules/vitest/LICENSE.md",
@@ -229,7 +230,6 @@
     "src/assets/hero.png",
     "public/icons.svg",
     "public/favicon.svg",
-    "var/folders/qn/694dj44d27v_jd671q90yyw40000gn/T/tmp.4lGokW39Zv/vite-project/src/assets/vue.svg",
-    "var/folders/qn/694dj44d27v_jd671q90yyw40000gn/T/tmp.4lGokW39Zv/vite-project/src/assets/vite.svg"
+    "var/folders/qn/694dj44d27v_jd671q90yyw40000gn/T/tmp.4lGokW39Zv/vite-project/src/assets/vue.svg"
   ]
 }
