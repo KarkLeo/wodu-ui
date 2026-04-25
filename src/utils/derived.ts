@@ -6,7 +6,7 @@ export interface BreakdownLine {
   label: string
 }
 
-export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds'>): number {
+export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds' | 'armorMod'>): number {
   const equipped = (char.inventory ?? []).filter(i => i.equipped)
   const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
   const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
@@ -14,7 +14,8 @@ export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds'>): n
   const base = hasFull ? 2 : hasLight ? 1 : 0
   const shield = hasShield ? 1 : 0
   const toughness = (char.abilityIds ?? []).includes('toughness') ? 1 : 0
-  return base + shield + toughness
+  const mod = char.armorMod ?? 0
+  return Math.max(0, base + shield + toughness + mod)
 }
 
 export function armorTypeLabel(char: Pick<Character, 'inventory'>): string {
@@ -150,7 +151,7 @@ export function damageAbilityBonus(
 }
 
 export function damageFormulaCompact(
-  char: Pick<Character, 'abilityIds' | 'damageBonusDice'>,
+  char: Pick<Character, 'abilityIds' | 'damageBonusDice' | 'damageMod'>,
   weapon: InventoryItem,
 ): string {
   if (!weapon.damage) return '—'
@@ -159,7 +160,7 @@ export function damageFormulaCompact(
   const count = m[1] ? Number(m[1]) : 1
   const side = Number(m[2])
   const baseFlat = m[3] ? (m[3] === '-' ? -Number(m[4]) : Number(m[4])) : 0
-  const flatSum = baseFlat + damageAbilityBonus(char, weapon)
+  const flatSum = baseFlat + damageAbilityBonus(char, weapon) + (char.damageMod ?? 0)
   const bonusDice = char.damageBonusDice > 0 ? char.damageBonusDice : 0
   const sameSide = side === 6
   const totalCount = sameSide ? count + bonusDice : count
@@ -168,8 +169,36 @@ export function damageFormulaCompact(
   return `${totalCount}d${side}${flatStr}${bonusDiceStr}`
 }
 
+export interface DamageFormulaParts {
+  base: string
+  tail: string
+  tailTone: 'buff' | 'debuff' | 'neutral'
+}
+
+export function damageFormulaParts(
+  char: Pick<Character, 'abilityIds' | 'damageBonusDice' | 'damageMod'>,
+  weapon: InventoryItem,
+): DamageFormulaParts | null {
+  if (!weapon.damage) return null
+  const m = weapon.damage.trim().match(/^(\d*)d(\d+)(?:\s*([+-])\s*(\d+))?$/i)
+  if (!m) return { base: weapon.damage, tail: '', tailTone: 'neutral' }
+  const count = m[1] ? Number(m[1]) : 1
+  const side = Number(m[2])
+  const baseFlat = m[3] ? (m[3] === '-' ? -Number(m[4]) : Number(m[4])) : 0
+  const mod = char.damageMod ?? 0
+  const flatSum = baseFlat + damageAbilityBonus(char, weapon) + mod
+  const bonusDice = char.damageBonusDice > 0 ? char.damageBonusDice : 0
+  const sameSide = side === 6
+  const totalCount = sameSide ? count + bonusDice : count
+  const bonusDiceStr = !sameSide && bonusDice > 0 ? `+${bonusDice}d6` : ''
+  const base = `${totalCount}d${side}${bonusDiceStr}`
+  const tail = flatSum > 0 ? `+${flatSum}` : flatSum < 0 ? String(flatSum) : ''
+  const tailTone: DamageFormulaParts['tailTone'] = mod > 0 ? 'buff' : mod < 0 ? 'debuff' : 'neutral'
+  return { base, tail, tailTone }
+}
+
 export function damageBreakdownLines(
-  char: Pick<Character, 'abilityIds' | 'damageBonusDice'>,
+  char: Pick<Character, 'abilityIds' | 'damageBonusDice' | 'damageMod'>,
   weapon: InventoryItem,
 ): BreakdownLine[] {
   if (!weapon.damage) return []
@@ -181,10 +210,12 @@ export function damageBreakdownLines(
   if (melee && abilityIds.includes('hewing')) lines.push({ value: '+2', label: 'Рубка' })
   if (ranged && abilityIds.includes('volley')) lines.push({ value: '+2', label: 'Залп' })
   if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'Бонус уровня' })
+  const mod = char.damageMod ?? 0
+  if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: 'Эффекты' })
   return lines
 }
 
-export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'abilityIds'>): {
+export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'abilityIds' | 'armorMod'>): {
   lines: BreakdownLine[]
   note?: string
 } {
@@ -198,6 +229,8 @@ export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'ability
   if (hasShield) lines.push({ value: '+1', label: 'щит' })
   const abilityIds = char.abilityIds ?? []
   if (abilityIds.includes('toughness')) lines.push({ value: '+1', label: 'Прочность' })
+  const mod = char.armorMod ?? 0
+  if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: 'Эффекты' })
   const note = abilityIds.includes('skirmish') ? 'доспех считается лёгким (Манёвренность)' : undefined
   return { lines, note }
 }

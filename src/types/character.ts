@@ -106,6 +106,9 @@ export interface Character {
   hitDice: number
   currentHp: number
   maxHp: number
+  tempHp?: number
+  armorMod?: number
+  damageMod?: number
   hpHistory?: { level: number; roll: number; source: 'dice' | 'sturdy' }[]
 
   skillIds: SkillId[]

@@ -268,20 +268,22 @@ function fmtMod(m: number): string {
   font-weight: 600;
   letter-spacing: 0.02em;
   border-radius: var(--r-pill);
-  background: var(--vtt-bg-base);
+  background: rgba(26, 21, 16, 0.55);
   border: 1px solid var(--vtt-border-strong);
   line-height: 1;
   pointer-events: none;
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
 }
 .stat-chip .sc-mod.is-buff {
   color: var(--vtt-success);
   border-color: rgba(107, 142, 78, 0.55);
-  background: rgba(107, 142, 78, 0.12);
+  background: rgba(107, 142, 78, 0.18);
 }
 .stat-chip .sc-mod.is-debuff {
   color: var(--vtt-danger-bright);
   border-color: rgba(178, 59, 79, 0.55);
-  background: rgba(58, 24, 32, 0.9);
+  background: rgba(58, 24, 32, 0.55);
 }
 
 .stat-chip .sc-base {
