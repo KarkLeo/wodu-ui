@@ -39,43 +39,7 @@ const open = defineModel<boolean>('open', { required: true })
 </template>
 
 <style>
-/* Portal — нескоупленные стили */
-.bs-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(4px);
-  z-index: 300;
-}
-.bs-content-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 301;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 16px;
-  pointer-events: none;
-}
-@media (min-width: 720px) {
-  .bs-content-wrap { align-items: center; }
-}
-.bs-content-wrap > .bottom-sheet { pointer-events: auto; }
-
-.bottom-sheet {
-  width: 100%;
-  max-width: 520px;
-  background: rgba(26, 21, 16, 0.94);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border: 1px solid var(--vtt-border-gold);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-2);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 32px);
-}
+/* Portal — нескоупленные стили (общие .bs-overlay/.bs-content-wrap/.bottom-sheet — в main.css) */
 .bs-head {
   display: flex;
   align-items: center;

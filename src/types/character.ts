@@ -38,6 +38,13 @@ export type AbilityId = typeof ABILITIES[number]['id']
 export type StatKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 export type Stats = Record<StatKey, number>
 
+export interface StatModifier {
+  id: string
+  statKey: StatKey
+  amount: number
+  label: string
+}
+
 export type ItemDescriptor =
   | { kind: 'weapon'; melee: true }
   | { kind: 'weapon'; melee: false }
@@ -103,6 +110,8 @@ export interface Character {
 
   skillIds: SkillId[]
   abilityIds: AbilityId[]
+
+  modifiers?: StatModifier[]
 
   inventory: InventoryItem[]
   coins: number

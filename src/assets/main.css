@@ -83,13 +83,45 @@ html, body, #app {
   min-height: 100%;
   background: var(--vtt-bg-base);
   color: var(--vtt-text-primary);
+  font-feature-settings: "locl" 1;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vtt-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--vtt-border-strong);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ============================================================
+   Utility classes (портируются 1:1 из палитры дизайн-системы)
+   ============================================================ */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--vtt-accent-deep);
+  margin: 0 0 10px;
 }
 
 body {
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
   background-image:
     radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
     radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
@@ -133,4 +165,42 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── BottomSheet portal (shared by BottomSheet, CatalogSheet, CustomItemSheet) ── */
+.bs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+}
+.bs-content-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 301;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+}
+@media (min-width: 720px) {
+  .bs-content-wrap { align-items: center; }
+}
+.bs-content-wrap > .bottom-sheet { pointer-events: auto; }
+
+.bottom-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(26, 21, 16, 0.94);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--vtt-border-gold);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
 }

@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<{
   state: 'default',
 })
 
-const model = defineModel<number>('value', { required: false })
+const model = defineModel<number | string>('value', { required: false })
 
 const emit = defineEmits<{
   (e: 'toggleEdit'): void

@@ -17,7 +17,6 @@ withDefaults(defineProps<{ size?: number | string; strokeWidth?: number | string
     stroke-linejoin="round"
     aria-hidden="true"
   >
-    <path d="M5 3 L8 4 L11 3 L11 9 C11 11 9.5 12.5 8 13 C6.5 12.5 5 11 5 9 Z"/>
-    <path d="M8 4 V13"/>
+    <path d="M8 2 L12.5 3.5 L12 9 C12 11 10 12.5 8 13.5 C6 12.5 4 11 4 9 L3.5 3.5 Z"/>
   </svg>
 </template>

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/superpowers/specs/2026-04-16-character-sheet-design.md",
+                "file": "docs/ideas.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-04-16-character-sheet-design"
+              "title": "ideas"
             }
           }
         ]
@@ -185,6 +185,7 @@
   },
   "active": "6d2e0de2b2834c5f",
   "lastOpenFiles": [
+    "src/domain/modifiers.ts",
     "src/utils/format.ts",
     "src/features/level-up/components/LevelMoveStep.vue",
     "src/features/level-up/components/LevelStatStep.vue",
@@ -195,7 +196,6 @@
     "src/features/in-game/components/HpXpBlock.vue",
     "src/features/in-game/components/GameHeader.vue",
     "src/features/character-creation/steps/StepGear.vue",
-    "src/features/character-creation/steps/StepMoves.vue",
     "node_modules/happy-dom/README.md",
     "node_modules/vitest/LICENSE.md",
     "node_modules/vitest/README.md",

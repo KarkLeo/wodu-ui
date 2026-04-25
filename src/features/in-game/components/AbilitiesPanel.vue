@@ -2,43 +2,99 @@
 import { computed, ref } from 'vue'
 import type { Character } from '@/types/character'
 import { ABILITIES } from '@/types/character'
-import AllAbilitiesDialog from '@/components/ui/AllAbilitiesDialog.vue'
+import AbilityCard from '@/components/ui/AbilityCard.vue'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { t } from '@/locales'
 
 const props = defineProps<{ char: Character }>()
 
-const items = computed(() => ABILITIES.filter(a => props.char.abilityIds.includes(a.id)))
-const expanded = ref<string | null>(null)
+const items = computed(() =>
+  ABILITIES.filter(a => props.char.abilityIds.includes(a.id)),
+)
+
+const sheetOpen = ref(false)
 </script>
 
 <template>
-  <section class="panel">
-    <div class="label-row">
-      <div class="label">Способности</div>
-      <AllAbilitiesDialog>
-        <button class="all-btn" type="button">все</button>
-      </AllAbilitiesDialog>
+  <section class="abilities-section">
+    <div class="abilities-section-head">
+      <span class="abilities-section-title">{{ t('inGame.abilities.title') }}</span>
+      <button
+        type="button"
+        class="abilities-section-link"
+        @click="sheetOpen = true"
+      >
+        {{ t('inGame.abilities.all') }}
+      </button>
     </div>
-    <ul class="list">
-      <li v-for="ab in items" :key="ab.id" class="row">
-        <button class="row__head" @click="expanded = expanded === ab.id ? null : ab.id">
-          <span>{{ ab.name }}</span>
-          <span>{{ expanded === ab.id ? '▾' : '▸' }}</span>
-        </button>
-        <div v-if="expanded === ab.id" class="row__desc">{{ ab.description }}</div>
-      </li>
-      <li v-if="!items.length" class="empty">—</li>
-    </ul>
+    <div v-if="items.length" class="abilities-list">
+      <AbilityCard
+        v-for="ab in items"
+        :key="ab.id"
+        :title="ab.name"
+        mode="display"
+      >
+        {{ ab.description }}
+      </AbilityCard>
+    </div>
+    <div v-else class="abilities-empty">{{ t('inGame.abilities.empty') }}</div>
   </section>
+
+  <BottomSheet v-model:open="sheetOpen" :title="t('inGame.abilities.allTitle')">
+    <AbilityCard
+      v-for="ab in ABILITIES"
+      :key="ab.id"
+      :title="ab.name"
+      mode="display"
+      variant="reference"
+    >
+      {{ ab.description }}
+    </AbilityCard>
+  </BottomSheet>
 </template>
 
 <style scoped>
-.panel { padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
-.label-row { display: flex; align-items: center; justify-content: space-between; }
-.all-btn { background: none; border: none; color: var(--color-text-muted); font-family: inherit; font-size: 12px; cursor: pointer; padding: 2px 4px; }
-.all-btn:hover { color: var(--color-text); }
-.list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }
-.row { border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }
-.row__head { width: 100%; display: flex; justify-content: space-between; padding: 8px 12px; background: var(--color-bg-elevated); border: none; color: var(--color-text); font-family: inherit; cursor: pointer; }
-.row__desc { padding: 8px 12px; font-size: 13px; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
-.empty { color: var(--color-text-muted); font-size: 13px; }
+.abilities-section {
+  padding: 14px 16px;
+}
+.abilities-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.abilities-section-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vtt-accent-deep);
+}
+.abilities-section-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--r-xs);
+  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.abilities-section-link:hover {
+  color: var(--vtt-accent-soft);
+  background: var(--vtt-bg-surface);
+}
+.abilities-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.abilities-empty {
+  font-size: 13px;
+  color: var(--vtt-text-muted);
+  font-style: italic;
+}
 </style>
