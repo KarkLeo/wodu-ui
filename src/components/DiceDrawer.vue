@@ -120,6 +120,9 @@ function rollExpr(r: RollRecord): string {
 const LOG_CLASS_MAP: Record<ChangeKind, string> = {
   'hp-damage': 'is-hp-damage',
   'hp-heal': 'is-hp-heal',
+  'hp-temp': 'is-hp-heal',
+  'armor-mod': 'is-attr',
+  'damage-mod': 'is-attr',
   'xp-gain': 'is-xp',
   'level-up': 'is-levelup',
   stats: 'is-attr',

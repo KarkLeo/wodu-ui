@@ -161,14 +161,26 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       break
     }
     case 'APPLY_DAMAGE': {
-      const before = char.currentHp
+      const tempBefore = char.tempHp ?? 0
+      const hpBefore = char.currentHp
       next = combat.applyDamage(char, cmd.amount)
-      const actual = before - next.currentHp
-      if (actual > 0) {
+      const tempAfter = next.tempHp ?? 0
+      const fromTemp = tempBefore - tempAfter
+      const fromHp = hpBefore - next.currentHp
+      const total = fromTemp + fromHp
+      if (total > 0) {
+        let label: string
+        if (fromTemp > 0 && fromHp > 0) {
+          label = `Урон ${cmd.amount} (врем. ${tempBefore}→${tempAfter}, HP ${hpBefore}→${next.currentHp})`
+        } else if (fromTemp > 0) {
+          label = `Урон ${cmd.amount} (врем. ${tempBefore}→${tempAfter})`
+        } else {
+          label = `Урон ${cmd.amount} (HP ${hpBefore} → ${next.currentHp})`
+        }
         changes.push({
           kind: 'hp-damage',
-          label: `Урон ${cmd.amount} (HP ${before} → ${next.currentHp})`,
-          delta: `−${actual} HP`,
+          label,
+          delta: `−${total} HP`,
           sourceCommand: cmd.type,
         })
       }
@@ -183,6 +195,59 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
           kind: 'hp-heal',
           label: `Лечение ${cmd.amount} (HP ${before} → ${next.currentHp})`,
           delta: `+${actual} HP`,
+          sourceCommand: cmd.type,
+        })
+      }
+      break
+    }
+    case 'SET_TEMP_HP': {
+      const before = char.tempHp ?? 0
+      next = combat.setTempHp(char, cmd.amount)
+      const after = next.tempHp ?? 0
+      if (after !== before) {
+        const diff = after - before
+        changes.push({
+          kind: 'hp-temp',
+          label: after === 0
+            ? `Врем. HP сброшено (было ${before})`
+            : `Врем. HP: ${before} → ${after}`,
+          delta: `${diff > 0 ? '+' : ''}${diff} врем.`,
+          sourceCommand: cmd.type,
+        })
+      }
+      break
+    }
+    case 'SET_ARMOR_MOD': {
+      const before = char.armorMod ?? 0
+      next = combat.setArmorMod(char, cmd.amount)
+      const after = next.armorMod ?? 0
+      if (after !== before) {
+        const diff = after - before
+        const fmt = (v: number) => (v > 0 ? `+${v}` : String(v))
+        changes.push({
+          kind: 'armor-mod',
+          label: after === 0
+            ? `Мод. брони сброшен (было ${fmt(before)})`
+            : `Мод. брони: ${fmt(before)} → ${fmt(after)}`,
+          delta: `${diff > 0 ? '+' : ''}${diff} брон.`,
+          sourceCommand: cmd.type,
+        })
+      }
+      break
+    }
+    case 'SET_DAMAGE_MOD': {
+      const before = char.damageMod ?? 0
+      next = combat.setDamageMod(char, cmd.amount)
+      const after = next.damageMod ?? 0
+      if (after !== before) {
+        const diff = after - before
+        const fmt = (v: number) => (v > 0 ? `+${v}` : String(v))
+        changes.push({
+          kind: 'damage-mod',
+          label: after === 0
+            ? `Мод. урона сброшен (было ${fmt(before)})`
+            : `Мод. урона: ${fmt(before)} → ${fmt(after)}`,
+          delta: `${diff > 0 ? '+' : ''}${diff} ур.`,
           sourceCommand: cmd.type,
         })
       }

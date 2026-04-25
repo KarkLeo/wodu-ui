@@ -44,7 +44,7 @@ const modClass = computed(() => {
         <span v-if="$slots.symbol" class="sc-glyph" aria-hidden="true">
           <slot name="symbol" />
         </span>
-        <span class="sc-value">{{ value }}</span>
+        <span class="sc-value"><slot name="value">{{ value }}</slot></span>
         <span class="sc-unit">{{ label }}</span>
         <span v-if="meta" class="sc-meta">{{ meta }}</span>
         <span v-if="mod" :class="['sc-mod', modClass]">{{ mod }}</span>

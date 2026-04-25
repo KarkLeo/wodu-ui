@@ -270,6 +270,14 @@ export const messages = {
         hintCap: 'макс',
         hintToNext: 'до ур. {level}',
       },
+      modSection: 'Эффекты',
+      modReset: 'Сбросить',
+      damage: {
+        modAria: 'Эффект на урон',
+      },
+      armor: {
+        modAria: 'Эффект на броню',
+      },
     },
     stats: {
       title: 'Характеристики',

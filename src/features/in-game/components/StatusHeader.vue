@@ -8,6 +8,7 @@ import { XP_THRESHOLDS } from '@/data/xpTable'
 import {
   totalArmor,
   damageFormulaCompact,
+  damageFormulaParts,
   damageAbilityBonus,
   damageBreakdownLines,
   armorBreakdownLines,
@@ -55,7 +56,14 @@ const equippedWeapon = computed(() => {
 const dmgFormulaStr = computed(() =>
   equippedWeapon.value && char.value ? damageFormulaCompact(char.value, equippedWeapon.value) : '—',
 )
+const dmgParts = computed(() =>
+  char.value && equippedWeapon.value ? damageFormulaParts(char.value, equippedWeapon.value) : null,
+)
 const armorValue = computed(() => (char.value ? totalArmor(char.value) : 0))
+const armorTone = computed<'buff' | 'debuff' | 'neutral'>(() => {
+  const m = char.value?.armorMod ?? 0
+  return m > 0 ? 'buff' : m < 0 ? 'debuff' : 'neutral'
+})
 const armorBreakdown = computed(() =>
   char.value ? armorBreakdownLines(char.value) : { lines: [], note: undefined },
 )
@@ -64,6 +72,25 @@ const damageBreakdown = computed(() =>
     ? damageBreakdownLines(char.value, equippedWeapon.value)
     : [],
 )
+
+const damageModModel = computed<number>({
+  get: () => char.value?.damageMod ?? 0,
+  set: v => {
+    const n = Math.trunc(Number(v) || 0)
+    if (char.value && n !== (char.value.damageMod ?? 0)) {
+      dispatch({ type: 'SET_DAMAGE_MOD', amount: n })
+    }
+  },
+})
+const armorModModel = computed<number>({
+  get: () => char.value?.armorMod ?? 0,
+  set: v => {
+    const n = Math.trunc(Number(v) || 0)
+    if (char.value && n !== (char.value.armorMod ?? 0)) {
+      dispatch({ type: 'SET_ARMOR_MOD', amount: n })
+    }
+  },
+})
 
 const ready = computed(() => (char.value ? isReadyToLevelUp(char.value) : false))
 const xpMax = computed(() => {
@@ -85,6 +112,9 @@ function onApplyDamage(n: number) {
 }
 function onHeal(n: number) {
   if (n > 0) dispatch({ type: 'HEAL', amount: n })
+}
+function onSetTempHp(n: number) {
+  dispatch({ type: 'SET_TEMP_HP', amount: n })
 }
 function onXpUpdate(v: number) {
   if (!char.value) return
@@ -110,7 +140,8 @@ async function handleRollDamage() {
   const w = equippedWeapon.value
   if (!c || !w || !w.damage) return
   try {
-    await rollDamage(c.id, c.name, w.name, w.damage, c.damageBonusDice, damageAbilityBonus(c, w))
+    const flat = damageAbilityBonus(c, w) + (c.damageMod ?? 0)
+    await rollDamage(c.id, c.name, w.name, w.damage, c.damageBonusDice, flat)
   } catch (err) {
     log.error('damage roll failed', err)
   }
@@ -148,6 +179,15 @@ async function handleRollDamage() {
           has-popover
         >
           <template #symbol><IconWeapon /></template>
+          <template #value>
+            <template v-if="dmgParts">
+              <span class="sh-val-base">{{ dmgParts.base }}</span><span
+                v-if="dmgParts.tail"
+                :class="['sh-val-tail', `is-${dmgParts.tailTone}`]"
+              >{{ dmgParts.tail }}</span>
+            </template>
+            <template v-else>{{ dmgFormulaStr }}</template>
+          </template>
           <template #popover>
             <div class="pop-head">
               <span class="pop-title">{{ equippedWeapon.name }}</span>
@@ -162,6 +202,22 @@ async function handleRollDamage() {
                 <span class="br-name">{{ line.label }}</span>
                 <span class="br-value">{{ line.value }}</span>
               </div>
+            </div>
+            <div class="sh-pop-mod">
+              <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
+              <Stepper
+                v-model="damageModModel"
+                :min="-10"
+                :max="10"
+                size="sm"
+                :aria-label="t('inGame.statusHeader.damage.modAria')"
+              />
+              <button
+                v-if="damageModModel !== 0"
+                type="button"
+                class="sh-pop-mod-reset"
+                @click="damageModModel = 0"
+              >{{ t('inGame.statusHeader.modReset') }}</button>
             </div>
             <button
               type="button"
@@ -199,6 +255,9 @@ async function handleRollDamage() {
           has-popover
         >
           <template #symbol><IconShield /></template>
+          <template #value>
+            <span :class="['sh-val-armor', `is-${armorTone}`]">{{ armorValue }}</span>
+          </template>
           <template #popover>
             <div class="pop-head">
               <span class="pop-title">{{ t('inGame.statusHeader.trio.armor') }}</span>
@@ -216,6 +275,22 @@ async function handleRollDamage() {
             </div>
             <div v-else class="sh-pop-empty">{{ t('inGame.statusHeader.trio.armorEmpty') }}</div>
             <div v-if="armorBreakdown.note" class="sh-pop-note">{{ armorBreakdown.note }}</div>
+            <div class="sh-pop-mod">
+              <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
+              <Stepper
+                v-model="armorModModel"
+                :min="-10"
+                :max="10"
+                size="sm"
+                :aria-label="t('inGame.statusHeader.armor.modAria')"
+              />
+              <button
+                v-if="armorModModel !== 0"
+                type="button"
+                class="sh-pop-mod-reset"
+                @click="armorModModel = 0"
+              >{{ t('inGame.statusHeader.modReset') }}</button>
+            </div>
           </template>
         </StatusChip>
         <StatusChip
@@ -247,10 +322,12 @@ async function handleRollDamage() {
       <HpBar
         :current="char.currentHp"
         :max="char.maxHp"
+        :temp="char.tempHp ?? 0"
         :size="compact ? 'sm' : 'base'"
         :show-controls="!compact"
         @apply-damage="onApplyDamage"
         @heal="onHeal"
+        @add-temp="onSetTempHp"
       />
     </div>
 
@@ -372,5 +449,43 @@ async function handleRollDamage() {
 }
 .sc-popover .sh-pop-coin-edit .sc-stepper input {
   width: 140px;
+}
+
+.sc-popover .sh-pop-mod {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--vtt-border-subtle);
+}
+.sc-popover .sh-pop-mod-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
+  flex: 1;
+}
+.sc-popover .sh-pop-mod-reset {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
+  cursor: pointer;
+}
+.sc-popover .sh-pop-mod-reset:hover { color: var(--vtt-danger-bright); }
+
+.status-chip .sh-val-tail.is-buff,
+.status-chip .sh-val-armor.is-buff {
+  color: var(--vtt-success);
+}
+.status-chip .sh-val-tail.is-debuff,
+.status-chip .sh-val-armor.is-debuff {
+  color: var(--vtt-danger-bright);
 }
 </style>

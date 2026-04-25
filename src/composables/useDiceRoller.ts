@@ -20,6 +20,7 @@ export function useDiceRoller() {
     purpose: RollPurpose
     characterId: string
     characterName?: string
+    minTotal?: number
   }): Promise<RollRecord | undefined> {
     if (_isRolling.value) {
       log.warn('roll: blocked (already rolling)', { notation: params.notation, label: params.label })
@@ -31,6 +32,8 @@ export function useDiceRoller() {
       const dice = await rollNotation(params.notation)
       const diceTotal = dice.reduce((s, d) => s + d.value, 0)
       const modifier = params.modifier ?? 0
+      const rawTotal = diceTotal + modifier
+      const total = params.minTotal !== undefined ? Math.max(params.minTotal, rawTotal) : rawTotal
       const record: RollRecord = {
         id: crypto.randomUUID(),
         timestamp: Date.now(),
@@ -38,7 +41,7 @@ export function useDiceRoller() {
         dice,
         diceTotal,
         modifier,
-        total: diceTotal + modifier,
+        total,
         label: params.label,
         purpose: params.purpose,
         characterId: params.characterId,
@@ -70,7 +73,7 @@ export function useDiceRoller() {
     weaponName: string,
     baseDamage: string,
     damageBonusDice: number,
-    abilityBonus: number = 0,
+    flatBonus: number = 0,
   ) {
     const cleanDamage = parseDamageNotation(baseDamage)
     const weaponFull = damageBonusDice > 0 ? `${cleanDamage}+${damageBonusDice}d6` : cleanDamage
@@ -83,7 +86,7 @@ export function useDiceRoller() {
       else fixedMod += Number(term)
     }
     const notation = diceTerms.join('+').replace(/\+\-/g, '-')
-    const modifier = fixedMod + abilityBonus
+    const modifier = fixedMod + flatBonus
     const modStr = modifier > 0 ? `+${modifier}` : modifier < 0 ? String(modifier) : ''
     const label = `${weaponName}: ${notation}${modStr}`
     return roll({
@@ -93,6 +96,7 @@ export function useDiceRoller() {
       purpose: { kind: 'damage', weaponName, formula: `${notation}${modStr}` },
       characterId,
       characterName,
+      minTotal: 0,
     })
   }
 

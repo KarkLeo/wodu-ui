@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
+import { computed, ref } from 'vue'
+import { PopoverRoot, PopoverAnchor, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
 
 type Size = 'sm' | 'base' | 'lg'
 
@@ -39,6 +39,8 @@ const fillPct = computed(() => {
   return Math.min(100, Math.max(0, (props.current / props.max) * 100))
 })
 
+const open = ref(false)
+
 function setCurrent(v: number) {
   const clamped = Math.max(0, Math.floor(v))
   if (model.value !== undefined) model.value = clamped
@@ -59,16 +61,32 @@ function onInput(e: Event) {
       size === 'sm' ? 'xp-sm' : size === 'lg' ? 'xp-lg' : '',
     ]"
   >
-    <span class="xp-bar-label">XP</span>
+    <span
+      :class="['xp-bar-label', { 'is-clickable': showControls }]"
+      :role="showControls ? 'button' : undefined"
+      :tabindex="showControls ? 0 : undefined"
+      @click="showControls && (open = true)"
+      @keydown.enter.prevent="showControls && (open = true)"
+      @keydown.space.prevent="showControls && (open = true)"
+    >XP</span>
 
-    <span class="xp-bar-values">
-      <span class="xp-current">{{ current }}</span>
-      <span class="xp-sep">/</span>
-      <span class="xp-max">{{ max }}</span>
-      <span v-if="state === 'ready'" class="xp-ready-dot" />
-    </span>
-
-    <PopoverRoot v-if="showControls">
+    <PopoverRoot v-if="showControls" :open="open" @update:open="(v) => (open = v)">
+      <PopoverAnchor as-child>
+        <span
+          class="xp-bar-values is-clickable"
+          role="button"
+          tabindex="0"
+          aria-label="Изменить опыт"
+          @click="open = true"
+          @keydown.enter.prevent="open = true"
+          @keydown.space.prevent="open = true"
+        >
+          <span class="xp-current">{{ current }}</span>
+          <span class="xp-sep">/</span>
+          <span class="xp-max">{{ max }}</span>
+          <span v-if="state === 'ready'" class="xp-ready-dot" />
+        </span>
+      </PopoverAnchor>
       <PopoverTrigger as-child>
         <button type="button" class="xp-bar-trigger">
           <span v-if="hint" class="xp-bar-hint">{{ hint }}</span>
@@ -83,10 +101,10 @@ function onInput(e: Event) {
           </div>
 
           <div class="xp-pop-steps">
-            <button type="button" class="xp-step-btn is-minus" @click="step(-1)">−1</button>
-            <button type="button" class="xp-step-btn is-minus" @click="step(-3)">−3</button>
-            <button type="button" class="xp-step-btn is-plus" @click="step(1)">+1</button>
-            <button type="button" class="xp-step-btn is-plus" @click="step(3)">+3</button>
+            <button type="button" class="xp-step-btn is-minus" @click="step(-100)">−100</button>
+            <button type="button" class="xp-step-btn is-minus" @click="step(-10)">−10</button>
+            <button type="button" class="xp-step-btn is-plus" @click="step(10)">+10</button>
+            <button type="button" class="xp-step-btn is-plus" @click="step(100)">+100</button>
           </div>
 
           <div class="xp-pop-manual">
@@ -120,9 +138,24 @@ function onInput(e: Event) {
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>
-    <span v-else-if="hint" class="xp-bar-hint">{{ hint }}</span>
+    <span v-else class="xp-bar-values">
+      <span class="xp-current">{{ current }}</span>
+      <span class="xp-sep">/</span>
+      <span class="xp-max">{{ max }}</span>
+      <span v-if="state === 'ready'" class="xp-ready-dot" />
+    </span>
+    <span v-if="!showControls && hint" class="xp-bar-hint">{{ hint }}</span>
 
-    <div class="xp-bar-track-wrap">
+    <div
+      class="xp-bar-track-wrap"
+      :class="{ 'is-clickable': showControls }"
+      :role="showControls ? 'button' : undefined"
+      :tabindex="showControls ? 0 : undefined"
+      :aria-label="showControls ? 'Изменить опыт' : undefined"
+      @click="showControls && (open = true)"
+      @keydown.enter.prevent="showControls && (open = true)"
+      @keydown.space.prevent="showControls && (open = true)"
+    >
       <div class="xp-bar-track">
         <div class="xp-bar-fill" :style="{ width: `${fillPct}%` }" />
         <div class="xp-bar-ticks" />
@@ -157,6 +190,25 @@ function onInput(e: Event) {
   line-height: 1;
   white-space: nowrap;
   letter-spacing: 0.02em;
+}
+.xp-bar-label.is-clickable,
+.xp-bar-values.is-clickable {
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  border-radius: var(--r-xs);
+  transition: filter var(--t-fast) var(--ease);
+}
+.xp-bar-label.is-clickable:hover,
+.xp-bar-values.is-clickable:hover { filter: brightness(1.2); }
+.xp-bar-label.is-clickable:focus-visible,
+.xp-bar-values.is-clickable:focus-visible { box-shadow: 0 0 0 2px var(--vtt-border-strong); }
+.xp-bar-track-wrap.is-clickable {
+  cursor: pointer;
+  outline: none;
+}
+.xp-bar-track-wrap.is-clickable:focus-visible .xp-bar-track {
+  box-shadow: var(--shadow-inset), 0 0 0 2px var(--vtt-border-strong);
 }
 .xp-bar-values .xp-current { color: var(--vtt-accent-soft); font-weight: 500; }
 .xp-bar-values .xp-sep { color: var(--vtt-text-muted); margin: 0 2px; }

@@ -27,6 +27,9 @@ export type CharacterCommand =
   // Боевые
   | { type: 'APPLY_DAMAGE'; amount: number }
   | { type: 'HEAL'; amount: number }
+  | { type: 'SET_TEMP_HP'; amount: number }
+  | { type: 'SET_ARMOR_MOD'; amount: number }
+  | { type: 'SET_DAMAGE_MOD'; amount: number }
   // Прогрессия
   | { type: 'GAIN_XP'; amount: number }
   | { type: 'LEVEL_UP'; patch: LevelUpPatch }
