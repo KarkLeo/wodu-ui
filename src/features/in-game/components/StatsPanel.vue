@@ -3,7 +3,7 @@ import { ref, computed, reactive } from 'vue'
 import { PopoverClose } from 'reka-ui'
 import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
-import { STAT_KEYS, STAT_LABELS, MAX_STAT_BONUS } from '@/data/xpTable'
+import { STAT_KEYS, STAT_LABELS, STAT_FULL_LABELS, MAX_STAT_BONUS } from '@/data/xpTable'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { effectiveStat, statModifierTotal, statModifierLines } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
@@ -18,15 +18,6 @@ type Dispatcher = (cmd: CharacterCommand) => void
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
 const { rollStat } = useDiceRoller()
-
-const STAT_FULL: Record<StatKey, string> = {
-  str: t('inGame.stats.full.str'),
-  dex: t('inGame.stats.full.dex'),
-  con: t('inGame.stats.full.con'),
-  int: t('inGame.stats.full.int'),
-  wis: t('inGame.stats.full.wis'),
-  cha: t('inGame.stats.full.cha'),
-}
 
 function stateFor(value: number): 'zero' | 'positive' | 'high' {
   if (value <= 0) return 'zero'
@@ -147,7 +138,7 @@ function stopEdit() {
       >
         <template #popover>
           <div class="pop-head">
-            <span class="pop-title">{{ STAT_FULL[key] }} · {{ fmt(eff(key)) }}</span>
+            <span class="pop-title">{{ STAT_FULL_LABELS[key] }} · {{ fmt(eff(key)) }}</span>
             <span class="pop-sub">{{ STAT_LABELS[key] }}</span>
           </div>
 

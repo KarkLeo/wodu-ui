@@ -43,3 +43,11 @@ export const STAT_KEYS: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 export const STAT_LABELS: Record<StatKey, string> = {
   str: 'СИЛ', dex: 'ЛОВ', con: 'ТЕЛ', int: 'ИНТ', wis: 'МУД', cha: 'ХАР',
 }
+export const STAT_FULL_LABELS: Record<StatKey, string> = {
+  str: 'Сила',
+  dex: 'Ловкость',
+  con: 'Телосложение',
+  int: 'Интеллект',
+  wis: 'Мудрость',
+  cha: 'Харизма',
+}

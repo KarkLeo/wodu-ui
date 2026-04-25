@@ -285,14 +285,6 @@ export const messages = {
       rollBtn: 'Бросить 2d6 {mod}',
       editBase: 'Поправить базу',
       popSub: 'База',
-      full: {
-        str: 'Сила',
-        dex: 'Ловкость',
-        con: 'Телосложение',
-        int: 'Интеллект',
-        wis: 'Мудрость',
-        cha: 'Харизма',
-      },
       modifiers: {
         title: 'Эффекты',
         empty: 'Нет активных эффектов',
