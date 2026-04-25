@@ -342,27 +342,6 @@ function fmtMod(m: number): string {
   font-size: 13px;
 }
 
-.stat-popover .pop-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.stat-popover .pop-title {
-  font-family: var(--font-serif);
-  font-size: 17px;
-  color: var(--vtt-accent-soft);
-  font-weight: 500;
-}
-.stat-popover .pop-sub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-
 .stat-popover .pop-hero {
   display: flex;
   align-items: center;
