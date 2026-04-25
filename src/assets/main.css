@@ -152,13 +152,6 @@ body {
   100% { transform: translateY(-3px) rotate(4deg); }
 }
 
-/* TODO: verify with mock — критического попадания пока нет в docs/design,
-   используем glow-accent-strong как базу; уточним на шаге 11 (dice-drawer). */
-@keyframes crit-glow {
-  0%, 100% { box-shadow: var(--glow-accent); }
-  50%      { box-shadow: var(--glow-accent-strong); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

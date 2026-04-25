@@ -114,23 +114,6 @@ function onToggleEquip(item: InventoryItem) {
 function onUse(item: InventoryItem) {
   inv.use(item.id)
 }
-
-const summaryStats = computed(() =>
-  t('characterCreation.gear.summaryStats', {
-    str: props.draft.stats.str >= 0 ? `+${props.draft.stats.str}` : String(props.draft.stats.str),
-    dex: props.draft.stats.dex >= 0 ? `+${props.draft.stats.dex}` : String(props.draft.stats.dex),
-    con: props.draft.stats.con >= 0 ? `+${props.draft.stats.con}` : String(props.draft.stats.con),
-    int: props.draft.stats.int >= 0 ? `+${props.draft.stats.int}` : String(props.draft.stats.int),
-    wis: props.draft.stats.wis >= 0 ? `+${props.draft.stats.wis}` : String(props.draft.stats.wis),
-    cha: props.draft.stats.cha >= 0 ? `+${props.draft.stats.cha}` : String(props.draft.stats.cha),
-  }),
-)
-
-const className = computed(() => {
-  if (props.draft.classId === 'custom') return props.draft.customClassName?.trim() || t('characterCreation.classNames.custom')
-  return t(`characterCreation.classNames.${props.draft.classId}`)
-})
-
 </script>
 
 <template>

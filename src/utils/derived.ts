@@ -18,17 +18,6 @@ export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds' | 'a
   return Math.max(0, base + shield + toughness + mod)
 }
 
-export function armorTypeLabel(char: Pick<Character, 'inventory'>): string {
-  const equipped = (char.inventory ?? []).filter(i => i.equipped)
-  const hasFull = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'full')
-  const hasLight = equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light')
-  const hasShield = equipped.some(i => i.descriptor.kind === 'shield')
-  const base = hasFull ? 'полный' : hasLight ? 'лёгкий' : ''
-  if (!base && !hasShield) return ''
-  if (!base) return 'щит'
-  return hasShield ? `${base} + щит` : base
-}
-
 export function isWeapon(item: InventoryItem): boolean {
   return item.descriptor.kind === 'weapon'
 }
@@ -96,8 +85,6 @@ export function rollHitDice(numDice: number, level: number): { rolls: number[]; 
   const total = kept.reduce((a, b) => a + b, 0)
   return { rolls, kept, total }
 }
-
-export const STAT_ORDER: StatKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
 export function statModifierTotal(char: Pick<Character, 'modifiers'>, key: StatKey): number {
   const list = char.modifiers ?? []

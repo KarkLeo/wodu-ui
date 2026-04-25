@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
+import { PopoverClose } from 'reka-ui'
 import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { STAT_KEYS, STAT_LABELS, MAX_STAT_BONUS } from '@/data/xpTable'
@@ -150,15 +151,17 @@ function stopEdit() {
             <span class="pop-sub">{{ STAT_LABELS[key] }}</span>
           </div>
 
-          <button
-            type="button"
-            class="pop-hero"
-            :disabled="isRolling"
-            @click="handleRollStat(key)"
-          >
-            <IconDice />
-            <span>{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</span>
-          </button>
+          <PopoverClose as-child>
+            <button
+              type="button"
+              class="pop-hero"
+              :disabled="isRolling"
+              @click="handleRollStat(key)"
+            >
+              <IconDice />
+              <span>{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</span>
+            </button>
+          </PopoverClose>
 
           <div class="pop-divider" />
 

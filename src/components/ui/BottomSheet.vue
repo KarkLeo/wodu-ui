@@ -19,7 +19,7 @@ const open = defineModel<boolean>('open', { required: true })
       <DialogContent class="bs-content-wrap">
         <div class="bottom-sheet" :style="{ maxWidth: `${props.maxWidth}px` }">
           <slot name="header">
-            <div v-if="title || $slots.footer || true" class="bs-head">
+            <div v-if="title" class="bs-head">
               <span class="bs-title">{{ title }}</span>
               <DialogClose class="bs-close" aria-label="Закрыть">
                 <IconClose />
