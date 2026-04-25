@@ -122,7 +122,8 @@ export function useItem(char: Character, itemId: string): Character {
       ),
     }
   }
-  if (item.templateId === 'mercury') {
+  const tpl = item.templateId ? findGearTemplate(item.templateId) : undefined
+  if (tpl?.useEffect === 'quicksilver') {
     return { ...updated, quicksilverCount: (char.quicksilverCount ?? 0) + 1 }
   }
   return updated
