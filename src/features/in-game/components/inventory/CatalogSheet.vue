@@ -2,16 +2,17 @@
 import { computed, ref } from 'vue'
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
 import IconClose from '@/components/ui/icons/IconClose.vue'
+import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import { GEAR_CATEGORIES, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
 import ItemIcon from './ItemIcon.vue'
+import ItemStatChip from './ItemStatChip.vue'
+import { t } from '@/locales'
 
 function isTplConsumable(tpl: GearTemplate): boolean {
   const d = tpl.descriptor
   if (d.kind === 'gear' || d.kind === 'occult' || d.kind === 'custom') return d.consumable === true
   return false
 }
-import ItemStatChip from './ItemStatChip.vue'
-import { t } from '@/locales'
 
 const props = defineProps<{ coins: number }>()
 const emit = defineEmits<{
@@ -78,17 +79,7 @@ function onBuyClick(tpl: GearTemplate) {
                 :placeholder="t('inGame.inventory.catalog.search')"
                 v-model="search"
               />
-              <div class="segmented">
-                <button
-                  v-for="seg in segments"
-                  :key="seg.value"
-                  type="button"
-                  :class="['segmented-btn', { 'is-active': activeCat === seg.value }]"
-                  @click="activeCat = seg.value"
-                >
-                  {{ seg.label }}
-                </button>
-              </div>
+              <SegmentedFilter v-model="activeCat" :options="segments" class="catalog-segments" />
             </div>
 
             <div v-if="!filtered.length" class="catalog-empty">
@@ -213,38 +204,7 @@ function onBuyClick(tpl: GearTemplate) {
   border-color: var(--vtt-border-gold);
   box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
 }
-.segmented {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  margin-top: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.segmented::-webkit-scrollbar { display: none; }
-.segmented-btn {
-  padding: 6px 10px;
-  background: transparent;
-  border: none;
-  border-radius: var(--r-xs);
-  color: var(--vtt-text-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--t-fast) var(--ease);
-}
-.segmented-btn:hover { color: var(--vtt-accent-soft); }
-.segmented-btn.is-active {
-  background: var(--vtt-bg-elevated);
-  color: var(--vtt-accent);
-  box-shadow: inset 0 0 0 1px var(--vtt-border-strong);
-}
+.catalog-segments { margin-top: 8px; }
 
 .catalog-empty {
   padding: 22px 14px;
