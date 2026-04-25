@@ -10,7 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@3d-dice/dice-box": "^1.1.4",
+    "c": "^1.1.4",
     "@fontsource/montserrat": "^5.2.8",
     "@fontsource/spectral": "^5.2.8",
     "pinia": "^3.0.4",
