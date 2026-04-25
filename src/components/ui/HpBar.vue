@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
+import { PopoverRoot, PopoverAnchor, PopoverPortal, PopoverContent } from 'reka-ui'
 
 type Size = 'sm' | 'base' | 'lg'
 type EffectKind = 'dot' | 'hot' | 'warn'
@@ -47,6 +47,7 @@ const tempPct = computed(() => {
 
 const tab = ref<'damage' | 'heal' | 'temp'>('damage')
 const amount = ref<number>(0)
+const open = ref(false)
 
 function onDice(formula: string, rolled: number) {
   amount.value = rolled
@@ -59,14 +60,18 @@ const submitClass = computed(() => `is-${tab.value}`)
 const submitLabel = computed(() => {
   if (tab.value === 'damage') return 'Нанести урон'
   if (tab.value === 'heal') return 'Восстановить'
-  return 'Добавить'
+  return 'Установить'
 })
 function submit() {
   const v = Math.max(0, Math.floor(amount.value || 0))
+  if (tab.value === 'temp') {
+    emit('addTemp', v)
+    amount.value = 0
+    return
+  }
   if (v <= 0) return
   if (tab.value === 'damage') emit('applyDamage', v)
-  else if (tab.value === 'heal') emit('heal', v)
-  else emit('addTemp', v)
+  else emit('heal', v)
   amount.value = 0
 }
 
@@ -93,17 +98,24 @@ const previewResult = computed(() => {
     ]"
   >
     <span class="hp-bar-label">{{ label }}</span>
-    <span class="hp-bar-values">
-      <span class="hp-current">{{ Math.max(0, current) }}</span>
-      <span class="hp-sep">/</span>
-      <span class="hp-max">{{ max }}</span>
-      <span v-if="temp && temp > 0" class="hp-temp-suffix">+{{ temp }}</span>
-    </span>
 
-    <PopoverRoot v-if="showControls">
-      <PopoverTrigger as-child>
-        <button type="button" class="hp-bar-btn is-damage" aria-label="Изменить HP">−</button>
-      </PopoverTrigger>
+    <PopoverRoot v-if="showControls" :open="open" @update:open="(v) => (open = v)">
+      <PopoverAnchor as-child>
+        <span
+          class="hp-bar-values is-clickable"
+          role="button"
+          tabindex="0"
+          aria-label="Изменить HP"
+          @click="open = true"
+          @keydown.enter.prevent="open = true"
+          @keydown.space.prevent="open = true"
+        >
+          <span class="hp-current">{{ Math.max(0, current) }}</span>
+          <span class="hp-sep">/</span>
+          <span class="hp-max">{{ max }}</span>
+          <span v-if="temp && temp > 0" class="hp-temp-suffix">+{{ temp }}</span>
+        </span>
+      </PopoverAnchor>
       <PopoverPortal>
         <PopoverContent class="hp-popover" :side-offset="10" align="end">
           <div class="hp-pop-head">
@@ -164,21 +176,34 @@ const previewResult = computed(() => {
             <template v-else>
               Временно:
               <b>{{ temp || 0 }}</b>
-              <span class="delta-pos"> +{{ amount || 0 }}</span>
-              =
-              <b>{{ previewResult.tempNext }}</b>
+              →
+              <b>{{ amount || 0 }}</b>
             </template>
           </div>
 
           <button
             type="button"
             :class="['hp-pop-submit', submitClass]"
-            :disabled="amount <= 0"
+            :disabled="tab !== 'temp' && amount <= 0"
             @click="submit"
           >{{ submitLabel }}</button>
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>
+    <span v-else class="hp-bar-values">
+      <span class="hp-current">{{ Math.max(0, current) }}</span>
+      <span class="hp-sep">/</span>
+      <span class="hp-max">{{ max }}</span>
+      <span v-if="temp && temp > 0" class="hp-temp-suffix">+{{ temp }}</span>
+    </span>
+
+    <button
+      v-if="showControls"
+      type="button"
+      class="hp-bar-btn is-damage"
+      aria-label="Уменьшить HP на 1"
+      @click="$emit('applyDamage', 1)"
+    >−</button>
 
     <button
       v-if="showControls"
@@ -188,7 +213,16 @@ const previewResult = computed(() => {
       @click="$emit('heal', 1)"
     >+</button>
 
-    <div class="hp-bar-track-wrap">
+    <div
+      class="hp-bar-track-wrap"
+      :class="{ 'is-clickable': showControls }"
+      :role="showControls ? 'button' : undefined"
+      :tabindex="showControls ? 0 : undefined"
+      :aria-label="showControls ? 'Изменить HP' : undefined"
+      @click="showControls && (open = true)"
+      @keydown.enter.prevent="showControls && (open = true)"
+      @keydown.space.prevent="showControls && (open = true)"
+    >
       <div class="hp-bar-track">
         <div class="hp-bar-fill" :style="{ width: `${fillPct}%` }" />
         <div v-if="temp && temp > 0" class="hp-bar-temp" :style="{ left: `${fillPct}%`, width: `${tempPct}%` }" />
@@ -266,6 +300,22 @@ const previewResult = computed(() => {
   line-height: 1;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+.hp-bar-values.is-clickable {
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  border-radius: var(--r-xs);
+  transition: filter var(--t-fast) var(--ease);
+}
+.hp-bar-values.is-clickable:hover { filter: brightness(1.15); }
+.hp-bar-values.is-clickable:focus-visible { box-shadow: 0 0 0 2px var(--vtt-border-strong); }
+.hp-bar-track-wrap.is-clickable {
+  cursor: pointer;
+  outline: none;
+}
+.hp-bar-track-wrap.is-clickable:focus-visible .hp-bar-track {
+  box-shadow: var(--shadow-inset), 0 0 0 2px var(--vtt-border-strong);
 }
 .hp-bar-values .hp-current { font-weight: 600; }
 .hp-bar-values .hp-max { color: var(--vtt-text-secondary); font-weight: 400; }
