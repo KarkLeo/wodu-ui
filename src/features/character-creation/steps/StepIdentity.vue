@@ -11,10 +11,11 @@ import { t } from '@/locales'
 
 const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll } = useCharacterCreation()
 
-const { roll } = useDiceRoller()
+const { roll, rollBatch } = useDiceRoller()
 const freshKey = ref<StatKey | null>(null)
 const diceTraces = ref<Partial<Record<StatKey, [number, number]>>>({})
 let freshTimer: number | null = null
+let staggerTimers: number[] = []
 
 function markFresh(key: StatKey) {
   freshKey.value = key
@@ -22,27 +23,44 @@ function markFresh(key: StatKey) {
   freshTimer = window.setTimeout(() => { freshKey.value = null }, 1400)
 }
 
-async function rollAll() {
-  for (const key of STAT_KEYS) {
-    await rerollOne(key)
-  }
+function applyStatResult(key: StatKey, dice: number[], total: number) {
+  if (dice.length === 2) diceTraces.value[key] = [dice[0], dice[1]]
+  setStatRoll(key, total, statBonusFrom2d6(total))
+}
+
+function rollAll() {
+  const d = draft.value
+  if (!d) return
+  staggerTimers.forEach(window.clearTimeout)
+  staggerTimers = []
+  const characterName = d.name || 'Новый персонаж'
+  const records = rollBatch(
+    STAT_KEYS.map(key => ({
+      notation: '2d6',
+      label: `${STAT_LABELS[key]} (2d6)`,
+      purpose: { kind: 'stat', statKey: key, statBonus: 0 } as const,
+    })),
+    { characterId: d.id, characterName },
+  )
+  records.forEach((record, idx) => {
+    const key = STAT_KEYS[idx]
+    applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
+    const timer = window.setTimeout(() => markFresh(key), idx * 180)
+    staggerTimers.push(timer)
+  })
 }
 
 async function rerollOne(key: StatKey) {
   const d = draft.value
   if (!d) return
-  const result = await roll({
+  const record = await roll({
     notation: '2d6',
     label: `${STAT_LABELS[key]} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
     characterId: d.id,
     characterName: d.name || 'Новый персонаж',
   })
-  if (!result) return
-  const r = result.diceTotal
-  const values = result.dice.map(dv => dv.value)
-  if (values.length === 2) diceTraces.value[key] = [values[0], values[1]]
-  setStatRoll(key, r, statBonusFrom2d6(r))
+  applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
   markFresh(key)
 }
 
