@@ -70,6 +70,10 @@ export function useCharacterCreation() {
       damageBonusDice: 0,
       notes: '',
     })
+    if (!char) {
+      log.warn('createDraft: add returned null')
+      return null
+    }
     creation.setDraft(char.id)
     return char
   }

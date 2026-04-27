@@ -73,7 +73,8 @@ function toggleCharacter(id: string) {
 
 async function startNew() {
   creation.reset()
-  await createDraft()
+  const draft = await createDraft()
+  if (!draft) return
   router.push('/character/new')
 }
 
