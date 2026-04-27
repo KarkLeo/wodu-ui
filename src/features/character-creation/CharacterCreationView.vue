@@ -56,8 +56,10 @@ function onDotClick(n: number) {
   while (creation.step > n) creation.prevStep()
 }
 
-function onClose() {
-  if (creation.draftId) characters.remove(creation.draftId)
+async function onClose() {
+  if (creation.draftId) {
+    try { await characters.remove(creation.draftId) } catch { /* logged in store */ }
+  }
   creation.reset()
   router.push('/')
 }

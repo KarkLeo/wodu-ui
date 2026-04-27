@@ -3,12 +3,10 @@ import type { Character } from '@/types/character'
 import { isReadyToLevelUp } from '@/utils/derived'
 import { applyCommand } from '@/domain/reducer'
 import type { CharacterCommand } from '@/domain/commands'
-import { useChangeLogStore } from '@/stores/changeLog'
-import { useRollHistoryStore } from '@/stores/rollHistory'
 import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
+import { pb } from '@/transport/pb'
 
-const STORAGE_KEY = 'wod.characters.v1'
 const log = createLogger('store:characters')
 
 export const useCharactersStore = defineStore('characters', {
@@ -24,43 +22,57 @@ export const useCharactersStore = defineStore('characters', {
     isReadyToLevelUp: () => (char: Character) => isReadyToLevelUp(char),
   },
   actions: {
-    add(data: Omit<Character, 'id' | 'createdAt'>): Character {
+    async add(data: Omit<Character, 'id' | 'createdAt'>): Promise<Character> {
       const character: Character = {
         ...data,
         id: crypto.randomUUID(),
         createdAt: Date.now(),
       }
       log.debug('add', { id: character.id, status: character.status, name: character.name, classId: character.classId })
-      this.list.push(character)
+      await pb.collection('characters').create({ id: character.id, data: character })
       return character
     },
-    dispatch(id: string, cmd: CharacterCommand) {
-      const idx = this.list.findIndex(c => c.id === id)
-      if (idx === -1) {
+    async dispatch(id: string, cmd: CharacterCommand): Promise<void> {
+      const char = this.list.find(c => c.id === id)
+      if (!char) {
         log.warn('dispatch: not found', { id, cmd: cmd.type })
         return
       }
       log.debug('dispatch', { id, cmd: cmd.type })
-      const { character, changes } = applyCommand(this.list[idx], cmd)
-      this.list[idx] = character
-      if (character.status === 'active' && changes.length) {
-        const now = Date.now()
-        const entries: ChangeEntry[] = changes.map((c, i) => ({
-          ...c,
-          id: crypto.randomUUID(),
-          timestamp: now + i,
-          characterId: character.id,
-          characterName: character.name,
-        }))
-        useChangeLogStore().addMany(entries)
+      const { character: next, changes } = applyCommand(char, cmd)
+      try {
+        await pb.collection('characters').update(id, { data: next })
+        if (next.status === 'active' && changes.length) {
+          const now = Date.now()
+          const entries: ChangeEntry[] = changes.map((c, i) => ({
+            ...c,
+            id: crypto.randomUUID(),
+            timestamp: now + i,
+            characterId: next.id,
+            characterName: next.name,
+          }))
+          for (const entry of entries) {
+            await pb.collection('change_events').create({
+              id: entry.id,
+              character_id: entry.characterId,
+              data: entry,
+            })
+          }
+        }
+      } catch (err) {
+        log.error('dispatch: PB failed', { id, cmd: cmd.type, err })
+        throw err
       }
     },
-    remove(id: string) {
+    async remove(id: string): Promise<void> {
       log.debug('remove', { id })
-      this.list = this.list.filter(c => c.id !== id)
+      try {
+        await pb.collection('characters').delete(id)
+      } catch (err) {
+        log.error('remove: PB failed', { id, err })
+        throw err
+      }
       if (this.activeId === id) this.activeId = null
-      useRollHistoryStore().removeByCharacter(id)
-      useChangeLogStore().removeByCharacter(id)
     },
     setActive(id: string | null) {
       if (id && !this.list.some(c => c.id === id)) {
@@ -76,30 +88,18 @@ export const useCharactersStore = defineStore('characters', {
       this.list = []
       this.activeId = null
     },
-  },
-  persist: {
-    key: STORAGE_KEY,
-    afterHydrate(ctx) {
-      ctx.store.$patch((state) => {
-        state.list = state.list.map((c: any) => {
-          const { armor: _armor, ...rest } = c
-          const magic = rest.magic
-            ? {
-                ...rest.magic,
-                rituals: (rest.magic.rituals ?? []).map((r: any) =>
-                  typeof r === 'string' ? { name: r, description: '' } : r,
-                ),
-              }
-            : rest.magic
-          return {
-            ...rest,
-            magic,
-            inventory: rest.inventory ?? [],
-            skillIds: rest.skillIds ?? [],
-            abilityIds: rest.abilityIds ?? [],
-          }
-        })
-      })
+    setAll(chars: Character[]) {
+      log.debug('setAll', { count: chars.length })
+      this.list = chars
+    },
+    upsertLocal(char: Character) {
+      const idx = this.list.findIndex(c => c.id === char.id)
+      if (idx === -1) this.list.push(char)
+      else this.list[idx] = char
+    },
+    removeLocal(id: string) {
+      this.list = this.list.filter(c => c.id !== id)
+      if (this.activeId === id) this.activeId = null
     },
   },
 })

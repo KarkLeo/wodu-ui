@@ -10,22 +10,17 @@ export const useChangeLogStore = defineStore('changeLog', {
     entries: [] as ChangeEntry[],
   }),
   actions: {
-    addEntry(entry: ChangeEntry) {
+    addLocal(entry: ChangeEntry) {
+      if (this.entries.some(e => e.id === entry.id)) return
       this.entries.unshift(entry)
       if (this.entries.length > MAX_ENTRIES) this.entries.length = MAX_ENTRIES
     },
-    addMany(entries: ChangeEntry[]) {
-      if (!entries.length) return
-      log.debug('addMany', { count: entries.length })
-      for (const e of entries) this.addEntry(e)
+    setAll(entries: ChangeEntry[]) {
+      log.debug('setAll', { count: entries.length })
+      this.entries = entries.slice(0, MAX_ENTRIES)
     },
     clearAll() {
       this.entries = []
-    },
-    removeByCharacter(characterId: string) {
-      const before = this.entries.length
-      this.entries = this.entries.filter(e => e.characterId !== characterId)
-      log.debug('removeByCharacter', { characterId, removed: before - this.entries.length })
     },
   },
 })

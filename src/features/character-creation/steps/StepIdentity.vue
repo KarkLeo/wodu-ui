@@ -7,9 +7,14 @@ import { SKILLS } from '@/types/character'
 import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
+import { useDebouncedField } from '@/composables/useDebouncedField'
 import { t } from '@/locales'
 
-const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll } = useCharacterCreation()
+const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll, setStatRollsBatch } = useCharacterCreation()
+
+const nameField = useDebouncedField(() => draft.value?.name ?? '', setName)
+const trueNameField = useDebouncedField(() => draft.value?.trueName ?? '', setTrueName)
+const customClassField = useDebouncedField(() => draft.value?.customClassName ?? '', setCustomClassName)
 
 const { roll, rollBatch } = useDiceRoller()
 const freshKey = ref<StatKey | null>(null)
@@ -28,13 +33,13 @@ function applyStatResult(key: StatKey, dice: number[], total: number) {
   setStatRoll(key, total, statBonusFrom2d6(total))
 }
 
-function rollAll() {
+async function rollAll() {
   const d = draft.value
   if (!d) return
   staggerTimers.forEach(window.clearTimeout)
   staggerTimers = []
   const characterName = d.name || 'Новый персонаж'
-  const records = rollBatch(
+  const records = await rollBatch(
     STAT_KEYS.map(key => ({
       notation: '2d6',
       label: `${STAT_LABELS[key]} (2d6)`,
@@ -42,9 +47,14 @@ function rollAll() {
     })),
     { characterId: d.id, characterName },
   )
-  records.forEach((record, idx) => {
+  const rolls = records.map((record, idx) => {
     const key = STAT_KEYS[idx]
-    applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
+    if (record.dice.length === 2) diceTraces.value[key] = [record.dice[0].value, record.dice[1].value]
+    return { key, roll: record.diceTotal, bonus: statBonusFrom2d6(record.diceTotal) }
+  })
+  setStatRollsBatch(rolls)
+  records.forEach((_record, idx) => {
+    const key = STAT_KEYS[idx]
     const timer = window.setTimeout(() => markFresh(key), idx * 180)
     staggerTimers.push(timer)
   })
@@ -110,8 +120,9 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         class="cc-input"
         type="text"
         :placeholder="t('characterCreation.identity.namePlaceholder')"
-        :value="draft.name"
-        @input="setName(($event.target as HTMLInputElement).value)"
+        :value="nameField.value.value"
+        @input="nameField.onInput(($event.target as HTMLInputElement).value)"
+        @blur="nameField.flush()"
       />
     </div>
     <div class="cc-field">
@@ -124,8 +135,9 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         class="cc-input is-truename"
         type="text"
         :placeholder="t('characterCreation.identity.trueNamePlaceholder')"
-        :value="draft.trueName ?? ''"
-        @input="setTrueName(($event.target as HTMLInputElement).value)"
+        :value="trueNameField.value.value"
+        @input="trueNameField.onInput(($event.target as HTMLInputElement).value)"
+        @blur="trueNameField.flush()"
       />
       <span class="cc-field-hint">
         <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg>
@@ -210,8 +222,9 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
       class="cc-input"
       type="text"
       :placeholder="t('characterCreation.identity.classCustomNamePlaceholder')"
-      :value="draft.customClassName ?? ''"
-      @input="setCustomClassName(($event.target as HTMLInputElement).value)"
+      :value="customClassField.value.value"
+      @input="customClassField.onInput(($event.target as HTMLInputElement).value)"
+      @blur="customClassField.flush()"
     />
   </section>
   </template>

@@ -1,6 +1,6 @@
 import { rollNotation as engineRoll } from '@/services/DiceEngine'
-import { enqueue as queueAnimation, isAnimating } from '@/services/DiceAnimationQueue'
-import { useRollHistoryStore } from '@/stores/rollHistory'
+import { isAnimating } from '@/services/DiceAnimationQueue'
+import { pb } from '@/transport/pb'
 import { parseDamageNotation } from '@/utils/derived'
 import type { RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
@@ -11,8 +11,6 @@ const log = createLogger('dice')
 export const isRolling = isAnimating
 
 export function useDiceRoller() {
-  const historyStore = useRollHistoryStore()
-
   function buildRecord(params: {
     notation: string
     modifier?: number
@@ -41,7 +39,7 @@ export function useDiceRoller() {
     }
   }
 
-  function roll(params: {
+  async function roll(params: {
     notation: string
     modifier?: number
     label: string
@@ -52,9 +50,12 @@ export function useDiceRoller() {
   }): Promise<RollRecord> {
     log.debug('roll', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
     const record = buildRecord(params)
-    historyStore.addRecord(record)
-    void queueAnimation(record.dice, record.notation)
-    return Promise.resolve(record)
+    await pb.collection('roll_events').create({
+      id: record.id,
+      character_id: record.characterId,
+      data: record,
+    })
+    return record
   }
 
   function rollStat(characterId: string, characterName: string | undefined, statKey: StatKey, statLabel: string, statBonus: number) {
@@ -125,7 +126,7 @@ export function useDiceRoller() {
     })
   }
 
-  function rollBatch(
+  async function rollBatch(
     items: Array<{
       notation: string
       modifier?: number
@@ -134,14 +135,17 @@ export function useDiceRoller() {
       minTotal?: number
     }>,
     ctx: { characterId: string; characterName?: string },
-  ): RollRecord[] {
+  ): Promise<RollRecord[]> {
     if (items.length === 0) return []
     const records = items.map(item => buildRecord({ ...item, characterId: ctx.characterId, characterName: ctx.characterName }))
-    for (const record of records) historyStore.addRecord(record)
-    const allDice = records.flatMap(r => r.dice)
-    const batchNotation = records.map(r => r.notation).join('+')
-    log.debug('rollBatch', { count: records.length, batchNotation })
-    void queueAnimation(allDice, batchNotation)
+    log.debug('rollBatch', { count: records.length })
+    await Promise.all(records.map(record =>
+      pb.collection('roll_events').create({
+        id: record.id,
+        character_id: record.characterId,
+        data: record,
+      }),
+    ))
     return records
   }
 
