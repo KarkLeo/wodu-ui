@@ -1,14 +1,35 @@
 import { rollNotation as engineRoll } from '@/services/DiceEngine'
-import { isAnimating } from '@/services/DiceAnimationQueue'
+import { isAnimating, enqueueCoalesced as enqueueDice } from '@/services/DiceAnimationQueue'
 import { pb } from '@/transport/pb'
+import { markRollPlayedLocally } from '@/transport/bootstrap'
+import { useRollHistoryStore } from '@/stores/rollHistory'
+import { useToastsStore } from '@/stores/toasts'
 import { parseDamageNotation } from '@/utils/derived'
 import type { RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
 import { createLogger } from '@/utils/logger'
+import { t } from '@/locales'
 
 const log = createLogger('dice')
 
 export const isRolling = isAnimating
+
+function persistRoll(record: RollRecord): void {
+  markRollPlayedLocally(record.id)
+  useRollHistoryStore().addLocal(record)
+  void enqueueDice(record.dice, record.notation)
+  void pb
+    .collection('roll_events')
+    .create({
+      id: record.id,
+      character_id: record.characterId,
+      data: record,
+    })
+    .catch((err) => {
+      log.error('persistRoll: PB create failed', { id: record.id, err })
+      useToastsStore().push(t('errors.rollSyncFailed'), 'error')
+    })
+}
 
 export function useDiceRoller() {
   function buildRecord(params: {
@@ -39,7 +60,7 @@ export function useDiceRoller() {
     }
   }
 
-  async function roll(params: {
+  function roll(params: {
     notation: string
     modifier?: number
     label: string
@@ -47,14 +68,10 @@ export function useDiceRoller() {
     characterId: string
     characterName?: string
     minTotal?: number
-  }): Promise<RollRecord> {
+  }): RollRecord {
     log.debug('roll', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
     const record = buildRecord(params)
-    await pb.collection('roll_events').create({
-      id: record.id,
-      character_id: record.characterId,
-      data: record,
-    })
+    persistRoll(record)
     return record
   }
 
@@ -126,7 +143,7 @@ export function useDiceRoller() {
     })
   }
 
-  async function rollBatch(
+  function rollBatch(
     items: Array<{
       notation: string
       modifier?: number
@@ -135,17 +152,11 @@ export function useDiceRoller() {
       minTotal?: number
     }>,
     ctx: { characterId: string; characterName?: string },
-  ): Promise<RollRecord[]> {
+  ): RollRecord[] {
     if (items.length === 0) return []
     const records = items.map(item => buildRecord({ ...item, characterId: ctx.characterId, characterName: ctx.characterName }))
     log.debug('rollBatch', { count: records.length })
-    await Promise.all(records.map(record =>
-      pb.collection('roll_events').create({
-        id: record.id,
-        character_id: record.characterId,
-        data: record,
-      }),
-    ))
+    for (const record of records) persistRoll(record)
     return records
   }
 
