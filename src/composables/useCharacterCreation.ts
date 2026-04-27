@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
@@ -10,6 +10,28 @@ import { createLogger } from '@/utils/logger'
 
 const log = createLogger('creation')
 
+function waitForActive(characters: ReturnType<typeof useCharactersStore>, id: string, timeoutMs = 2000): Promise<boolean> {
+  const existing = characters.getById(id)
+  if (existing?.status === 'active') return Promise.resolve(true)
+  return new Promise((resolve) => {
+    let stop = () => {}
+    const timer = window.setTimeout(() => {
+      stop()
+      resolve(false)
+    }, timeoutMs)
+    stop = watch(
+      () => characters.getById(id)?.status,
+      (status) => {
+        if (status === 'active') {
+          window.clearTimeout(timer)
+          stop()
+          resolve(true)
+        }
+      },
+    )
+  })
+}
+
 export function useCharacterCreation() {
   const router = useRouter()
   const characters = useCharactersStore()
@@ -19,16 +41,18 @@ export function useCharacterCreation() {
   const step = computed(() => creation.step)
 
   function dispatch(cmd: CharacterCommand) {
-    if (creation.draftId) characters.dispatch(creation.draftId, cmd)
+    if (creation.draftId) {
+      void characters.dispatch(creation.draftId, cmd)
+    }
   }
 
-  function createDraft() {
+  async function createDraft() {
     if (creation.draftId && characters.getById(creation.draftId)) {
       log.debug('createDraft: reusing existing', { id: creation.draftId })
       return characters.getById(creation.draftId)!
     }
     log.info('createDraft: new')
-    const char = characters.add({
+    const char = await characters.add({
       status: 'draft',
       classId: 'fighter',
       name: '',
@@ -52,9 +76,11 @@ export function useCharacterCreation() {
 
   function next() { creation.nextStep() }
 
-  function back() {
+  async function back() {
     if (creation.step === 1) {
-      if (creation.draftId) characters.remove(creation.draftId)
+      if (creation.draftId) {
+        try { await characters.remove(creation.draftId) } catch (err) { log.error('back: remove failed', err) }
+      }
       creation.reset()
       router.push('/')
     } else {
@@ -62,15 +88,26 @@ export function useCharacterCreation() {
     }
   }
 
-  function finish() {
+  async function finish() {
     if (!creation.draftId) {
       log.warn('finish: no draft')
       return
     }
-    log.info('finish', { draftId: creation.draftId })
-    characters.dispatch(creation.draftId, { type: 'FINALIZE_CHARACTER' })
-    characters.setActive(creation.draftId)
     const id = creation.draftId
+    log.info('finish', { draftId: id })
+    try {
+      await characters.dispatch(id, { type: 'FINALIZE_CHARACTER' })
+    } catch (err) {
+      log.error('finish: dispatch failed', err)
+      return
+    }
+    const arrived = await waitForActive(characters, id)
+    if (!arrived) {
+      log.warn('finish: active status did not arrive within timeout')
+      router.push('/')
+      return
+    }
+    characters.setActive(id)
     creation.reset()
     router.push(`/character/${id}`)
   }
@@ -81,6 +118,9 @@ export function useCharacterCreation() {
   function setCustomClassName(name: string) { dispatch({ type: 'SET_CUSTOM_CLASS_NAME', name }) }
   function setStatRoll(key: StatKey, roll: number, bonus: number) {
     dispatch({ type: 'SET_STAT_ROLL', key, roll, bonus })
+  }
+  function setStatRollsBatch(rolls: { key: StatKey; roll: number; bonus: number }[]) {
+    dispatch({ type: 'SET_STAT_ROLLS_BATCH', rolls })
   }
   function toggleSkill(id: SkillId) { dispatch({ type: 'TOGGLE_SKILL', id }) }
   function toggleAbility(id: AbilityId) { dispatch({ type: 'TOGGLE_ABILITY', id }) }
@@ -127,6 +167,7 @@ export function useCharacterCreation() {
     pickClass,
     setCustomClassName,
     setStatRoll,
+    setStatRollsBatch,
     toggleSkill,
     toggleAbility,
     setHitDiceResult,

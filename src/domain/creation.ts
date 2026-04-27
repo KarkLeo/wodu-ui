@@ -46,6 +46,19 @@ export function setStatRoll(char: Character, key: StatKey, roll: number, bonus: 
   }
 }
 
+export function setStatRollsBatch(
+  char: Character,
+  rolls: { key: StatKey; roll: number; bonus: number }[],
+): Character {
+  const statRolls = { ...char.statRolls }
+  const stats = { ...char.stats }
+  for (const r of rolls) {
+    statRolls[r.key] = r.roll
+    stats[r.key] = r.bonus
+  }
+  return { ...char, statRolls, stats }
+}
+
 export function toggleSkill(char: Character, id: SkillId): Character {
   const cls = CLASSES[char.classId]
   if (cls.grantedSkillIds.includes(id)) return char

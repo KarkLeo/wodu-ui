@@ -307,6 +307,9 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
     case 'SET_STAT_ROLL':
       next = creation.setStatRoll(char, cmd.key, cmd.roll, cmd.bonus)
       break
+    case 'SET_STAT_ROLLS_BATCH':
+      next = creation.setStatRollsBatch(char, cmd.rolls)
+      break
     case 'TOGGLE_SKILL':
       next = creation.toggleSkill(char, cmd.id)
       break

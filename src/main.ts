@@ -18,7 +18,14 @@ import '@fontsource/montserrat/600.css'
 import '@fontsource/montserrat/700.css'
 import './assets/main.css'
 
+import { bootstrap } from '@/transport/bootstrap'
+
 const pinia = createPinia()
 pinia.use(piniaPersistedstate)
 
-createApp(App).use(pinia).use(router).mount('#app')
+const app = createApp(App).use(pinia).use(router)
+
+void (async () => {
+  await bootstrap()
+  app.mount('#app')
+})()

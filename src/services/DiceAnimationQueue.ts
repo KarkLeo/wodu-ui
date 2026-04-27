@@ -18,10 +18,11 @@ const _isAnimating = ref(false)
 export const isAnimating = readonly(_isAnimating)
 
 const queue: Array<{ dice: DieResult[]; notation: string; resolve: () => void; reject: (e: Error) => void }> = []
+let coalescedSlot: { dice: DieResult[]; notation: string } | null = null
 let workerRunning = false
 
 function refreshAnimating() {
-  _isAnimating.value = queue.length > 0 || workerRunning
+  _isAnimating.value = queue.length > 0 || workerRunning || coalescedSlot !== null
 }
 
 function scheduleClear() {
@@ -76,7 +77,26 @@ export async function getDiceBox(): Promise<DiceBox> {
   return initPromise
 }
 
-function buildNotation(dice: DieResult[], notation: string): string {
+function expandPercentile(dice: DieResult[]): DieResult[] {
+  const out: DieResult[] = []
+  for (const d of dice) {
+    if (d.sides === 100) {
+      const v = Math.max(1, Math.min(100, d.value))
+      const tensDigit = Math.floor(v / 10) % 10
+      const onesDigit = v % 10
+      const tensFace = tensDigit === 0 ? 10 : tensDigit
+      const onesFace = onesDigit === 0 ? 10 : onesDigit
+      out.push({ sides: 10, value: tensFace })
+      out.push({ sides: 10, value: onesFace })
+    } else {
+      out.push(d)
+    }
+  }
+  return out
+}
+
+function buildNotation(rawDice: DieResult[], notation: string): string {
+  const dice = expandPercentile(rawDice)
   if (dice.length === 0) return notation
   const groupedBySides = new Map<number, number[]>()
   const order: number[] = []
@@ -103,8 +123,15 @@ async function processNext() {
   if (workerRunning) return
   workerRunning = true
   refreshAnimating()
-  while (queue.length > 0) {
-    const job = queue.shift()!
+  while (queue.length > 0 || coalescedSlot !== null) {
+    let job: { dice: DieResult[]; notation: string; resolve: () => void; reject: (e: Error) => void }
+    if (queue.length > 0) {
+      job = queue.shift()!
+    } else {
+      const slot = coalescedSlot!
+      coalescedSlot = null
+      job = { dice: slot.dice, notation: slot.notation, resolve: () => {}, reject: () => {} }
+    }
     refreshAnimating()
     const notationWithValues = buildNotation(job.dice, job.notation)
     log.debug('rolling', { notation: notationWithValues })
@@ -148,11 +175,24 @@ export function enqueue(dice: DieResult[], notation: string): Promise<void> {
   })
 }
 
+export function enqueueCoalesced(dice: DieResult[], notation: string): void {
+  if (dice.length === 0) return
+  if (queue.length === 0 && !workerRunning && coalescedSlot === null) {
+    void enqueue(dice, notation)
+    return
+  }
+  log.debug('enqueueCoalesced: replacing pending slot', { notation, diceCount: dice.length })
+  coalescedSlot = { dice, notation }
+  refreshAnimating()
+  void processNext()
+}
+
 export function clear(): void {
   while (queue.length > 0) {
     const job = queue.shift()!
     job.reject(new Error('Cleared'))
   }
+  coalescedSlot = null
   try { instance?.clearDice() } catch { /* noop */ }
   refreshAnimating()
 }
