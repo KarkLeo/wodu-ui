@@ -51,6 +51,7 @@ export type CharacterCommand =
   | { type: 'SET_CLASS'; classId: ClassId }
   | { type: 'SET_CUSTOM_CLASS_NAME'; name: string }
   | { type: 'SET_STAT_ROLL'; key: StatKey; roll: number; bonus: number }
+  | { type: 'SET_STAT_ROLLS_BATCH'; rolls: { key: StatKey; roll: number; bonus: number }[] }
   | { type: 'TOGGLE_SKILL'; id: SkillId }
   | { type: 'TOGGLE_ABILITY'; id: AbilityId }
   | { type: 'SET_HIT_DICE_RESULT'; hitDice: number; maxHp: number; currentHp: number; hpHistory: HpHistoryEntry[] }

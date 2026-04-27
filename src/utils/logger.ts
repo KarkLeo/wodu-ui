@@ -22,6 +22,8 @@ const NAMESPACE_COLORS: Record<string, string> = {
   'levelup':           '#674ea7',
   'active-char':       '#0b5394',
   'router':            '#e69138',
+  'transport:pb':      '#1abc9c',
+  'transport:sse':     '#16a085',
 }
 
 function colorFor(ns: string): string {

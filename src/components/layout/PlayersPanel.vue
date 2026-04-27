@@ -71,9 +71,9 @@ function toggleCharacter(id: string) {
   store.setActive(id)
 }
 
-function startNew() {
+async function startNew() {
   creation.reset()
-  createDraft()
+  await createDraft()
   router.push('/character/new')
 }
 
