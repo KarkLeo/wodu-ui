@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { getDiceBox } from '@/services/DiceBoxService'
-import { isRolling } from '@/composables/useDiceRoller'
+import { getDiceBox, isAnimating } from '@/services/DiceAnimationQueue'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('dice-overlay')
@@ -12,7 +11,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="dice-overlay" :class="{ 'dice-overlay--active': isRolling }" />
+  <div id="dice-overlay" :class="{ 'dice-overlay--active': isAnimating }" />
 </template>
 
 <style>

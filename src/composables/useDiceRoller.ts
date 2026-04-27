@@ -1,19 +1,19 @@
-import { ref, readonly } from 'vue'
-import { rollNotation, rollGroups } from '@/services/DiceBoxService'
+import { rollNotation as engineRoll } from '@/services/DiceEngine'
+import { enqueue as queueAnimation, isAnimating } from '@/services/DiceAnimationQueue'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { parseDamageNotation } from '@/utils/derived'
-import type { DieResult, RollPurpose, RollRecord } from '@/types/dice'
+import type { RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('dice')
-const _isRolling = ref(false)
-export const isRolling = readonly(_isRolling)
+
+export const isRolling = isAnimating
 
 export function useDiceRoller() {
   const historyStore = useRollHistoryStore()
 
-  async function roll(params: {
+  function buildRecord(params: {
     notation: string
     modifier?: number
     label: string
@@ -21,38 +21,40 @@ export function useDiceRoller() {
     characterId: string
     characterName?: string
     minTotal?: number
-  }): Promise<RollRecord | undefined> {
-    if (_isRolling.value) {
-      log.warn('roll: blocked (already rolling)', { notation: params.notation, label: params.label })
-      return undefined
+  }): RollRecord {
+    const { dice, total: diceTotal } = engineRoll(params.notation)
+    const modifier = params.modifier ?? 0
+    const rawTotal = diceTotal + modifier
+    const total = params.minTotal !== undefined ? Math.max(params.minTotal, rawTotal) : rawTotal
+    return {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      notation: params.notation,
+      dice,
+      diceTotal,
+      modifier,
+      total,
+      label: params.label,
+      purpose: params.purpose,
+      characterId: params.characterId,
+      characterName: params.characterName,
     }
-    log.debug('roll: start', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
-    _isRolling.value = true
-    try {
-      const dice = await rollNotation(params.notation)
-      const diceTotal = dice.reduce((s, d) => s + d.value, 0)
-      const modifier = params.modifier ?? 0
-      const rawTotal = diceTotal + modifier
-      const total = params.minTotal !== undefined ? Math.max(params.minTotal, rawTotal) : rawTotal
-      const record: RollRecord = {
-        id: crypto.randomUUID(),
-        timestamp: Date.now(),
-        notation: params.notation,
-        dice,
-        diceTotal,
-        modifier,
-        total,
-        label: params.label,
-        purpose: params.purpose,
-        characterId: params.characterId,
-        characterName: params.characterName,
-      }
-      log.debug('roll: recording', { characterId: record.characterId, total: record.total, diceCount: dice.length })
-      historyStore.addRecord(record)
-      return record
-    } finally {
-      _isRolling.value = false
-    }
+  }
+
+  function roll(params: {
+    notation: string
+    modifier?: number
+    label: string
+    purpose: RollPurpose
+    characterId: string
+    characterName?: string
+    minTotal?: number
+  }): Promise<RollRecord> {
+    log.debug('roll', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
+    const record = buildRecord(params)
+    historyStore.addRecord(record)
+    void queueAnimation(record.dice, record.notation)
+    return Promise.resolve(record)
   }
 
   function rollStat(characterId: string, characterName: string | undefined, statKey: StatKey, statLabel: string, statBonus: number) {
@@ -112,67 +114,6 @@ export function useDiceRoller() {
     })
   }
 
-  async function rollSilentGroups(notations: string[]): Promise<DieResult[][] | undefined> {
-    if (_isRolling.value) {
-      log.warn('rollSilentGroups: blocked (already rolling)', { notations })
-      return undefined
-    }
-    log.debug('rollSilentGroups: start', { notations })
-    _isRolling.value = true
-    try {
-      const groups = await rollGroups(notations)
-      log.debug('rollSilentGroups: done', { groupCount: groups.length })
-      return groups
-    } finally {
-      _isRolling.value = false
-    }
-  }
-
-  async function rollSilent(notation: string): Promise<DieResult[] | undefined> {
-    if (_isRolling.value) {
-      log.warn('rollSilent: blocked (already rolling)', { notation })
-      return undefined
-    }
-    log.debug('rollSilent: start', { notation })
-    _isRolling.value = true
-    try {
-      const dice = await rollNotation(notation)
-      log.debug('rollSilent: done', { count: dice.length, values: dice.map(d => d.value) })
-      return dice
-    } finally {
-      _isRolling.value = false
-    }
-  }
-
-  function recordRoll(params: {
-    dice: DieResult[]
-    modifier?: number
-    label: string
-    purpose: RollPurpose
-    characterId: string
-    characterName?: string
-    notation: string
-  }): RollRecord {
-    const diceTotal = params.dice.reduce((s, d) => s + d.value, 0)
-    const modifier = params.modifier ?? 0
-    const record: RollRecord = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      notation: params.notation,
-      dice: params.dice,
-      diceTotal,
-      modifier,
-      total: diceTotal + modifier,
-      label: params.label,
-      purpose: params.purpose,
-      characterId: params.characterId,
-      characterName: params.characterName,
-    }
-    log.debug('recordRoll', { characterId: record.characterId, label: record.label, purpose: record.purpose.kind, total: record.total })
-    historyStore.addRecord(record)
-    return record
-  }
-
   function rollFree(characterId: string, characterName: string | undefined, notation: string) {
     return roll({
       notation,
@@ -184,5 +125,25 @@ export function useDiceRoller() {
     })
   }
 
-  return { roll, rollStat, rollDamage, rollFree, rollSilent, rollSilentGroups, recordRoll, isRolling }
+  function rollBatch(
+    items: Array<{
+      notation: string
+      modifier?: number
+      label: string
+      purpose: RollPurpose
+      minTotal?: number
+    }>,
+    ctx: { characterId: string; characterName?: string },
+  ): RollRecord[] {
+    if (items.length === 0) return []
+    const records = items.map(item => buildRecord({ ...item, characterId: ctx.characterId, characterName: ctx.characterName }))
+    for (const record of records) historyStore.addRecord(record)
+    const allDice = records.flatMap(r => r.dice)
+    const batchNotation = records.map(r => r.notation).join('+')
+    log.debug('rollBatch', { count: records.length, batchNotation })
+    void queueAnimation(allDice, batchNotation)
+    return records
+  }
+
+  return { roll, rollStat, rollDamage, rollFree, rollBatch, isRolling }
 }
