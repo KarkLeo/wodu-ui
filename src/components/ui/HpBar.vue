@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { PopoverRoot, PopoverAnchor, PopoverPortal, PopoverContent } from 'reka-ui'
+import BottomSheet from './BottomSheet.vue'
+import HpControlsPanel from './HpControlsPanel.vue'
+import { useIsMobile } from '@/composables/useIsMobile'
+import { t } from '@/locales'
 
 type Size = 'sm' | 'base' | 'lg'
 type EffectKind = 'dot' | 'hot' | 'warn'
@@ -14,18 +18,22 @@ const props = withDefaults(defineProps<{
   size?: Size
   showControls?: boolean
   label?: string
+  characterId?: string
+  characterName?: string
 }>(), {
   size: 'base',
   showControls: true,
   label: 'HP',
 })
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'applyDamage', amount: number): void
   (e: 'heal', amount: number): void
   (e: 'addTemp', amount: number): void
-  (e: 'rollDice', formula: string): void
 }>()
+
+const isMobile = useIsMobile()
+const open = ref(false)
 
 const state = computed(() => {
   if (props.max <= 0) return 'zero'
@@ -44,49 +52,6 @@ const tempPct = computed(() => {
   if (!props.temp || props.max <= 0) return 0
   return Math.min(100, Math.max(0, (props.temp / props.max) * 100))
 })
-
-const tab = ref<'damage' | 'heal' | 'temp'>('damage')
-const amount = ref<number>(0)
-const open = ref(false)
-
-function onDice(formula: string, rolled: number) {
-  amount.value = rolled
-  emit('rollDice', formula)
-}
-
-watch(tab, () => { amount.value = 0 })
-
-const submitClass = computed(() => `is-${tab.value}`)
-const submitLabel = computed(() => {
-  if (tab.value === 'damage') return 'Нанести урон'
-  if (tab.value === 'heal') return 'Восстановить'
-  return 'Установить'
-})
-function submit() {
-  const v = Math.max(0, Math.floor(amount.value || 0))
-  if (tab.value === 'temp') {
-    emit('addTemp', v)
-    amount.value = 0
-    return
-  }
-  if (v <= 0) return
-  if (tab.value === 'damage') emit('applyDamage', v)
-  else emit('heal', v)
-  amount.value = 0
-}
-
-const previewResult = computed(() => {
-  const v = amount.value || 0
-  if (tab.value === 'damage') {
-    const next = Math.max(0, props.current - v)
-    return { nextValue: next, delta: -v, tempNext: props.temp ?? 0 }
-  }
-  if (tab.value === 'heal') {
-    const next = Math.min(props.max, props.current + v)
-    return { nextValue: next, delta: +v, tempNext: props.temp ?? 0 }
-  }
-  return { nextValue: props.current, delta: 0, tempNext: (props.temp ?? 0) + v }
-})
 </script>
 
 <template>
@@ -99,7 +64,7 @@ const previewResult = computed(() => {
   >
     <span class="hp-bar-label">{{ label }}</span>
 
-    <PopoverRoot v-if="showControls" :open="open" @update:open="(v) => (open = v)">
+    <PopoverRoot v-if="showControls && !isMobile" :open="open" @update:open="(v) => (open = v)">
       <PopoverAnchor as-child>
         <span
           class="hp-bar-values is-clickable"
@@ -117,79 +82,36 @@ const previewResult = computed(() => {
         </span>
       </PopoverAnchor>
       <PopoverPortal>
-        <PopoverContent class="hp-popover" :side-offset="10" align="end">
-          <div class="hp-pop-head">
-            <span class="hp-pop-title">HP</span>
-            <span class="hp-pop-sub">{{ current }} / {{ max }}</span>
-          </div>
-          <div class="hp-pop-tabs">
-            <button
-              type="button"
-              :class="['tab-damage', { active: tab === 'damage' }]"
-              @click="tab = 'damage'"
-            >Урон</button>
-            <button
-              type="button"
-              :class="['tab-heal', { active: tab === 'heal' }]"
-              @click="tab = 'heal'"
-            >Лечение</button>
-            <button
-              type="button"
-              :class="[{ active: tab === 'temp' }]"
-              @click="tab = 'temp'"
-            >Временное</button>
-          </div>
-
-          <div class="hp-amount">
-            <button type="button" @click="amount = Math.max(0, amount - 1)">−</button>
-            <input
-              type="number"
-              min="0"
-              :class="[tab === 'heal' ? 'is-heal' : tab === 'temp' ? 'is-temp' : '']"
-              :value="amount"
-              @input="(e) => { const v = Number((e.target as HTMLInputElement).value); amount = Number.isNaN(v) ? 0 : v }"
-            />
-            <button type="button" @click="amount = amount + 1">+</button>
-          </div>
-
-          <div class="hp-dice-quick">
-            <button type="button" @click="onDice('d6', 1 + Math.floor(Math.random() * 6))">d6</button>
-            <button type="button" @click="onDice('2d6', (1 + Math.floor(Math.random() * 6)) + (1 + Math.floor(Math.random() * 6)))">2d6</button>
-            <button type="button" @click="onDice('d8', 1 + Math.floor(Math.random() * 8))">d8</button>
-          </div>
-
-          <div class="hp-pop-preview">
-            <template v-if="tab === 'damage'">
-              <b>{{ current }}</b>
-              <span class="delta-neg"> −{{ amount || 0 }}</span>
-              =
-              <b>{{ previewResult.nextValue }}</b>
-              / {{ max }}
-            </template>
-            <template v-else-if="tab === 'heal'">
-              <b>{{ current }}</b>
-              <span class="delta-pos"> +{{ amount || 0 }}</span>
-              =
-              <b>{{ previewResult.nextValue }}</b>
-              / {{ max }}
-            </template>
-            <template v-else>
-              Временно:
-              <b>{{ temp || 0 }}</b>
-              →
-              <b>{{ amount || 0 }}</b>
-            </template>
-          </div>
-
-          <button
-            type="button"
-            :class="['hp-pop-submit', submitClass]"
-            :disabled="tab !== 'temp' && amount <= 0"
-            @click="submit"
-          >{{ submitLabel }}</button>
+        <PopoverContent class="hp-popover" :side-offset="10" align="end" :avoid-collisions="true" :collision-padding="12">
+          <HpControlsPanel
+            :current="current"
+            :max="max"
+            :temp="temp"
+            :show-header="true"
+            :character-id="characterId"
+            :character-name="characterName"
+            @apply-damage="(v) => $emit('applyDamage', v)"
+            @heal="(v) => $emit('heal', v)"
+            @add-temp="(v) => $emit('addTemp', v)"
+          />
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>
+    <span
+      v-else-if="showControls"
+      class="hp-bar-values is-clickable"
+      role="button"
+      tabindex="0"
+      aria-label="Изменить HP"
+      @click="open = true"
+      @keydown.enter.prevent="open = true"
+      @keydown.space.prevent="open = true"
+    >
+      <span class="hp-current">{{ Math.max(0, current) }}</span>
+      <span class="hp-sep">/</span>
+      <span class="hp-max">{{ max }}</span>
+      <span v-if="temp && temp > 0" class="hp-temp-suffix">+{{ temp }}</span>
+    </span>
     <span v-else class="hp-bar-values">
       <span class="hp-current">{{ Math.max(0, current) }}</span>
       <span class="hp-sep">/</span>
@@ -239,6 +161,23 @@ const previewResult = computed(() => {
       </span>
     </div>
   </div>
+
+  <BottomSheet v-if="showControls && isMobile" v-model:open="open" :title="t('hpControls.title')">
+    <div class="hp-popover hp-popover--sheet">
+      <HpControlsPanel
+        :current="current"
+        :max="max"
+        :temp="temp"
+        :show-header="false"
+        :character-id="characterId"
+        :character-name="characterName"
+        @apply-damage="(v) => $emit('applyDamage', v)"
+        @heal="(v) => $emit('heal', v)"
+        @add-temp="(v) => $emit('addTemp', v)"
+        @submitted="open = false"
+      />
+    </div>
+  </BottomSheet>
 </template>
 
 <style scoped>
@@ -433,6 +372,16 @@ const previewResult = computed(() => {
   z-index: 200;
   font-family: var(--font-sans);
   color: var(--vtt-text-primary);
+}
+.hp-popover.hp-popover--sheet {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .hp-popover .hp-pop-head {
   display: flex;

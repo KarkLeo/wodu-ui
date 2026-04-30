@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
+import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle, VisuallyHidden } from 'reka-ui'
 import IconClose from './icons/IconClose.vue'
 
 const props = withDefaults(defineProps<{
@@ -16,15 +16,22 @@ const open = defineModel<boolean>('open', { required: true })
   <DialogRoot v-model:open="open">
     <DialogPortal>
       <DialogOverlay class="bs-overlay" />
-      <DialogContent class="bs-content-wrap">
+      <DialogContent
+        class="bs-content-wrap"
+        :aria-describedby="undefined"
+        @click.self="open = false"
+      >
         <div class="bottom-sheet" :style="{ maxWidth: `${props.maxWidth}px` }">
           <slot name="header">
             <div v-if="title" class="bs-head">
-              <span class="bs-title">{{ title }}</span>
+              <DialogTitle class="bs-title">{{ title }}</DialogTitle>
               <DialogClose class="bs-close" aria-label="Закрыть">
                 <IconClose />
               </DialogClose>
             </div>
+            <VisuallyHidden v-else>
+              <DialogTitle>Диалог</DialogTitle>
+            </VisuallyHidden>
           </slot>
           <div class="bs-body">
             <slot />

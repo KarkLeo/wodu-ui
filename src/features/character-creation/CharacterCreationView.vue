@@ -8,6 +8,9 @@ import { t } from '@/locales'
 import StepIdentity from './steps/StepIdentity.vue'
 import StepTraining from './steps/StepTraining.vue'
 import StepGear from './steps/StepGear.vue'
+import { useIsMobile } from '@/composables/useIsMobile'
+
+const isMobile = useIsMobile()
 
 const router = useRouter()
 const creation = useCreationStore()
@@ -75,6 +78,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <Teleport to="body" :disabled="!isMobile">
   <div v-if="draft" class="cc-shell">
     <div class="cc-topbar">
       <div class="cc-title">{{ stepTitle }}</div>
@@ -130,6 +134,7 @@ onMounted(() => {
       </button>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -147,6 +152,18 @@ onMounted(() => {
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   position: relative;
   color: var(--vtt-text-primary);
+}
+@media (max-width: 719px) {
+  .cc-shell {
+    position: fixed;
+    inset: 0;
+    height: 100dvh;
+    max-width: none;
+    margin: 0;
+    z-index: 50;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 @media (min-width: 720px) {
   .cc-shell {
