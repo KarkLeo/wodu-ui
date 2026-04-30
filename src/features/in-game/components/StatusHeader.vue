@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { PopoverClose } from 'reka-ui'
+import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
@@ -155,7 +155,11 @@ async function handleRollDamage() {
       <div class="sh-id-text">
         <div class="sh-id-line">
           <span class="sh-name">{{ char.name }}</span>
-          <span class="sh-meta"><b>{{ className }}</b> · {{ t('inGame.statusHeader.levelLabel') }} {{ char.level }}</span>
+          <span class="sh-meta">
+            <b>{{ className }}</b>
+            <template v-if="compact"> · {{ char.level }}</template>
+            <template v-else> · {{ t('inGame.statusHeader.levelLabel') }} {{ char.level }}</template>
+          </span>
         </div>
         <span v-if="char.trueName && !compact" class="sh-truename">
           <span class="sh-truename-glyph" aria-hidden="true">
@@ -177,6 +181,7 @@ async function handleRollDamage() {
           :label="t('inGame.statusHeader.trio.damage')"
           :value="dmgFormulaStr"
           :size="compact ? 'sm' : 'base'"
+          :popover-title="equippedWeapon.name"
           has-popover
         >
           <template #symbol><IconWeapon /></template>
@@ -220,7 +225,7 @@ async function handleRollDamage() {
                 @click="damageModModel = 0"
               >{{ t('inGame.statusHeader.modReset') }}</button>
             </div>
-            <PopoverClose as-child>
+            <InfoPopoverClose as-child>
               <button
                 type="button"
                 class="pop-hero-roll"
@@ -230,7 +235,7 @@ async function handleRollDamage() {
                 <IconDice />
                 <span>{{ t('inGame.statusHeader.trio.damageRoll', { formula: dmgFormulaStr }) }}</span>
               </button>
-            </PopoverClose>
+            </InfoPopoverClose>
           </template>
         </StatusChip>
         <StatusChip
@@ -239,6 +244,7 @@ async function handleRollDamage() {
           :label="t('inGame.statusHeader.trio.damage')"
           value="—"
           :size="compact ? 'sm' : 'base'"
+          :popover-title="t('inGame.statusHeader.trio.damage')"
           has-popover
         >
           <template #symbol><IconWeapon /></template>
@@ -255,6 +261,7 @@ async function handleRollDamage() {
           :label="t('inGame.statusHeader.trio.armor')"
           :value="armorValue"
           :size="compact ? 'sm' : 'base'"
+          :popover-title="t('inGame.statusHeader.trio.armor')"
           has-popover
         >
           <template #symbol><IconShield /></template>
@@ -301,6 +308,7 @@ async function handleRollDamage() {
           :label="t('inGame.statusHeader.trio.coins')"
           :value="char.coins"
           :size="compact ? 'sm' : 'base'"
+          :popover-title="t('inGame.statusHeader.trio.coins')"
           has-popover
         >
           <template #symbol><IconCoin /></template>
@@ -328,6 +336,8 @@ async function handleRollDamage() {
         :temp="char.tempHp ?? 0"
         :size="compact ? 'sm' : 'base'"
         :show-controls="!compact"
+        :character-id="charId"
+        :character-name="char.name"
         @apply-damage="onApplyDamage"
         @heal="onHeal"
         @add-temp="onSetTempHp"
@@ -413,15 +423,16 @@ async function handleRollDamage() {
 
 .status-header.is-compact {
   padding: 8px 16px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr);
   grid-template-areas:
-    "id trio"
-    "hp hp";
+    "id trio ."
+    "hp hp hp";
   row-gap: 6px;
   column-gap: 12px;
   align-items: center;
 }
-.status-header.is-compact .sh-trio { justify-self: end; }
+.status-header.is-compact .sh-id { padding-right: 0; }
+.status-header.is-compact .sh-trio { justify-self: start; }
 .status-header.is-compact .sh-name { font-size: 16px; }
 .status-header.is-compact .sh-meta { font-size: 9px; }
 </style>

@@ -103,4 +103,25 @@ onBeforeUnmount(() => {
   right: 14px;
   bottom: 86px;
 }
+
+@media (max-width: 960px) {
+  .app-shell {
+    height: 100%;
+    min-height: 0;
+  }
+  .app-shell-content {
+    overflow-y: auto;
+    padding: 14px 14px 16px;
+  }
+  .app-shell-tabs {
+    order: 4;
+    z-index: 4;
+    background: rgba(7, 5, 10, 0.78);
+    backdrop-filter: blur(22px) saturate(1.1);
+    -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  }
+  .app-shell-fab-slot {
+    bottom: 86px;
+  }
+}
 </style>

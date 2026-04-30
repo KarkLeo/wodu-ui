@@ -12,6 +12,9 @@ import StepAbility from './components/StepAbility.vue'
 import StepStat from './components/StepStat.vue'
 import StepHitDice from './components/StepHitDice.vue'
 import StepSummary from './components/StepSummary.vue'
+import { useIsMobile } from '@/composables/useIsMobile'
+
+const isMobile = useIsMobile()
 
 const router = useRouter()
 const { id, char, dispatch } = useActiveCharacter()
@@ -128,6 +131,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <Teleport to="body" :disabled="!isMobile">
   <div v-if="char && lv.reward.value" class="cc-shell lu-shell">
     <div class="cc-topbar">
       <div class="cc-title">
@@ -216,6 +220,7 @@ onMounted(() => {
       </button>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -233,6 +238,18 @@ onMounted(() => {
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   position: relative;
   color: var(--vtt-text-primary);
+}
+@media (max-width: 719px) {
+  .cc-shell {
+    position: fixed;
+    inset: 0;
+    height: 100dvh;
+    max-width: none;
+    margin: 0;
+    z-index: 50;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 @media (min-width: 720px) {
   .cc-shell {
@@ -255,7 +272,7 @@ onMounted(() => {
   justify-self: start;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
   font-family: var(--font-serif);
   font-size: 17px;
   font-weight: 500;
