@@ -126,6 +126,25 @@ export const messages = {
       custom: 'Свой класс',
     },
   },
+  hpControls: {
+    title: 'HP',
+    tabDamage: 'Урон',
+    tabHeal: 'Лечение',
+    tabTemp: 'Временное',
+    submitDamage: 'Нанести урон',
+    submitHeal: 'Восстановить',
+    submitTemp: 'Установить',
+    tempPreviewLabel: 'Временно:',
+  },
+  xpControls: {
+    title: 'Опыт',
+    inputLabel: 'Ввод',
+    outOf: 'из {max}',
+    readyPrefix: 'Готов к',
+    readyEmphasis: 'повышению уровня',
+    notReady: 'Нужно больше опыта.',
+    levelUpBtn: 'Level Up',
+  },
   diceDrawer: {
     title: 'Журнал',
     rail: {
@@ -494,6 +513,8 @@ export const messages = {
     },
     sheetColumn: {
       close: 'Закрыть лист',
+
+      goToCard: 'Перейти к карточке {n}',
     },
   },
   errors: {

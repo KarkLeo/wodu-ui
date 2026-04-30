@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, provide, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, provide, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconClose from '@/components/ui/icons/IconClose.vue'
@@ -48,6 +49,9 @@ function closeMobOverlays() {
   leftOpenMobile.value = false
   rightOpenMobile.value = false
 }
+
+const route = useRoute()
+watch(() => route.fullPath, closeMobOverlays)
 </script>
 
 <template>
@@ -107,44 +111,49 @@ function closeMobOverlays() {
     </aside>
 
     <!-- ── MOBILE OVERLAYS ──────────────────────────────── -->
-    <div
-      v-if="leftOpenMobile || rightOpenMobile"
-      class="mob-overlay"
-      @click="closeMobOverlays"
-    />
+    <Transition name="mob-fade">
+      <div
+        v-if="leftOpenMobile || rightOpenMobile"
+        class="mob-overlay"
+        @click="closeMobOverlays"
+      />
+    </Transition>
 
-    <aside v-if="leftOpenMobile" class="mob-side">
-      <div class="mob-side-close">
-        <button
-          type="button"
-          class="btn-icon-sm"
-          :aria-label="t('gameLayout.actions.closePanel')"
-          @click="leftOpenMobile = false"
-        >
-          <IconClose :size="14" />
-        </button>
-      </div>
-      <div class="mob-side-body">
-        <slot name="left" />
-      </div>
-    </aside>
+    <Transition name="mob-side">
+      <aside v-if="leftOpenMobile" class="mob-side">
+        <div class="mob-side-close">
+          <button
+            type="button"
+            class="btn-icon-sm"
+            :aria-label="t('gameLayout.actions.closePanel')"
+            @click="leftOpenMobile = false"
+          >
+            <IconClose :size="14" />
+          </button>
+        </div>
+        <div class="mob-side-body">
+          <slot name="left" />
+        </div>
+      </aside>
+    </Transition>
 
-    <aside v-if="rightOpenMobile" class="mob-sheet">
-      <div class="mob-sheet-handle" />
-      <div class="mob-sheet-head">
-        <button
-          type="button"
-          class="btn-icon-sm"
-          :aria-label="t('gameLayout.actions.closePanel')"
-          @click="rightOpenMobile = false"
-        >
-          <IconClose :size="14" />
-        </button>
-      </div>
-      <div class="mob-sheet-body">
-        <slot name="right" />
-      </div>
-    </aside>
+    <Transition name="mob-side-r">
+      <aside v-if="rightOpenMobile" class="mob-side mob-side-r">
+        <div class="mob-side-close">
+          <button
+            type="button"
+            class="btn-icon-sm"
+            :aria-label="t('gameLayout.actions.closePanel')"
+            @click="rightOpenMobile = false"
+          >
+            <IconClose :size="14" />
+          </button>
+        </div>
+        <div class="mob-side-body">
+          <slot name="right" />
+        </div>
+      </aside>
+    </Transition>
   </div>
 </template>
 
@@ -224,9 +233,27 @@ function closeMobOverlays() {
   align-items: center;
   gap: 8px;
   padding: 0 8px;
-  background: var(--vtt-bg-elevated);
-  border-bottom: 1px solid var(--vtt-border-subtle);
+  background: transparent;
   z-index: 6;
+}
+.gl-mob-topbar::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: rgba(7, 5, 10, 0.78);
+  backdrop-filter: blur(22px) saturate(1.1);
+  -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 55%,
+    rgba(0, 0, 0, 0.6) 80%,
+    rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 55%,
+    rgba(0, 0, 0, 0.6) 80%,
+    rgba(0, 0, 0, 0) 100%);
+  z-index: -1;
+  pointer-events: none;
 }
 .gl-mob-topbar .btn-icon-sm {
   width: 32px; height: 32px; border-radius: var(--r-pill);
@@ -325,63 +352,51 @@ function closeMobOverlays() {
 }
 .mob-side {
   position: absolute; left: 0; top: 0; bottom: 0;
-  width: 82%; max-width: 320px;
-  background:
-    linear-gradient(to right, rgba(26, 21, 16, 0.97), rgba(14, 11, 8, 0.99)),
-    var(--vtt-bg-surface);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border-right: 1px solid var(--vtt-border-gold);
-  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.55);
+  width: 100%;
+  background: rgba(7, 5, 10, 0.62);
+  backdrop-filter: blur(28px) saturate(1.2);
+  -webkit-backdrop-filter: blur(28px) saturate(1.2);
   display: flex; flex-direction: column;
   z-index: 8;
-  animation: mob-side-in 240ms var(--ease);
 }
-@keyframes mob-side-in {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(0); }
+.mob-side-enter-active,
+.mob-side-leave-active {
+  transition: transform 240ms var(--ease);
+}
+.mob-side-enter-from,
+.mob-side-leave-to {
+  transform: translateX(-100%);
 }
 .mob-side-close {
-  display: flex; justify-content: flex-end;
-  padding: 8px 10px 0;
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 1;
 }
 .mob-side-body {
   flex: 1 1 auto; min-height: 0;
   overflow-y: auto;
 }
 
-.mob-sheet {
-  position: absolute; left: 0; right: 0; bottom: 0;
-  max-height: 85%;
-  background:
-    linear-gradient(to bottom, rgba(26, 21, 16, 0.96), rgba(14, 11, 8, 0.98)),
-    var(--vtt-bg-surface);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border-top: 1px solid var(--vtt-border-gold);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
-  display: flex; flex-direction: column;
-  z-index: 8;
-  animation: mob-sheet-in 240ms var(--ease);
+.mob-side-r {
+  left: auto;
+  right: 0;
 }
-@keyframes mob-sheet-in {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+.mob-side-r-enter-active,
+.mob-side-r-leave-active {
+  transition: transform 240ms var(--ease);
 }
-.mob-sheet-handle {
-  width: 36px; height: 4px; border-radius: var(--r-pill);
-  background: var(--vtt-border-strong);
-  margin: 8px auto 0;
+.mob-side-r-enter-from,
+.mob-side-r-leave-to {
+  transform: translateX(100%);
 }
-.mob-sheet-head {
-  display: flex; justify-content: flex-end;
-  padding: 4px 12px 0;
+.mob-fade-enter-active,
+.mob-fade-leave-active {
+  transition: opacity 240ms var(--ease);
 }
-.mob-sheet-body {
-  flex: 1 1 auto; min-height: 0;
-  overflow-y: auto;
-  padding: 4px 0 12px;
+.mob-fade-enter-from,
+.mob-fade-leave-to {
+  opacity: 0;
 }
 
 /* ── SHARED ICON BUTTON (для mob-topbar / close) ─────── */
@@ -391,7 +406,7 @@ function closeMobOverlays() {
   padding: 0;
   background: transparent;
   border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
+  border-radius: 50%;
   color: var(--vtt-text-muted);
   cursor: pointer;
   transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);

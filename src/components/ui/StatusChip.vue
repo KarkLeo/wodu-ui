@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   size?: Size
   mod?: string
   hasPopover?: boolean
+  popoverTitle?: string
 }>(), {
   size: 'base',
 })
@@ -31,7 +32,7 @@ const modClass = computed(() => {
 </script>
 
 <template>
-  <InfoPopover v-if="hasPopover" side="bottom" align="start" @open="emit('open', $event)">
+  <InfoPopover v-if="hasPopover" side="bottom" align="start" :title="popoverTitle" @open="emit('open', $event)">
     <template #trigger>
       <button
         type="button"
@@ -141,7 +142,7 @@ const modClass = computed(() => {
 .status-chip.sc-sm { padding: 4px 8px; gap: 6px; }
 .status-chip.sc-sm .sc-glyph { width: 14px; height: 14px; }
 .status-chip.sc-sm .sc-value { font-size: 14px; }
-.status-chip.sc-sm .sc-unit  { font-size: 9px; letter-spacing: 0.12em; }
+.status-chip.sc-sm .sc-unit  { display: none; }
 .status-chip.sc-sm .sc-meta  { display: none; }
 
 .status-chip.sc-lg { padding: 8px 16px; gap: 10px; }
