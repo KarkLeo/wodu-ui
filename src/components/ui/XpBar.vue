@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { PopoverRoot, PopoverAnchor, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
+import BottomSheet from './BottomSheet.vue'
+import XpControlsPanel from './XpControlsPanel.vue'
+import { useIsMobile } from '@/composables/useIsMobile'
 
 type Size = 'sm' | 'base' | 'lg'
 
@@ -26,6 +29,8 @@ const emit = defineEmits<{
   (e: 'update:current', value: number): void
 }>()
 
+const isMobile = useIsMobile()
+
 const state = computed(() => {
   if (props.isCap) return 'cap'
   if (props.isReady) return 'ready'
@@ -46,11 +51,6 @@ function setCurrent(v: number) {
   if (model.value !== undefined) model.value = clamped
   else emit('update:current', clamped)
 }
-function step(delta: number) { setCurrent(props.current + delta) }
-function onInput(e: Event) {
-  const v = Number((e.target as HTMLInputElement).value)
-  if (!Number.isNaN(v)) setCurrent(v)
-}
 </script>
 
 <template>
@@ -70,7 +70,7 @@ function onInput(e: Event) {
       @keydown.space.prevent="showControls && (open = true)"
     >XP</span>
 
-    <PopoverRoot v-if="showControls" :open="open" @update:open="(v) => (open = v)">
+    <PopoverRoot v-if="showControls && !isMobile" :open="open" @update:open="(v) => (open = v)">
       <PopoverAnchor as-child>
         <span
           class="xp-bar-values is-clickable"
@@ -94,51 +94,44 @@ function onInput(e: Event) {
         </button>
       </PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent class="xp-popover" :side-offset="10" align="end">
-          <div class="xp-pop-head">
-            <span class="xp-pop-head-title">{{ popoverTitle }}</span>
-            <span class="xp-pop-head-meta">{{ current }} / {{ max }}</span>
-          </div>
-
-          <div class="xp-pop-steps">
-            <button type="button" class="xp-step-btn is-minus" @click="step(-100)">−100</button>
-            <button type="button" class="xp-step-btn is-minus" @click="step(-10)">−10</button>
-            <button type="button" class="xp-step-btn is-plus" @click="step(10)">+10</button>
-            <button type="button" class="xp-step-btn is-plus" @click="step(100)">+100</button>
-          </div>
-
-          <div class="xp-pop-manual">
-            <span class="xp-pop-manual-label">Ввод</span>
-            <input
-              type="number"
-              :value="current"
-              min="0"
-              :max="max"
-              @input="onInput"
-            />
-            <span class="xp-pop-manual-total">из {{ max }}</span>
-          </div>
-
-          <div :class="['xp-pop-levelup', { 'is-locked': !isReady }]">
-            <div class="xp-pop-levelup-text">
-              <template v-if="isReady">
-                Готов к <b>повышению уровня</b>.
-              </template>
-              <template v-else>
-                Нужно больше опыта.
-              </template>
-            </div>
-            <button
-              type="button"
-              class="xp-pop-levelup-btn"
-              :disabled="!isReady"
-              @click="isReady && emit('levelUp')"
-            >Level Up</button>
-          </div>
+        <PopoverContent class="xp-popover" :side-offset="10" align="end" :avoid-collisions="true" :collision-padding="12">
+          <XpControlsPanel
+            :current="current"
+            :max="max"
+            :is-ready="isReady"
+            :popover-title="popoverTitle"
+            :show-header="true"
+            @update:current="(v) => setCurrent(v)"
+            @level-up="emit('levelUp')"
+          />
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>
-    <span v-else class="xp-bar-values">
+    <span
+      v-else-if="showControls"
+      class="xp-bar-values is-clickable"
+      role="button"
+      tabindex="0"
+      aria-label="Изменить опыт"
+      @click="open = true"
+      @keydown.enter.prevent="open = true"
+      @keydown.space.prevent="open = true"
+    >
+      <span class="xp-current">{{ current }}</span>
+      <span class="xp-sep">/</span>
+      <span class="xp-max">{{ max }}</span>
+      <span v-if="state === 'ready'" class="xp-ready-dot" />
+    </span>
+    <button
+      v-if="showControls && isMobile"
+      type="button"
+      class="xp-bar-trigger"
+      @click="open = true"
+    >
+      <span v-if="hint" class="xp-bar-hint">{{ hint }}</span>
+      <span v-else class="xp-bar-hint">+</span>
+    </button>
+    <span v-if="!showControls" class="xp-bar-values">
       <span class="xp-current">{{ current }}</span>
       <span class="xp-sep">/</span>
       <span class="xp-max">{{ max }}</span>
@@ -162,6 +155,20 @@ function onInput(e: Event) {
       </div>
     </div>
   </div>
+
+  <BottomSheet v-if="showControls && isMobile" v-model:open="open" :title="popoverTitle">
+    <div class="xp-popover xp-popover--sheet">
+      <XpControlsPanel
+        :current="current"
+        :max="max"
+        :is-ready="isReady"
+        :popover-title="popoverTitle"
+        :show-header="false"
+        @update:current="(v) => setCurrent(v)"
+        @level-up="emit('levelUp'); open = false"
+      />
+    </div>
+  </BottomSheet>
 </template>
 
 <style scoped>
@@ -335,6 +342,16 @@ function onInput(e: Event) {
   color: var(--vtt-text-primary);
   text-align: left;
   z-index: 200;
+}
+.xp-popover.xp-popover--sheet {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .xp-popover .xp-pop-head {

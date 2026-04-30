@@ -458,4 +458,8 @@ function confirmReset() {
   height: 7px;
   border: 1.5px solid rgba(14, 11, 8, 0.9);
 }
+
+@media (max-width: 960px) {
+  .btn-collapse { display: none; }
+}
 </style>
