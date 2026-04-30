@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{
   editing?: boolean
   state?: State
   hasPopover?: boolean
+  popoverTitle?: string
   rollHint?: string
 }>(), {
   variant: 'default',
@@ -47,7 +48,7 @@ function fmtMod(m: number): string {
 </script>
 
 <template>
-  <InfoPopover v-if="hasPopover" side="right" align="start" @open="emit('open', $event)">
+  <InfoPopover v-if="hasPopover" side="right" align="start" :title="popoverTitle" @open="emit('open', $event)">
     <template #trigger>
       <button
         type="button"

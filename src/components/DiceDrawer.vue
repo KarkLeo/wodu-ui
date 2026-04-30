@@ -236,11 +236,11 @@ function logDelta(e: ChangeEntry): string | undefined {
       </button>
       <span class="drawer-title">{{ t('diceDrawer.title') }}</span>
       <button
-        v-if="unified.hasAny.value"
         type="button"
         class="btn-collapse"
         :title="t('diceDrawer.actions.clear')"
         :aria-label="t('diceDrawer.actions.clear')"
+        :disabled="!unified.hasAny.value"
         @click="unified.clearAll()"
       >
         <IconTrash :size="14" />
@@ -401,10 +401,14 @@ function logDelta(e: ChangeEntry): string | undefined {
   flex-shrink: 0;
   transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
-.btn-collapse:hover {
+.btn-collapse:hover:not(:disabled) {
   color: var(--vtt-accent-soft);
   border-color: var(--vtt-border-strong);
   background: rgba(228, 201, 160, 0.08);
+}
+.btn-collapse:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .drawer-filter {
@@ -833,5 +837,14 @@ function logDelta(e: ChangeEntry): string | undefined {
 .btn-rail-roll:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .drawer-header > .btn-collapse:first-child { display: none; }
+  .drawer-header {
+    padding-top: 8px;
+    padding-right: 52px;
+  }
+  .drawer-header > .btn-collapse:last-child { order: -1; }
 }
 </style>

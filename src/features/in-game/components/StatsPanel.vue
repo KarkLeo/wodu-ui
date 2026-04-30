@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
-import { PopoverClose } from 'reka-ui'
+import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { STAT_KEYS, STAT_LABELS, STAT_FULL_LABELS, MAX_STAT_BONUS } from '@/data/xpTable'
@@ -134,6 +134,7 @@ function stopEdit() {
         :base="modTotal(key) !== 0 ? fmt(char.stats[key]) : undefined"
         dice="2d6"
         has-popover
+        :popover-title="`${STAT_FULL_LABELS[key]} · ${fmt(eff(key))}`"
         @open="onPopoverOpen(key, $event)"
       >
         <template #popover>
@@ -142,7 +143,7 @@ function stopEdit() {
             <span class="pop-sub">{{ STAT_LABELS[key] }}</span>
           </div>
 
-          <PopoverClose as-child>
+          <InfoPopoverClose as-child>
             <button
               type="button"
               class="pop-hero"
@@ -152,7 +153,7 @@ function stopEdit() {
               <IconDice />
               <span>{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</span>
             </button>
-          </PopoverClose>
+          </InfoPopoverClose>
 
           <div class="pop-divider" />
 
