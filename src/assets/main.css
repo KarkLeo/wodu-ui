@@ -144,7 +144,7 @@ body {
   background-image:
     radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
     radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ============================================================
@@ -212,7 +212,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
 }
 
 /* ── Popover portal — shared head/breakdown rows for stat & status popovers ── */
