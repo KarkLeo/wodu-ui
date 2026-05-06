@@ -38,7 +38,7 @@ The player must choose from one of the standard archetypes or opt to create a cu
    - **Abilities:** Choose 2 from (Благословение `blessing`, Исцеление `heal`, Отвращение нежити `turnUndead`, Видение `vision`).
 4. **Wizard** (`wizard`)
    - **Granted Skill:** Lore.
-   - **Abilities:** Automatically gains `summoning` (Призыв). Choose 1 additional ability from (Заклички `incantations`, Подчинение `domination`, Ритуал `ritual`).
+   - **Abilities:** Automatically gains `summoning` (Призыв). Choose 1 additional ability from (Заговоры `incantations`, Подчинение `domination`, Ритуал `ritual`).
    - **Magic Section:** The spirit/ritual fields are shown but not required — the player may leave them blank and defer spirit creation to gameplay.
 5. **Ranger** (`ranger`)
    - **Granted Skill:** Survival.
