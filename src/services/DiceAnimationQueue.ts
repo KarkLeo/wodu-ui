@@ -77,19 +77,19 @@ export async function getDiceBox(): Promise<DiceBox> {
   return initPromise
 }
 
-function expandPercentile(dice: DieResult[]): DieResult[] {
-  const out: DieResult[] = []
+function expandPercentile(dice: DieResult[]): Array<{ sides: number; value: number }> {
+  const out: Array<{ sides: number; value: number }> = []
   for (const d of dice) {
     if (d.sides === 100) {
       const v = Math.max(1, Math.min(100, d.value))
       const tensDigit = Math.floor(v / 10) % 10
       const onesDigit = v % 10
-      const tensFace = tensDigit === 0 ? 10 : tensDigit
-      const onesFace = onesDigit === 0 ? 10 : onesDigit
-      out.push({ sides: 10, value: tensFace })
-      out.push({ sides: 10, value: onesFace })
+      const tensValue = tensDigit === 0 ? 100 : tensDigit * 10
+      const onesValue = onesDigit === 0 ? 10 : onesDigit
+      out.push({ sides: 100, value: tensValue })
+      out.push({ sides: 10, value: onesValue })
     } else {
-      out.push(d)
+      out.push({ sides: d.sides, value: d.value })
     }
   }
   return out
@@ -107,10 +107,10 @@ function buildNotation(rawDice: DieResult[], notation: string): string {
     }
     groupedBySides.get(d.sides)!.push(d.value)
   }
-  const allValues = dice.map(d => d.value).join(',')
   if (order.length === 1) {
     const sides = order[0]
-    return `${dice.length}d${sides}@${allValues}`
+    const values = groupedBySides.get(sides)!
+    return `${values.length}d${sides}@${values.join(',')}`
   }
   const terms = order.map(sides => {
     const values = groupedBySides.get(sides)!
