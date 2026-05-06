@@ -107,16 +107,9 @@ function buildNotation(rawDice: DieResult[], notation: string): string {
     }
     groupedBySides.get(d.sides)!.push(d.value)
   }
-  if (order.length === 1) {
-    const sides = order[0]
-    const values = groupedBySides.get(sides)!
-    return `${values.length}d${sides}@${values.join(',')}`
-  }
-  const terms = order.map(sides => {
-    const values = groupedBySides.get(sides)!
-    return `${values.length}d${sides}@${values.join(',')}`
-  })
-  return terms.join('+')
+  const terms = order.map(sides => `${groupedBySides.get(sides)!.length}d${sides}`)
+  const allValues = order.flatMap(sides => groupedBySides.get(sides)!)
+  return `${terms.join('+')}@${allValues.join(',')}`
 }
 
 async function processNext() {
