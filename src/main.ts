@@ -28,4 +28,7 @@ const app = createApp(App).use(pinia).use(router)
 void (async () => {
   await bootstrap()
   app.mount('#app')
+  if (import.meta.env.PROD) {
+    void import('@/pwa/register')
+  }
 })()
