@@ -528,4 +528,11 @@ export const messages = {
     failedHint: 'Данные временно недоступны.',
     retry: 'Повторить',
   },
+  pwa: {
+    updateAvailable: 'Доступно обновление',
+    update: 'Обновить',
+    updating: 'Обновление…',
+    installCta: 'Установить приложение',
+    installed: 'Приложение установлено',
+  },
 } as const
