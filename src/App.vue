@@ -2,6 +2,7 @@
 import DiceOverlay from '@/components/DiceOverlay.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
 import ToastHost from '@/components/ToastHost.vue'
+import PwaUpdatePrompt from '@/components/PwaUpdatePrompt.vue'
 import GameLayout from '@/components/layout/GameLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import { bootstrap, bootstrapStatus } from '@/transport/bootstrap'
@@ -11,6 +12,7 @@ import { t } from '@/locales'
 <template>
   <DiceOverlay />
   <ToastHost />
+  <PwaUpdatePrompt />
 
   <div v-if="bootstrapStatus === 'failed'" class="bootstrap-banner" role="alert">
     <div class="bootstrap-banner__title">{{ t('bootstrap.failedTitle') }}</div>
