@@ -5,10 +5,12 @@ import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
 import IconDice from '@/components/ui/icons/IconDice.vue'
+import { usePwaInstall } from '@/pwa/useInstall'
 
 const router = useRouter()
 const characters = useCharactersStore()
 const creation = useCreationStore()
+const install = usePwaInstall()
 
 const activeChars = computed(() => characters.list.filter(c => c.status === 'active'))
 const draftChars = computed(() => characters.list.filter(c => c.status === 'draft'))
@@ -48,6 +50,15 @@ function resumeCreation(id: string) {
     <div v-else-if="activeChars.length > 0" class="cl-hint">
       {{ t('characterList.pickFromSidebar') }}
     </div>
+
+    <button
+      v-if="install.canInstall.value"
+      type="button"
+      class="cl-install"
+      @click="install.promptInstall()"
+    >
+      {{ t('pwa.installCta') }}
+    </button>
   </div>
 </template>
 
@@ -162,5 +173,25 @@ function resumeCreation(id: string) {
   font-style: italic;
   font-size: 14px;
   line-height: 1.55;
+}
+
+.cl-install {
+  align-self: center;
+  margin-top: 8px;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--vtt-accent-deep);
+  border-radius: var(--r-sm);
+  color: var(--vtt-accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.cl-install:hover {
+  background: rgba(140, 106, 58, 0.18);
+  border-color: var(--vtt-accent);
 }
 </style>
