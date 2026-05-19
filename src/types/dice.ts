@@ -14,6 +14,8 @@ export type RollPurpose =
   | { kind: 'hp-init'; level: number; numDice: number; kept: number }
   | { kind: 'hit-dice'; fromLevel: number; toLevel: number; numDice: number; kept: number }
 
+export type RollMode = 'normal' | 'advantage' | 'disadvantage'
+
 export interface RollRecord {
   id: string
   timestamp: number
@@ -26,4 +28,7 @@ export interface RollRecord {
   purpose: RollPurpose
   characterId: string
   characterName?: string
+  rollMode?: RollMode
+  discardedDice?: DieResult[]
+  discardedTotal?: number
 }
