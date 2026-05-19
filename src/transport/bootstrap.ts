@@ -135,7 +135,8 @@ function subscribeAll() {
       playedLocally.delete(record.id)
       return
     }
-    void enqueueDice(record.dice, record.notation)
+    const dice = record.discardedDice ? [...record.dice, ...record.discardedDice] : record.dice
+    void enqueueDice(dice, record.notation)
   })
 
   pb.collection('change_events').subscribe<ChangeRow>('*', (e) => {
