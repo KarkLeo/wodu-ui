@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useCharactersStore } from '@/stores/characters'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
-import type { RollRecord } from '@/types/dice'
+import type { RollMode, RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
 import { STAT_LABELS } from '@/data/xpTable'
 import { t } from '@/locales'
@@ -33,6 +33,11 @@ const filter = ref<LogFilter>('all')
 const notation = ref('2d6')
 const notationError = ref('')
 const recentId = ref<string | null>(null)
+const pendingMode = ref<RollMode>('normal')
+
+function toggleMode(mode: Exclude<RollMode, 'normal'>) {
+  pendingMode.value = pendingMode.value === mode ? 'normal' : mode
+}
 
 const activeChar = computed(() => charStore.active)
 
@@ -65,10 +70,13 @@ async function doRoll(notationStr: string) {
     return
   }
   notationError.value = ''
+  const mode = pendingMode.value
   try {
-    await rollFree(activeChar.value.id, activeChar.value.name, norm)
+    await rollFree(activeChar.value.id, activeChar.value.name, norm, mode)
   } catch (e) {
     log.error('roll failed', e)
+  } finally {
+    pendingMode.value = 'normal'
   }
 }
 
@@ -95,6 +103,8 @@ function rollMetaLabel(r: RollRecord): string {
   if (r.purpose.kind === 'damage') return t('diceDrawer.meta.damage')
   if (r.purpose.kind === 'hit-dice') return t('diceDrawer.rollMeta.hitDice')
   if (r.purpose.kind === 'hp-init') return t('diceDrawer.rollMeta.hpInit')
+  if (r.rollMode === 'advantage') return t('diceDrawer.mode.advantage')
+  if (r.rollMode === 'disadvantage') return t('diceDrawer.mode.disadvantage')
   return t('diceDrawer.meta.manual')
 }
 
@@ -116,6 +126,8 @@ function rollClasses(r: RollRecord) {
     'is-success': success,
     'is-fail': fail,
     'is-damage': r.purpose.kind === 'damage',
+    'is-advantage': r.rollMode === 'advantage',
+    'is-disadvantage': r.rollMode === 'disadvantage',
     'is-fresh': r.id === recentId.value,
   }
 }
@@ -293,6 +305,9 @@ function logDelta(e: ChangeEntry): string | undefined {
                   <em>{{ d.value }}</em><template v-if="i < item.payload.dice.length - 1"> + </template>
                 </template>
               </span>
+              <span v-if="item.payload.discardedTotal !== undefined" class="f-alt">
+                · {{ t('diceDrawer.mode.alt') }} {{ item.payload.discardedTotal }}
+              </span>
             </div>
           </div>
           <div class="dice-row-result">{{ item.payload.total }}</div>
@@ -319,6 +334,35 @@ function logDelta(e: ChangeEntry): string | undefined {
     </div>
 
     <div class="drawer-quick">
+      <div class="drawer-quick-label">{{ t('diceDrawer.mode.label') }}</div>
+      <div class="drawer-mode">
+        <button
+          type="button"
+          class="mode-chip"
+          :class="{ 'is-armed': pendingMode === 'advantage' }"
+          :disabled="isRolling || !activeChar"
+          :aria-pressed="pendingMode === 'advantage'"
+          @click="toggleMode('advantage')"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M8 13 L8 3 M4 7 L8 3 L12 7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {{ t('diceDrawer.mode.advantage') }}
+        </button>
+        <button
+          type="button"
+          class="mode-chip"
+          :class="{ 'is-armed': pendingMode === 'disadvantage' }"
+          :disabled="isRolling || !activeChar"
+          :aria-pressed="pendingMode === 'disadvantage'"
+          @click="toggleMode('disadvantage')"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M8 3 L8 13 M4 9 L8 13 L12 9" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {{ t('diceDrawer.mode.disadvantage') }}
+        </button>
+      </div>
       <div class="drawer-quick-label">{{ t('diceDrawer.quick') }}</div>
       <div class="quick-rolls">
         <button
@@ -495,6 +539,12 @@ function logDelta(e: ChangeEntry): string | undefined {
 .dice-row-formula .f-rolls { color: var(--vtt-text-muted); font-style: italic; margin: 0 4px; }
 .dice-row-formula .f-rolls em { color: var(--vtt-text-secondary); font-style: normal; }
 .dice-row-formula .f-mod { color: var(--vtt-text-muted); }
+.dice-row-formula .f-alt {
+  color: var(--vtt-text-muted);
+  font-style: italic;
+  margin-left: 4px;
+  font-size: 12px;
+}
 .dice-row-result {
   min-width: 40px;
   height: 40px; padding: 0 8px;
@@ -533,6 +583,10 @@ function logDelta(e: ChangeEntry): string | undefined {
 }
 .dice-row.is-fail .dice-row-glyph { color: var(--vtt-danger-bright); opacity: 0.75; }
 .dice-row.is-damage .dice-row-glyph { color: var(--vtt-danger-bright); }
+.dice-row.is-advantage .dice-row-glyph { color: var(--vtt-accent); }
+.dice-row.is-advantage .dice-row-meta b { color: var(--vtt-accent); }
+.dice-row.is-disadvantage .dice-row-glyph { color: var(--vtt-warning, var(--vtt-danger-bright)); }
+.dice-row.is-disadvantage .dice-row-meta b { color: var(--vtt-warning, var(--vtt-danger-bright)); }
 .dice-row.is-fresh { animation: dice-row-fresh 1600ms var(--ease); }
 
 /* Log row */
@@ -644,6 +698,44 @@ function logDelta(e: ChangeEntry): string | undefined {
   letter-spacing: 0.24em; text-transform: uppercase;
   color: var(--vtt-text-muted);
   margin: 0 0 8px;
+}
+.drawer-quick-label + .drawer-quick-label,
+.drawer-mode + .drawer-quick-label {
+  margin-top: 10px;
+}
+.drawer-mode {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.mode-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px;
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  background: rgba(36, 28, 21, 0.55);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--vtt-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+.mode-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+.mode-chip:hover:not(:disabled) {
+  color: var(--vtt-accent);
+  background: rgba(140, 106, 58, 0.18);
+}
+.mode-chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.mode-chip.is-armed {
+  color: var(--vtt-accent);
+  background: rgba(140, 106, 58, 0.28);
+  border-color: rgba(212, 168, 87, 0.45);
+  box-shadow: 0 0 10px rgba(212, 168, 87, 0.18);
 }
 .quick-rolls { display: flex; gap: 6px; flex-wrap: wrap; }
 .qr-chip {
