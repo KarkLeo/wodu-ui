@@ -17,7 +17,8 @@ export const isRolling = isAnimating
 function persistRoll(record: RollRecord): void {
   markRollPlayedLocally(record.id)
   useRollHistoryStore().addLocal(record)
-  void enqueueDice(record.dice, record.notation)
+  const dice = record.discardedDice ? [...record.dice, ...record.discardedDice] : record.dice
+  void enqueueDice(dice, record.notation)
   void pb
     .collection('roll_events')
     .create({
