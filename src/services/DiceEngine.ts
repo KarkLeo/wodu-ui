@@ -1,5 +1,5 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller'
-import type { DieResult, DieSize } from '@/types/dice'
+import type { DieResult, DieSize, RollMode } from '@/types/dice'
 
 const ALLOWED_SIDES: ReadonlySet<number> = new Set([4, 6, 8, 10, 12, 20, 100])
 const DICE_TERM = /(\d*)d(\d+)/gi
@@ -38,9 +38,11 @@ function isRollResults(value: unknown): value is { rolls: Array<{ value: number 
 export interface DiceRollOutcome {
   dice: DieResult[]
   total: number
+  discardedDice?: DieResult[]
+  discardedTotal?: number
 }
 
-export function rollNotation(notation: string): DiceRollOutcome {
+function rollOnce(notation: string): { dice: DieResult[]; total: number } {
   const groups = parseDiceGroups(notation)
   const roll = new DiceRoll(notation)
 
@@ -69,4 +71,20 @@ export function rollNotation(notation: string): DiceRollOutcome {
 
   const total = dice.reduce((s, d) => s + d.value, 0)
   return { dice, total }
+}
+
+export function rollNotation(notation: string, mode: RollMode = 'normal'): DiceRollOutcome {
+  if (mode === 'normal') return rollOnce(notation)
+
+  const a = rollOnce(notation)
+  const b = rollOnce(notation)
+  const keepFirst = mode === 'advantage' ? a.total >= b.total : a.total <= b.total
+  const kept = keepFirst ? a : b
+  const discarded = keepFirst ? b : a
+  return {
+    dice: kept.dice,
+    total: kept.total,
+    discardedDice: discarded.dice,
+    discardedTotal: discarded.total,
+  }
 }

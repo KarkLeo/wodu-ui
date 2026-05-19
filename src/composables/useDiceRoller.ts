@@ -5,7 +5,7 @@ import { markRollPlayedLocally } from '@/transport/bootstrap'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useToastsStore } from '@/stores/toasts'
 import { parseDamageNotation } from '@/utils/derived'
-import type { RollPurpose, RollRecord } from '@/types/dice'
+import type { RollMode, RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
 import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
@@ -40,17 +40,19 @@ export function useDiceRoller() {
     characterId: string
     characterName?: string
     minTotal?: number
+    rollMode?: RollMode
   }): RollRecord {
-    const { dice, total: diceTotal } = engineRoll(params.notation)
+    const mode = params.rollMode ?? 'normal'
+    const outcome = engineRoll(params.notation, mode)
     const modifier = params.modifier ?? 0
-    const rawTotal = diceTotal + modifier
+    const rawTotal = outcome.total + modifier
     const total = params.minTotal !== undefined ? Math.max(params.minTotal, rawTotal) : rawTotal
-    return {
+    const record: RollRecord = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       notation: params.notation,
-      dice,
-      diceTotal,
+      dice: outcome.dice,
+      diceTotal: outcome.total,
       modifier,
       total,
       label: params.label,
@@ -58,6 +60,14 @@ export function useDiceRoller() {
       characterId: params.characterId,
       characterName: params.characterName,
     }
+    if (mode !== 'normal') {
+      record.rollMode = mode
+      if (outcome.discardedDice) record.discardedDice = outcome.discardedDice
+      if (outcome.discardedTotal !== undefined) {
+        record.discardedTotal = outcome.discardedTotal + modifier
+      }
+    }
+    return record
   }
 
   function roll(params: {
@@ -68,6 +78,7 @@ export function useDiceRoller() {
     characterId: string
     characterName?: string
     minTotal?: number
+    rollMode?: RollMode
   }): RollRecord {
     log.debug('roll', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
     const record = buildRecord(params)
@@ -132,7 +143,12 @@ export function useDiceRoller() {
     })
   }
 
-  function rollFree(characterId: string, characterName: string | undefined, notation: string) {
+  function rollFree(
+    characterId: string,
+    characterName: string | undefined,
+    notation: string,
+    rollMode: RollMode = 'normal',
+  ) {
     return roll({
       notation,
       modifier: 0,
@@ -140,6 +156,7 @@ export function useDiceRoller() {
       purpose: { kind: 'free', notation },
       characterId,
       characterName,
+      rollMode,
     })
   }
 
