@@ -135,3 +135,4 @@ In-game tabs: **Основное** (stats/skills/abilities) → **Инвента
 - No decorative chrome — every UI element must serve a functional purpose
 - All user data survives page refresh via Pinia persisted state
 - Domain command dispatch is the only path for gameplay mutations
+- Bump `version` in `package.json` (patch by default) whenever you change code — the in-app footer surfaces it via `__APP_VERSION__`, so a stale version means stale UI for users
