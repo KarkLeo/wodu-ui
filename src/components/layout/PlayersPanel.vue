@@ -35,6 +35,17 @@ const openIdsSet = computed(() => new Set(openIds.value))
 
 const confirmResetOpen = ref(false)
 
+const buildLine = computed(() => {
+  const built = new Date(__BUILD_TIMESTAMP__).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return t('gameLayout.players.buildLine', { version: __APP_VERSION__, built })
+})
+
 function initial(name: string): string {
   const trimmed = name.trim()
   if (!trimmed) return '?'
@@ -166,6 +177,7 @@ function confirmReset() {
         class="reset-link"
         @click="confirmResetOpen = true"
       >{{ t('characterList.dev.reset') }}</button>
+      <div class="build-id">{{ buildLine }}</div>
     </div>
 
     <ConfirmSheet
@@ -381,6 +393,15 @@ function confirmReset() {
   transition: color var(--t-fast) var(--ease);
 }
 .reset-link:hover { color: var(--vtt-danger-bright); }
+
+.build-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--vtt-text-muted);
+  opacity: 0.7;
+  text-align: center;
+}
 
 /* ── СВЁРНУТЫЙ ВИД · rail ─────────────────────────── */
 .players-rail {
