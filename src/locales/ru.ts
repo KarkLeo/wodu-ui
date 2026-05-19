@@ -160,6 +160,12 @@ export const messages = {
       hint: 'Любой бросок, урон, находка или уровень осядут здесь',
     },
     quick: 'Быстрые',
+    mode: {
+      label: 'Модификатор',
+      advantage: 'Преимущество',
+      disadvantage: 'Помеха',
+      alt: 'альт.',
+    },
     input: {
       placeholder: '2d6+1, d20, 4d6…',
       error: 'Неверный формат. Пример: 2d6, 1d8+2, 3d6+1d4',
