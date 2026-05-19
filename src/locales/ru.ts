@@ -516,6 +516,7 @@ export const messages = {
       empty: 'Список пуст — создай первого персонажа',
       hpLabel: 'HP',
       railLabel: 'Игроки · {count}',
+      buildLine: 'v{version} · {built}',
     },
     sheetColumn: {
       close: 'Закрыть лист',
