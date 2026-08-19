@@ -1,4 +1,13 @@
-import { messages } from './ru'
+import { messages as en, type Messages } from './en'
+import { messages as ru } from './ru'
+import { messages as uk } from './uk'
+import { currentLocale, FALLBACK_LOCALE, type Locale } from './locale'
+
+export const DICTIONARIES: Record<Locale, Messages> = {
+  en,
+  ru,
+  uk,
+}
 
 type Primitive = string | number | boolean
 
@@ -10,11 +19,18 @@ type DeepKeyOf<T, Prefix extends string = ''> = {
       : never
 }[keyof T & string]
 
-export type MessageKey = DeepKeyOf<typeof messages>
+export type MessageKey = DeepKeyOf<Messages>
 
-function resolve(path: string): string | undefined {
+export type Param = string | number | { $key: MessageKey }
+
+export interface LabelRef {
+  key: MessageKey
+  params?: Record<string, Param>
+}
+
+function resolve(dict: Messages, path: string): string | undefined {
   const parts = path.split('.')
-  let node: unknown = messages
+  let node: unknown = dict
   for (const part of parts) {
     if (node && typeof node === 'object' && part in (node as Record<string, unknown>)) {
       node = (node as Record<string, unknown>)[part]
@@ -25,15 +41,19 @@ function resolve(path: string): string | undefined {
   return typeof node === 'string' ? node : undefined
 }
 
-function interpolate(template: string, params?: Record<string, string | number>): string {
+function interpolate(template: string, params?: Record<string, Param>): string {
   if (!params) return template
-  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in params ? String(params[key]) : match
-  )
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    if (!(key in params)) return match
+    const value = params[key]
+    if (typeof value === 'object' && value !== null && '$key' in value) return t(value.$key, params)
+    return String(value)
+  })
 }
 
-export function t(key: MessageKey, params?: Record<string, string | number>): string {
-  const value = resolve(key)
+export function t(key: MessageKey, params?: Record<string, Param>): string {
+  const value =
+    resolve(DICTIONARIES[currentLocale.value], key) ?? resolve(DICTIONARIES[FALLBACK_LOCALE], key)
   if (value === undefined) {
     if (import.meta.env.DEV) {
       console.warn(`[i18n] Missing translation for key: "${key}"`)
@@ -42,3 +62,9 @@ export function t(key: MessageKey, params?: Record<string, string | number>): st
   }
   return interpolate(value, params)
 }
+
+export function tLabel(ref: LabelRef): string {
+  return t(ref.key, ref.params)
+}
+
+export { currentLocale, setLocale, LOCALES, type Locale } from './locale'

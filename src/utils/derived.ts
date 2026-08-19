@@ -1,11 +1,11 @@
 import type { AbilityId, Character, InventoryItem, StatKey } from '@/types/character'
-import { ABILITIES } from '@/types/character'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 import { getAbilityEffect } from '@/data/abilities'
+import type { LabelRef } from '@/locales'
 
 export interface BreakdownLine {
   value: string
-  label: string
+  label: LabelRef
 }
 
 interface EquippedArmorState {
@@ -21,20 +21,6 @@ function getEquippedArmor(char: Pick<Character, 'inventory'>): EquippedArmorStat
     hasLight: equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light'),
     hasShield: equipped.some(i => i.descriptor.kind === 'shield'),
   }
-}
-
-function abilityName(id: AbilityId): string {
-  return ABILITIES.find(a => a.id === id)?.name ?? id
-}
-
-const ABILITY_SHORT_NAME: Partial<Record<AbilityId, string>> = {
-  skirmish: 'Манёвр.',
-  hewing: 'Рубка',
-  volley: 'Залп',
-}
-
-function abilityShortName(id: AbilityId): string {
-  return ABILITY_SHORT_NAME[id] ?? abilityName(id)
 }
 
 function weaponScope(weapon: InventoryItem): 'melee' | 'ranged' | null {
@@ -73,16 +59,6 @@ export function totalArmor(char: Pick<Character, 'inventory' | 'abilityIds' | 'a
 
 export function isWeapon(item: InventoryItem): boolean {
   return item.descriptor.kind === 'weapon'
-}
-
-export function damageFormula(char: Pick<Character, 'abilityIds' | 'damageBonusDice'>, weapon: InventoryItem): string {
-  if (!weapon.damage) return '—'
-  const bonuses = damageBonusesForWeapon(char.abilityIds ?? [], weapon)
-  const bonusDice = char.damageBonusDice > 0 ? ` +${char.damageBonusDice}d6` : ''
-  const extras = bonuses.length
-    ? ' (' + bonuses.map(b => `+${b.amount} ${abilityShortName(b.id)}`).join(', ') + ')'
-    : ''
-  return `${weapon.damage}${bonusDice}${extras}`
 }
 
 export function xpToNextLevel(char: Pick<Character, 'level' | 'xp'>): number | null {
@@ -168,7 +144,10 @@ export function hpBreakdownLines(hpHistory: Character['hpHistory']): BreakdownLi
   if (!hpHistory?.length) return []
   return hpHistory.map(entry => ({
     value: entry.source === 'sturdy' ? '+6' : String(entry.roll),
-    label: entry.source === 'sturdy' ? abilityName('sturdy') : `ур. ${entry.level}, бросок к6`,
+    label:
+      entry.source === 'sturdy'
+        ? { key: 'content.abilities.sturdy.name' as const }
+        : { key: 'derived.hpRoll' as const, params: { level: entry.level } },
   }))
 }
 
@@ -231,35 +210,42 @@ export function damageBreakdownLines(
   weapon: InventoryItem,
 ): BreakdownLine[] {
   if (!weapon.damage) return []
-  const lines: BreakdownLine[] = [{ value: weapon.damage, label: 'Оружие' }]
+  const lines: BreakdownLine[] = [{ value: weapon.damage, label: { key: 'derived.weapon' } }]
   for (const b of damageBonusesForWeapon(char.abilityIds ?? [], weapon)) {
-    lines.push({ value: `+${b.amount}`, label: abilityName(b.id) })
+    lines.push({ value: `+${b.amount}`, label: { key: `content.abilities.${b.id}.name` as never } })
   }
-  if (char.damageBonusDice > 0) lines.push({ value: `+${char.damageBonusDice}d6`, label: 'Бонус уровня' })
+  if (char.damageBonusDice > 0) {
+    lines.push({ value: `+${char.damageBonusDice}d6`, label: { key: 'derived.levelBonus' } })
+  }
   const mod = char.damageMod ?? 0
-  if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: 'Эффекты' })
+  if (mod !== 0) {
+    lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: { key: 'derived.effects' } })
+  }
   return lines
 }
 
 export function armorBreakdownLines(char: Pick<Character, 'inventory' | 'abilityIds' | 'armorMod'>): {
   lines: BreakdownLine[]
-  note?: string
+  note?: LabelRef
 } {
   const { hasFull, hasLight, hasShield } = getEquippedArmor(char)
   const lines: BreakdownLine[] = []
-  if (hasFull) lines.push({ value: '2', label: 'полный доспех' })
-  else if (hasLight) lines.push({ value: '1', label: 'лёгкий доспех' })
-  if (hasShield) lines.push({ value: '+1', label: 'щит' })
+  if (hasFull) lines.push({ value: '2', label: { key: 'derived.armorFull' } })
+  else if (hasLight) lines.push({ value: '1', label: { key: 'derived.armorLight' } })
+  if (hasShield) lines.push({ value: '+1', label: { key: 'derived.shield' } })
   const abilityIds = char.abilityIds ?? []
   for (const id of abilityIds) {
     const bonus = getAbilityEffect(id)?.armorBonus
-    if (bonus) lines.push({ value: `+${bonus}`, label: abilityName(id) })
+    if (bonus) lines.push({ value: `+${bonus}`, label: { key: `content.abilities.${id}.name` as never } })
   }
   const mod = char.armorMod ?? 0
-  if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: 'Эффекты' })
+  if (mod !== 0) lines.push({ value: mod > 0 ? `+${mod}` : String(mod), label: { key: 'derived.effects' } })
   const lighterAbilityId = abilityIds.find(id => getAbilityEffect(id)?.armorTreatedAsLighter)
-  const note = lighterAbilityId
-    ? `доспех считается лёгким (${abilityName(lighterAbilityId)})`
+  const note: LabelRef | undefined = lighterAbilityId
+    ? {
+        key: 'derived.armorLighterNote',
+        params: { ability: { $key: `content.abilities.${lighterAbilityId}.name` as never } },
+      }
     : undefined
   return { lines, note }
 }

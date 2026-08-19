@@ -70,7 +70,7 @@ const tempPct = computed(() => {
           class="hp-bar-values is-clickable"
           role="button"
           tabindex="0"
-          aria-label="Изменить HP"
+          :aria-label="t('ui.hpBar.editAria')"
           @click="open = true"
           @keydown.enter.prevent="open = true"
           @keydown.space.prevent="open = true"
@@ -102,7 +102,7 @@ const tempPct = computed(() => {
       class="hp-bar-values is-clickable"
       role="button"
       tabindex="0"
-      aria-label="Изменить HP"
+      :aria-label="t('ui.hpBar.editAria')"
       @click="open = true"
       @keydown.enter.prevent="open = true"
       @keydown.space.prevent="open = true"
@@ -123,7 +123,7 @@ const tempPct = computed(() => {
       v-if="showControls"
       type="button"
       class="hp-bar-btn is-damage"
-      aria-label="Уменьшить HP на 1"
+      :aria-label="t('ui.hpBar.decreaseAria')"
       @click="$emit('applyDamage', 1)"
     >−</button>
 
@@ -131,7 +131,7 @@ const tempPct = computed(() => {
       v-if="showControls"
       type="button"
       class="hp-bar-btn is-heal"
-      aria-label="Восстановить HP"
+      :aria-label="t('ui.hpBar.healAria')"
       @click="$emit('heal', 1)"
     >+</button>
 
@@ -140,7 +140,7 @@ const tempPct = computed(() => {
       :class="{ 'is-clickable': showControls }"
       :role="showControls ? 'button' : undefined"
       :tabindex="showControls ? 0 : undefined"
-      :aria-label="showControls ? 'Изменить HP' : undefined"
+      :aria-label="showControls ? t('ui.hpBar.editAria') : undefined"
       @click="showControls && (open = true)"
       @keydown.enter.prevent="showControls && (open = true)"
       @keydown.space.prevent="showControls && (open = true)"

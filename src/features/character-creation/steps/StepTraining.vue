@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SkillId, AbilityId, Spirit, Ritual } from '@/types/character'
-import { SKILLS, ABILITIES } from '@/types/character'
+import { SKILL_IDS, ABILITY_IDS } from '@/types/character'
 import { hasMagicAbility } from '@/data/abilities'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import SpiritCard from '@/features/in-game/components/magic/SpiritCard.vue'
 import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
 import { t } from '@/locales'
+import { skillName, abilityName, abilityDescription, cantripName } from '@/locales/content'
 
 const {
   draft,
@@ -69,7 +70,7 @@ const hasRitualAbility = computed(() => pickedAbilities.value.includes('ritual')
 
 const visibleAbilities = computed(() => {
   const allowed = new Set<AbilityId>([...autoAbilities.value, ...abilityPool.value])
-  return ABILITIES.filter(a => allowed.has(a.id))
+  return ABILITY_IDS.filter(id => allowed.has(id))
 })
 
 const abilitiesCounterText = computed(() =>
@@ -99,7 +100,7 @@ const abilitiesHint = computed(() => {
 })
 const skillsHint = computed(() => {
   if (autoSkills.value.length > 0) {
-    const autoNames = autoSkills.value.map(id => SKILLS.find(s => s.id === id)?.name ?? id).join(', ')
+    const autoNames = autoSkills.value.map(id => skillName(id)).join(', ')
     if (requiredSkillPicks.value === 0) return t('characterCreation.training.skillsHintAllLocked', { auto: autoNames })
     return t('characterCreation.training.skillsHintLocked', { auto: autoNames, count: requiredSkillPicks.value })
   }
@@ -114,12 +115,6 @@ function abilState(id: AbilityId): { selected: boolean; auto: boolean; disabled:
   return { selected, auto, disabled }
 }
 
-function abilDescription(id: AbilityId): string {
-  return ABILITIES.find(a => a.id === id)?.description ?? ''
-}
-function abilName(id: AbilityId): string {
-  return ABILITIES.find(a => a.id === id)?.name ?? id
-}
 function skillIsLocked(id: SkillId): boolean {
   return autoSkills.value.includes(id)
 }
@@ -146,23 +141,23 @@ function onAbilityClick(id: AbilityId) {
     </div>
     <div class="cc-skill-grid">
       <button
-        v-for="sk in SKILLS"
-        :key="sk.id"
+        v-for="id in SKILL_IDS"
+        :key="id"
         type="button"
         :class="[
           'cc-skill',
           {
-            'is-selected': draft.skillIds.includes(sk.id) && !skillIsLocked(sk.id),
-            'is-locked': skillIsLocked(sk.id),
+            'is-selected': draft.skillIds.includes(id) && !skillIsLocked(id),
+            'is-locked': skillIsLocked(id),
           },
         ]"
-        :disabled="skillIsLocked(sk.id) || (!draft.skillIds.includes(sk.id) && skillSlotsFull)"
-        @click="onSkillClick(sk.id)"
+        :disabled="skillIsLocked(id) || (!draft.skillIds.includes(id) && skillSlotsFull)"
+        @click="onSkillClick(id)"
       >
-        <span v-if="skillIsLocked(sk.id)" class="lock-glyph">
+        <span v-if="skillIsLocked(id)" class="lock-glyph">
           <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="4.5" width="6" height="4" rx="0.5"/><path d="M3.5 4.5 L3.5 3 C3.5 1.8 4.2 1.2 5 1.2 C5.8 1.2 6.5 1.8 6.5 3 L6.5 4.5"/></svg>
         </span>
-        {{ sk.name }}
+        {{ skillName(id) }}
       </button>
     </div>
   </section>
@@ -175,35 +170,35 @@ function onAbilityClick(id: AbilityId) {
     </div>
     <div class="cc-abil-list">
       <div
-        v-for="ab in visibleAbilities"
-        :key="ab.id"
+        v-for="id in visibleAbilities"
+        :key="id"
         :class="[
           'cc-abil',
           {
-            'is-selected': abilState(ab.id).selected && !abilState(ab.id).auto,
-            'is-locked': abilState(ab.id).auto,
-            'is-disabled': abilState(ab.id).disabled,
+            'is-selected': abilState(id).selected && !abilState(id).auto,
+            'is-locked': abilState(id).auto,
+            'is-disabled': abilState(id).disabled,
           },
         ]"
         role="checkbox"
-        :aria-checked="abilState(ab.id).selected"
-        :tabindex="abilState(ab.id).disabled || abilState(ab.id).auto ? -1 : 0"
-        @click="onAbilityClick(ab.id)"
-        @keydown.space.prevent="onAbilityClick(ab.id)"
+        :aria-checked="abilState(id).selected"
+        :tabindex="abilState(id).disabled || abilState(id).auto ? -1 : 0"
+        @click="onAbilityClick(id)"
+        @keydown.space.prevent="onAbilityClick(id)"
       >
         <span class="cc-check">
-          <svg v-if="abilState(ab.id).selected" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
+          <svg v-if="abilState(id).selected" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
         </span>
         <div class="cc-abil-body">
-          <span class="cc-abil-name">{{ abilName(ab.id) }}</span>
-          <span class="cc-abil-desc">{{ abilDescription(ab.id) }}</span>
+          <span class="cc-abil-name">{{ abilityName(id) }}</span>
+          <span class="cc-abil-desc">{{ abilityDescription(id) }}</span>
         </div>
-        <span v-if="abilState(ab.id).auto" class="cc-abil-flag">{{ t('characterCreation.training.abilFlagAuto') }}</span>
+        <span v-if="abilState(id).auto" class="cc-abil-flag">{{ t('characterCreation.training.abilFlagAuto') }}</span>
         <span
-          v-else-if="!abilState(ab.id).selected && abilState(ab.id).disabled"
+          v-else-if="!abilState(id).selected && abilState(id).disabled"
           class="cc-abil-flag"
         >{{ t('characterCreation.training.abilFlagNoSlots') }}</span>
-        <span v-else-if="abilState(ab.id).selected" class="cc-abil-flag">{{ t('characterCreation.training.abilFlagSelected') }}</span>
+        <span v-else-if="abilState(id).selected" class="cc-abil-flag">{{ t('characterCreation.training.abilFlagSelected') }}</span>
       </div>
     </div>
   </section>
@@ -245,7 +240,7 @@ function onAbilityClick(id: AbilityId) {
     <div v-if="cantrips.length" class="cc-magic-group">
       <span class="cc-magic-sub">{{ t('characterCreation.training.cantripsSection') }}</span>
       <div class="cc-cantrips-row">
-        <CantripChip v-for="c in cantrips" :key="c" :name="c" />
+        <CantripChip v-for="c in cantrips" :key="c" :name="cantripName(c)" />
       </div>
     </div>
   </section>

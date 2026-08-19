@@ -25,8 +25,8 @@ provide(GameLayoutContextKey, {
   toggleCollapsed,
 })
 
-// Часы в топбаре: обновление раз в минуту.
-const MONTHS_RU_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+// Topbar clock: updates once a minute.
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const
 const now = ref(new Date())
 let tickHandle: number | null = null
 onMounted(() => {
@@ -38,7 +38,7 @@ onBeforeUnmount(() => {
 
 const dateStr = computed(() => {
   const d = now.value
-  return `${d.getDate()} ${MONTHS_RU_SHORT[d.getMonth()]}`
+  return `${d.getDate()} ${t(`gameLayout.months.${MONTH_KEYS[d.getMonth()]}`)}`
 })
 const timeStr = computed(() => {
   const d = now.value
@@ -399,7 +399,7 @@ watch(() => route.fullPath, closeMobOverlays)
   opacity: 0;
 }
 
-/* ── SHARED ICON BUTTON (для mob-topbar / close) ─────── */
+/* ── SHARED ICON BUTTON (for mob-topbar / close) ─────── */
 .btn-icon-sm {
   width: 28px; height: 28px;
   display: inline-flex; align-items: center; justify-content: center;

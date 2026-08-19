@@ -9,7 +9,7 @@ export interface DieResult {
 
 export type RollPurpose =
   | { kind: 'stat'; statKey: StatKey; statBonus: number }
-  | { kind: 'damage'; weaponName: string; formula: string }
+  | { kind: 'damage'; weaponName: string; weaponTemplateId?: string; formula: string }
   | { kind: 'free'; notation: string }
   | { kind: 'hp-init'; level: number; numDice: number; kept: number }
   | { kind: 'hit-dice'; fromLevel: number; toLevel: number; numDice: number; kept: number }

@@ -85,7 +85,7 @@ function close() { open.value = false }
             <span class="bs-title">
               {{ isEditing ? t('inGame.inventory.customForm.titleEdit') : t('inGame.inventory.customForm.titleAdd') }}
             </span>
-            <DialogClose class="bs-close" aria-label="Закрыть">
+            <DialogClose class="bs-close" :aria-label="t('common.close')">
               <IconClose />
             </DialogClose>
           </div>

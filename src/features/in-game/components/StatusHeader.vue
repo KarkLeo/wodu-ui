@@ -4,7 +4,6 @@ import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
-import { CLASSES } from '@/data/classes'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 import {
   totalArmor,
@@ -17,6 +16,7 @@ import {
   isReadyToLevelUp,
 } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
+import { className as classNameOf, gearName } from '@/locales/content'
 import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
 import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
@@ -26,7 +26,7 @@ import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconWeapon from '@/components/ui/icons/IconWeapon.vue'
 import IconShield from '@/components/ui/icons/IconShield.vue'
 import IconCoin from '@/components/ui/icons/IconCoin.vue'
-import { t } from '@/locales'
+import { t, tLabel } from '@/locales'
 
 const log = createLogger('status-header')
 
@@ -43,8 +43,8 @@ const className = computed(() => {
   const c = char.value
   if (!c) return ''
   return c.classId === 'custom'
-    ? (c.customClassName ?? 'Свой класс')
-    : CLASSES[c.classId].name
+    ? (c.customClassName ?? classNameOf('custom'))
+    : classNameOf(c.classId)
 })
 
 const equippedWeapon = computed(() => {
@@ -52,6 +52,10 @@ const equippedWeapon = computed(() => {
   if (!c) return null
   const weapons = c.inventory.filter(isWeapon)
   return weapons.find(w => w.equipped) ?? weapons[0] ?? null
+})
+const equippedWeaponName = computed(() => {
+  const w = equippedWeapon.value
+  return w ? gearName(w.templateId, w.name) : ''
 })
 
 const dmgFormulaStr = computed(() =>
@@ -142,7 +146,7 @@ async function handleRollDamage() {
   if (!c || !w || !w.damage) return
   try {
     const flat = damageAbilityBonus(c, w) + (c.damageMod ?? 0)
-    await rollDamage(c.id, c.name, w.name, w.damage, c.damageBonusDice, flat)
+    await rollDamage(c.id, c.name, gearName(w.templateId, w.name), w.damage, c.damageBonusDice, flat, w.templateId)
   } catch (err) {
     log.error('damage roll failed', err)
   }
@@ -181,7 +185,7 @@ async function handleRollDamage() {
           :label="t('inGame.statusHeader.trio.damage')"
           :value="dmgFormulaStr"
           :size="compact ? 'sm' : 'base'"
-          :popover-title="equippedWeapon.name"
+          :popover-title="equippedWeaponName"
           has-popover
         >
           <template #symbol><IconWeapon /></template>
@@ -196,7 +200,7 @@ async function handleRollDamage() {
           </template>
           <template #popover>
             <div class="pop-head">
-              <span class="pop-title">{{ equippedWeapon.name }}</span>
+              <span class="pop-title">{{ equippedWeaponName }}</span>
               <span class="pop-sub">{{ dmgFormulaStr }}</span>
             </div>
             <div class="breakdown">
@@ -205,7 +209,7 @@ async function handleRollDamage() {
                 :key="idx"
                 class="breakdown-row"
               >
-                <span class="br-name">{{ line.label }}</span>
+                <span class="br-name">{{ tLabel(line.label) }}</span>
                 <span class="br-value">{{ line.value }}</span>
               </div>
             </div>
@@ -279,12 +283,12 @@ async function handleRollDamage() {
                 :key="idx"
                 class="breakdown-row"
               >
-                <span class="br-name">{{ line.label }}</span>
+                <span class="br-name">{{ tLabel(line.label) }}</span>
                 <span class="br-value">{{ line.value }}</span>
               </div>
             </div>
             <div v-else class="sh-pop-empty">{{ t('inGame.statusHeader.trio.armorEmpty') }}</div>
-            <div v-if="armorBreakdown.note" class="sh-pop-note">{{ armorBreakdown.note }}</div>
+            <div v-if="armorBreakdown.note" class="sh-pop-note">{{ tLabel(armorBreakdown.note) }}</div>
             <div class="sh-pop-mod">
               <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
               <Stepper
@@ -417,7 +421,14 @@ async function handleRollDamage() {
 .sh-truename-glyph { width: 10px; height: 10px; color: var(--vtt-accent-deep); }
 .sh-truename-glyph svg { width: 100%; height: 100%; display: block; }
 
-.sh-trio { grid-area: trio; justify-self: start; }
+.sh-trio {
+  grid-area: trio;
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sh-trio::-webkit-scrollbar { display: none; }
 .sh-hp { grid-area: hp; }
 .sh-xp { grid-area: xp; }
 

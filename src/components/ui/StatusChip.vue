@@ -150,6 +150,11 @@ const modClass = computed(() => {
 .status-chip.sc-lg .sc-value { font-size: 24px; }
 .status-chip.sc-lg .sc-unit  { font-size: 11px; }
 
+@media (max-width: 480px) {
+  .status-chip { padding: 6px 8px; gap: 6px; }
+  .status-chip .sc-unit { letter-spacing: 0.08em; }
+}
+
 .status-chip.is-active {
   background: var(--vtt-bg-elevated);
   box-shadow: 0 0 0 1px var(--vtt-border-strong);

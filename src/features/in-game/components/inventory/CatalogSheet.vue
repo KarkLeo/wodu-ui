@@ -3,11 +3,12 @@ import { computed, ref } from 'vue'
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
-import { GEAR_CATEGORIES, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
+import { GEAR_CATEGORY_IDS, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
 import { isConsumable } from '@/domain/inventory'
 import ItemIcon from './ItemIcon.vue'
 import ItemStatChip from './ItemStatChip.vue'
 import { t } from '@/locales'
+import { gearName, gearNotes, gearCategoryName } from '@/locales/content'
 
 const props = defineProps<{ coins: number }>()
 const emit = defineEmits<{
@@ -22,14 +23,19 @@ const search = ref('')
 
 const segments = computed(() => [
   { value: ALL, label: t('inGame.inventory.catalog.all') },
-  ...GEAR_CATEGORIES.map(c => ({ value: c.id, label: c.name })),
+  ...GEAR_CATEGORY_IDS.map(id => ({ value: id, label: gearCategoryName(id) })),
 ])
 
 const filtered = computed<GearTemplate[]>(() => {
   const q = search.value.trim().toLowerCase()
   return GEAR_CATALOG
     .filter(it => activeCat.value === ALL || it.category === activeCat.value)
-    .filter(it => !q || it.name.toLowerCase().includes(q) || (it.notes ?? '').toLowerCase().includes(q))
+    .filter(it => {
+      if (!q) return true
+      const name = gearName(it.templateId).toLowerCase()
+      const notes = (gearNotes(it.templateId) ?? '').toLowerCase()
+      return name.includes(q) || notes.includes(q)
+    })
     .slice()
     .sort((a, b) => (a.price ?? 0) - (b.price ?? 0))
 })
@@ -37,10 +43,10 @@ const filtered = computed<GearTemplate[]>(() => {
 function armorChip(tpl: GearTemplate): string | null {
   const d = tpl.descriptor
   if (d.kind === 'armor') {
-    if (d.class === 'full') return '+2 бр.'
-    if (d.class === 'light') return '+1 бр.'
+    if (d.class === 'full') return t('inGame.inventory.armorBonus', { amount: 2 })
+    if (d.class === 'light') return t('inGame.inventory.armorBonus', { amount: 1 })
   }
-  if (d.kind === 'shield') return '+1 бр.'
+  if (d.kind === 'shield') return t('inGame.inventory.armorBonus', { amount: 1 })
   return null
 }
 
@@ -61,7 +67,7 @@ function onBuyClick(tpl: GearTemplate) {
             <span class="bs-title">{{ t('inGame.inventory.catalog.title') }}</span>
             <div class="bs-head-right">
               <span class="bs-coins">{{ coins }} {{ t('inGame.inventory.coinsUnit') }}</span>
-              <DialogClose class="bs-close" aria-label="Закрыть">
+              <DialogClose class="bs-close" :aria-label="t('common.close')">
                 <IconClose />
               </DialogClose>
             </div>
@@ -87,8 +93,8 @@ function onBuyClick(tpl: GearTemplate) {
                   :consumable="isConsumable(tpl)"
                 />
                 <div class="cat-item-body">
-                  <div class="cat-item-name">{{ tpl.name }}</div>
-                  <div v-if="tpl.notes" class="cat-item-desc">{{ tpl.notes }}</div>
+                  <div class="cat-item-name">{{ gearName(tpl.templateId) }}</div>
+                  <div v-if="gearNotes(tpl.templateId)" class="cat-item-desc">{{ gearNotes(tpl.templateId) }}</div>
                 </div>
                 <div class="cat-item-stats">
                   <ItemStatChip v-if="tpl.damage" variant="damage">{{ tpl.damage }}</ItemStatChip>

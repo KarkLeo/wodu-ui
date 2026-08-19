@@ -56,6 +56,9 @@ export function useDiceRoller() {
       diceTotal: outcome.total,
       modifier,
       total,
+      // Nothing in this app renders `label` anymore — do not remove it. Other
+      // players' PWAs read RollRecord straight from PocketBase and may still be
+      // running an older build that displays it, so it has to stay populated.
       label: params.label,
       purpose: params.purpose,
       characterId: params.characterId,
@@ -106,6 +109,7 @@ export function useDiceRoller() {
     baseDamage: string,
     damageBonusDice: number,
     flatBonus: number = 0,
+    weaponTemplateId?: string,
   ) {
     const cleanDamage = parseDamageNotation(baseDamage)
     const weaponFull = damageBonusDice > 0 ? `${cleanDamage}+${damageBonusDice}d6` : cleanDamage
@@ -137,7 +141,7 @@ export function useDiceRoller() {
       notation,
       modifier,
       label,
-      purpose: { kind: 'damage', weaponName, formula: `${notation}${modStr}` },
+      purpose: { kind: 'damage', weaponName, weaponTemplateId, formula: `${notation}${modStr}` },
       characterId,
       characterName,
       minTotal: 0,

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Character, AbilityId, SkillId, StatKey } from '@/types/character'
-import { ABILITIES, SKILLS } from '@/types/character'
-import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
+import { STAT_KEYS } from '@/data/xpTable'
 import type { LevelUpPatch } from '@/domain/commands'
 import { t } from '@/locales'
+import { skillName as skillNameOf, abilityName as abilityNameOf, statShort } from '@/locales/content'
 
 const props = defineProps<{ char: Character; pending: Partial<LevelUpPatch>; targetLevel: number }>()
 
@@ -35,12 +35,12 @@ const bumpedStat = computed(findBumpedStat)
 const skillName = computed(() => {
   const id = newSkillId.value
   if (!id) return null
-  return SKILLS.find(s => s.id === id)?.name ?? null
+  return skillNameOf(id)
 })
 const abilityName = computed(() => {
   const id = newAbilityId.value
   if (!id) return null
-  return ABILITIES.find(a => a.id === id)?.name ?? null
+  return abilityNameOf(id)
 })
 
 const magicOpened = computed(() => !props.char.magic && !!props.pending.magic)
@@ -108,7 +108,7 @@ function formatMod(n: number) {
         </span>
         <div class="lu-sum-body">
           <span class="lu-sum-label">{{ t('levelUp.summary.stat') }}</span>
-          <span class="lu-sum-name">{{ STAT_LABELS[bumpedStat.key] }} {{ formatMod(bumpedStat.from) }} → {{ formatMod(bumpedStat.to) }}</span>
+          <span class="lu-sum-name">{{ statShort(bumpedStat.key) }} {{ formatMod(bumpedStat.from) }} → {{ formatMod(bumpedStat.to) }}</span>
         </div>
       </div>
 

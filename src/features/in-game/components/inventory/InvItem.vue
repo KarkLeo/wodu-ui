@@ -8,6 +8,7 @@ import IconCheck from '@/components/ui/icons/IconCheck.vue'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import { t } from '@/locales'
+import { gearName, gearNotes } from '@/locales/content'
 
 const props = defineProps<{ item: InventoryItem }>()
 const emit = defineEmits<{
@@ -19,14 +20,16 @@ const emit = defineEmits<{
 
 const consumable = computed(() => isConsumable(props.item))
 const qty = computed(() => props.item.quantity ?? 1)
+const displayName = computed(() => gearName(props.item.templateId, props.item.name))
+const displayNotes = computed(() => gearNotes(props.item.templateId) ?? props.item.notes)
 
 const armorChip = computed(() => {
   const d = props.item.descriptor
   if (d.kind === 'armor') {
-    if (d.class === 'full') return '+2 бр.'
-    if (d.class === 'light') return '+1 бр.'
+    if (d.class === 'full') return t('inGame.inventory.armorBonus', { amount: 2 })
+    if (d.class === 'light') return t('inGame.inventory.armorBonus', { amount: 1 })
   }
-  if (d.kind === 'shield') return '+1 бр.'
+  if (d.kind === 'shield') return t('inGame.inventory.armorBonus', { amount: 1 })
   return null
 })
 </script>
@@ -40,10 +43,10 @@ const armorChip = computed(() => {
     />
     <div class="inv-item-body">
       <div class="inv-item-name">
-        <span class="inv-item-name-text">{{ item.name }}</span>
+        <span class="inv-item-name-text">{{ displayName }}</span>
         <span v-if="item.equipped" class="equipped-mark">{{ t('inGame.inventory.equippedMark') }}</span>
       </div>
-      <div v-if="item.notes" class="inv-item-desc">{{ item.notes }}</div>
+      <div v-if="displayNotes" class="inv-item-desc">{{ displayNotes }}</div>
     </div>
     <div class="inv-item-stats">
       <ItemStatChip v-if="item.damage" variant="damage">{{ item.damage }}</ItemStatChip>
@@ -120,15 +123,17 @@ const armorChip = computed(() => {
   color: var(--vtt-accent-soft);
   line-height: 1.2;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
+  gap: 2px 6px;
   min-width: 0;
 }
 .inv-item-name-text {
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
+  min-width: 44px;
 }
 .equipped-mark {
   font-family: var(--font-mono);

@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Character, AbilityId } from '@/types/character'
-import { ABILITIES } from '@/types/character'
+import { ABILITY_IDS } from '@/types/character'
 import { getAbilityEffect } from '@/data/abilities'
 import { t } from '@/locales'
+import { abilityName, abilityDescription } from '@/locales/content'
 
 const props = defineProps<{ char: Character; currentAbilityIds: readonly AbilityId[]; selected: AbilityId | null }>()
 const emit = defineEmits<{ 'update:selected': [id: AbilityId] }>()
 
-const available = computed(() => ABILITIES.filter(a => !props.currentAbilityIds.includes(a.id)))
+const available = computed(() => ABILITY_IDS.filter(id => !props.currentAbilityIds.includes(id)))
 
 function chipFor(id: AbilityId): { text: string; variant: 'magic' | 'danger' } | null {
   const eff = getAbilityEffect(id)
@@ -27,22 +28,22 @@ function chipFor(id: AbilityId): { text: string; variant: 'magic' | 'danger' } |
     </div>
     <div v-if="available.length" class="cc-abil-list">
       <button
-        v-for="a in available"
-        :key="a.id"
+        v-for="id in available"
+        :key="id"
         type="button"
         class="cc-abil"
-        :class="{ 'is-selected': selected === a.id }"
-        @click="emit('update:selected', a.id)"
+        :class="{ 'is-selected': selected === id }"
+        @click="emit('update:selected', id)"
       >
         <span class="cc-check" aria-hidden="true">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
         </span>
         <span class="cc-abil-body-text">
-          <span class="cc-abil-name">{{ a.name }}</span>
-          <span class="cc-abil-desc">{{ a.description }}</span>
+          <span class="cc-abil-name">{{ abilityName(id) }}</span>
+          <span class="cc-abil-desc">{{ abilityDescription(id) }}</span>
         </span>
-        <span v-if="chipFor(a.id)" class="cc-abil-chip" :class="`is-${chipFor(a.id)!.variant}`">
-          {{ chipFor(a.id)!.text }}
+        <span v-if="chipFor(id)" class="cc-abil-chip" :class="`is-${chipFor(id)!.variant}`">
+          {{ chipFor(id)!.text }}
         </span>
       </button>
     </div>

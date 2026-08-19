@@ -5,14 +5,14 @@ import type { Character } from '@/types/character'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
-import { CLASSES } from '@/data/classes'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import { useGameLayout } from './gameLayoutContext'
-import { t } from '@/locales'
+import { t, currentLocale, setLocale, LOCALES, type Locale } from '@/locales'
+import { className } from '@/locales/content'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,8 +35,10 @@ const openIdsSet = computed(() => new Set(openIds.value))
 
 const confirmResetOpen = ref(false)
 
+const localeOptions = LOCALES.map(l => ({ value: l, label: l.toUpperCase() }))
+
 const buildLine = computed(() => {
-  const built = new Date(__BUILD_TIMESTAMP__).toLocaleString('ru-RU', {
+  const built = new Date(__BUILD_TIMESTAMP__).toLocaleString(currentLocale.value, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -55,7 +57,7 @@ function initial(name: string): string {
 function classLabel(c: Character): string {
   const name = c.classId === 'custom'
     ? (c.customClassName ?? t('characterList.customClassFallback'))
-    : (CLASSES[c.classId]?.name ?? c.classId)
+    : className(c.classId)
   return t('characterList.classLine', { className: name, level: c.level })
 }
 
@@ -98,7 +100,7 @@ function confirmReset() {
 </script>
 
 <template>
-  <!-- ── СВЁРНУТЫЙ ВИД · rail 56px ───────────────── -->
+  <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.leftCollapsed.value" class="players-rail">
     <button
       type="button"
@@ -122,7 +124,7 @@ function confirmReset() {
     </div>
   </div>
 
-  <!-- ── РАЗВЁРНУТЫЙ ВИД ─────────────────────────── -->
+  <!-- ── EXPANDED VIEW ─────────────────────────── -->
   <div v-else class="players-panel">
     <div class="gl-panel-head">
       <p class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
@@ -178,6 +180,17 @@ function confirmReset() {
         @click="confirmResetOpen = true"
       >{{ t('characterList.dev.reset') }}</button>
       <div class="build-id">{{ buildLine }}</div>
+      <div class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
+        <button
+          v-for="opt in localeOptions"
+          :key="opt.value"
+          type="button"
+          class="pr-locale-btn"
+          :class="{ 'is-active': currentLocale === opt.value }"
+          :aria-pressed="currentLocale === opt.value"
+          @click="setLocale(opt.value as Locale)"
+        >{{ opt.label }}</button>
+      </div>
     </div>
 
     <ConfirmSheet
@@ -403,7 +416,23 @@ function confirmReset() {
   text-align: center;
 }
 
-/* ── СВЁРНУТЫЙ ВИД · rail ─────────────────────────── */
+.pr-locale { display: flex; gap: 2px; margin-top: 6px; }
+.pr-locale-btn {
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--vtt-text-muted);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pr-locale-btn.is-active {
+  color: var(--vtt-text-primary);
+  background: var(--vtt-bg-elevated);
+}
+
+/* ── COLLAPSED VIEW · rail ─────────────────────────── */
 .players-rail {
   display: flex;
   flex-direction: column;

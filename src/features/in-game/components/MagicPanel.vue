@@ -6,6 +6,7 @@ import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
 import { grantsSection } from '@/data/abilities'
 import { t } from '@/locales'
+import { cantripName } from '@/locales/content'
 
 import SpiritCard from './magic/SpiritCard.vue'
 import RitualCard from './magic/RitualCard.vue'
@@ -141,7 +142,7 @@ function onDrink() {
         </span>
       </div>
       <div class="mg-cantrips">
-        <CantripChip v-for="c in magic.cantrips" :key="c" :name="c" />
+        <CantripChip v-for="c in magic.cantrips" :key="c" :name="cantripName(c)" />
       </div>
     </div>
 

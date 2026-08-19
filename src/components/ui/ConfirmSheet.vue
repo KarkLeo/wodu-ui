@@ -2,6 +2,7 @@
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
 import IconClose from './icons/IconClose.vue'
 import IconWarning from './icons/IconWarning.vue'
+import { t } from '@/locales'
 
 withDefaults(defineProps<{
   title: string
@@ -20,7 +21,7 @@ const open = defineModel<boolean>('open', { required: true })
       <DialogContent class="bs-content-wrap">
         <div :class="['bottom-sheet', 'confirm-sheet', `v-${variant}`]">
           <div class="cs-head">
-            <DialogClose class="bs-close" aria-label="Закрыть">
+            <DialogClose class="bs-close" :aria-label="t('common.close')">
               <IconClose />
             </DialogClose>
           </div>

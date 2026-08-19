@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle, VisuallyHidden } from 'reka-ui'
 import IconClose from './icons/IconClose.vue'
+import { t } from '@/locales'
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -25,12 +26,12 @@ const open = defineModel<boolean>('open', { required: true })
           <slot name="header">
             <div v-if="title" class="bs-head">
               <DialogTitle class="bs-title">{{ title }}</DialogTitle>
-              <DialogClose class="bs-close" aria-label="Закрыть">
+              <DialogClose class="bs-close" :aria-label="t('common.close')">
                 <IconClose />
               </DialogClose>
             </div>
             <VisuallyHidden v-else>
-              <DialogTitle>Диалог</DialogTitle>
+              <DialogTitle>{{ t('ui.bottomSheet.dialogTitle') }}</DialogTitle>
             </VisuallyHidden>
           </slot>
           <div class="bs-body">
@@ -46,7 +47,7 @@ const open = defineModel<boolean>('open', { required: true })
 </template>
 
 <style>
-/* Portal — нескоупленные стили (общие .bs-overlay/.bs-content-wrap/.bottom-sheet — в main.css) */
+/* Portal — unscoped styles (shared .bs-overlay/.bs-content-wrap/.bottom-sheet — in main.css) */
 .bs-head {
   display: flex;
   align-items: center;

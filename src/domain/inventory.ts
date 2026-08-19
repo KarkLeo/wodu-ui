@@ -32,11 +32,10 @@ export function buyItem(char: Character, templateId: string): Character {
   const item: InventoryItem = {
     id: crypto.randomUUID(),
     templateId: tpl.templateId,
-    name: tpl.name,
+    name: '',
     descriptor: tpl.descriptor,
     damage: tpl.damage,
     price: tpl.price,
-    notes: tpl.notes,
   }
   return {
     ...char,

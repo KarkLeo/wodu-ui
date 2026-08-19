@@ -3,7 +3,7 @@ import { ref, computed, reactive } from 'vue'
 import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
-import { STAT_KEYS, STAT_LABELS, STAT_FULL_LABELS, MAX_STAT_BONUS } from '@/data/xpTable'
+import { STAT_KEYS, MAX_STAT_BONUS } from '@/data/xpTable'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { effectiveStat, statModifierTotal, statModifierLines } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
@@ -11,6 +11,7 @@ import StatChip from '@/components/ui/StatChip.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { t } from '@/locales'
+import { statLabel, statShort } from '@/locales/content'
 
 const log = createLogger('stats-panel')
 
@@ -64,7 +65,7 @@ function setStat(key: StatKey, value: number) {
 
 async function handleRollStat(key: StatKey) {
   try {
-    await rollStat(props.char.id, props.char.name, key, STAT_LABELS[key], eff(key))
+    await rollStat(props.char.id, props.char.name, key, statShort(key), eff(key))
   } catch (err) {
     log.error('stat roll failed', err)
   }
@@ -127,20 +128,20 @@ function stopEdit() {
       <StatChip
         v-for="key in STAT_KEYS"
         :key="key"
-        :label="STAT_LABELS[key]"
+        :label="statShort(key)"
         :value="fmt(eff(key))"
         :state="stateFor(eff(key))"
         :mod="modTotal(key) || undefined"
         :base="modTotal(key) !== 0 ? fmt(char.stats[key]) : undefined"
         dice="2d6"
         has-popover
-        :popover-title="`${STAT_FULL_LABELS[key]} · ${fmt(eff(key))}`"
+        :popover-title="`${statLabel(key)} · ${fmt(eff(key))}`"
         @open="onPopoverOpen(key, $event)"
       >
         <template #popover>
           <div class="pop-head">
-            <span class="pop-title">{{ STAT_FULL_LABELS[key] }} · {{ fmt(eff(key)) }}</span>
-            <span class="pop-sub">{{ STAT_LABELS[key] }}</span>
+            <span class="pop-title">{{ statLabel(key) }} · {{ fmt(eff(key)) }}</span>
+            <span class="pop-sub">{{ statShort(key) }}</span>
           </div>
 
           <InfoPopoverClose as-child>
@@ -227,7 +228,7 @@ function stopEdit() {
               v-model="editBuf"
               :min="-3"
               :max="MAX_STAT_BONUS"
-              :aria-label="`Правка ${STAT_LABELS[key]}`"
+              :aria-label="t('inGame.stats.editAria', { stat: statShort(key) })"
             />
             <button type="button" class="pop-btn pop-btn-done" @click="stopEdit">
               {{ t('common.save') }}

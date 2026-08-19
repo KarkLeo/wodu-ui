@@ -3,6 +3,12 @@ import type { AbilityId } from '@/types/character'
 export type MagicSection = 'spirits' | 'rituals' | 'cantrips'
 export type DamageScope = 'all' | 'melee' | 'ranged'
 
+// Ids for the wizard's starting cantrips (see ABILITY_EFFECTS.incantations below).
+// Stored on Character.magic.cantrips as ids, never translated strings — see
+// content.cantripName() in src/locales/content.ts for the display-side lookup.
+export const CANTRIP_IDS = ['candle', 'shadow', 'throwVoice'] as const
+export type CantripId = (typeof CANTRIP_IDS)[number]
+
 export interface AbilityEffect {
   grantsMagicSection?: MagicSection
   initMagicOnAcquire?: boolean
@@ -17,7 +23,7 @@ export interface AbilityEffect {
 export const ABILITY_EFFECTS: Partial<Record<AbilityId, AbilityEffect>> = {
   summoning:    { grantsMagicSection: 'spirits',  initMagicOnAcquire: true },
   ritual:       { grantsMagicSection: 'rituals' },
-  incantations: { grantsMagicSection: 'cantrips', startingCantrips: ['Свеча', 'Тень', 'Чревовещание'] },
+  incantations: { grantsMagicSection: 'cantrips', startingCantrips: [...CANTRIP_IDS] },
   sturdy:       { hpBonusOnAcquire: 6, hpBonusSource: 'sturdy' },
   skirmish:     { damageBonus: { amount: 1, scope: 'all' },    armorTreatedAsLighter: true },
   hewing:       { damageBonus: { amount: 2, scope: 'melee' } },

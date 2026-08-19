@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { t } from '@/locales'
 
 const props = withDefaults(defineProps<{
   min?: number
@@ -39,7 +40,7 @@ function onInput(e: Event) {
 
 <template>
   <div :class="['sc-stepper', `sz-${props.size}`]" :aria-label="ariaLabel">
-    <button type="button" aria-label="Уменьшить" :disabled="!canDec" @click="dec">−</button>
+    <button type="button" :aria-label="t('ui.stepper.decrease')" :disabled="!canDec" @click="dec">−</button>
     <input
       type="number"
       :value="model"
@@ -48,7 +49,7 @@ function onInput(e: Event) {
       :step="step"
       @input="onInput"
     />
-    <button type="button" aria-label="Увеличить" :disabled="!canInc" @click="inc">+</button>
+    <button type="button" :aria-label="t('ui.stepper.increase')" :disabled="!canInc" @click="inc">+</button>
   </div>
 </template>
 

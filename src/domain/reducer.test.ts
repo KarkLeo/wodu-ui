@@ -23,9 +23,15 @@ describe('applyCommand: BUY_ITEM', () => {
     })
     expect(character.coins).toBe(40)
     expect(character.inventory).toHaveLength(1)
-    expect(character.inventory[0].name).toBe('Лёгкое оружие')
     expect(changes).toHaveLength(1)
     expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'buy', cost: 10 })
+  })
+  it('links a bought item to its catalog template', () => {
+    const char = makeCharacter({ coins: 100 })
+    const { character } = applyCommand(char, { type: 'BUY_ITEM', templateId: 'light_weapon' })
+    const item = character.inventory.at(-1)!
+    expect(item.templateId).toBe('light_weapon')
+    expect(item.damage).toBe('1d6')
   })
   it('неизвестный шаблон не меняет персонажа и не пишет changes', () => {
     const char = makeCharacter({ coins: 50 })

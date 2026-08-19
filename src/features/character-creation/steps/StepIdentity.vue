@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ClassId, StatKey } from '@/types/character'
+import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
-import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
-import { SKILLS } from '@/types/character'
+import { STAT_KEYS } from '@/data/xpTable'
 import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useDebouncedField } from '@/composables/useDebouncedField'
 import { t } from '@/locales'
+import { skillName, statShort, className } from '@/locales/content'
 
 const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll, setStatRollsBatch } = useCharacterCreation()
 
@@ -38,11 +38,13 @@ async function rollAll() {
   if (!d) return
   staggerTimers.forEach(window.clearTimeout)
   staggerTimers = []
-  const characterName = d.name || 'Новый персонаж'
+  // Pass undefined rather than a locale-baked fallback: DiceDrawer's authorFor()
+  // resolves a missing name from the live character list, in the roller's own locale.
+  const characterName = d.name || undefined
   const records = await rollBatch(
     STAT_KEYS.map(key => ({
       notation: '2d6',
-      label: `${STAT_LABELS[key]} (2d6)`,
+      label: `${statShort(key)} (2d6)`,
       purpose: { kind: 'stat', statKey: key, statBonus: 0 } as const,
     })),
     { characterId: d.id, characterName },
@@ -65,10 +67,10 @@ async function rerollOne(key: StatKey) {
   if (!d) return
   const record = await roll({
     notation: '2d6',
-    label: `${STAT_LABELS[key]} (2d6)`,
+    label: `${statShort(key)} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
     characterId: d.id,
-    characterName: d.name || 'Новый персонаж',
+    characterName: d.name || undefined,
   })
   applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
   markFresh(key)
@@ -79,11 +81,7 @@ function selectClass(id: ClassId) {
   pickClass(id)
 }
 
-function skillName(id: string): string {
-  return SKILLS.find(s => s.id === id)?.name ?? id
-}
-
-function classTagText(classId: ClassId, grantedSkillIds: readonly string[]): string {
+function classTagText(classId: ClassId, grantedSkillIds: readonly SkillId[]): string {
   if (classId === 'custom') return t('characterCreation.identity.classTags.custom')
   const skill = grantedSkillIds[0] ? skillName(grantedSkillIds[0]) : ''
   return t(`characterCreation.identity.classTags.${classId}`, { skill })
@@ -166,7 +164,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
           { 'cc-attr-empty': !draft.statRolls[key], 'is-max': draft.statRolls[key] === 12, 'is-fresh': freshKey === key },
         ]"
       >
-        <span class="cc-attr-label">{{ STAT_LABELS[key] }}</span>
+        <span class="cc-attr-label">{{ statShort(key) }}</span>
         <button
           type="button"
           class="cc-attr-roll"
@@ -213,7 +211,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
             <rect x="6" y="6" width="16" height="16" rx="2"/><path d="M10 14 L14 14 M12 10 L12 18"/>
           </svg>
         </span>
-        <span class="cc-class-name">{{ t(`characterCreation.classNames.${cls.id}`) }}</span>
+        <span class="cc-class-name">{{ className(cls.id) }}</span>
         <span class="cc-class-tag">{{ classTagText(cls.id, cls.grantedSkillIds) }}</span>
       </button>
     </div>

@@ -4,6 +4,7 @@ import { PopoverRoot, PopoverAnchor, PopoverTrigger, PopoverPortal, PopoverConte
 import BottomSheet from './BottomSheet.vue'
 import XpControlsPanel from './XpControlsPanel.vue'
 import { useIsMobile } from '@/composables/useIsMobile'
+import { t } from '@/locales'
 
 type Size = 'sm' | 'base' | 'lg'
 
@@ -19,8 +20,9 @@ const props = withDefaults(defineProps<{
 }>(), {
   size: 'base',
   showControls: true,
-  popoverTitle: 'Опыт',
 })
+
+const resolvedPopoverTitle = computed(() => props.popoverTitle || t('xpControls.title'))
 
 const model = defineModel<number>('current', { required: false })
 
@@ -76,7 +78,7 @@ function setCurrent(v: number) {
           class="xp-bar-values is-clickable"
           role="button"
           tabindex="0"
-          aria-label="Изменить опыт"
+          :aria-label="t('ui.xpBar.editAria')"
           @click="open = true"
           @keydown.enter.prevent="open = true"
           @keydown.space.prevent="open = true"
@@ -112,7 +114,7 @@ function setCurrent(v: number) {
       class="xp-bar-values is-clickable"
       role="button"
       tabindex="0"
-      aria-label="Изменить опыт"
+      :aria-label="t('ui.xpBar.editAria')"
       @click="open = true"
       @keydown.enter.prevent="open = true"
       @keydown.space.prevent="open = true"
@@ -144,7 +146,7 @@ function setCurrent(v: number) {
       :class="{ 'is-clickable': showControls }"
       :role="showControls ? 'button' : undefined"
       :tabindex="showControls ? 0 : undefined"
-      :aria-label="showControls ? 'Изменить опыт' : undefined"
+      :aria-label="showControls ? t('ui.xpBar.editAria') : undefined"
       @click="showControls && (open = true)"
       @keydown.enter.prevent="showControls && (open = true)"
       @keydown.space.prevent="showControls && (open = true)"
@@ -156,7 +158,7 @@ function setCurrent(v: number) {
     </div>
   </div>
 
-  <BottomSheet v-if="showControls && isMobile" v-model:open="open" :title="popoverTitle">
+  <BottomSheet v-if="showControls && isMobile" v-model:open="open" :title="resolvedPopoverTitle">
     <div class="xp-popover xp-popover--sheet">
       <XpControlsPanel
         :current="current"

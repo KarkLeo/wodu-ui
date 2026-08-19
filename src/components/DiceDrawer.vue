@@ -5,8 +5,8 @@ import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
 import type { RollMode, RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
-import { STAT_LABELS } from '@/data/xpTable'
-import { t } from '@/locales'
+import { t, currentLocale } from '@/locales'
+import { statShort, gearName } from '@/locales/content'
 import { formatChangeLabel, formatChangeDelta, isCoinSpend } from '@/utils/changeFormat'
 import { createLogger } from '@/utils/logger'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -89,7 +89,7 @@ async function onSubmit() {
 function onInput() { if (notationError.value) notationError.value = '' }
 
 function formatTime(ts: number) {
-  return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  return new Date(ts).toLocaleTimeString(currentLocale.value, { hour: '2-digit', minute: '2-digit' })
 }
 
 function authorFor(charId: string, charName?: string): string {
@@ -99,7 +99,7 @@ function authorFor(charId: string, charName?: string): string {
 }
 
 function rollMetaLabel(r: RollRecord): string {
-  if (r.purpose.kind === 'stat') return STAT_LABELS[r.purpose.statKey] ?? r.purpose.statKey
+  if (r.purpose.kind === 'stat') return statShort(r.purpose.statKey)
   if (r.purpose.kind === 'damage') return t('diceDrawer.meta.damage')
   if (r.purpose.kind === 'hit-dice') return t('diceDrawer.rollMeta.hitDice')
   if (r.purpose.kind === 'hp-init') return t('diceDrawer.rollMeta.hpInit')
@@ -109,7 +109,7 @@ function rollMetaLabel(r: RollRecord): string {
 }
 
 function rollMetaSecondary(r: RollRecord): string | null {
-  if (r.purpose.kind === 'damage') return r.purpose.weaponName
+  if (r.purpose.kind === 'damage') return gearName(r.purpose.weaponTemplateId, r.purpose.weaponName)
   return null
 }
 
@@ -203,7 +203,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 </script>
 
 <template>
-  <!-- ── СВЁРНУТЫЙ ВИД · rail 56px ───────────────── -->
+  <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.rightCollapsed.value" class="dice-rail">
     <button
       type="button"
@@ -233,7 +233,7 @@ function logDelta(e: ChangeEntry): string | undefined {
     </button>
   </div>
 
-  <!-- ── РАЗВЁРНУТЫЙ ВИД ─────────────────────────── -->
+  <!-- ── EXPANDED VIEW ─────────────────────────── -->
   <aside v-else class="dice-drawer">
     <div class="drawer-header">
       <button
@@ -292,10 +292,10 @@ function logDelta(e: ChangeEntry): string | undefined {
             <div class="dice-row-meta">
               <b>{{ rollMetaLabel(item.payload) }}</b>
               <template v-if="rollMetaSecondary(item.payload)">
-                <span class="dot"></span><span>{{ rollMetaSecondary(item.payload) }}</span>
+                <span class="dot"></span><span class="dice-row-meta-secondary">{{ rollMetaSecondary(item.payload) }}</span>
               </template>
-              <span class="dot"></span><span>{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span>{{ formatTime(item.payload.timestamp) }}</span>
+              <span class="dot"></span><span class="dice-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
+              <span class="dot"></span><span class="dice-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
             </div>
             <div class="dice-row-formula">
               <span class="f-expr">{{ rollExpr(item.payload) }}</span>
@@ -323,12 +323,12 @@ function logDelta(e: ChangeEntry): string | undefined {
           <div class="log-row-body">
             <div class="log-row-meta">
               <b>{{ logMeta(item.payload) }}</b>
-              <span class="dot"></span><span>{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span>{{ formatTime(item.payload.timestamp) }}</span>
+              <span class="dot"></span><span class="log-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
+              <span class="dot"></span><span class="log-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
             </div>
             <div class="log-row-label">{{ logLabel(item.payload) }}</div>
           </div>
-          <div v-if="logDelta(item.payload)" class="log-row-delta">{{ logDelta(item.payload) }}</div>
+          <div v-if="logDelta(item.payload)" class="log-row-delta"><span class="log-row-delta-text">{{ logDelta(item.payload) }}</span></div>
         </div>
       </template>
     </div>
@@ -520,10 +520,25 @@ function logDelta(e: ChangeEntry): string | undefined {
   letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--vtt-text-muted);
   margin-bottom: 2px;
-  overflow: hidden;
+  min-width: 0;
   white-space: nowrap;
 }
-.dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; }
+.dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
+.dice-row-meta-secondary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.dice-row-meta-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.dice-row-meta-time { flex-shrink: 0; white-space: nowrap; }
 .dice-row-meta .dot {
   width: 3px; height: 3px; border-radius: var(--r-pill);
   background: var(--vtt-text-muted); opacity: 0.6;
@@ -617,9 +632,18 @@ function logDelta(e: ChangeEntry): string | undefined {
   letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--vtt-text-muted);
   margin-bottom: 2px;
-  overflow: hidden; white-space: nowrap;
+  min-width: 0;
+  white-space: nowrap;
 }
-.log-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; }
+.log-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
+.log-row-meta-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.log-row-meta-time { flex-shrink: 0; white-space: nowrap; }
 .log-row-meta .dot {
   width: 3px; height: 3px; border-radius: var(--r-pill);
   background: var(--vtt-text-muted); opacity: 0.6;
@@ -634,6 +658,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 .log-row-label em { color: var(--vtt-accent-soft); font-style: normal; font-weight: 500; }
 .log-row-delta {
   min-width: 48px;
+  max-width: 120px;
   height: 40px; padding: 0 10px;
   display: inline-flex; align-items: center; justify-content: center;
   background: rgba(7, 5, 10, 0.45);
@@ -644,7 +669,12 @@ function logDelta(e: ChangeEntry): string | undefined {
   color: var(--vtt-accent-soft);
   line-height: 1;
   flex-shrink: 0;
+}
+.log-row-delta-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
 .log-row.is-hp-damage .log-row-glyph { color: var(--vtt-danger-bright); }
 .log-row.is-hp-damage .log-row-delta {
@@ -820,7 +850,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 }
 .drawer-input-hint.is-error { color: var(--vtt-danger-bright); }
 
-/* ── СВЁРНУТЫЙ ВИД · rail 56px ─────────────────────── */
+/* ── COLLAPSED VIEW · rail 56px ─────────────────────── */
 .dice-rail {
   display: flex;
   flex-direction: column;
