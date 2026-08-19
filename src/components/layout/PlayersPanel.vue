@@ -38,7 +38,7 @@ const confirmResetOpen = ref(false)
 const localeOptions = LOCALES.map(l => ({ value: l, label: l.toUpperCase() }))
 
 const buildLine = computed(() => {
-  const built = new Date(__BUILD_TIMESTAMP__).toLocaleString('ru-RU', {
+  const built = new Date(__BUILD_TIMESTAMP__).toLocaleString(currentLocale.value, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

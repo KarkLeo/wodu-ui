@@ -8,7 +8,7 @@ import SpiritCard from '@/features/in-game/components/magic/SpiritCard.vue'
 import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
 import { t } from '@/locales'
-import { skillName, abilityName, abilityDescription } from '@/locales/content'
+import { skillName, abilityName, abilityDescription, cantripName } from '@/locales/content'
 
 const {
   draft,
@@ -240,7 +240,7 @@ function onAbilityClick(id: AbilityId) {
     <div v-if="cantrips.length" class="cc-magic-group">
       <span class="cc-magic-sub">{{ t('characterCreation.training.cantripsSection') }}</span>
       <div class="cc-cantrips-row">
-        <CantripChip v-for="c in cantrips" :key="c" :name="c" />
+        <CantripChip v-for="c in cantrips" :key="c" :name="cantripName(c)" />
       </div>
     </div>
   </section>

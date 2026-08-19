@@ -56,6 +56,9 @@ export function useDiceRoller() {
       diceTotal: outcome.total,
       modifier,
       total,
+      // Nothing in this app renders `label` anymore — do not remove it. Other
+      // players' PWAs read RollRecord straight from PocketBase and may still be
+      // running an older build that displays it, so it has to stay populated.
       label: params.label,
       purpose: params.purpose,
       characterId: params.characterId,

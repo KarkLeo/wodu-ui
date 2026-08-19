@@ -142,14 +142,6 @@ export const messages: Messages = {
       addCustom: 'Свой предмет',
       boughtEmpty: 'Пока ничего не куплено',
     },
-    classNames: {
-      fighter: 'Воин',
-      thief: 'Вор',
-      cleric: 'Жрец',
-      wizard: 'Волшебник',
-      ranger: 'Следопыт',
-      custom: 'Свой класс',
-    },
   },
   hpControls: {
     title: 'HP',
@@ -618,6 +610,11 @@ export const messages: Messages = {
       scouting: { name: 'Разведка', description: 'Когда ведёшь разведку — всегда замечаешь цель прежде, чем она заметит тебя.' },
       volley: { name: 'Залп', description: '+2 к урону дальнего боя.' },
       savage: { name: 'Дикарь', description: 'Можешь разговаривать с животными и пытаться ими командовать.' },
+    },
+    cantrips: {
+      candle: 'Свеча',
+      shadow: 'Тень',
+      throwVoice: 'Чревовещание',
     },
     classes: {
       fighter: 'Воин',
