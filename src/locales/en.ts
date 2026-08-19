@@ -5,6 +5,27 @@ export const messages = {
     back: 'Back',
     close: 'Close',
   },
+  ui: {
+    bottomSheet: {
+      dialogTitle: 'Dialog',
+    },
+    stepper: {
+      decrease: 'Decrease',
+      increase: 'Increase',
+    },
+    hpBar: {
+      editAria: 'Edit HP',
+      decreaseAria: 'Decrease HP by 1',
+      healAria: 'Restore HP',
+    },
+    xpBar: {
+      editAria: 'Edit experience',
+    },
+    statChip: {
+      editAria: 'Edit {stat}',
+      baseLabel: 'base',
+    },
+  },
   characterList: {
     title: 'Characters',
     openSelected: 'Open ({count})',
@@ -60,6 +81,7 @@ export const messages = {
       trueNameOpt: '— optional',
       trueNamePlaceholder: 'A name that grants power',
       trueNameHint: 'Hidden from others. Grants a bonus if the enemy doesn’t know it.',
+      nameFallback: 'New character',
       attrsLabel: 'Attributes',
       attrsHint: '2d6 each · modifier 0…+3',
       attrEmpty: 'tap ↻',
@@ -100,6 +122,7 @@ export const messages = {
     },
     gear: {
       hpLabel: 'Hit points',
+      rollLabel: 'Hit points ({dice}d6, keep 1)',
       hpHint: '{dice}d6, highest{sturdy}',
       hpSturdy: ' + 6 from “Hardy”',
       hpEmpty: 'roll the dice',
@@ -230,6 +253,7 @@ export const messages = {
       },
       hitDice: {
         label: 'HP dice',
+        rollLabel: 'Hit dice ({dice}d6, keep {level})',
         hintPre: 'rolling {n}d6 · keeping top {k}',
         hintPost: 'kept: {vals}',
         roll: 'Roll',
@@ -309,6 +333,7 @@ export const messages = {
       rollHint: 'tap — roll 2d6',
       rollBtn: 'Roll 2d6 {mod}',
       editBase: 'Edit base',
+      editAria: 'Edit {stat}',
       popSub: 'Base',
       modifiers: {
         title: 'Effects',
@@ -352,6 +377,7 @@ export const messages = {
       edit: 'Edit',
       remove: 'Remove',
       equippedMark: 'equipped',
+      armorBonus: '+{amount} arm.',
       sections: {
         equipped: 'Equipped',
         backpack: 'In backpack',
@@ -505,6 +531,20 @@ export const messages = {
   gameLayout: {
     topTitle: 'Game table',
     presenceSingle: 'just you',
+    months: {
+      jan: 'Jan',
+      feb: 'Feb',
+      mar: 'Mar',
+      apr: 'Apr',
+      may: 'May',
+      jun: 'Jun',
+      jul: 'Jul',
+      aug: 'Aug',
+      sep: 'Sep',
+      oct: 'Oct',
+      nov: 'Nov',
+      dec: 'Dec',
+    },
     actions: {
       togglePlayers: 'Players',
       toggleDice: 'Dice',

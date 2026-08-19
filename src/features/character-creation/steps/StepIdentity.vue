@@ -38,7 +38,7 @@ async function rollAll() {
   if (!d) return
   staggerTimers.forEach(window.clearTimeout)
   staggerTimers = []
-  const characterName = d.name || 'Новый персонаж'
+  const characterName = d.name || t('characterCreation.identity.nameFallback')
   const records = await rollBatch(
     STAT_KEYS.map(key => ({
       notation: '2d6',
@@ -68,7 +68,7 @@ async function rerollOne(key: StatKey) {
     label: `${statShort(key)} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
     characterId: d.id,
-    characterName: d.name || 'Новый персонаж',
+    characterName: d.name || t('characterCreation.identity.nameFallback'),
   })
   applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
   markFresh(key)

@@ -23,7 +23,7 @@ const newMaxHp = computed(() => Math.max(props.previousMaxHp, total.value))
 async function doRoll() {
   const result = await roll({
     notation: `${props.numDice}d6`,
-    label: `Hit dice (${props.numDice}d6, оставить ${props.targetLevel})`,
+    label: t('levelUp.steps.hitDice.rollLabel', { dice: props.numDice, level: props.targetLevel }),
     purpose: {
       kind: 'hit-dice',
       fromLevel: props.targetLevel - 1,

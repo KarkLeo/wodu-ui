@@ -43,10 +43,10 @@ const filtered = computed<GearTemplate[]>(() => {
 function armorChip(tpl: GearTemplate): string | null {
   const d = tpl.descriptor
   if (d.kind === 'armor') {
-    if (d.class === 'full') return '+2 бр.'
-    if (d.class === 'light') return '+1 бр.'
+    if (d.class === 'full') return t('inGame.inventory.armorBonus', { amount: 2 })
+    if (d.class === 'light') return t('inGame.inventory.armorBonus', { amount: 1 })
   }
-  if (d.kind === 'shield') return '+1 бр.'
+  if (d.kind === 'shield') return t('inGame.inventory.armorBonus', { amount: 1 })
   return null
 }
 
@@ -67,7 +67,7 @@ function onBuyClick(tpl: GearTemplate) {
             <span class="bs-title">{{ t('inGame.inventory.catalog.title') }}</span>
             <div class="bs-head-right">
               <span class="bs-coins">{{ coins }} {{ t('inGame.inventory.coinsUnit') }}</span>
-              <DialogClose class="bs-close" aria-label="Закрыть">
+              <DialogClose class="bs-close" :aria-label="t('common.close')">
                 <IconClose />
               </DialogClose>
             </div>

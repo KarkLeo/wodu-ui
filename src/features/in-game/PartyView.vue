@@ -22,8 +22,8 @@ const ids = computed(() => {
     })
 })
 
-// Держим activeId в синхроне с открытыми листами: если активный закрылся
-// или вошли в роут со свежим набором ids — активируем первый из списка.
+// Keep activeId in sync with the open sheets: if the active one closed,
+// or we entered the route with a fresh set of ids — activate the first one.
 watch(ids, (list) => {
   if (list.length === 0) {
     store.setActive(null)
@@ -46,7 +46,7 @@ function closePanel(id: string) {
   }
 }
 
-// ── Слайдер-индикатор (мобила): отслеживаем самую видимую карточку ──
+// ── Slider indicator (mobile): track the most visible card ──
 const scrollerRef = ref<HTMLElement | null>(null)
 const itemEls = ref<HTMLElement[]>([])
 const activeIndex = ref(0)

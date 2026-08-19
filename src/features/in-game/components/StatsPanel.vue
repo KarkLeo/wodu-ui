@@ -228,7 +228,7 @@ function stopEdit() {
               v-model="editBuf"
               :min="-3"
               :max="MAX_STAT_BONUS"
-              :aria-label="`Правка ${statShort(key)}`"
+              :aria-label="t('inGame.stats.editAria', { stat: statShort(key) })"
             />
             <button type="button" class="pop-btn pop-btn-done" @click="stopEdit">
               {{ t('common.save') }}

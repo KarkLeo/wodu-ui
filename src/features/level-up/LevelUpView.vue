@@ -442,8 +442,8 @@ onMounted(() => {
 </style>
 
 <style>
-/* Стили дочерних Step*.vue — они используют общие классы без <style scoped>,
-   поэтому определяем их глобально здесь, рядом с их единственным использованием. */
+/* Styles for the child Step*.vue components — they use shared classes without <style scoped>,
+   so we define them globally here, next to their only usage. */
 .lu-shell .btn-roll {
   display: inline-flex;
   align-items: center;
