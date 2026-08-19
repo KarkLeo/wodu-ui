@@ -8,6 +8,7 @@ import IconCheck from '@/components/ui/icons/IconCheck.vue'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import { t } from '@/locales'
+import { gearName, gearNotes } from '@/locales/content'
 
 const props = defineProps<{ item: InventoryItem }>()
 const emit = defineEmits<{
@@ -19,6 +20,8 @@ const emit = defineEmits<{
 
 const consumable = computed(() => isConsumable(props.item))
 const qty = computed(() => props.item.quantity ?? 1)
+const displayName = computed(() => gearName(props.item.templateId, props.item.name))
+const displayNotes = computed(() => gearNotes(props.item.templateId) ?? props.item.notes)
 
 const armorChip = computed(() => {
   const d = props.item.descriptor
@@ -40,10 +43,10 @@ const armorChip = computed(() => {
     />
     <div class="inv-item-body">
       <div class="inv-item-name">
-        <span class="inv-item-name-text">{{ item.name }}</span>
+        <span class="inv-item-name-text">{{ displayName }}</span>
         <span v-if="item.equipped" class="equipped-mark">{{ t('inGame.inventory.equippedMark') }}</span>
       </div>
-      <div v-if="item.notes" class="inv-item-desc">{{ item.notes }}</div>
+      <div v-if="displayNotes" class="inv-item-desc">{{ displayNotes }}</div>
     </div>
     <div class="inv-item-stats">
       <ItemStatChip v-if="item.damage" variant="damage">{{ item.damage }}</ItemStatChip>

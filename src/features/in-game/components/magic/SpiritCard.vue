@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { Spirit } from '@/types/character'
-import { SPHERE_PRESETS } from '@/data/spheres'
+import { SPHERE_PRESET_IDS } from '@/data/spheres'
+import { spherePresetName } from '@/locales/content'
 import SphereChip from './SphereChip.vue'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
@@ -142,7 +143,7 @@ function save() {
         </div>
       </div>
       <datalist id="sphere-presets">
-        <option v-for="s in SPHERE_PRESETS" :key="s" :value="s" />
+        <option v-for="id in SPHERE_PRESET_IDS" :key="id" :value="spherePresetName(id)" />
       </datalist>
       <div class="spirit-edit-foot">
         <Button type="button" variant="ghost" @click="cancel">{{ t('common.cancel') }}</Button>

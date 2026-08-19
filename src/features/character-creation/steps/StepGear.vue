@@ -5,6 +5,7 @@ import { useInventory } from '@/composables/useInventory'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { findGearTemplate } from '@/data/gear'
+import { gearName } from '@/locales/content'
 import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
 import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
 import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
@@ -72,11 +73,10 @@ function gmApprove() {
   if (!tpl) return
   inv.receive({
     templateId: tpl.templateId,
-    name: tpl.name,
+    name: '',
     descriptor: tpl.descriptor,
     damage: tpl.damage,
     price: tpl.price,
-    notes: tpl.notes,
   })
   gmPendingId.value = null
 }
@@ -199,7 +199,7 @@ function onUse(item: InventoryItem) {
     :title="t('inGame.inventory.gm.title')"
   >
     <p>
-      {{ t('inGame.inventory.gm.body', { name: gmPending.name, price: gmPending.price ?? 0, coins: draft.coins }) }}
+      {{ t('inGame.inventory.gm.body', { name: gearName(gmPending.templateId), price: gmPending.price ?? 0, coins: draft.coins }) }}
     </p>
     <template #actions>
       <Button variant="hero" @click="gmApprove">{{ t('inGame.inventory.gm.approve') }}</Button>

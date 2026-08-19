@@ -7,6 +7,7 @@ import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
 import { findGearTemplate } from '@/data/gear'
 import { t } from '@/locales'
+import { gearName } from '@/locales/content'
 
 import InvWarning from './inventory/InvWarning.vue'
 import InvSection from './inventory/InvSection.vue'
@@ -100,11 +101,10 @@ function gmApprove() {
   if (!tpl) return
   inv.receive({
     templateId: tpl.templateId,
-    name: tpl.name,
+    name: '',
     descriptor: tpl.descriptor,
     damage: tpl.damage,
     price: tpl.price,
-    notes: tpl.notes,
   })
   gmPendingId.value = null
 }
@@ -202,7 +202,7 @@ function openAddCustom() {
       :title="t('inGame.inventory.gm.title')"
     >
       <p>
-        {{ t('inGame.inventory.gm.body', { name: gmPending.name, price: gmPending.price ?? 0, coins: char.coins }) }}
+        {{ t('inGame.inventory.gm.body', { name: gearName(gmPending.templateId), price: gmPending.price ?? 0, coins: char.coins }) }}
       </p>
       <template #actions>
         <Button variant="hero" @click="gmApprove">{{ t('inGame.inventory.gm.approve') }}</Button>

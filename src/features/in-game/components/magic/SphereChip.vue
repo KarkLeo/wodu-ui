@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { t } from '@/locales'
 
 const props = defineProps<{
   value?: string
@@ -20,7 +21,7 @@ const presetClass = computed(() => {
 })
 
 const isEmpty = computed(() => !props.value)
-const label = computed(() => props.value || props.placeholder || 'Сфера')
+const label = computed(() => props.value || props.placeholder || t('inGame.magic.spirits.sphereEmpty'))
 </script>
 
 <template>
