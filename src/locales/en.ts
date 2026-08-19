@@ -650,11 +650,11 @@ export const messages = {
       fireoil: { name: 'Fire oil (flask)', notes: 'Sets an area on fire: d6+1 damage/round for 3 rounds. Fills a lantern 10 times.' },
     },
     spherePresets: {
-      fire: 'Fire',
+      fire: 'Flame',
       shadow: 'Shadow',
       stone: 'Stone',
       lightning: 'Lightning',
-      mysteries: 'Mysteries',
+      mysteries: 'Secrets',
       fear: 'Fear',
     },
   },

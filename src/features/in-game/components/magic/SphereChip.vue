@@ -1,23 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { t } from '@/locales'
+import { matchSpherePreset } from '@/locales/content'
+import type { SpherePresetId } from '@/data/spheres'
 
 const props = defineProps<{
   value?: string
   placeholder?: string
 }>()
 
+const CLASS_BY_PRESET: Record<SpherePresetId, string> = {
+  fire: 'sphere-fire',
+  shadow: 'sphere-shadow',
+  stone: 'sphere-stone',
+  lightning: 'sphere-storm',
+  mysteries: 'sphere-secret',
+  fear: 'sphere-fear',
+}
+
 const presetClass = computed(() => {
   if (!props.value) return ''
-  const map: Record<string, string> = {
-    'Огонь': 'sphere-fire',
-    'Тень': 'sphere-shadow',
-    'Камень': 'sphere-stone',
-    'Молния': 'sphere-storm',
-    'Тайны': 'sphere-secret',
-    'Страх': 'sphere-fear',
-  }
-  return map[props.value] ?? 'sphere-custom'
+  const id = matchSpherePreset(props.value)
+  return id ? CLASS_BY_PRESET[id] : 'sphere-custom'
 })
 
 const isEmpty = computed(() => !props.value)
