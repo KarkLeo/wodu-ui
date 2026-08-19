@@ -2,7 +2,7 @@ import { messages as en, type Messages } from './en'
 import { messages as ru } from './ru'
 import { currentLocale, FALLBACK_LOCALE, type Locale } from './locale'
 
-const DICTIONARIES: Record<Locale, Messages> = {
+export const DICTIONARIES: Record<Locale, Messages> = {
   en,
   ru,
   // uk is added in the task that introduces the Ukrainian dictionary

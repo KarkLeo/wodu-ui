@@ -1,8 +1,8 @@
-import { t } from './index'
+import { t, DICTIONARIES, LOCALES } from './index'
 import type { Messages } from './en'
 import type { AbilityId, ClassId, SkillId, StatKey } from '@/types/character'
 import type { GearCategoryId, GearTemplateId } from '@/data/gear'
-import type { SpherePresetId } from '@/data/spheres'
+import { SPHERE_PRESET_IDS, type SpherePresetId } from '@/data/spheres'
 
 export function skillName(id: SkillId): string {
   return t(`content.skills.${id}` as never)
@@ -47,6 +47,22 @@ export function gearCategoryName(id: GearCategoryId): string {
 
 export function spherePresetName(id: SpherePresetId): string {
   return t(`content.spherePresets.${id}` as never)
+}
+
+// Matches a free-text Spirit.sphere1/sphere2 value against the preset names in every
+// locale, so a chip can colour-code presets regardless of which language they were
+// picked in (or stored in, before this dictionary existed). Never used to translate the
+// stored value itself — only to classify it.
+export function matchSpherePreset(value: string): SpherePresetId | null {
+  const needle = value.trim().toLowerCase()
+  if (!needle) return null
+  for (const id of SPHERE_PRESET_IDS) {
+    for (const locale of LOCALES) {
+      const name = DICTIONARIES[locale].content.spherePresets[id]
+      if (name.trim().toLowerCase() === needle) return id
+    }
+  }
+  return null
 }
 
 // Compile-time guards: a missing entry in any dictionary breaks the build.
