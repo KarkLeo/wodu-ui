@@ -1,12 +1,12 @@
 import { messages as en, type Messages } from './en'
 import { messages as ru } from './ru'
+import { messages as uk } from './uk'
 import { currentLocale, FALLBACK_LOCALE, type Locale } from './locale'
 
 export const DICTIONARIES: Record<Locale, Messages> = {
   en,
   ru,
-  // uk is added in the task that introduces the Ukrainian dictionary
-  uk: en,
+  uk,
 }
 
 type Primitive = string | number | boolean
