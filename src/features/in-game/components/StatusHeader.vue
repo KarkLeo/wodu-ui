@@ -146,7 +146,7 @@ async function handleRollDamage() {
   if (!c || !w || !w.damage) return
   try {
     const flat = damageAbilityBonus(c, w) + (c.damageMod ?? 0)
-    await rollDamage(c.id, c.name, gearName(w.templateId, w.name), w.damage, c.damageBonusDice, flat)
+    await rollDamage(c.id, c.name, gearName(w.templateId, w.name), w.damage, c.damageBonusDice, flat, w.templateId)
   } catch (err) {
     log.error('damage roll failed', err)
   }
