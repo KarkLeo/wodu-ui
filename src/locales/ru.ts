@@ -519,6 +519,7 @@ export const messages: Messages = {
       hpLabel: 'HP',
       railLabel: 'Игроки · {count}',
       buildLine: 'v{version} · {built}',
+      language: 'Язык',
     },
     sheetColumn: {
       close: 'Закрыть лист',

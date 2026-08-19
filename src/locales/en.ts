@@ -517,6 +517,7 @@ export const messages = {
       hpLabel: 'HP',
       railLabel: 'Players · {count}',
       buildLine: 'v{version} · {built}',
+      language: 'Language',
     },
     sheetColumn: {
       close: 'Close sheet',
