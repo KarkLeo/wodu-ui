@@ -292,7 +292,7 @@ function logDelta(e: ChangeEntry): string | undefined {
             <div class="dice-row-meta">
               <b>{{ rollMetaLabel(item.payload) }}</b>
               <template v-if="rollMetaSecondary(item.payload)">
-                <span class="dot"></span><span>{{ rollMetaSecondary(item.payload) }}</span>
+                <span class="dot"></span><span class="dice-row-meta-secondary">{{ rollMetaSecondary(item.payload) }}</span>
               </template>
               <span class="dot"></span><span class="dice-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
               <span class="dot"></span><span class="dice-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
@@ -328,7 +328,7 @@ function logDelta(e: ChangeEntry): string | undefined {
             </div>
             <div class="log-row-label">{{ logLabel(item.payload) }}</div>
           </div>
-          <div v-if="logDelta(item.payload)" class="log-row-delta">{{ logDelta(item.payload) }}</div>
+          <div v-if="logDelta(item.payload)" class="log-row-delta"><span class="log-row-delta-text">{{ logDelta(item.payload) }}</span></div>
         </div>
       </template>
     </div>
@@ -524,6 +524,13 @@ function logDelta(e: ChangeEntry): string | undefined {
   white-space: nowrap;
 }
 .dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
+.dice-row-meta-secondary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
 .dice-row-meta-author {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -651,6 +658,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 .log-row-label em { color: var(--vtt-accent-soft); font-style: normal; font-weight: 500; }
 .log-row-delta {
   min-width: 48px;
+  max-width: 120px;
   height: 40px; padding: 0 10px;
   display: inline-flex; align-items: center; justify-content: center;
   background: rgba(7, 5, 10, 0.45);
@@ -661,7 +669,12 @@ function logDelta(e: ChangeEntry): string | undefined {
   color: var(--vtt-accent-soft);
   line-height: 1;
   flex-shrink: 0;
+}
+.log-row-delta-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
 .log-row.is-hp-damage .log-row-glyph { color: var(--vtt-danger-bright); }
 .log-row.is-hp-damage .log-row-delta {
