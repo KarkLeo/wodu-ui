@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   totalArmor,
-  damageFormula,
   damageAbilityBonus,
   damageBreakdownLines,
   armorBreakdownLines,
@@ -68,61 +67,6 @@ describe('totalArmor', () => {
   })
 })
 
-describe('damageFormula', () => {
-  it('без damage — прочерк', () => {
-    expect(damageFormula(makeCharacter(), makeWeapon({ damage: undefined }))).toBe('—')
-  })
-  it('melee: undefined — ни hewing, ни volley не применяются', () => {
-    const weapon = makeWeapon()
-    // @ts-expect-error — специально мутируем descriptor для проверки ветви
-    weapon.descriptor = { kind: 'weapon' }
-    expect(
-      damageFormula(
-        makeCharacter({ abilityIds: ['hewing', 'volley'] }),
-        weapon,
-      ),
-    ).toBe('d6')
-  })
-  it('базовая формула', () => {
-    expect(damageFormula(makeCharacter(), makeWeapon())).toBe('d6')
-  })
-  it('skirmish добавляет +1 к манёвренности', () => {
-    expect(
-      damageFormula(makeCharacter({ abilityIds: ['skirmish'] }), makeWeapon()),
-    ).toBe('d6 (+1 Манёвр.)')
-  })
-  it('hewing работает только в ближнем бою', () => {
-    expect(
-      damageFormula(makeCharacter({ abilityIds: ['hewing'] }), makeWeapon({ melee: true })),
-    ).toBe('d6 (+2 Рубка)')
-    expect(
-      damageFormula(makeCharacter({ abilityIds: ['hewing'] }), makeWeapon({ melee: false })),
-    ).toBe('d6')
-  })
-  it('volley работает только в дальнем бою', () => {
-    expect(
-      damageFormula(makeCharacter({ abilityIds: ['volley'] }), makeWeapon({ melee: false })),
-    ).toBe('d6 (+2 Залп)')
-    expect(
-      damageFormula(makeCharacter({ abilityIds: ['volley'] }), makeWeapon({ melee: true })),
-    ).toBe('d6')
-  })
-  it('damageBonusDice добавляет +Nd6', () => {
-    expect(damageFormula(makeCharacter({ damageBonusDice: 2 }), makeWeapon())).toBe('d6 +2d6')
-  })
-  it('damageBonusDice=0 — без "+0d6"', () => {
-    expect(damageFormula(makeCharacter({ damageBonusDice: 0 }), makeWeapon())).toBe('d6')
-  })
-  it('всё вместе', () => {
-    expect(
-      damageFormula(
-        makeCharacter({ abilityIds: ['skirmish', 'hewing'], damageBonusDice: 1 }),
-        makeWeapon({ melee: true }),
-      ),
-    ).toBe('d6 +1d6 (+1 Манёвр., +2 Рубка)')
-  })
-})
-
 describe('damageAbilityBonus', () => {
   it('без способностей — 0', () => {
     expect(damageAbilityBonus(makeCharacter(), makeWeapon())).toBe(0)
@@ -171,10 +115,10 @@ describe('damageBreakdownLines', () => {
       makeWeapon({ melee: true, damage: 'd6+1' }),
     )
     expect(lines).toEqual([
-      { value: 'd6+1', label: 'Оружие' },
-      { value: '+1', label: 'Манёвренность' },
-      { value: '+2', label: 'Рубка' },
-      { value: '+1d6', label: 'Бонус уровня' },
+      { value: 'd6+1', label: { key: 'derived.weapon' } },
+      { value: '+1', label: { key: 'content.abilities.skirmish.name' } },
+      { value: '+2', label: { key: 'content.abilities.hewing.name' } },
+      { value: '+1d6', label: { key: 'derived.levelBonus' } },
     ])
   })
   it('ranged weapon + volley — Залп присутствует, Рубка отсутствует', () => {
@@ -183,8 +127,20 @@ describe('damageBreakdownLines', () => {
       makeWeapon({ melee: false, damage: 'd6' }),
     )
     expect(lines).toEqual([
-      { value: 'd6', label: 'Оружие' },
-      { value: '+2', label: 'Залп' },
+      { value: 'd6', label: { key: 'derived.weapon' } },
+      { value: '+2', label: { key: 'content.abilities.volley.name' } },
+    ])
+  })
+  it('lists the weapon, ability bonuses and effects as label refs', () => {
+    const lines = damageBreakdownLines(
+      makeCharacter({ abilityIds: ['hewing'], damageBonusDice: 1, damageMod: 2 }),
+      makeWeapon({ melee: true, damage: '1d6' }),
+    )
+    expect(lines).toEqual([
+      { value: '1d6', label: { key: 'derived.weapon' } },
+      { value: '+2', label: { key: 'content.abilities.hewing.name' } },
+      { value: '+1d6', label: { key: 'derived.levelBonus' } },
+      { value: '+2', label: { key: 'derived.effects' } },
     ])
   })
 })
@@ -201,9 +157,9 @@ describe('armorBreakdownLines', () => {
       }),
     )
     expect(result.lines).toEqual([
-      { value: '2', label: 'полный доспех' },
-      { value: '+1', label: 'щит' },
-      { value: '+1', label: 'Прочность' },
+      { value: '2', label: { key: 'derived.armorFull' } },
+      { value: '+1', label: { key: 'derived.shield' } },
+      { value: '+1', label: { key: 'content.abilities.toughness.name' } },
     ])
     expect(result.note).toBeUndefined()
   })
@@ -211,7 +167,26 @@ describe('armorBreakdownLines', () => {
     const result = armorBreakdownLines(
       makeCharacter({ inventory: [makeArmor('full')], abilityIds: ['skirmish'] }),
     )
-    expect(result.note).toBe('доспех считается лёгким (Манёвренность)')
+    expect(result.note).toEqual({
+      key: 'derived.armorLighterNote',
+      params: { ability: { $key: 'content.abilities.skirmish.name' } },
+    })
+  })
+  it('describes equipped armor and the lighter-armor note', () => {
+    const char = makeCharacter({
+      abilityIds: ['skirmish'],
+      inventory: [
+        { id: 'a', name: '', descriptor: { kind: 'armor', class: 'full' }, equipped: true },
+        { id: 's', name: '', descriptor: { kind: 'shield' }, equipped: true },
+      ],
+    })
+    const { lines, note } = armorBreakdownLines(char)
+    expect(lines).toContainEqual({ value: '2', label: { key: 'derived.armorFull' } })
+    expect(lines).toContainEqual({ value: '+1', label: { key: 'derived.shield' } })
+    expect(note).toEqual({
+      key: 'derived.armorLighterNote',
+      params: { ability: { $key: 'content.abilities.skirmish.name' } },
+    })
   })
 })
 
@@ -371,12 +346,12 @@ describe('hpBreakdownLines', () => {
   })
   it('dice-источник', () => {
     expect(hpBreakdownLines([{ level: 1, roll: 4, source: 'dice' }])).toEqual([
-      { value: '4', label: 'ур. 1, бросок к6' },
+      { value: '4', label: { key: 'derived.hpRoll', params: { level: 1 } } },
     ])
   })
   it('sturdy-источник', () => {
     expect(hpBreakdownLines([{ level: 1, roll: 0, source: 'sturdy' }])).toEqual([
-      { value: '+6', label: 'Стойкость' },
+      { value: '+6', label: { key: 'content.abilities.sturdy.name' } },
     ])
   })
   it('смесь источников по уровням — порядок сохраняется', () => {
@@ -388,10 +363,10 @@ describe('hpBreakdownLines', () => {
         { level: 3, roll: 6, source: 'dice' },
       ]),
     ).toEqual([
-      { value: '4', label: 'ур. 1, бросок к6' },
-      { value: '+6', label: 'Стойкость' },
-      { value: '5', label: 'ур. 2, бросок к6' },
-      { value: '6', label: 'ур. 3, бросок к6' },
+      { value: '4', label: { key: 'derived.hpRoll', params: { level: 1 } } },
+      { value: '+6', label: { key: 'content.abilities.sturdy.name' } },
+      { value: '5', label: { key: 'derived.hpRoll', params: { level: 2 } } },
+      { value: '6', label: { key: 'derived.hpRoll', params: { level: 3 } } },
     ])
   })
 })
