@@ -12,7 +12,7 @@ import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import { useGameLayout } from './gameLayoutContext'
-import { t } from '@/locales'
+import { t, currentLocale, setLocale, LOCALES, type Locale } from '@/locales'
 
 const route = useRoute()
 const router = useRouter()
@@ -34,6 +34,8 @@ const openIds = computed(() => {
 const openIdsSet = computed(() => new Set(openIds.value))
 
 const confirmResetOpen = ref(false)
+
+const localeOptions = LOCALES.map(l => ({ value: l, label: l.toUpperCase() }))
 
 const buildLine = computed(() => {
   const built = new Date(__BUILD_TIMESTAMP__).toLocaleString('ru-RU', {
@@ -178,6 +180,17 @@ function confirmReset() {
         @click="confirmResetOpen = true"
       >{{ t('characterList.dev.reset') }}</button>
       <div class="build-id">{{ buildLine }}</div>
+      <div class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
+        <button
+          v-for="opt in localeOptions"
+          :key="opt.value"
+          type="button"
+          class="pr-locale-btn"
+          :class="{ 'is-active': currentLocale === opt.value }"
+          :aria-pressed="currentLocale === opt.value"
+          @click="setLocale(opt.value as Locale)"
+        >{{ opt.label }}</button>
+      </div>
     </div>
 
     <ConfirmSheet
@@ -401,6 +414,22 @@ function confirmReset() {
   color: var(--vtt-text-muted);
   opacity: 0.7;
   text-align: center;
+}
+
+.pr-locale { display: flex; gap: 2px; margin-top: 6px; }
+.pr-locale-btn {
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--vtt-text-muted);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pr-locale-btn.is-active {
+  color: var(--vtt-text-primary);
+  background: var(--vtt-bg-elevated);
 }
 
 /* ── СВЁРНУТЫЙ ВИД · rail ─────────────────────────── */
