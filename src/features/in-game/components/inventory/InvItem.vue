@@ -123,15 +123,17 @@ const armorChip = computed(() => {
   color: var(--vtt-accent-soft);
   line-height: 1.2;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
+  gap: 2px 6px;
   min-width: 0;
 }
 .inv-item-name-text {
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
+  min-width: 44px;
 }
 .equipped-mark {
   font-family: var(--font-mono);

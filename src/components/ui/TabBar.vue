@@ -76,9 +76,9 @@ const model = defineModel<string>({ required: true })
   align-items: center;
   justify-content: center;
   gap: 8px;
-  flex: 1 1 auto;
-  min-width: max-content;
-  padding: 10px 18px 12px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 10px 12px;
   background: transparent;
   border: none;
   border-radius: var(--r-xs) var(--r-xs) 0 0;
@@ -133,6 +133,12 @@ const model = defineModel<string>({ required: true })
 .tab-item-glyph :deep(svg) { width: 100%; height: 100%; display: block; }
 .tab-item.is-active .tab-item-glyph { opacity: 1; }
 
+.tab-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tab-item-dot {
   width: 6px;
   height: 6px;
@@ -184,6 +190,14 @@ const model = defineModel<string>({ required: true })
 .tab-bar.size-sm .tab-item-badge { min-width: 16px; height: 16px; font-size: 9px; }
 
 .tab-bar.size-lg .tab-item { padding: 12px 22px 14px; font-size: 14px; }
+
+@media (max-width: 480px) {
+  .tab-item {
+    padding: 10px 4px 12px;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+  }
+}
 
 .tab-bar.variant-bottom {
   border-top: 1px solid var(--vtt-border-subtle);
