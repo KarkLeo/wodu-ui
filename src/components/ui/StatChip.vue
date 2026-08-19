@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import InfoPopover from './InfoPopover.vue'
 import Stepper from './Stepper.vue'
+import { t } from '@/locales'
 
 type Variant = 'default' | 'row' | 'hero' | 'minimal'
 type Size = 'sm' | 'base' | 'lg'
@@ -69,11 +70,11 @@ function fmtMod(m: number): string {
           v-else
           v-model="(model as number)"
           size="base"
-          :aria-label="`Правка ${label}`"
+          :aria-label="t('ui.statChip.editAria', { stat: label })"
         />
         <span v-if="dice && !editing" class="sc-dice">{{ dice }}</span>
         <span v-if="base !== undefined && !editing" class="sc-base">
-          база <s>{{ base }}</s>
+          {{ t('ui.statChip.baseLabel') }} <s>{{ base }}</s>
         </span>
         <span v-if="mod !== undefined && mod !== 0" :class="['sc-mod', modClass]">
           {{ fmtMod(mod) }}
@@ -105,11 +106,11 @@ function fmtMod(m: number): string {
       v-else
       v-model="(model as number)"
       size="base"
-      :aria-label="`Правка ${label}`"
+      :aria-label="t('ui.statChip.editAria', { stat: label })"
     />
     <span v-if="dice && !editing" class="sc-dice">{{ dice }}</span>
     <span v-if="base !== undefined && !editing" class="sc-base">
-      база <s>{{ base }}</s>
+      {{ t('ui.statChip.baseLabel') }} <s>{{ base }}</s>
     </span>
     <span v-if="mod !== undefined && mod !== 0" :class="['sc-mod', modClass]">
       {{ fmtMod(mod) }}
@@ -315,7 +316,7 @@ function fmtMod(m: number): string {
 </style>
 
 <style>
-/* Portal — глобальные стили для popover-контента */
+/* Portal — global styles for the popover content */
 .info-popover .pop-hero {
   display: flex;
   align-items: center;

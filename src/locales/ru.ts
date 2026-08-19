@@ -7,6 +7,27 @@ export const messages: Messages = {
     back: 'Назад',
     close: 'Закрыть',
   },
+  ui: {
+    bottomSheet: {
+      dialogTitle: 'Диалог',
+    },
+    stepper: {
+      decrease: 'Уменьшить',
+      increase: 'Увеличить',
+    },
+    hpBar: {
+      editAria: 'Изменить HP',
+      decreaseAria: 'Уменьшить HP на 1',
+      healAria: 'Восстановить HP',
+    },
+    xpBar: {
+      editAria: 'Изменить опыт',
+    },
+    statChip: {
+      editAria: 'Правка {stat}',
+      baseLabel: 'база',
+    },
+  },
   characterList: {
     title: 'Персонажи',
     openSelected: 'Открыть ({count})',
@@ -62,6 +83,7 @@ export const messages: Messages = {
       trueNameOpt: '— опционально',
       trueNamePlaceholder: 'Имя, дающее силу',
       trueNameHint: 'Скрыто от других. Даёт бонус, если враг его не узнал.',
+      nameFallback: 'Новый персонаж',
       attrsLabel: 'Характеристики',
       attrsHint: 'по 2d6 на каждую · модификатор 0…+3',
       attrEmpty: 'нажми ↻',
@@ -102,6 +124,7 @@ export const messages: Messages = {
     },
     gear: {
       hpLabel: 'Очки здоровья',
+      rollLabel: 'Очки здоровья ({dice}d6, оставить 1)',
       hpHint: '{dice}d6, высший{sturdy}',
       hpSturdy: ' + 6 от «Стойкости»',
       hpEmpty: 'брось кубики',
@@ -232,6 +255,7 @@ export const messages: Messages = {
       },
       hitDice: {
         label: 'Кости HP',
+        rollLabel: 'Кости здоровья ({dice}d6, оставить {level})',
         hintPre: 'бросаем {n}d6 · оставляем {k} верхних',
         hintPost: 'сохранены: {vals}',
         roll: 'Бросить',
@@ -311,6 +335,7 @@ export const messages: Messages = {
       rollHint: 'тап — бросок 2d6',
       rollBtn: 'Бросить 2d6 {mod}',
       editBase: 'Поправить базу',
+      editAria: 'Правка {stat}',
       popSub: 'База',
       modifiers: {
         title: 'Эффекты',
@@ -354,6 +379,7 @@ export const messages: Messages = {
       edit: 'Редактировать',
       remove: 'Удалить',
       equippedMark: 'надето',
+      armorBonus: '+{amount} бр.',
       sections: {
         equipped: 'Экипировано',
         backpack: 'В рюкзаке',
@@ -507,6 +533,20 @@ export const messages: Messages = {
   gameLayout: {
     topTitle: 'Стол игры',
     presenceSingle: 'только ты',
+    months: {
+      jan: 'янв',
+      feb: 'фев',
+      mar: 'мар',
+      apr: 'апр',
+      may: 'май',
+      jun: 'июн',
+      jul: 'июл',
+      aug: 'авг',
+      sep: 'сен',
+      oct: 'окт',
+      nov: 'ноя',
+      dec: 'дек',
+    },
     actions: {
       togglePlayers: 'Игроки',
       toggleDice: 'Кубики',

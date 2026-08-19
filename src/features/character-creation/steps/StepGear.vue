@@ -48,10 +48,10 @@ async function rollHp() {
   if (!d) return
   const result = await roll({
     notation: `${numDice.value}d6`,
-    label: `Очки здоровья (${numDice.value}d6, оставить 1)`,
+    label: t('characterCreation.gear.rollLabel', { dice: numDice.value }),
     purpose: { kind: 'hp-init', level: 1, numDice: numDice.value, kept: 1 },
     characterId: d.id,
-    characterName: d.name || 'Новый персонаж',
+    characterName: d.name || t('characterCreation.identity.nameFallback'),
   })
   if (!result) return
   const rolls = result.dice.map(dv => dv.value)
@@ -139,7 +139,7 @@ function onUse(item: InventoryItem) {
         <span v-if="hpFormulaLines" class="cc-hp-formula">
           {{ numDice }}d6 → <em>{{ hpFormulaLines.top }}</em>
           <span v-if="hpFormulaLines.sturdy">
-            + 6 <span class="cc-hp-formula-note">Стойкость</span>
+            + 6 <span class="cc-hp-formula-note">{{ t('content.abilities.sturdy.name') }}</span>
           </span>
         </span>
         <span v-else class="cc-hp-formula">{{ t('characterCreation.gear.hpEmpty') }}</span>

@@ -100,7 +100,7 @@ function confirmReset() {
 </script>
 
 <template>
-  <!-- ── СВЁРНУТЫЙ ВИД · rail 56px ───────────────── -->
+  <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.leftCollapsed.value" class="players-rail">
     <button
       type="button"
@@ -124,7 +124,7 @@ function confirmReset() {
     </div>
   </div>
 
-  <!-- ── РАЗВЁРНУТЫЙ ВИД ─────────────────────────── -->
+  <!-- ── EXPANDED VIEW ─────────────────────────── -->
   <div v-else class="players-panel">
     <div class="gl-panel-head">
       <p class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
@@ -432,7 +432,7 @@ function confirmReset() {
   background: var(--vtt-bg-elevated);
 }
 
-/* ── СВЁРНУТЫЙ ВИД · rail ─────────────────────────── */
+/* ── COLLAPSED VIEW · rail ─────────────────────────── */
 .players-rail {
   display: flex;
   flex-direction: column;

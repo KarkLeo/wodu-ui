@@ -203,7 +203,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 </script>
 
 <template>
-  <!-- ── СВЁРНУТЫЙ ВИД · rail 56px ───────────────── -->
+  <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.rightCollapsed.value" class="dice-rail">
     <button
       type="button"
@@ -233,7 +233,7 @@ function logDelta(e: ChangeEntry): string | undefined {
     </button>
   </div>
 
-  <!-- ── РАЗВЁРНУТЫЙ ВИД ─────────────────────────── -->
+  <!-- ── EXPANDED VIEW ─────────────────────────── -->
   <aside v-else class="dice-drawer">
     <div class="drawer-header">
       <button
@@ -820,7 +820,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 }
 .drawer-input-hint.is-error { color: var(--vtt-danger-bright); }
 
-/* ── СВЁРНУТЫЙ ВИД · rail 56px ─────────────────────── */
+/* ── COLLAPSED VIEW · rail 56px ─────────────────────── */
 .dice-rail {
   display: flex;
   flex-direction: column;

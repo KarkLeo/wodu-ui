@@ -26,10 +26,10 @@ const displayNotes = computed(() => gearNotes(props.item.templateId) ?? props.it
 const armorChip = computed(() => {
   const d = props.item.descriptor
   if (d.kind === 'armor') {
-    if (d.class === 'full') return '+2 бр.'
-    if (d.class === 'light') return '+1 бр.'
+    if (d.class === 'full') return t('inGame.inventory.armorBonus', { amount: 2 })
+    if (d.class === 'light') return t('inGame.inventory.armorBonus', { amount: 1 })
   }
-  if (d.kind === 'shield') return '+1 бр.'
+  if (d.kind === 'shield') return t('inGame.inventory.armorBonus', { amount: 1 })
   return null
 })
 </script>
