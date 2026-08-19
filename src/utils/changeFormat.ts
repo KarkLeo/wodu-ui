@@ -1,6 +1,6 @@
 import type { ChangePayload } from '@/types/changeLog'
 import { t } from '@/locales'
-import { statLabel } from '@/locales/content'
+import { statShort } from '@/locales/content'
 
 function signed(amount: number): string {
   return amount > 0 ? `+${amount}` : String(amount)
@@ -76,24 +76,24 @@ export function formatChangeLabel(payload: ChangePayload): string {
       return t('changeLog.levelUp', { before: payload.before, after: payload.after })
     case 'stats': {
       const parts = payload.changes
-        .map(c => t('changeLog.statChange', { stat: statLabel(c.key), before: c.before, after: c.after }))
+        .map(c => t('changeLog.statChange', { stat: statShort(c.key), before: c.before, after: c.after }))
         .join(', ')
       return t('changeLog.statsHeader', { parts })
     }
     case 'modifier-add':
       return t('changeLog.modifierAdd', {
-        stat: statLabel(payload.statKey),
+        stat: statShort(payload.statKey),
         label: payload.label,
         sign: signed(payload.amount),
       })
     case 'modifier-remove':
       return t('changeLog.modifierRemove', {
-        stat: statLabel(payload.statKey),
+        stat: statShort(payload.statKey),
         label: payload.label,
         sign: signed(payload.amount),
       })
     case 'modifier-clear': {
-      const scope = payload.statKey ? statLabel(payload.statKey) : t('changeLog.modifierClearAllScope')
+      const scope = payload.statKey ? statShort(payload.statKey) : t('changeLog.modifierClearAllScope')
       return t('changeLog.modifierClearScope', { scope, count: payload.count })
     }
     case 'magic':
@@ -145,10 +145,10 @@ export function formatChangeDelta(payload: ChangePayload): string | undefined {
       return t('changeLog.delta.modifierStat', {
         sign: signOf(payload.amount),
         amount: Math.abs(payload.amount),
-        stat: statLabel(payload.statKey),
+        stat: statShort(payload.statKey),
       })
     case 'modifier-remove':
-      return t('changeLog.delta.modifierRemoved', { stat: statLabel(payload.statKey) })
+      return t('changeLog.delta.modifierRemoved', { stat: statShort(payload.statKey) })
     default:
       return undefined
   }
