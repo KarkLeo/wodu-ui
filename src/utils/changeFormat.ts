@@ -1,11 +1,6 @@
 import type { ChangePayload } from '@/types/changeLog'
-import type { StatKey } from '@/types/character'
 import { t } from '@/locales'
-import { STAT_LABELS } from '@/data/xpTable'
-
-function statLabel(key: StatKey): string {
-  return STAT_LABELS[key]
-}
+import { statLabel } from '@/locales/content'
 
 function signed(amount: number): string {
   return amount > 0 ? `+${amount}` : String(amount)

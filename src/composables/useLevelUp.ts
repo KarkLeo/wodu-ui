@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Character, SkillId, AbilityId, StatKey, Magic } from '@/types/character'
-import { ABILITIES, SKILLS } from '@/types/character'
+import { ABILITY_IDS, SKILL_IDS } from '@/types/character'
 import { getAbilityEffect } from '@/data/abilities'
 import { getReward, MAX_STAT_BONUS, STAT_KEYS } from '@/data/xpTable'
 import type { CharacterCommand, LevelUpPatch } from '@/domain/commands'
@@ -44,11 +44,11 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     if (!r || !c) return []
     const steps: LevelUpStep[] = []
     if (r.skills) {
-      const pool = SKILLS.filter(s => !currentSkillIds.value.includes(s.id))
+      const pool = SKILL_IDS.filter(id => !currentSkillIds.value.includes(id))
       if (pool.length > 0) steps.push('skill')
     }
     if (r.abilities) {
-      const pool = ABILITIES.filter(a => !currentAbilityIds.value.includes(a.id))
+      const pool = ABILITY_IDS.filter(id => !currentAbilityIds.value.includes(id))
       if (pool.length > 0) steps.push('ability')
     }
     if (r.statBonus) {
@@ -77,13 +77,13 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
       if (done.value[step]) continue
       if (step === 'skill') {
         if (!r.skills) { done.value.skill = true; continue }
-        const pool = SKILLS.filter(s => !currentSkillIds.value.includes(s.id))
+        const pool = SKILL_IDS.filter(id => !currentSkillIds.value.includes(id))
         if (pool.length === 0) { done.value.skill = true; continue }
         phase.value = 'skill'; return
       }
       if (step === 'ability') {
         if (!r.abilities) { done.value.ability = true; continue }
-        const pool = ABILITIES.filter(a => !currentAbilityIds.value.includes(a.id))
+        const pool = ABILITY_IDS.filter(id => !currentAbilityIds.value.includes(id))
         if (pool.length === 0) { done.value.ability = true; continue }
         phase.value = 'ability'; return
       }

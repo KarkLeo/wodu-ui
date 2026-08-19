@@ -4,7 +4,6 @@ import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
-import { CLASSES } from '@/data/classes'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 import {
   totalArmor,
@@ -17,6 +16,7 @@ import {
   isReadyToLevelUp,
 } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
+import { className as classNameOf } from '@/locales/content'
 import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
 import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
@@ -43,8 +43,8 @@ const className = computed(() => {
   const c = char.value
   if (!c) return ''
   return c.classId === 'custom'
-    ? (c.customClassName ?? 'Свой класс')
-    : CLASSES[c.classId].name
+    ? (c.customClassName ?? classNameOf('custom'))
+    : classNameOf(c.classId)
 })
 
 const equippedWeapon = computed(() => {

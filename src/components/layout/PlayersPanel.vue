@@ -5,7 +5,6 @@ import type { Character } from '@/types/character'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
-import { CLASSES } from '@/data/classes'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
@@ -13,6 +12,7 @@ import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import { useGameLayout } from './gameLayoutContext'
 import { t, currentLocale, setLocale, LOCALES, type Locale } from '@/locales'
+import { className } from '@/locales/content'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,7 +57,7 @@ function initial(name: string): string {
 function classLabel(c: Character): string {
   const name = c.classId === 'custom'
     ? (c.customClassName ?? t('characterList.customClassFallback'))
-    : (CLASSES[c.classId]?.name ?? c.classId)
+    : className(c.classId)
   return t('characterList.classLine', { className: name, level: c.level })
 }
 

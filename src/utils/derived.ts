@@ -1,7 +1,7 @@
 import type { AbilityId, Character, InventoryItem, StatKey } from '@/types/character'
-import { ABILITIES } from '@/types/character'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 import { getAbilityEffect } from '@/data/abilities'
+import { abilityName } from '@/locales/content'
 
 export interface BreakdownLine {
   value: string
@@ -21,10 +21,6 @@ function getEquippedArmor(char: Pick<Character, 'inventory'>): EquippedArmorStat
     hasLight: equipped.some(i => i.descriptor.kind === 'armor' && i.descriptor.class === 'light'),
     hasShield: equipped.some(i => i.descriptor.kind === 'shield'),
   }
-}
-
-function abilityName(id: AbilityId): string {
-  return ABILITIES.find(a => a.id === id)?.name ?? id
 }
 
 const ABILITY_SHORT_NAME: Partial<Record<AbilityId, string>> = {

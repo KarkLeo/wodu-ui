@@ -1,25 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Character } from '@/types/character'
-import { SKILLS } from '@/types/character'
+import type { Character, SkillId } from '@/types/character'
+import { SKILL_IDS } from '@/types/character'
 import { CLASSES } from '@/data/classes'
 import SkillChip from '@/components/ui/SkillChip.vue'
 import IconLock from '@/components/ui/icons/IconLock.vue'
 import { t } from '@/locales'
+import { skillName } from '@/locales/content'
 
 const props = defineProps<{ char: Character }>()
 
 const autoSkillIds = computed(() => CLASSES[props.char.classId].grantedSkillIds as readonly string[])
 
-type Row = { id: string; name: string; state: 'auto' | 'default' }
+type Row = { id: SkillId; name: string; state: 'auto' | 'default' }
 
 const rows = computed<Row[]>(() =>
-  SKILLS
-    .filter(s => props.char.skillIds.includes(s.id))
-    .map(s => ({
-      id: s.id,
-      name: s.name,
-      state: autoSkillIds.value.includes(s.id) ? 'auto' : 'default',
+  SKILL_IDS
+    .filter(id => props.char.skillIds.includes(id))
+    .map(id => ({
+      id,
+      name: skillName(id),
+      state: autoSkillIds.value.includes(id) ? 'auto' : 'default',
     })),
 )
 </script>

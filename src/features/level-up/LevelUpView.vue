@@ -4,9 +4,8 @@ import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useLevelUp } from '@/composables/useLevelUp'
 import type { SkillId, AbilityId, StatKey } from '@/types/character'
-import { STAT_LABELS } from '@/data/xpTable'
-import { SKILLS, ABILITIES } from '@/types/character'
 import { t } from '@/locales'
+import { skillName as skillNameOf, abilityName as abilityNameOf, statShort } from '@/locales/content'
 import StepSkill from './components/StepSkill.vue'
 import StepAbility from './components/StepAbility.vue'
 import StepStat from './components/StepStat.vue'
@@ -51,18 +50,18 @@ const footerHint = computed(() => {
   switch (lv.phase.value) {
     case 'skill': {
       if (!skillSel.value) return t('levelUp.footer.needPick')
-      const name = SKILLS.find(s => s.id === skillSel.value)?.name ?? ''
+      const name = skillNameOf(skillSel.value)
       return t('levelUp.footer.pickSkill', { name })
     }
     case 'ability': {
       if (!abilitySel.value) return t('levelUp.footer.needPick')
-      const name = ABILITIES.find(a => a.id === abilitySel.value)?.name ?? ''
+      const name = abilityNameOf(abilitySel.value)
       return t('levelUp.footer.pickAbility', { name })
     }
     case 'stat': {
       if (!statSel.value || !char.value) return t('levelUp.footer.needPick')
       const from = lv.currentStats.value?.[statSel.value] ?? 0
-      return t('levelUp.footer.pickStat', { label: STAT_LABELS[statSel.value], from, to: from + 1 })
+      return t('levelUp.footer.pickStat', { label: statShort(statSel.value), from, to: from + 1 })
     }
     case 'hitDice': {
       if (!hitDiceTotal.value) return t('levelUp.footer.rollToContinue')

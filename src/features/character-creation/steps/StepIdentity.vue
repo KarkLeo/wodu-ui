@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ClassId, StatKey } from '@/types/character'
+import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
-import { STAT_KEYS, STAT_LABELS } from '@/data/xpTable'
-import { SKILLS } from '@/types/character'
+import { STAT_KEYS } from '@/data/xpTable'
 import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useDebouncedField } from '@/composables/useDebouncedField'
 import { t } from '@/locales'
+import { skillName, statShort } from '@/locales/content'
 
 const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll, setStatRollsBatch } = useCharacterCreation()
 
@@ -42,7 +42,7 @@ async function rollAll() {
   const records = await rollBatch(
     STAT_KEYS.map(key => ({
       notation: '2d6',
-      label: `${STAT_LABELS[key]} (2d6)`,
+      label: `${statShort(key)} (2d6)`,
       purpose: { kind: 'stat', statKey: key, statBonus: 0 } as const,
     })),
     { characterId: d.id, characterName },
@@ -65,7 +65,7 @@ async function rerollOne(key: StatKey) {
   if (!d) return
   const record = await roll({
     notation: '2d6',
-    label: `${STAT_LABELS[key]} (2d6)`,
+    label: `${statShort(key)} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
     characterId: d.id,
     characterName: d.name || 'Новый персонаж',
@@ -79,11 +79,7 @@ function selectClass(id: ClassId) {
   pickClass(id)
 }
 
-function skillName(id: string): string {
-  return SKILLS.find(s => s.id === id)?.name ?? id
-}
-
-function classTagText(classId: ClassId, grantedSkillIds: readonly string[]): string {
+function classTagText(classId: ClassId, grantedSkillIds: readonly SkillId[]): string {
   if (classId === 'custom') return t('characterCreation.identity.classTags.custom')
   const skill = grantedSkillIds[0] ? skillName(grantedSkillIds[0]) : ''
   return t(`characterCreation.identity.classTags.${classId}`, { skill })
@@ -166,7 +162,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
           { 'cc-attr-empty': !draft.statRolls[key], 'is-max': draft.statRolls[key] === 12, 'is-fresh': freshKey === key },
         ]"
       >
-        <span class="cc-attr-label">{{ STAT_LABELS[key] }}</span>
+        <span class="cc-attr-label">{{ statShort(key) }}</span>
         <button
           type="button"
           class="cc-attr-roll"
