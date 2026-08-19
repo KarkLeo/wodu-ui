@@ -10,12 +10,12 @@ export type ChangePayload =
   | { kind: 'xp-gain'; before: number; after: number }
   | { kind: 'level-up'; before: number; after: number }
   | { kind: 'stats'; changes: { key: StatKey; before: number; after: number }[] }
-  | { kind: 'inventory-add'; itemName: string; cost?: number; source: 'buy' | 'receive' | 'custom' }
-  | { kind: 'inventory-remove'; itemName: string }
-  | { kind: 'inventory-use'; itemName: string; quantityBefore: number; quantityAfter: number }
-  | { kind: 'inventory-edit'; itemName: string }
-  | { kind: 'equip'; itemName: string }
-  | { kind: 'unequip'; itemName: string }
+  | { kind: 'inventory-add'; itemName: string; itemTemplateId?: string; cost?: number; source: 'buy' | 'receive' | 'custom' }
+  | { kind: 'inventory-remove'; itemName: string; itemTemplateId?: string }
+  | { kind: 'inventory-use'; itemName: string; itemTemplateId?: string; quantityBefore: number; quantityAfter: number }
+  | { kind: 'inventory-edit'; itemName: string; itemTemplateId?: string }
+  | { kind: 'equip'; itemName: string; itemTemplateId?: string }
+  | { kind: 'unequip'; itemName: string; itemTemplateId?: string }
   | { kind: 'coins'; before: number; after: number }
   | { kind: 'magic' }
   | { kind: 'modifier-add'; statKey: StatKey; label: string; amount: number }

@@ -1,6 +1,6 @@
 import type { ChangePayload } from '@/types/changeLog'
 import { t } from '@/locales'
-import { statShort } from '@/locales/content'
+import { gearName, statShort } from '@/locales/content'
 
 function signed(amount: number): string {
   return amount > 0 ? `+${amount}` : String(amount)
@@ -10,32 +10,36 @@ function signOf(amount: number): string {
   return amount > 0 ? '+' : amount < 0 ? '−' : ''
 }
 
+function itemLabel(payload: { itemName: string; itemTemplateId?: string }): string {
+  return gearName(payload.itemTemplateId, payload.itemName)
+}
+
 export function formatChangeLabel(payload: ChangePayload): string {
   switch (payload.kind) {
     case 'inventory-add':
       if (payload.source === 'buy') {
         return payload.cost && payload.cost > 0
-          ? t('changeLog.boughtWithCost', { name: payload.itemName, cost: payload.cost })
-          : t('changeLog.bought', { name: payload.itemName })
+          ? t('changeLog.boughtWithCost', { name: itemLabel(payload), cost: payload.cost })
+          : t('changeLog.bought', { name: itemLabel(payload) })
       }
       if (payload.source === 'custom') {
         return payload.cost && payload.cost > 0
-          ? t('changeLog.addedCustomWithCost', { name: payload.itemName, cost: payload.cost })
-          : t('changeLog.addedCustom', { name: payload.itemName })
+          ? t('changeLog.addedCustomWithCost', { name: itemLabel(payload), cost: payload.cost })
+          : t('changeLog.addedCustom', { name: itemLabel(payload) })
       }
-      return t('changeLog.received', { name: payload.itemName })
+      return t('changeLog.received', { name: itemLabel(payload) })
     case 'inventory-edit':
-      return t('changeLog.edited', { name: payload.itemName })
+      return t('changeLog.edited', { name: itemLabel(payload) })
     case 'inventory-remove':
-      return t('changeLog.removed', { name: payload.itemName })
+      return t('changeLog.removed', { name: itemLabel(payload) })
     case 'inventory-use':
       return payload.quantityBefore > 1
-        ? t('changeLog.usedQty', { name: payload.itemName, before: payload.quantityBefore, after: payload.quantityAfter })
-        : t('changeLog.used', { name: payload.itemName })
+        ? t('changeLog.usedQty', { name: itemLabel(payload), before: payload.quantityBefore, after: payload.quantityAfter })
+        : t('changeLog.used', { name: itemLabel(payload) })
     case 'equip':
-      return t('changeLog.equipped', { name: payload.itemName })
+      return t('changeLog.equipped', { name: itemLabel(payload) })
     case 'unequip':
-      return t('changeLog.unequipped', { name: payload.itemName })
+      return t('changeLog.unequipped', { name: itemLabel(payload) })
     case 'coins':
       return t('changeLog.coins', { before: payload.before, after: payload.after })
     case 'hp-damage': {
@@ -108,11 +112,11 @@ export function formatChangeLabel(payload: ChangePayload): string {
 export function formatChangeDelta(payload: ChangePayload): string | undefined {
   switch (payload.kind) {
     case 'inventory-add':
-      return t('changeLog.delta.itemPlus', { name: payload.itemName })
+      return t('changeLog.delta.itemPlus', { name: itemLabel(payload) })
     case 'inventory-remove':
-      return t('changeLog.delta.itemMinus', { name: payload.itemName })
+      return t('changeLog.delta.itemMinus', { name: itemLabel(payload) })
     case 'inventory-use':
-      return t('changeLog.delta.itemUseOne', { name: payload.itemName })
+      return t('changeLog.delta.itemUseOne', { name: itemLabel(payload) })
     case 'coins': {
       const diff = payload.after - payload.before
       return t('changeLog.delta.coins', { sign: diff > 0 ? '+' : '', amount: diff })
