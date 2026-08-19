@@ -294,8 +294,8 @@ function logDelta(e: ChangeEntry): string | undefined {
               <template v-if="rollMetaSecondary(item.payload)">
                 <span class="dot"></span><span>{{ rollMetaSecondary(item.payload) }}</span>
               </template>
-              <span class="dot"></span><span>{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span>{{ formatTime(item.payload.timestamp) }}</span>
+              <span class="dot"></span><span class="dice-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
+              <span class="dot"></span><span class="dice-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
             </div>
             <div class="dice-row-formula">
               <span class="f-expr">{{ rollExpr(item.payload) }}</span>
@@ -323,8 +323,8 @@ function logDelta(e: ChangeEntry): string | undefined {
           <div class="log-row-body">
             <div class="log-row-meta">
               <b>{{ logMeta(item.payload) }}</b>
-              <span class="dot"></span><span>{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span>{{ formatTime(item.payload.timestamp) }}</span>
+              <span class="dot"></span><span class="log-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
+              <span class="dot"></span><span class="log-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
             </div>
             <div class="log-row-label">{{ logLabel(item.payload) }}</div>
           </div>
@@ -520,10 +520,18 @@ function logDelta(e: ChangeEntry): string | undefined {
   letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--vtt-text-muted);
   margin-bottom: 2px;
-  overflow: hidden;
+  min-width: 0;
   white-space: nowrap;
 }
-.dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; }
+.dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
+.dice-row-meta-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.dice-row-meta-time { flex-shrink: 0; white-space: nowrap; }
 .dice-row-meta .dot {
   width: 3px; height: 3px; border-radius: var(--r-pill);
   background: var(--vtt-text-muted); opacity: 0.6;
@@ -617,9 +625,18 @@ function logDelta(e: ChangeEntry): string | undefined {
   letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--vtt-text-muted);
   margin-bottom: 2px;
-  overflow: hidden; white-space: nowrap;
+  min-width: 0;
+  white-space: nowrap;
 }
-.log-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; }
+.log-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
+.log-row-meta-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.log-row-meta-time { flex-shrink: 0; white-space: nowrap; }
 .log-row-meta .dot {
   width: 3px; height: 3px; border-radius: var(--r-pill);
   background: var(--vtt-text-muted); opacity: 0.6;

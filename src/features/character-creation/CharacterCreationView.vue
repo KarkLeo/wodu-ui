@@ -177,7 +177,7 @@ onMounted(() => {
 
 .cc-topbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--s-3);
   padding: 0 var(--s-4);

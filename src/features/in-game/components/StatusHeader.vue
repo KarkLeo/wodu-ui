@@ -421,7 +421,14 @@ async function handleRollDamage() {
 .sh-truename-glyph { width: 10px; height: 10px; color: var(--vtt-accent-deep); }
 .sh-truename-glyph svg { width: 100%; height: 100%; display: block; }
 
-.sh-trio { grid-area: trio; justify-self: start; }
+.sh-trio {
+  grid-area: trio;
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sh-trio::-webkit-scrollbar { display: none; }
 .sh-hp { grid-area: hp; }
 .sh-xp { grid-area: xp; }
 
