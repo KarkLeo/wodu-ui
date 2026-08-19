@@ -6,7 +6,7 @@ import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
 import type { RollMode, RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
 import { t } from '@/locales'
-import { statShort } from '@/locales/content'
+import { statShort, gearName } from '@/locales/content'
 import { formatChangeLabel, formatChangeDelta, isCoinSpend } from '@/utils/changeFormat'
 import { createLogger } from '@/utils/logger'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -109,7 +109,7 @@ function rollMetaLabel(r: RollRecord): string {
 }
 
 function rollMetaSecondary(r: RollRecord): string | null {
-  if (r.purpose.kind === 'damage') return r.purpose.weaponName
+  if (r.purpose.kind === 'damage') return gearName(r.purpose.weaponTemplateId, r.purpose.weaponName)
   return null
 }
 

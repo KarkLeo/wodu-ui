@@ -106,6 +106,7 @@ export function useDiceRoller() {
     baseDamage: string,
     damageBonusDice: number,
     flatBonus: number = 0,
+    weaponTemplateId?: string,
   ) {
     const cleanDamage = parseDamageNotation(baseDamage)
     const weaponFull = damageBonusDice > 0 ? `${cleanDamage}+${damageBonusDice}d6` : cleanDamage
@@ -137,7 +138,7 @@ export function useDiceRoller() {
       notation,
       modifier,
       label,
-      purpose: { kind: 'damage', weaponName, formula: `${notation}${modStr}` },
+      purpose: { kind: 'damage', weaponName, weaponTemplateId, formula: `${notation}${modStr}` },
       characterId,
       characterName,
       minTotal: 0,
