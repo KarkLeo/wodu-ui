@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Character, SkillId } from '@/types/character'
-import { SKILLS } from '@/types/character'
+import { SKILL_IDS } from '@/types/character'
 import { t } from '@/locales'
+import { skillName } from '@/locales/content'
 
 const props = defineProps<{ char: Character; currentSkillIds: readonly SkillId[]; selected: SkillId | null }>()
 const emit = defineEmits<{ 'update:selected': [id: SkillId] }>()
 
-const available = computed(() => SKILLS.filter(s => !props.currentSkillIds.includes(s.id)))
+const available = computed(() => SKILL_IDS.filter(id => !props.currentSkillIds.includes(id)))
 </script>
 
 <template>
@@ -18,18 +19,18 @@ const available = computed(() => SKILLS.filter(s => !props.currentSkillIds.inclu
     </div>
     <div v-if="available.length" class="cc-abil-list">
       <button
-        v-for="s in available"
-        :key="s.id"
+        v-for="id in available"
+        :key="id"
         type="button"
         class="cc-abil"
-        :class="{ 'is-selected': selected === s.id }"
-        @click="emit('update:selected', s.id)"
+        :class="{ 'is-selected': selected === id }"
+        @click="emit('update:selected', id)"
       >
         <span class="cc-check" aria-hidden="true">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
         </span>
         <span class="cc-abil-body-text">
-          <span class="cc-abil-name">{{ s.name }}</span>
+          <span class="cc-abil-name">{{ skillName(id) }}</span>
         </span>
       </button>
     </div>

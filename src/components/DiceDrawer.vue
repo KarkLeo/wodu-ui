@@ -5,8 +5,8 @@ import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
 import type { RollMode, RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
-import { STAT_LABELS } from '@/data/xpTable'
 import { t } from '@/locales'
+import { statShort } from '@/locales/content'
 import { formatChangeLabel, formatChangeDelta, isCoinSpend } from '@/utils/changeFormat'
 import { createLogger } from '@/utils/logger'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -99,7 +99,7 @@ function authorFor(charId: string, charName?: string): string {
 }
 
 function rollMetaLabel(r: RollRecord): string {
-  if (r.purpose.kind === 'stat') return STAT_LABELS[r.purpose.statKey] ?? r.purpose.statKey
+  if (r.purpose.kind === 'stat') return statShort(r.purpose.statKey)
   if (r.purpose.kind === 'damage') return t('diceDrawer.meta.damage')
   if (r.purpose.kind === 'hit-dice') return t('diceDrawer.rollMeta.hitDice')
   if (r.purpose.kind === 'hp-init') return t('diceDrawer.rollMeta.hpInit')

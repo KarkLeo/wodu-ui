@@ -1,33 +1,29 @@
-import { ABILITIES } from '@/types/character'
+import { ABILITY_IDS } from '@/types/character'
 import type { AbilityId, ClassData, ClassId } from '@/types/character'
 
-export const ALL_ABILITY_IDS: AbilityId[] = ABILITIES.map(a => a.id)
+export const ALL_ABILITY_IDS: AbilityId[] = [...ABILITY_IDS]
 
 export const CLASSES: Record<ClassId, ClassData> = {
   fighter: {
     id: 'fighter',
-    name: 'Воин',
     grantedSkillIds: ['athletics'],
     abilityPool: ['skirmish', 'toughness', 'hewing', 'sturdy'],
     hasMagic: false,
   },
   thief: {
     id: 'thief',
-    name: 'Вор',
     grantedSkillIds: ['stealth'],
     abilityPool: ['shadowStrike', 'luck', 'reflexes', 'skilled'],
     hasMagic: false,
   },
   cleric: {
     id: 'cleric',
-    name: 'Жрец',
     grantedSkillIds: ['decipher', 'healing'],
     abilityPool: ['blessing', 'heal', 'turnUndead', 'vision'],
     hasMagic: false,
   },
   wizard: {
     id: 'wizard',
-    name: 'Волшебник',
     grantedSkillIds: ['lore'],
     abilityPool: ['incantations', 'domination', 'ritual'],
     autoAbilityIds: ['summoning'],
@@ -35,14 +31,12 @@ export const CLASSES: Record<ClassId, ClassData> = {
   },
   ranger: {
     id: 'ranger',
-    name: 'Следопыт',
     grantedSkillIds: ['survival'],
     abilityPool: ['pet', 'scouting', 'volley', 'savage'],
     hasMagic: false,
   },
   custom: {
     id: 'custom',
-    name: 'Свой класс',
     grantedSkillIds: [],
     abilityPool: ALL_ABILITY_IDS,
     hasMagic: false,
