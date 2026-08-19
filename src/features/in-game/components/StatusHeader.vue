@@ -26,7 +26,7 @@ import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconWeapon from '@/components/ui/icons/IconWeapon.vue'
 import IconShield from '@/components/ui/icons/IconShield.vue'
 import IconCoin from '@/components/ui/icons/IconCoin.vue'
-import { t } from '@/locales'
+import { t, tLabel } from '@/locales'
 
 const log = createLogger('status-header')
 
@@ -209,7 +209,7 @@ async function handleRollDamage() {
                 :key="idx"
                 class="breakdown-row"
               >
-                <span class="br-name">{{ line.label }}</span>
+                <span class="br-name">{{ tLabel(line.label) }}</span>
                 <span class="br-value">{{ line.value }}</span>
               </div>
             </div>
@@ -283,12 +283,12 @@ async function handleRollDamage() {
                 :key="idx"
                 class="breakdown-row"
               >
-                <span class="br-name">{{ line.label }}</span>
+                <span class="br-name">{{ tLabel(line.label) }}</span>
                 <span class="br-value">{{ line.value }}</span>
               </div>
             </div>
             <div v-else class="sh-pop-empty">{{ t('inGame.statusHeader.trio.armorEmpty') }}</div>
-            <div v-if="armorBreakdown.note" class="sh-pop-note">{{ armorBreakdown.note }}</div>
+            <div v-if="armorBreakdown.note" class="sh-pop-note">{{ tLabel(armorBreakdown.note) }}</div>
             <div class="sh-pop-mod">
               <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
               <Stepper

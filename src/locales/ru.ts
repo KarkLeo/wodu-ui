@@ -660,4 +660,14 @@ export const messages: Messages = {
       fear: 'Страх',
     },
   },
+  derived: {
+    hpRoll: 'ур. {level}, бросок к6',
+    weapon: 'Оружие',
+    levelBonus: 'Бонус уровня',
+    effects: 'Эффекты',
+    armorFull: 'полный доспех',
+    armorLight: 'лёгкий доспех',
+    shield: 'щит',
+    armorLighterNote: 'доспех считается лёгким ({ability})',
+  },
 }

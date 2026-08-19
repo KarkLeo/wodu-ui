@@ -658,6 +658,16 @@ export const messages = {
       fear: 'Fear',
     },
   },
+  derived: {
+    hpRoll: 'lvl {level}, d6 roll',
+    weapon: 'Weapon',
+    levelBonus: 'Level bonus',
+    effects: 'Effects',
+    armorFull: 'full armor',
+    armorLight: 'light armor',
+    shield: 'shield',
+    armorLighterNote: 'armor counts as light ({ability})',
+  },
 }
 
 export type Messages = typeof messages
