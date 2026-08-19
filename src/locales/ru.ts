@@ -1,4 +1,6 @@
-export const messages = {
+import type { Messages } from './en'
+
+export const messages: Messages = {
   common: {
     save: 'Сохранить',
     cancel: 'Отмена',
@@ -542,4 +544,4 @@ export const messages = {
     installCta: 'Установить приложение',
     installed: 'Приложение установлено',
   },
-} as const
+}
