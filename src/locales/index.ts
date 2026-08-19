@@ -46,7 +46,7 @@ function interpolate(template: string, params?: Record<string, Param>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => {
     if (!(key in params)) return match
     const value = params[key]
-    if (typeof value === 'object' && value !== null && '$key' in value) return t(value.$key)
+    if (typeof value === 'object' && value !== null && '$key' in value) return t(value.$key, params)
     return String(value)
   })
 }

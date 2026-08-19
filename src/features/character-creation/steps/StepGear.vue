@@ -5,7 +5,7 @@ import { useInventory } from '@/composables/useInventory'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { findGearTemplate } from '@/data/gear'
-import { gearName } from '@/locales/content'
+import { gearName, abilityName } from '@/locales/content'
 import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
 import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
 import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
@@ -51,7 +51,9 @@ async function rollHp() {
     label: t('characterCreation.gear.rollLabel', { dice: numDice.value }),
     purpose: { kind: 'hp-init', level: 1, numDice: numDice.value, kept: 1 },
     characterId: d.id,
-    characterName: d.name || t('characterCreation.identity.nameFallback'),
+    // Pass undefined rather than a locale-baked fallback: DiceDrawer's authorFor()
+    // resolves a missing name from the live character list, in the roller's own locale.
+    characterName: d.name || undefined,
   })
   if (!result) return
   const rolls = result.dice.map(dv => dv.value)
@@ -139,7 +141,7 @@ function onUse(item: InventoryItem) {
         <span v-if="hpFormulaLines" class="cc-hp-formula">
           {{ numDice }}d6 → <em>{{ hpFormulaLines.top }}</em>
           <span v-if="hpFormulaLines.sturdy">
-            + 6 <span class="cc-hp-formula-note">{{ t('content.abilities.sturdy.name') }}</span>
+            + 6 <span class="cc-hp-formula-note">{{ abilityName('sturdy') }}</span>
           </span>
         </span>
         <span v-else class="cc-hp-formula">{{ t('characterCreation.gear.hpEmpty') }}</span>

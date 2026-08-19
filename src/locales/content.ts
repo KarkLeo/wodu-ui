@@ -3,6 +3,7 @@ import type { Messages } from './en'
 import type { AbilityId, ClassId, SkillId, StatKey } from '@/types/character'
 import type { GearCategoryId, GearTemplateId } from '@/data/gear'
 import { SPHERE_PRESET_IDS, type SpherePresetId } from '@/data/spheres'
+import { CANTRIP_IDS, type CantripId } from '@/data/abilities'
 
 export function skillName(id: SkillId): string {
   return t(`content.skills.${id}` as never)
@@ -14,6 +15,17 @@ export function abilityName(id: AbilityId): string {
 
 export function abilityDescription(id: AbilityId): string {
   return t(`content.abilities.${id}.description` as never)
+}
+
+// Character.magic.cantrips stores either a known cantrip id (new characters) or a
+// raw display string (characters created before this dictionary existed — legacy
+// synced data we can't migrate in place). Translate known ids; pass anything else
+// through unchanged so legacy values keep displaying as-is.
+export function cantripName(value: string): string {
+  if ((CANTRIP_IDS as readonly string[]).includes(value)) {
+    return t(`content.cantrips.${value}` as never)
+  }
+  return value
 }
 
 export function className(id: ClassId): string {
@@ -28,7 +40,7 @@ export function statShort(key: StatKey): string {
   return t(`content.stats.${key}.short` as never)
 }
 
-export function gearName(templateId: string | undefined, fallback = ''): string {
+export function gearName(templateId: string | undefined, fallback: string = templateId ?? ''): string {
   if (!templateId) return fallback
   const translated = t(`content.gear.${templateId}.name` as never)
   return translated.startsWith('content.') ? fallback : translated
@@ -71,6 +83,7 @@ type _AbilitiesComplete =
   Messages['content']['abilities'] extends Record<AbilityId, { name: string; description: string }>
     ? true
     : never
+type _CantripsComplete = Messages['content']['cantrips'] extends Record<CantripId, string> ? true : never
 type _ClassesComplete = Messages['content']['classes'] extends Record<ClassId, string> ? true : never
 type _StatsComplete =
   Messages['content']['stats'] extends Record<StatKey, { full: string; short: string }> ? true : never
@@ -86,10 +99,11 @@ type _SpheresComplete =
 const _guards: [
   _SkillsComplete,
   _AbilitiesComplete,
+  _CantripsComplete,
   _ClassesComplete,
   _StatsComplete,
   _GearComplete,
   _GearCategoriesComplete,
   _SpheresComplete,
-] = [true, true, true, true, true, true, true]
+] = [true, true, true, true, true, true, true, true]
 void _guards

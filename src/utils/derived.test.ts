@@ -103,6 +103,18 @@ describe('damageAbilityBonus', () => {
       ),
     ).toBe(0)
   })
+  it('не-weapon дескриптор — скоуп-бонус не применяется', () => {
+    expect(
+      damageAbilityBonus(makeCharacter({ abilityIds: ['hewing'] }), makeArmor('light')),
+    ).toBe(0)
+  })
+  it('weapon без явного melee — скоуп-бонус не применяется', () => {
+    const weapon = makeWeapon({ melee: true })
+    // Simulates legacy/synced data predating the melee flag: a weapon descriptor
+    // with no melee key at all, not representable through the current type.
+    weapon.descriptor = { kind: 'weapon' } as unknown as typeof weapon.descriptor
+    expect(damageAbilityBonus(makeCharacter({ abilityIds: ['hewing'] }), weapon)).toBe(0)
+  })
 })
 
 describe('damageBreakdownLines', () => {

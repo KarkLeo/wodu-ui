@@ -5,6 +5,7 @@ import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useCreationStore } from '@/stores/creation'
 import { useCharactersStore } from '@/stores/characters'
 import { t } from '@/locales'
+import { className as classNameOf } from '@/locales/content'
 import StepIdentity from './steps/StepIdentity.vue'
 import StepTraining from './steps/StepTraining.vue'
 import StepGear from './steps/StepGear.vue'
@@ -28,8 +29,8 @@ const stepTitle = computed(() => {
 
 const className = computed(() => {
   if (!draft.value) return ''
-  if (draft.value.classId === 'custom') return draft.value.customClassName?.trim() || t('characterCreation.classNames.custom')
-  return t(`characterCreation.classNames.${draft.value.classId}`)
+  if (draft.value.classId === 'custom') return draft.value.customClassName?.trim() || classNameOf('custom')
+  return classNameOf(draft.value.classId)
 })
 
 const footerHint = computed(() => {

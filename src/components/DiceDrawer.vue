@@ -5,7 +5,7 @@ import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
 import type { RollMode, RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
-import { t } from '@/locales'
+import { t, currentLocale } from '@/locales'
 import { statShort, gearName } from '@/locales/content'
 import { formatChangeLabel, formatChangeDelta, isCoinSpend } from '@/utils/changeFormat'
 import { createLogger } from '@/utils/logger'
@@ -89,7 +89,7 @@ async function onSubmit() {
 function onInput() { if (notationError.value) notationError.value = '' }
 
 function formatTime(ts: number) {
-  return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  return new Date(ts).toLocaleTimeString(currentLocale.value, { hour: '2-digit', minute: '2-digit' })
 }
 
 function authorFor(charId: string, charName?: string): string {

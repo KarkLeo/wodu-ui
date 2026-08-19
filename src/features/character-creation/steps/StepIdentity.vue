@@ -8,7 +8,7 @@ import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useDebouncedField } from '@/composables/useDebouncedField'
 import { t } from '@/locales'
-import { skillName, statShort } from '@/locales/content'
+import { skillName, statShort, className } from '@/locales/content'
 
 const { draft, setName, setTrueName, pickClass, setCustomClassName, setStatRoll, setStatRollsBatch } = useCharacterCreation()
 
@@ -38,7 +38,9 @@ async function rollAll() {
   if (!d) return
   staggerTimers.forEach(window.clearTimeout)
   staggerTimers = []
-  const characterName = d.name || t('characterCreation.identity.nameFallback')
+  // Pass undefined rather than a locale-baked fallback: DiceDrawer's authorFor()
+  // resolves a missing name from the live character list, in the roller's own locale.
+  const characterName = d.name || undefined
   const records = await rollBatch(
     STAT_KEYS.map(key => ({
       notation: '2d6',
@@ -68,7 +70,7 @@ async function rerollOne(key: StatKey) {
     label: `${statShort(key)} (2d6)`,
     purpose: { kind: 'stat', statKey: key, statBonus: 0 },
     characterId: d.id,
-    characterName: d.name || t('characterCreation.identity.nameFallback'),
+    characterName: d.name || undefined,
   })
   applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
   markFresh(key)
@@ -209,7 +211,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
             <rect x="6" y="6" width="16" height="16" rx="2"/><path d="M10 14 L14 14 M12 10 L12 18"/>
           </svg>
         </span>
-        <span class="cc-class-name">{{ t(`characterCreation.classNames.${cls.id}`) }}</span>
+        <span class="cc-class-name">{{ className(cls.id) }}</span>
         <span class="cc-class-tag">{{ classTagText(cls.id, cls.grantedSkillIds) }}</span>
       </button>
     </div>

@@ -20,7 +20,7 @@ Run a single test file: `npm run test -- src/utils/derived.test.ts`.
 ## Tech Stack
 
 - **Framework**: Vue 3 + TypeScript (strict), Vite
-- **State / Persistence**: Pinia + `pinia-plugin-persistedstate`. localStorage keys: `wod.characters.v1`, `wod.creation.v1`, `wod.rollHistory.v1`
+- **State / Persistence**: Pinia + `pinia-plugin-persistedstate`. localStorage keys: `wod.characters.v1`, `wod.creation.v1`, `wod.rollHistory.v1`, `wod.locale.v1`
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box` wrapped in `src/services/DiceBoxService.ts`
 - **Routing**: Vue Router with route guards
@@ -67,13 +67,13 @@ Flow: composable → `store.dispatch(id, cmd)` → `applyCommand` → persisted 
 All computed/derived values live here — never recalculate inline in components.
 
 - `totalArmor(char)` — equipped armor tags + `toughness`
-- `damageFormula(char, weapon)` — weapon damage with ability bonuses (`skirmish`, `hewing`, `volley`, etc.)
+- `damageAbilityBonus(char, weapon)`, `damageFormulaCompact(char, weapon)`, `damageFormulaParts(char, weapon)` — weapon damage with ability bonuses (`skirmish`, `hewing`, `volley`, etc.)
 - `hpBreakdownLines(hpHistory)`, `damageBreakdownLines(char, weapon)`, `armorBreakdownLines(char)` — formatted rows for `InfoPopover`
 - `isReadyToLevelUp(char)` — XP vs `XP_THRESHOLDS`
 - `rollHitDice(numDice, level)` — rolls N d6, keeps top `level`
 - `statBonusFrom2d6(roll)` — 2d6 → bonus (0/1/2/3)
 
-`BreakdownLine { value, label }` is the shared interface for popover rows.
+`BreakdownLine { value, label }` is the shared interface for popover rows — `label` is a `LabelRef` (`{ key, params? }`), resolved with `tLabel()`, not a plain string.
 
 Ability bonuses are **data-driven**: `src/data/abilities.ts` exposes `ABILITY_EFFECTS` and `getAbilityEffect(id)`. `derived.ts` reads this table — do not branch on ability IDs (`if (id === 'hewing')`) anywhere else.
 
@@ -117,8 +117,8 @@ In-game tabs: **Основное** (stats/skills/abilities) → **Инвента
 
 ## Localization (`src/locales/`)
 
-- All user-facing strings live in `src/locales/ru.ts`. Components use `t('key')` from `@/locales`.
-- Adding new UI: add the string to `ru.ts` first, then use `t()`. No hardcoded user-visible strings in `.vue`.
+- Trilingual (en/ru/uk), switchable at runtime. `src/locales/en.ts` is the **structural type authority** (`type Messages`); `ru.ts` and `uk.ts` are declared `const messages: Messages`, so `vue-tsc` fails the build on any key missing from (or extra in) any of the three. Add a new key to all three dictionaries together.
+- Components use `t('key')` from `@/locales` for UI strings. Game vocabulary (skill/ability/class/stat/gear/cantrip/sphere-preset names) does **not** go through raw `t()` — reach it through the helpers in `src/locales/content.ts` (`skillName`, `abilityName`, `className`, `gearName`, `cantripName`, etc.), which resolve under `content.*` and are guarded at compile time by the `_guards` tuple in that file.
 - Allowed inline: `console.*`, developer-only errors, technical strings (CSS classes, localStorage keys, event names).
 - Existing hardcoded strings are migrated as files are touched — no mass migration.
 - Key style: `section.subsection.name` in camelCase (e.g. `header.hpLabel`, `inventory.emptyState`). Group by screen/feature.
