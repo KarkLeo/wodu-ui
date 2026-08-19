@@ -6,7 +6,7 @@ import * as combat from './combat'
 import * as prog from './progression'
 import * as mods from './modifiers'
 import * as creation from './creation'
-import { findGearTemplate } from '@/data/gear'
+import { gearName } from '@/locales/content'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('domain')
@@ -40,7 +40,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       const before = char
       next = inv.buyItem(char, cmd.templateId)
       if (next !== before) {
-        const name = findGearTemplate(cmd.templateId)?.name ?? '—'
+        const name = gearName(cmd.templateId, '—')
         const cost = before.coins - next.coins
         changes.push({
           payload: { kind: 'inventory-add', itemName: name, cost, source: 'buy' },
@@ -52,7 +52,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
     case 'RECEIVE_ITEM': {
       next = inv.receiveItem(char, cmd.item)
       changes.push({
-        payload: { kind: 'inventory-add', itemName: cmd.item.name, source: 'receive' },
+        payload: { kind: 'inventory-add', itemName: gearName(cmd.item.templateId, cmd.item.name), source: 'receive' },
         sourceCommand: cmd.type,
       })
       break
@@ -80,7 +80,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.removeItem(char, cmd.itemId)
       if (item) {
         changes.push({
-          payload: { kind: 'inventory-remove', itemName: item.name },
+          payload: { kind: 'inventory-remove', itemName: gearName(item.templateId, item.name) },
           sourceCommand: cmd.type,
         })
       }
@@ -93,7 +93,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
         const before = item.quantity ?? 1
         const after = Math.max(0, before - 1)
         changes.push({
-          payload: { kind: 'inventory-use', itemName: item.name, quantityBefore: before, quantityAfter: after },
+          payload: { kind: 'inventory-use', itemName: gearName(item.templateId, item.name), quantityBefore: before, quantityAfter: after },
           sourceCommand: cmd.type,
         })
       }
@@ -104,7 +104,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.equipItem(char, cmd.itemId)
       if (item) {
         changes.push({
-          payload: { kind: 'equip', itemName: item.name },
+          payload: { kind: 'equip', itemName: gearName(item.templateId, item.name) },
           sourceCommand: cmd.type,
         })
       }
@@ -115,7 +115,7 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       next = inv.unequipItem(char, cmd.itemId)
       if (item) {
         changes.push({
-          payload: { kind: 'unequip', itemName: item.name },
+          payload: { kind: 'unequip', itemName: gearName(item.templateId, item.name) },
           sourceCommand: cmd.type,
         })
       }

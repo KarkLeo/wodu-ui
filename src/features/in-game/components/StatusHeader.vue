@@ -16,7 +16,7 @@ import {
   isReadyToLevelUp,
 } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
-import { className as classNameOf } from '@/locales/content'
+import { className as classNameOf, gearName } from '@/locales/content'
 import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
 import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
@@ -52,6 +52,10 @@ const equippedWeapon = computed(() => {
   if (!c) return null
   const weapons = c.inventory.filter(isWeapon)
   return weapons.find(w => w.equipped) ?? weapons[0] ?? null
+})
+const equippedWeaponName = computed(() => {
+  const w = equippedWeapon.value
+  return w ? gearName(w.templateId, w.name) : ''
 })
 
 const dmgFormulaStr = computed(() =>
@@ -142,7 +146,7 @@ async function handleRollDamage() {
   if (!c || !w || !w.damage) return
   try {
     const flat = damageAbilityBonus(c, w) + (c.damageMod ?? 0)
-    await rollDamage(c.id, c.name, w.name, w.damage, c.damageBonusDice, flat)
+    await rollDamage(c.id, c.name, gearName(w.templateId, w.name), w.damage, c.damageBonusDice, flat)
   } catch (err) {
     log.error('damage roll failed', err)
   }
@@ -181,7 +185,7 @@ async function handleRollDamage() {
           :label="t('inGame.statusHeader.trio.damage')"
           :value="dmgFormulaStr"
           :size="compact ? 'sm' : 'base'"
-          :popover-title="equippedWeapon.name"
+          :popover-title="equippedWeaponName"
           has-popover
         >
           <template #symbol><IconWeapon /></template>
@@ -196,7 +200,7 @@ async function handleRollDamage() {
           </template>
           <template #popover>
             <div class="pop-head">
-              <span class="pop-title">{{ equippedWeapon.name }}</span>
+              <span class="pop-title">{{ equippedWeaponName }}</span>
               <span class="pop-sub">{{ dmgFormulaStr }}</span>
             </div>
             <div class="breakdown">
