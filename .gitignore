@@ -37,3 +37,8 @@ docs/
 # Deploy keys — never commit
 deploy-key
 deploy-key.pub
+
+# Personal notes / agent scratch — not part of the project
+instruction.md
+world_of_dungeons.txt
+.claude/
