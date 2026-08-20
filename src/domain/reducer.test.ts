@@ -15,7 +15,7 @@ beforeEach(() => {
 })
 
 describe('applyCommand: BUY_ITEM', () => {
-  it('покупка существующего шаблона списывает монеты и добавляет предмет', () => {
+  it('buying an existing template deducts coins and adds the item', () => {
     const char = makeCharacter({ coins: 50 })
     const { character, changes } = applyCommand(char, {
       type: 'BUY_ITEM',
@@ -33,7 +33,7 @@ describe('applyCommand: BUY_ITEM', () => {
     expect(item.templateId).toBe('light_weapon')
     expect(item.damage).toBe('1d6')
   })
-  it('неизвестный шаблон не меняет персонажа и не пишет changes', () => {
+  it('an unknown template leaves the character untouched and writes no changes', () => {
     const char = makeCharacter({ coins: 50 })
     const { character, changes } = applyCommand(char, {
       type: 'BUY_ITEM',
@@ -45,42 +45,42 @@ describe('applyCommand: BUY_ITEM', () => {
 })
 
 describe('applyCommand: RECEIVE_ITEM', () => {
-  it('добавляет предмет и пишет change', () => {
+  it('adds the item and writes a change', () => {
     const char = makeCharacter()
     const { character, changes } = applyCommand(char, {
       type: 'RECEIVE_ITEM',
-      item: { name: 'Подарок', descriptor: { kind: 'gear' } },
+      item: { name: 'Gift', descriptor: { kind: 'gear' } },
     })
     expect(character.inventory).toHaveLength(1)
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'receive', itemName: 'Подарок' })
+    expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'receive', itemName: 'Gift' })
   })
 })
 
 describe('applyCommand: ADD_CUSTOM_ITEM', () => {
-  it('списывает цену и пишет change', () => {
+  it('deducts the price and writes a change', () => {
     const char = makeCharacter({ coins: 20 })
     const { character, changes } = applyCommand(char, {
       type: 'ADD_CUSTOM_ITEM',
-      name: 'Артефакт',
+      name: 'Artifact',
       price: 5,
     })
     expect(character.coins).toBe(15)
     expect(character.inventory).toHaveLength(1)
     expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'custom', cost: 5 })
   })
-  it('без цены — payload без cost', () => {
+  it('no price — payload without cost', () => {
     const { changes } = applyCommand(makeCharacter(), {
       type: 'ADD_CUSTOM_ITEM',
-      name: 'Подарок',
+      name: 'Gift',
     })
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'custom', itemName: 'Подарок' })
+    expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'custom', itemName: 'Gift' })
     expect((changes[0].payload as { cost?: number }).cost).toBeUndefined()
   })
-  it('цена больше монет — coins clamp\'ятся к 0', () => {
+  it('price above the coin balance — coins clamp to 0', () => {
     const char = makeCharacter({ coins: 5 })
     const { character } = applyCommand(char, {
       type: 'ADD_CUSTOM_ITEM',
-      name: 'Дорогой',
+      name: 'Expensive',
       price: 20,
     })
     expect(character.coins).toBe(0)
@@ -88,21 +88,21 @@ describe('applyCommand: ADD_CUSTOM_ITEM', () => {
 })
 
 describe('applyCommand: EDIT_CUSTOM_ITEM', () => {
-  it('правит имя custom-предмета', () => {
-    const item = makeCustom(false, { name: 'старое' })
+  it('edits the name of a custom item', () => {
+    const item = makeCustom(false, { name: 'old' })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, {
       type: 'EDIT_CUSTOM_ITEM',
       itemId: item.id,
-      name: 'новое',
+      name: 'new',
     })
-    expect(character.inventory[0].name).toBe('новое')
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-edit', itemName: 'новое' })
+    expect(character.inventory[0].name).toBe('new')
+    expect(changes[0].payload).toMatchObject({ kind: 'inventory-edit', itemName: 'new' })
   })
 })
 
 describe('applyCommand: REMOVE_ITEM', () => {
-  it('удаляет и пишет change', () => {
+  it('removes it and writes a change', () => {
     const item = makeWeapon()
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, { type: 'REMOVE_ITEM', itemId: item.id })
@@ -112,25 +112,25 @@ describe('applyCommand: REMOVE_ITEM', () => {
 })
 
 describe('applyCommand: USE_ITEM', () => {
-  it('quantity > 1 — уменьшает на 1, лейбл показывает x→x', () => {
-    const item = makeCustom(true, { quantity: 3, name: 'Зелье' })
+  it('quantity > 1 — decrements by 1, the label shows x→x', () => {
+    const item = makeCustom(true, { quantity: 3, name: 'Potion' })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, { type: 'USE_ITEM', itemId: item.id })
     expect(character.inventory[0].quantity).toBe(2)
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-use', itemName: 'Зелье', quantityBefore: 3, quantityAfter: 2 })
+    expect(changes[0].payload).toMatchObject({ kind: 'inventory-use', itemName: 'Potion', quantityBefore: 3, quantityAfter: 2 })
   })
-  it('quantity === 1 — удаляет предмет', () => {
-    const item = makeCustom(true, { quantity: 1, name: 'Зелье' })
+  it('quantity === 1 — removes the item', () => {
+    const item = makeCustom(true, { quantity: 1, name: 'Potion' })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, { type: 'USE_ITEM', itemId: item.id })
     expect(character.inventory).toEqual([])
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-use', itemName: 'Зелье', quantityBefore: 1 })
+    expect(changes[0].payload).toMatchObject({ kind: 'inventory-use', itemName: 'Potion', quantityBefore: 1 })
   })
-  it('mercury — инкрементирует quicksilverCount (undefined → 1)', () => {
+  it('mercury — increments quicksilverCount (undefined → 1)', () => {
     const mercury: InventoryItem = {
       id: 'mercury-1',
       templateId: 'mercury',
-      name: 'Ртуть (доза)',
+      name: 'Mercury (dose)',
       descriptor: { kind: 'occult', consumable: true },
       quantity: 2,
     }
@@ -140,11 +140,11 @@ describe('applyCommand: USE_ITEM', () => {
     expect(character.quicksilverCount).toBe(1)
     expect(character.inventory[0].quantity).toBe(1)
   })
-  it('mercury — накопительный инкремент с существующего count', () => {
+  it('mercury — increments cumulatively from an existing count', () => {
     const mercury: InventoryItem = {
       id: 'mercury-2',
       templateId: 'mercury',
-      name: 'Ртуть (доза)',
+      name: 'Mercury (dose)',
       descriptor: { kind: 'occult', consumable: true },
       quantity: 1,
     }
@@ -156,7 +156,7 @@ describe('applyCommand: USE_ITEM', () => {
 })
 
 describe('applyCommand: BUY_ITEM — stacking consumables', () => {
-  it('повторная покупка consumable с тем же templateId увеличивает quantity, а не длину инвентаря', () => {
+  it('buying the same consumable templateId again raises quantity, not inventory length', () => {
     const char0 = makeCharacter({ coins: 10, inventory: [] })
     const r1 = applyCommand(char0, { type: 'BUY_ITEM', templateId: 'rations' })
     expect(r1.character.inventory).toHaveLength(1)
@@ -166,7 +166,7 @@ describe('applyCommand: BUY_ITEM — stacking consumables', () => {
     expect(r2.character.inventory[0].quantity).toBe(2)
     expect(r2.character.coins).toBe(6)
   })
-  it('монеты clamp\'ятся к 0 при нехватке', () => {
+  it('coins clamp to 0 when there are not enough', () => {
     const char = makeCharacter({ coins: 3 })
     const { character } = applyCommand(char, { type: 'BUY_ITEM', templateId: 'light_weapon' })
     expect(character.coins).toBe(0)
@@ -174,11 +174,11 @@ describe('applyCommand: BUY_ITEM — stacking consumables', () => {
 })
 
 describe('applyCommand: RECEIVE_ITEM — stacking consumables', () => {
-  it('при получении consumable с известным templateId — складывается в существующий', () => {
+  it('receiving a consumable with a known templateId stacks onto the existing one', () => {
     const existing: InventoryItem = {
       id: 'rat-1',
       templateId: 'rations',
-      name: 'Дорожный паёк',
+      name: 'Rations',
       descriptor: { kind: 'gear', consumable: true },
       quantity: 1,
     }
@@ -187,7 +187,7 @@ describe('applyCommand: RECEIVE_ITEM — stacking consumables', () => {
       type: 'RECEIVE_ITEM',
       item: {
         templateId: 'rations',
-        name: 'Дорожный паёк',
+        name: 'Rations',
         descriptor: { kind: 'gear', consumable: true },
         quantity: 3,
       },
@@ -198,25 +198,25 @@ describe('applyCommand: RECEIVE_ITEM — stacking consumables', () => {
 })
 
 describe('applyCommand: EDIT_CUSTOM_ITEM — guard', () => {
-  it('не custom — поля не меняются, change не пишется', () => {
-    const weapon = makeWeapon({ name: 'Меч' })
+  it('not custom — fields stay untouched and no change is written', () => {
+    const weapon = makeWeapon({ name: 'Sword' })
     const char = makeCharacter({ inventory: [weapon] })
     const { character, changes } = applyCommand(char, {
       type: 'EDIT_CUSTOM_ITEM',
       itemId: weapon.id,
-      name: 'Попытка переименовать',
+      name: 'Rename attempt',
     })
-    expect(character.inventory[0].name).toBe('Меч')
-    // Никаких реальных изменений нет — journal тоже должен быть пуст.
+    expect(character.inventory[0].name).toBe('Sword')
+    // Nothing actually changed, so the journal must stay empty too.
     expect(changes).toEqual([])
   })
-  it('consumable:false затирает quantity у custom-предмета', () => {
-    const item = makeCustom(true, { name: 'Зелье', quantity: 5 })
+  it('consumable:false wipes quantity on a custom item', () => {
+    const item = makeCustom(true, { name: 'Potion', quantity: 5 })
     const char = makeCharacter({ inventory: [item] })
     const { character } = applyCommand(char, {
       type: 'EDIT_CUSTOM_ITEM',
       itemId: item.id,
-      name: 'Зелье',
+      name: 'Potion',
       consumable: false,
       quantity: 5,
     })
@@ -224,45 +224,45 @@ describe('applyCommand: EDIT_CUSTOM_ITEM — guard', () => {
     expect(edited.quantity).toBeUndefined()
     expect(edited.descriptor).toEqual({ kind: 'custom', consumable: false })
   })
-  it('custom consumable — сохраняет quantity из команды', () => {
-    const item = makeCustom(true, { name: 'Зелье', quantity: 1 })
+  it('custom consumable — keeps the quantity from the command', () => {
+    const item = makeCustom(true, { name: 'Potion', quantity: 1 })
     const char = makeCharacter({ inventory: [item] })
     const { character } = applyCommand(char, {
       type: 'EDIT_CUSTOM_ITEM',
       itemId: item.id,
-      name: 'Зелье+',
+      name: 'Potion+',
       consumable: true,
       quantity: 5,
       price: 3,
-      notes: 'заметка',
+      notes: 'note',
     })
     const edited = character.inventory[0]
-    expect(edited.name).toBe('Зелье+')
+    expect(edited.name).toBe('Potion+')
     expect(edited.quantity).toBe(5)
     expect(edited.price).toBe(3)
-    expect(edited.notes).toBe('заметка')
+    expect(edited.notes).toBe('note')
   })
 })
 
 describe('applyCommand: EDIT_CUSTOM_ITEM — guards', () => {
-  it('несуществующий itemId — без изменений и без change', () => {
-    const item = makeCustom(false, { name: 'Артефакт' })
+  it('unknown itemId — no changes and no change entry', () => {
+    const item = makeCustom(false, { name: 'Artifact' })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, {
       type: 'EDIT_CUSTOM_ITEM',
       itemId: 'no-such',
-      name: 'Новое',
+      name: 'New',
     })
-    expect(character.inventory[0].name).toBe('Артефакт')
+    expect(character.inventory[0].name).toBe('Artifact')
     expect(changes).toEqual([])
   })
 })
 
 describe('applyCommand: ADD_CUSTOM_ITEM — consumable edge cases', () => {
-  it('consumable=true без quantity — quantity остаётся undefined', () => {
+  it('consumable=true without quantity — quantity stays undefined', () => {
     const { character } = applyCommand(makeCharacter(), {
       type: 'ADD_CUSTOM_ITEM',
-      name: 'Зелье',
+      name: 'Potion',
       consumable: true,
     })
     const item = character.inventory[0]
@@ -271,12 +271,12 @@ describe('applyCommand: ADD_CUSTOM_ITEM — consumable edge cases', () => {
   })
 })
 
-describe('applyCommand: RECEIVE_ITEM — не-стекающиеся кейсы', () => {
-  it('non-consumable с тем же templateId — создаётся отдельный предмет', () => {
+describe('applyCommand: RECEIVE_ITEM — non-stacking cases', () => {
+  it('non-consumable with the same templateId — a separate item is created', () => {
     const existing: InventoryItem = {
       id: 'sword-1',
       templateId: 'light_weapon',
-      name: 'Лёгкое оружие',
+      name: 'Light weapon',
       descriptor: { kind: 'weapon', melee: true },
       damage: 'd6',
     }
@@ -285,18 +285,18 @@ describe('applyCommand: RECEIVE_ITEM — не-стекающиеся кейсы'
       type: 'RECEIVE_ITEM',
       item: {
         templateId: 'light_weapon',
-        name: 'Лёгкое оружие',
+        name: 'Light weapon',
         descriptor: { kind: 'weapon', melee: true },
         damage: 'd6',
       },
     })
     expect(character.inventory).toHaveLength(2)
   })
-  it('consumable без templateId — создаётся новый предмет, не стекается', () => {
+  it('consumable without a templateId — a new item is created, nothing stacks', () => {
     const existing: InventoryItem = {
       id: 'rat-1',
       templateId: 'rations',
-      name: 'Дорожный паёк',
+      name: 'Rations',
       descriptor: { kind: 'gear', consumable: true },
       quantity: 1,
     }
@@ -304,7 +304,7 @@ describe('applyCommand: RECEIVE_ITEM — не-стекающиеся кейсы'
     const { character } = applyCommand(char, {
       type: 'RECEIVE_ITEM',
       item: {
-        name: 'Ягоды',
+        name: 'Berries',
         descriptor: { kind: 'gear', consumable: true },
         quantity: 2,
       },
@@ -314,25 +314,25 @@ describe('applyCommand: RECEIVE_ITEM — не-стекающиеся кейсы'
   })
 })
 
-describe('applyCommand: APPLY_DAMAGE / HEAL — отрицательный amount', () => {
-  it('APPLY_DAMAGE с отрицательным amount — no-op', () => {
+describe('applyCommand: APPLY_DAMAGE / HEAL — negative amount', () => {
+  it('APPLY_DAMAGE with a negative amount — no-op', () => {
     const char = makeCharacter({ currentHp: 3, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'APPLY_DAMAGE', amount: -2 })
     expect(character.currentHp).toBe(3)
     expect(changes).toEqual([])
   })
-  it('HEAL с отрицательным amount — no-op', () => {
+  it('HEAL with a negative amount — no-op', () => {
     const char = makeCharacter({ currentHp: 3, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'HEAL', amount: -2 })
     expect(character.currentHp).toBe(3)
     expect(changes).toEqual([])
   })
-  it('APPLY_DAMAGE не может увести HP выше maxHp (никогда не лечит)', () => {
+  it('APPLY_DAMAGE cannot push HP above maxHp (it never heals)', () => {
     const char = makeCharacter({ currentHp: 5, maxHp: 5 })
     const { character } = applyCommand(char, { type: 'APPLY_DAMAGE', amount: -10 })
     expect(character.currentHp).toBe(5)
   })
-  it('HEAL не может увести HP ниже 0 (никогда не ранит)', () => {
+  it('HEAL cannot push HP below 0 (it never wounds)', () => {
     const char = makeCharacter({ currentHp: 1, maxHp: 5 })
     const { character } = applyCommand(char, { type: 'HEAL', amount: -10 })
     expect(character.currentHp).toBe(1)
@@ -340,14 +340,14 @@ describe('applyCommand: APPLY_DAMAGE / HEAL — отрицательный amoun
 })
 
 describe('applyCommand: EQUIP_ITEM / UNEQUIP_ITEM', () => {
-  it('EQUIP помечает equipped:true', () => {
+  it('EQUIP marks equipped:true', () => {
     const item = makeWeapon({ equipped: false })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, { type: 'EQUIP_ITEM', itemId: item.id })
     expect(character.inventory[0].equipped).toBe(true)
     expect(changes[0].payload.kind).toBe('equip')
   })
-  it('UNEQUIP помечает equipped:false', () => {
+  it('UNEQUIP marks equipped:false', () => {
     const item = makeArmor('full', { equipped: true })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, { type: 'UNEQUIP_ITEM', itemId: item.id })
@@ -357,24 +357,24 @@ describe('applyCommand: EQUIP_ITEM / UNEQUIP_ITEM', () => {
 })
 
 describe('applyCommand: SET_COINS', () => {
-  it('меняет монеты и пишет дельту', () => {
+  it('changes coins and writes the delta', () => {
     const char = makeCharacter({ coins: 10 })
     const { character, changes } = applyCommand(char, { type: 'SET_COINS', amount: 25 })
     expect(character.coins).toBe(25)
     expect(changes[0].payload).toMatchObject({ kind: 'coins', before: 10, after: 25 })
   })
-  it('без изменения значения — без change', () => {
+  it('value unchanged — no change', () => {
     const char = makeCharacter({ coins: 10 })
     const { changes } = applyCommand(char, { type: 'SET_COINS', amount: 10 })
     expect(changes).toEqual([])
   })
-  it('отрицательный amount — clamp в 0', () => {
+  it('negative amount — clamps to 0', () => {
     const char = makeCharacter({ coins: 10 })
     const { character, changes } = applyCommand(char, { type: 'SET_COINS', amount: -5 })
     expect(character.coins).toBe(0)
     expect(changes[0].payload).toMatchObject({ kind: 'coins', before: 10, after: 0 })
   })
-  it('отрицательный amount при coins=0 — без change (clamp no-op)', () => {
+  it('negative amount at coins=0 — no change (clamp no-op)', () => {
     const char = makeCharacter({ coins: 0 })
     const { character, changes } = applyCommand(char, { type: 'SET_COINS', amount: -5 })
     expect(character.coins).toBe(0)
@@ -383,24 +383,24 @@ describe('applyCommand: SET_COINS', () => {
 })
 
 describe('applyCommand: APPLY_DAMAGE', () => {
-  it('обычный урон', () => {
+  it('plain damage', () => {
     const char = makeCharacter({ currentHp: 5, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'APPLY_DAMAGE', amount: 3 })
     expect(character.currentHp).toBe(2)
     expect(changes[0].payload).toMatchObject({ kind: 'hp-damage', amount: 3, hpBefore: 5, hpAfter: 2 })
   })
-  it('HP уже 0 — без change', () => {
+  it('HP already 0 — no change', () => {
     const char = makeCharacter({ currentHp: 0 })
     const { changes } = applyCommand(char, { type: 'APPLY_DAMAGE', amount: 3 })
     expect(changes).toEqual([])
   })
-  it('amount = 0 при живом HP — без change', () => {
+  it('amount = 0 on a living character — no change', () => {
     const char = makeCharacter({ currentHp: 5, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'APPLY_DAMAGE', amount: 0 })
     expect(character.currentHp).toBe(5)
     expect(changes).toEqual([])
   })
-  it('урон больше currentHp — clamp в 0, delta показывает фактический урон', () => {
+  it('damage above currentHp — clamps to 0, delta reports the damage actually taken', () => {
     const char = makeCharacter({ currentHp: 2, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'APPLY_DAMAGE', amount: 10 })
     expect(character.currentHp).toBe(0)
@@ -409,19 +409,19 @@ describe('applyCommand: APPLY_DAMAGE', () => {
 })
 
 describe('applyCommand: HEAL', () => {
-  it('обычное лечение', () => {
+  it('plain healing', () => {
     const char = makeCharacter({ currentHp: 1, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'HEAL', amount: 2 })
     expect(character.currentHp).toBe(3)
     expect(changes[0].payload).toMatchObject({ kind: 'hp-heal', amount: 2, before: 1, after: 3 })
   })
-  it('переполнение clamp\'ится в maxHp', () => {
+  it('overflow clamps to maxHp', () => {
     const char = makeCharacter({ currentHp: 4, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'HEAL', amount: 999 })
     expect(character.currentHp).toBe(5)
     expect(changes[0].payload).toMatchObject({ kind: 'hp-heal', before: 4, after: 5 })
   })
-  it('лечение при полном HP — без change', () => {
+  it('healing at full HP — no change', () => {
     const char = makeCharacter({ currentHp: 5, maxHp: 5 })
     const { character, changes } = applyCommand(char, { type: 'HEAL', amount: 3 })
     expect(character.currentHp).toBe(5)
@@ -430,32 +430,32 @@ describe('applyCommand: HEAL', () => {
 })
 
 describe('applyCommand: GAIN_XP', () => {
-  it('добавляет XP и пишет дельту', () => {
+  it('adds XP and writes the delta', () => {
     const char = makeCharacter({ xp: 100 })
     const { character, changes } = applyCommand(char, { type: 'GAIN_XP', amount: 50 })
     expect(character.xp).toBe(150)
     expect(changes[0].payload).toMatchObject({ kind: 'xp-gain', before: 100, after: 150 })
   })
-  it('отрицательная дельта — payload отражает before/after', () => {
+  it('negative delta — the payload reflects before/after', () => {
     const char = makeCharacter({ xp: 100 })
     const { character, changes } = applyCommand(char, { type: 'GAIN_XP', amount: -30 })
     expect(character.xp).toBe(70)
     expect(changes[0].payload).toMatchObject({ kind: 'xp-gain', before: 100, after: 70 })
   })
-  it('clamp в 0 при перерасходе, payload отражает фактическое after', () => {
+  it('clamps to 0 on overspend, the payload reflects the actual after value', () => {
     const char = makeCharacter({ xp: 10 })
     const { character, changes } = applyCommand(char, { type: 'GAIN_XP', amount: -999 })
     expect(character.xp).toBe(0)
     expect(changes[0].payload).toMatchObject({ kind: 'xp-gain', before: 10, after: 0 })
   })
-  it('amount = 0 — без change', () => {
+  it('amount = 0 — no change', () => {
     const { changes } = applyCommand(makeCharacter({ xp: 100 }), { type: 'GAIN_XP', amount: 0 })
     expect(changes).toEqual([])
   })
 })
 
 describe('applyCommand: LEVEL_UP', () => {
-  it('применяет patch и пишет change', () => {
+  it('applies the patch and writes a change', () => {
     const char = makeCharacter({ level: 1, maxHp: 6, currentHp: 6 })
     const patch: LevelUpPatch = {
       level: 2,
@@ -473,8 +473,8 @@ describe('applyCommand: LEVEL_UP', () => {
     expect(character.maxHp).toBe(10)
     expect(changes[0].payload).toMatchObject({ kind: 'level-up', before: 1, after: 2 })
   })
-  it('без patch.magic — существующая магия не затирается', () => {
-    const existingMagic: Magic = { spirits: [], rituals: [], cantrips: ['Старое'] }
+  it('no patch.magic — existing magic is not wiped', () => {
+    const existingMagic: Magic = { spirits: [], rituals: [], cantrips: ['Old'] }
     const char = makeCharacter({ level: 1, magic: existingMagic })
     const patch: LevelUpPatch = {
       level: 2,
@@ -490,9 +490,9 @@ describe('applyCommand: LEVEL_UP', () => {
     const { character } = applyCommand(char, { type: 'LEVEL_UP', patch })
     expect(character.magic).toEqual(existingMagic)
   })
-  it('с patch.magic — магия обновляется', () => {
+  it('with patch.magic — magic is updated', () => {
     const char = makeCharacter({ level: 1 })
-    const newMagic: Magic = { spirits: [], rituals: [], cantrips: ['Новое'] }
+    const newMagic: Magic = { spirits: [], rituals: [], cantrips: ['New'] }
     const patch: LevelUpPatch = {
       level: 2,
       maxHp: 10,
@@ -508,7 +508,7 @@ describe('applyCommand: LEVEL_UP', () => {
     const { character } = applyCommand(char, { type: 'LEVEL_UP', patch })
     expect(character.magic).toEqual(newMagic)
   })
-  it('patch полностью заменяет skillIds, abilityIds и damageBonusDice', () => {
+  it('the patch fully replaces skillIds, abilityIds and damageBonusDice', () => {
     const char = makeCharacter({
       level: 1,
       skillIds: ['athletics'],
@@ -536,8 +536,8 @@ describe('applyCommand: LEVEL_UP', () => {
 })
 
 describe('applyCommand: UPDATE_MAGIC', () => {
-  it('записывает новую магию', () => {
-    const magic: Magic = { spirits: [], rituals: [], cantrips: ['Свеча'] }
+  it('writes the new magic', () => {
+    const magic: Magic = { spirits: [], rituals: [], cantrips: ['Candle'] }
     const { character, changes } = applyCommand(makeCharacter(), { type: 'UPDATE_MAGIC', magic })
     expect(character.magic).toEqual(magic)
     expect(changes[0].payload.kind).toBe('magic')
@@ -545,7 +545,7 @@ describe('applyCommand: UPDATE_MAGIC', () => {
 })
 
 describe('applyCommand: UPDATE_STATS', () => {
-  it('пишет diff по изменённым статам', () => {
+  it('writes a diff for the stats that changed', () => {
     const char = makeCharacter()
     const { character, changes } = applyCommand(char, {
       type: 'UPDATE_STATS',
@@ -561,7 +561,7 @@ describe('applyCommand: UPDATE_STATS', () => {
       ]),
     )
   })
-  it('без изменений — без change', () => {
+  it('nothing changed — no change', () => {
     const char = makeCharacter()
     const { changes } = applyCommand(char, { type: 'UPDATE_STATS', stats: { ...char.stats } })
     expect(changes).toEqual([])
@@ -569,7 +569,7 @@ describe('applyCommand: UPDATE_STATS', () => {
 })
 
 describe('applyCommand: UPDATE_NOTES', () => {
-  it('обновляет notes без change', () => {
+  it('updates notes without writing a change', () => {
     const { character, changes } = applyCommand(makeCharacter(), {
       type: 'UPDATE_NOTES',
       notes: 'hi',
@@ -580,13 +580,13 @@ describe('applyCommand: UPDATE_NOTES', () => {
 })
 
 describe('applyCommand: RESET_QUICKSILVER', () => {
-  it('сбрасывает в 0 и пишет change если было > 0', () => {
+  it('resets to 0 and writes a change when it was > 0', () => {
     const char = makeCharacter({ quicksilverCount: 3 })
     const { character, changes } = applyCommand(char, { type: 'RESET_QUICKSILVER' })
     expect(character.quicksilverCount).toBe(0)
     expect(changes[0].payload).toMatchObject({ kind: 'quicksilver-reset', before: 3 })
   })
-  it('count === 0 — без change', () => {
+  it('count === 0 — no change', () => {
     const char = makeCharacter({ quicksilverCount: 0 })
     const { changes } = applyCommand(char, { type: 'RESET_QUICKSILVER' })
     expect(changes).toEqual([])
@@ -594,13 +594,13 @@ describe('applyCommand: RESET_QUICKSILVER', () => {
 })
 
 describe('applyCommand: FINALIZE_CHARACTER', () => {
-  it('меняет статус на active', () => {
-    const char = makeCharacter({ status: 'draft', name: 'Гном' })
+  it('switches the status to active', () => {
+    const char = makeCharacter({ status: 'draft', name: 'Dwarf' })
     const { character, changes } = applyCommand(char, { type: 'FINALIZE_CHARACTER' })
     expect(character.status).toBe('active')
-    expect(changes[0].payload).toMatchObject({ kind: 'create', characterName: 'Гном' })
+    expect(changes[0].payload).toMatchObject({ kind: 'create', characterName: 'Dwarf' })
   })
-  it('пустое имя → payload с прочерком', () => {
+  it('empty name → payload falls back to a dash', () => {
     const { changes } = applyCommand(makeCharacter({ status: 'draft', name: '' }), {
       type: 'FINALIZE_CHARACTER',
     })
@@ -608,8 +608,8 @@ describe('applyCommand: FINALIZE_CHARACTER', () => {
   })
 })
 
-describe('applyCommand: guards на несуществующий itemId', () => {
-  it('REMOVE_ITEM — без change, инвентарь не меняется', () => {
+describe('applyCommand: guards against an unknown itemId', () => {
+  it('REMOVE_ITEM — no change, inventory untouched', () => {
     const item = makeWeapon()
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, {
@@ -619,7 +619,7 @@ describe('applyCommand: guards на несуществующий itemId', () => 
     expect(character.inventory).toEqual([item])
     expect(changes).toEqual([])
   })
-  it('USE_ITEM — без change, инвентарь не меняется', () => {
+  it('USE_ITEM — no change, inventory untouched', () => {
     const item = makeCustom(true, { quantity: 2 })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, {
@@ -629,7 +629,7 @@ describe('applyCommand: guards на несуществующий itemId', () => 
     expect(character.inventory[0].quantity).toBe(2)
     expect(changes).toEqual([])
   })
-  it('EQUIP_ITEM — без change', () => {
+  it('EQUIP_ITEM — no change', () => {
     const item = makeWeapon({ equipped: false })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, {
@@ -639,7 +639,7 @@ describe('applyCommand: guards на несуществующий itemId', () => 
     expect(character.inventory[0].equipped).toBe(false)
     expect(changes).toEqual([])
   })
-  it('UNEQUIP_ITEM — без change', () => {
+  it('UNEQUIP_ITEM — no change', () => {
     const item = makeArmor('full', { equipped: true })
     const char = makeCharacter({ inventory: [item] })
     const { character, changes } = applyCommand(char, {
@@ -651,8 +651,8 @@ describe('applyCommand: guards на несуществующий itemId', () => 
   })
 })
 
-describe('applyCommand: BUY_ITEM — non-consumable не стекается', () => {
-  it('повторная покупка оружия → два отдельных предмета', () => {
+describe('applyCommand: BUY_ITEM — non-consumable does not stack', () => {
+  it('buying the same weapon twice → two separate items', () => {
     const char0 = makeCharacter({ coins: 100, inventory: [] })
     const r1 = applyCommand(char0, { type: 'BUY_ITEM', templateId: 'light_weapon' })
     const r2 = applyCommand(r1.character, { type: 'BUY_ITEM', templateId: 'light_weapon' })

@@ -12,18 +12,18 @@ export type GearTemplate = Omit<InventoryItem, 'id' | 'name' | 'notes'> & {
 }
 
 export const GEAR_CATALOG = [
-  // Оружие
+  // Weapons
   { templateId: 'light_weapon',  price: 10, descriptor: { kind: 'weapon', melee: true },  damage: '1d6',   category: 'weapon' },
   { templateId: 'battle_weapon', price: 30, descriptor: { kind: 'weapon', melee: true },  damage: '1d6+1', category: 'weapon' },
   { templateId: 'heavy_weapon',  price: 40, descriptor: { kind: 'weapon', melee: true },  damage: '1d6+2', category: 'weapon' },
   { templateId: 'short_bow',     price: 10, descriptor: { kind: 'weapon', melee: false }, damage: '1d6',   category: 'weapon' },
   { templateId: 'bow',           price: 30, descriptor: { kind: 'weapon', melee: false }, damage: '1d6+1', category: 'weapon' },
   { templateId: 'heavy_bow',     price: 50, descriptor: { kind: 'weapon', melee: false }, damage: '1d6+2', category: 'weapon' },
-  // Доспехи
+  // Armor
   { templateId: 'light_armor', price: 30, descriptor: { kind: 'armor', class: 'light' }, category: 'armor' },
   { templateId: 'full_armor',  price: 60, descriptor: { kind: 'armor', class: 'full' },  category: 'armor' },
   { templateId: 'shield',      price: 10, descriptor: { kind: 'shield' },                category: 'armor' },
-  // Походное (2с)
+  // Adventuring gear (2s)
   { templateId: 'rope',      price: 2, descriptor: { kind: 'gear' },                  category: 'gear' },
   { templateId: 'spike',     price: 2, descriptor: { kind: 'gear' },                  category: 'gear' },
   { templateId: 'chalk',     price: 2, descriptor: { kind: 'gear' },                  category: 'gear' },
@@ -37,7 +37,7 @@ export const GEAR_CATALOG = [
   { templateId: 'rations',   price: 2, descriptor: { kind: 'gear', consumable: true }, category: 'gear' },
   { templateId: 'waterskin', price: 2, descriptor: { kind: 'gear', consumable: true }, category: 'gear' },
   { templateId: 'wineskin',  price: 2, descriptor: { kind: 'gear', consumable: true }, category: 'gear' },
-  // Инструменты (5с)
+  // Tools (5s)
   { templateId: 'crowbar',    price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
   { templateId: 'hatchet',    price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
   { templateId: 'snare',      price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
@@ -48,13 +48,13 @@ export const GEAR_CATALOG = [
   { templateId: 'grapnel',    price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
   { templateId: 'pick',       price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
   { templateId: 'pole',       price: 5, descriptor: { kind: 'tool' }, category: 'tool' },
-  // Оккультные (10с)
+  // Occult (10s)
   { templateId: 'mercury',   price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult', useEffect: 'quicksilver' },
   { templateId: 'bonedust',  price: 10, descriptor: { kind: 'occult' },                   category: 'occult' },
   { templateId: 'holywater', price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult' },
   { templateId: 'bloodvial', price: 10, descriptor: { kind: 'occult', consumable: true }, category: 'occult' },
   { templateId: 'incense',   price: 10, descriptor: { kind: 'occult' },                   category: 'occult' },
-  // Редкие (20с)
+  // Rare (20s)
   { templateId: 'mirror',    price: 20, descriptor: { kind: 'gear' }, category: 'rare' },
   { templateId: 'lantern',   price: 20, descriptor: { kind: 'gear' }, category: 'rare' },
   { templateId: 'spyglass',  price: 20, descriptor: { kind: 'gear' }, category: 'rare' },
@@ -62,7 +62,7 @@ export const GEAR_CATALOG = [
   { templateId: 'boardgame', price: 20, descriptor: { kind: 'gear' }, category: 'rare' },
   { templateId: 'finery',    price: 20, descriptor: { kind: 'gear' }, category: 'rare' },
   { templateId: 'symbols',   price: 20, descriptor: { kind: 'gear' }, category: 'rare' },
-  // Огненное масло
+  // Fire oil
   { templateId: 'fireoil', price: 20, descriptor: { kind: 'gear', consumable: true }, category: 'fire' },
 ] as const satisfies readonly GearTemplate[]
 

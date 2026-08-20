@@ -6,7 +6,7 @@ function repeat(n: number, fn: (i: number) => void) {
 }
 
 describe('DiceEngine.rollNotation', () => {
-  it('2d6 — два куба d6, total = сумма', () => {
+  it('2d6 — two d6, total = sum', () => {
     repeat(50, () => {
       const { dice, total } = rollNotation('2d6')
       expect(dice).toHaveLength(2)
@@ -16,20 +16,20 @@ describe('DiceEngine.rollNotation', () => {
     })
   })
 
-  it('1d6 — один куб', () => {
+  it('1d6 — a single die', () => {
     const { dice, total } = rollNotation('1d6')
     expect(dice).toHaveLength(1)
     expect(dice[0].sides).toBe(6)
     expect(total).toBe(dice[0].value)
   })
 
-  it('d6 — без префикса трактуется как 1d6', () => {
+  it('d6 — no prefix is treated as 1d6', () => {
     const { dice } = rollNotation('d6')
     expect(dice).toHaveLength(1)
     expect(dice[0].sides).toBe(6)
   })
 
-  it('1d6+2d4 — две группы кубов разного размера, total без модификатора', () => {
+  it('1d6+2d4 — two groups of different die sizes, total excludes the modifier', () => {
     repeat(50, () => {
       const { dice, total } = rollNotation('1d6+2d4')
       expect(dice).toHaveLength(3)
@@ -47,7 +47,7 @@ describe('DiceEngine.rollNotation', () => {
     })
   })
 
-  it('2d6+3 — модификатор НЕ входит в total (total = только сумма кубов)', () => {
+  it('2d6+3 — the modifier is NOT part of total (total = dice sum only)', () => {
     repeat(50, () => {
       const { dice, total } = rollNotation('2d6+3')
       expect(dice).toHaveLength(2)
@@ -58,34 +58,34 @@ describe('DiceEngine.rollNotation', () => {
     })
   })
 
-  it('2d6-1 — отрицательный модификатор тоже игнорируется', () => {
+  it('2d6-1 — a negative modifier is ignored as well', () => {
     const { dice, total } = rollNotation('2d6-1')
     expect(dice).toHaveLength(2)
     expect(total).toBe(dice[0].value + dice[1].value)
   })
 
-  it('d20 — поддерживает d20', () => {
+  it('d20 — d20 is supported', () => {
     const { dice } = rollNotation('d20')
     expect(dice[0].sides).toBe(20)
     expect(dice[0].value).toBeGreaterThanOrEqual(1)
     expect(dice[0].value).toBeLessThanOrEqual(20)
   })
 
-  it('4d6 — четыре куба', () => {
+  it('4d6 — four dice', () => {
     const { dice } = rollNotation('4d6')
     expect(dice).toHaveLength(4)
     expect(dice.every(d => d.sides === 6)).toBe(true)
   })
 
-  it('бросает на неподдерживаемом размере куба', () => {
+  it('throws on an unsupported die size', () => {
     expect(() => rollNotation('1d7')).toThrow(/unsupported die size/)
   })
 
-  it('бросает на пустой нотации', () => {
+  it('throws on empty notation', () => {
     expect(() => rollNotation('5')).toThrow(/no dice terms/)
   })
 
-  it('сохраняет порядок: dice[i] из i-й dice-группы нотации', () => {
+  it('preserves order: dice[i] comes from the i-th dice group of the notation', () => {
     repeat(20, () => {
       const { dice } = rollNotation('1d20+2d4+1d6')
       expect(dice).toHaveLength(4)

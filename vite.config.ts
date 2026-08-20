@@ -80,5 +80,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    // tests/e2e/ holds a Playwright scaffold that vitest cannot run.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 })

@@ -103,7 +103,7 @@ export function statBonusFrom2d6(roll: number): number {
   return 3
 }
 
-/** Бросает N d6, возвращает отсортированный массив (убывание) и top `level` значений. */
+/** Rolls N d6; returns the rolls sorted descending plus the top `level` of them. */
 export function rollHitDice(numDice: number, level: number): { rolls: number[]; kept: number[]; total: number } {
   const rolls = Array.from({ length: numDice }, () => rollD6()).sort((a, b) => b - a)
   const kept = rolls.slice(0, level)

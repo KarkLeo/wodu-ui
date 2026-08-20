@@ -1,12 +1,12 @@
 /*
  * /BREAKPOINTS-ANCHOR/
- * Адаптивные точки разрыва. JS-источник истины: src/composables/breakpoints.ts
- * (BP_MOBILE_MAX = 719 — телефон; BP_TABLET_MAX = 960 — планшет/узкий ландшафт).
+ * Responsive breakpoints. JS source of truth: src/composables/breakpoints.ts
+ * (BP_MOBILE_MAX = 719 — phone; BP_TABLET_MAX = 960 — tablet / narrow landscape).
  *
- * @media (max-width: 719px)  — мобильный (синхронизировано с useIsMobile)
- * @media (max-width: 960px)  — планшет / fab-режим
+ * @media (max-width: 719px)  — mobile (kept in sync with useIsMobile)
+ * @media (max-width: 960px)  — tablet / fab mode
  *
- * Места использования (если меняешь — обнови все):
+ * Used in (when changing a value, update every one of them):
  *   - src/composables/useIsMobile.ts
  *   - src/components/AppShell.vue
  *   - src/components/DiceDrawer.vue
@@ -125,7 +125,7 @@ html, body, #app {
 }
 
 /* ============================================================
-   Utility classes (портируются 1:1 из палитры дизайн-системы)
+   Utility classes (ported 1:1 from the design-system palette)
    ============================================================ */
 
 .eyebrow {
@@ -148,7 +148,7 @@ body {
 }
 
 /* ============================================================
-   Keyframes — низкоуровневые, переиспользуются компонентами
+   Keyframes — low-level, shared across components
    ============================================================ */
 
 @keyframes tab-dot-pulse {

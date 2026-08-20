@@ -12,7 +12,7 @@ export function makeCharacter(overrides: Partial<Character> = {}): Character {
     id: 'char-1',
     createdAt: 0,
     status: 'active',
-    name: 'Тестовый',
+    name: 'Test',
     classId: 'fighter',
     level: 1,
     xp: 0,
@@ -59,7 +59,7 @@ export function makeWeapon(
   const { melee = true, ...rest } = overrides
   return makeItem(
     { kind: 'weapon', melee } as ItemDescriptor,
-    { name: melee ? 'Меч' : 'Лук', damage: 'd6', ...rest },
+    { name: melee ? 'Sword' : 'Bow', damage: 'd6', ...rest },
   )
 }
 
@@ -69,12 +69,12 @@ export function makeArmor(
 ): InventoryItem {
   return makeItem(
     { kind: 'armor', class: klass },
-    { name: klass === 'full' ? 'Полный доспех' : 'Лёгкий доспех', equipped: true, ...overrides },
+    { name: klass === 'full' ? 'Full armor' : 'Light armor', equipped: true, ...overrides },
   )
 }
 
 export function makeShield(overrides: Partial<InventoryItem> = {}): InventoryItem {
-  return makeItem({ kind: 'shield' }, { name: 'Щит', equipped: true, ...overrides })
+  return makeItem({ kind: 'shield' }, { name: 'Shield', equipped: true, ...overrides })
 }
 
 export function makeGear(
@@ -83,7 +83,7 @@ export function makeGear(
 ): InventoryItem {
   return makeItem(
     { kind: 'gear', consumable } as ItemDescriptor,
-    { name: 'Снаряжение', ...overrides },
+    { name: 'Gear', ...overrides },
   )
 }
 
@@ -93,6 +93,6 @@ export function makeCustom(
 ): InventoryItem {
   return makeItem(
     { kind: 'custom', consumable } as ItemDescriptor,
-    { name: 'Свой предмет', ...overrides },
+    { name: 'Custom item', ...overrides },
   )
 }

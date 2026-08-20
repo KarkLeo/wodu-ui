@@ -22,7 +22,9 @@ import IconStar from '@/components/ui/icons/IconStar.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconLock from '@/components/ui/icons/IconLock.vue'
 
-// Локальные inline-иконки (меч, монета) — пока не добавлены в библиотеку
+import { createLogger } from '@/utils/logger'
+
+// Local inline icons (sword, coin) — not part of the icon library yet
 const statStr = ref(1)
 const editingStr = ref(false)
 
@@ -41,9 +43,7 @@ const xpCurrent = ref(28)
 const xpReady = ref(36)
 const xpCap = ref(100)
 
-function log(msg: string, ...args: unknown[]) {
-  console.log(`[preview] ${msg}`, ...args)
-}
+const log = createLogger('preview').debug
 </script>
 
 <template>
@@ -52,8 +52,8 @@ function log(msg: string, ...args: unknown[]) {
       <p class="eyebrow">Step 3 · dev preview</p>
       <h1 class="preview-title">UI Primitives</h1>
       <p class="preview-lead">
-        Превью всех атомов VTT-дизайна. Маршрут <code>/_preview</code> — временный,
-        удаляется в шаге 13 (Cleanup).
+        Preview of every VTT design atom. The <code>/_preview</code> route is temporary
+        and gets removed in step 13 (Cleanup).
       </p>
     </header>
 
@@ -62,31 +62,31 @@ function log(msg: string, ...args: unknown[]) {
       <h2 class="section-title">StatChip</h2>
 
       <div class="stage">
-        <p class="stage-title">Варианты</p>
+        <p class="stage-title">Variants</p>
         <div class="row">
-          <StatChip label="СИЛ" :value="1" dice="2d6" state="positive" />
-          <StatChip label="ЛОВ" :value="0" dice="2d6" state="zero" />
-          <StatChip label="ТЕЛ" :value="3" dice="2d6" state="high" />
-          <StatChip label="ИНТ" :value="2" dice="2d6" variant="row" />
-          <StatChip label="МУД" :value="1" variant="hero" roll-hint="Бросить" />
-          <StatChip label="ХАР" :value="0" variant="minimal" />
+          <StatChip label="STR" :value="1" dice="2d6" state="positive" />
+          <StatChip label="DEX" :value="0" dice="2d6" state="zero" />
+          <StatChip label="CON" :value="3" dice="2d6" state="high" />
+          <StatChip label="INT" :value="2" dice="2d6" variant="row" />
+          <StatChip label="WIS" :value="1" variant="hero" roll-hint="Roll" />
+          <StatChip label="CHA" :value="0" variant="minimal" />
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">Размеры</p>
+        <p class="stage-title">Sizes</p>
         <div class="row">
-          <StatChip label="СИЛ" :value="1" size="sm" />
-          <StatChip label="СИЛ" :value="1" size="base" dice="2d6" />
-          <StatChip label="СИЛ" :value="1" size="lg" dice="2d6" />
+          <StatChip label="STR" :value="1" size="sm" />
+          <StatChip label="STR" :value="1" size="base" dice="2d6" />
+          <StatChip label="STR" :value="1" size="lg" dice="2d6" />
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">С модификатором</p>
+        <p class="stage-title">With modifier</p>
         <div class="row">
-          <StatChip label="ТЕЛ" :value="3" :mod="2" :base="1" dice="2d6" />
-          <StatChip label="ЛОВ" :value="-1" :mod="-2" :base="1" dice="2d6" />
+          <StatChip label="CON" :value="3" :mod="2" :base="1" dice="2d6" />
+          <StatChip label="DEX" :value="-1" :mod="-2" :base="1" dice="2d6" />
         </div>
       </div>
 
@@ -94,24 +94,24 @@ function log(msg: string, ...args: unknown[]) {
         <p class="stage-title">Editing mode</p>
         <div class="row">
           <StatChip
-            label="СИЛ"
+            label="STR"
             v-model:value="statStr"
             :editing="editingStr"
             editable
             @toggle-edit="editingStr = !editingStr"
           />
           <Button variant="ghost" size="sm" @click="editingStr = !editingStr">
-            {{ editingStr ? 'Закрыть' : 'Редактировать' }}
+            {{ editingStr ? 'Close' : 'Edit' }}
           </Button>
-          <span class="value-hint">значение: {{ statStr }}</span>
+          <span class="value-hint">value: {{ statStr }}</span>
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">С popover-ом (тапни)</p>
+        <p class="stage-title">With popover (tap)</p>
         <div class="row">
           <StatChip
-            label="СИЛ"
+            label="STR"
             :value="1"
             dice="2d6"
             has-popover
@@ -119,27 +119,27 @@ function log(msg: string, ...args: unknown[]) {
           >
             <template #popover>
               <div class="pop-head">
-                <span class="pop-title">Сила</span>
+                <span class="pop-title">Strength</span>
                 <span class="pop-sub">2d6 + 1</span>
               </div>
               <button type="button" class="pop-hero" @click="log('roll 2d6+1')">
-                Бросить 2d6 + 1
+                Roll 2d6 + 1
               </button>
               <div class="pop-divider" />
               <div class="pop-section-head">
-                <span class="pop-sub">Эффекты</span>
+                <span class="pop-sub">Effects</span>
               </div>
               <div class="pop-effect">
                 <span class="pop-effect-delta is-buff">+1</span>
                 <div class="pop-effect-name">
-                  Зелье силы
-                  <span class="pop-effect-meta">2 хода</span>
+                  Potion of strength
+                  <span class="pop-effect-meta">2 turns</span>
                 </div>
-                <button type="button" class="pop-effect-remove" aria-label="Убрать">×</button>
+                <button type="button" class="pop-effect-remove" aria-label="Remove">×</button>
               </div>
               <div class="pop-actions">
-                <button type="button" class="pop-btn" @click="log('add effect')">+ эффект</button>
-                <button type="button" class="pop-btn" @click="log('edit base')">Поправить базу</button>
+                <button type="button" class="pop-btn" @click="log('add effect')">+ effect</button>
+                <button type="button" class="pop-btn" @click="log('edit base')">Fix base</button>
               </div>
             </template>
           </StatChip>
@@ -154,113 +154,113 @@ function log(msg: string, ...args: unknown[]) {
       <div class="stage">
         <p class="stage-title">Kinds</p>
         <div class="row">
-          <StatusChip kind="damage" label="Урон" value="d6" meta="оружие">
+          <StatusChip kind="damage" label="Damage" value="d6" meta="weapon">
             <template #symbol>
               <svg viewBox="0 0 24 24"><path d="M3 21l7-7M10 14l4-4m-4 4l-3-3m13-8l3 3-9 9-3-3z"/></svg>
             </template>
           </StatusChip>
-          <StatusChip kind="armor" label="Броня" value="3" meta="полный + щит">
+          <StatusChip kind="armor" label="Armor" value="3" meta="full + shield">
             <template #symbol>
               <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3 8-8 10-5-2-8-5.5-8-10V6l8-3z"/></svg>
             </template>
           </StatusChip>
-          <StatusChip kind="coin" label="Монеты" value="450" meta="кошелёк">
+          <StatusChip kind="coin" label="Coins" value="450" meta="purse">
             <template #symbol>
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9 10h6M9 14h6"/></svg>
             </template>
           </StatusChip>
-          <StatusChip kind="dim" label="Урон" value="—" meta="нет оружия" />
+          <StatusChip kind="dim" label="Damage" value="—" meta="no weapon" />
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">Размеры</p>
+        <p class="stage-title">Sizes</p>
         <div class="row">
-          <StatusChip kind="damage" label="Урон" value="d6" size="sm" />
-          <StatusChip kind="damage" label="Урон" value="d6" meta="оружие" />
-          <StatusChip kind="damage" label="Урон" value="d6+1" meta="оружие + сила" size="lg" />
+          <StatusChip kind="damage" label="Damage" value="d6" size="sm" />
+          <StatusChip kind="damage" label="Damage" value="d6" meta="weapon" />
+          <StatusChip kind="damage" label="Damage" value="d6+1" meta="weapon + strength" size="lg" />
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">С модификатором</p>
+        <p class="stage-title">With modifier</p>
         <div class="row">
-          <StatusChip kind="damage" label="Урон" value="d6" mod="+d2" meta="оружие" />
-          <StatusChip kind="armor" label="Броня" value="2" mod="−1" meta="без щита" />
+          <StatusChip kind="damage" label="Damage" value="d6" mod="+d2" meta="weapon" />
+          <StatusChip kind="armor" label="Armor" value="2" mod="−1" meta="no shield" />
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">Trio (в рамке)</p>
+        <p class="stage-title">Trio (framed)</p>
         <StatusChipTrio>
-          <StatusChip kind="damage" label="Урон" value="d6+1" has-popover>
+          <StatusChip kind="damage" label="Damage" value="d6+1" has-popover>
             <template #symbol>
               <svg viewBox="0 0 24 24"><path d="M3 21l7-7M10 14l4-4m-4 4l-3-3m13-8l3 3-9 9-3-3z"/></svg>
             </template>
             <template #popover>
               <div class="pop-head">
-                <span class="pop-title">Урон</span>
+                <span class="pop-title">Damage</span>
                 <span class="pop-sub">breakdown</span>
               </div>
               <div class="breakdown">
                 <div class="breakdown-row">
                   <div>
-                    <div class="br-name">Меч</div>
-                    <div class="br-source">оружие</div>
+                    <div class="br-name">Sword</div>
+                    <div class="br-source">weapon</div>
                   </div>
                   <div class="br-value">d6</div>
                 </div>
                 <div class="breakdown-row">
                   <div>
-                    <div class="br-name">Сила</div>
-                    <div class="br-source">атрибут</div>
+                    <div class="br-name">Strength</div>
+                    <div class="br-source">stat</div>
                   </div>
                   <div class="br-value is-buff">+1</div>
                 </div>
               </div>
               <div class="breakdown-total">
-                <span class="bt-label">Итого</span>
+                <span class="bt-label">Total</span>
                 <span class="bt-value">d6+1</span>
               </div>
               <button type="button" class="pop-hero-roll" @click="log('roll damage')">
-                Бросить d6+1
+                Roll d6+1
               </button>
             </template>
           </StatusChip>
-          <StatusChip kind="armor" label="Броня" value="3" has-popover>
+          <StatusChip kind="armor" label="Armor" value="3" has-popover>
             <template #symbol>
               <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3 8-8 10-5-2-8-5.5-8-10V6l8-3z"/></svg>
             </template>
             <template #popover>
               <div class="pop-head">
-                <span class="pop-title">Броня</span>
+                <span class="pop-title">Armor</span>
               </div>
               <div class="breakdown">
                 <div class="breakdown-row">
-                  <div><div class="br-name">Полный доспех</div></div>
+                  <div><div class="br-name">Full armor</div></div>
                   <div class="br-value">+2</div>
                 </div>
                 <div class="breakdown-row">
-                  <div><div class="br-name">Щит</div></div>
+                  <div><div class="br-name">Shield</div></div>
                   <div class="br-value">+1</div>
                 </div>
               </div>
               <div class="breakdown-total">
-                <span class="bt-label">Итого</span>
+                <span class="bt-label">Total</span>
                 <span class="bt-value">3</span>
               </div>
             </template>
           </StatusChip>
-          <StatusChip kind="coin" label="Монеты" value="450" />
+          <StatusChip kind="coin" label="Coins" value="450" />
         </StatusChipTrio>
       </div>
 
       <div class="stage">
         <p class="stage-title">Trio (no-frame)</p>
         <StatusChipTrio no-frame>
-          <StatusChip kind="damage" label="Урон" value="d6" size="sm" />
-          <StatusChip kind="armor" label="Броня" value="3" size="sm" />
-          <StatusChip kind="coin" label="Монеты" value="450" size="sm" />
+          <StatusChip kind="damage" label="Damage" value="d6" size="sm" />
+          <StatusChip kind="armor" label="Armor" value="3" size="sm" />
+          <StatusChip kind="coin" label="Coins" value="450" size="sm" />
         </StatusChipTrio>
       </div>
     </section>
@@ -270,18 +270,18 @@ function log(msg: string, ...args: unknown[]) {
       <h2 class="section-title">HpBar</h2>
 
       <div class="stage">
-        <p class="stage-title">Состояния</p>
+        <p class="stage-title">States</p>
         <div class="stack">
           <HpBar :current="8" :max="8" @apply-damage="(v) => log('damage', v)" @heal="(v) => log('heal', v)" />
-          <HpBar :current="6" :max="8" :temp="2" :effects="[{ label: 'Благословение', kind: 'hot', meta: '+1/ход' }]" />
-          <HpBar :current="4" :max="8" :effects="[{ label: 'Яд', kind: 'dot', meta: '−1/ход' }, { label: 'Ослаблен', kind: 'warn' }]" />
+          <HpBar :current="6" :max="8" :temp="2" :effects="[{ label: 'Blessing', kind: 'hot', meta: '+1/turn' }]" />
+          <HpBar :current="4" :max="8" :effects="[{ label: 'Poison', kind: 'dot', meta: '−1/turn' }, { label: 'Weakened', kind: 'warn' }]" />
           <HpBar :current="2" :max="8" />
           <HpBar :current="0" :max="8" />
         </div>
       </div>
 
       <div class="stage">
-        <p class="stage-title">Размеры</p>
+        <p class="stage-title">Sizes</p>
         <div class="stack">
           <HpBar :current="5" :max="8" size="sm" />
           <HpBar :current="5" :max="8" size="base" />
@@ -294,18 +294,18 @@ function log(msg: string, ...args: unknown[]) {
     <section class="section">
       <h2 class="section-title">XpBar</h2>
       <div class="stage">
-        <p class="stage-title">Состояния</p>
+        <p class="stage-title">States</p>
         <div class="stack">
-          <XpBar v-model:current="xpCurrent" :max="50" hint="до ур. 2 · 22" @level-up="log('levelUp')" />
-          <XpBar :current="45" :max="50" hint="почти!" />
+          <XpBar v-model:current="xpCurrent" :max="50" hint="to lvl 2 · 22" @level-up="log('levelUp')" />
+          <XpBar :current="45" :max="50" hint="almost!" />
           <XpBar
             v-model:current="xpReady"
             :max="36"
             is-ready
-            hint="готов!"
+            hint="ready!"
             @level-up="log('levelUp ready')"
           />
-          <XpBar :current="xpCap" :max="100" is-cap hint="макс. ур." />
+          <XpBar :current="xpCap" :max="100" is-cap hint="max lvl" />
         </div>
       </div>
     </section>
@@ -315,31 +315,31 @@ function log(msg: string, ...args: unknown[]) {
       <h2 class="section-title">SkillChip</h2>
 
       <div class="stage">
-        <p class="stage-title">Состояния (display)</p>
+        <p class="stage-title">States (display)</p>
         <div class="row wrap">
-          <SkillChip label="Атлетика" />
-          <SkillChip label="Скрытность" state="auto" :icon="IconLock" />
-          <SkillChip label="Воровство" state="selected" />
-          <SkillChip label="Навигация" state="locked" />
-          <SkillChip label="Ещё" mode="add" :icon="IconPlus" />
+          <SkillChip label="Athletics" />
+          <SkillChip label="Stealth" state="auto" :icon="IconLock" />
+          <SkillChip label="Thievery" state="selected" />
+          <SkillChip label="Navigation" state="locked" />
+          <SkillChip label="More" mode="add" :icon="IconPlus" />
         </div>
       </div>
 
       <div class="stage">
         <p class="stage-title">Picker multi</p>
         <div class="row wrap">
-          <SkillChip label="Магия огня" mode="pick-multi" :state="skill1" @toggle="skill1 = skill1 === 'selected' ? 'default' : 'selected'" />
-          <SkillChip label="Магия тени" mode="pick-multi" :state="skill2" @toggle="skill2 = skill2 === 'selected' ? 'default' : 'selected'" />
-          <SkillChip label="Магия тайны" mode="pick-multi" />
+          <SkillChip label="Fire magic" mode="pick-multi" :state="skill1" @toggle="skill1 = skill1 === 'selected' ? 'default' : 'selected'" />
+          <SkillChip label="Shadow magic" mode="pick-multi" :state="skill2" @toggle="skill2 = skill2 === 'selected' ? 'default' : 'selected'" />
+          <SkillChip label="Arcane magic" mode="pick-multi" />
         </div>
       </div>
 
       <div class="stage">
         <p class="stage-title">Picker single</p>
         <div class="row wrap">
-          <SkillChip label="Меч" mode="pick-single" state="selected" />
-          <SkillChip label="Секира" mode="pick-single" />
-          <SkillChip label="Копьё" mode="pick-single" />
+          <SkillChip label="Sword" mode="pick-single" state="selected" />
+          <SkillChip label="Axe" mode="pick-single" />
+          <SkillChip label="Spear" mode="pick-single" />
         </div>
       </div>
     </section>
@@ -351,20 +351,20 @@ function log(msg: string, ...args: unknown[]) {
       <div class="stage">
         <p class="stage-title">Default (display)</p>
         <div class="stack narrow">
-          <AbilityCard title="Боевой стиль" level="ур. 1">
-            <p class="ability-body-text">Выбери стиль боя: двуручный, щит+оружие или стрельба.</p>
+          <AbilityCard title="Fighting style" level="lvl 1">
+            <p class="ability-body-text">Pick a fighting style: two-handed, shield + weapon, or ranged.</p>
             <template #actions>
-              <button type="button" class="ability-btn is-hero">Бросить</button>
-              <button type="button" class="ability-btn">Редактировать</button>
+              <button type="button" class="ability-btn is-hero">Roll</button>
+              <button type="button" class="ability-btn">Edit</button>
             </template>
           </AbilityCard>
 
-          <AbilityCard title="Вторая атака" level="ур. 3" :state="'selected'">
-            <p class="ability-body-text">После удачной атаки в бою можешь атаковать снова.</p>
+          <AbilityCard title="Second attack" level="lvl 3" :state="'selected'">
+            <p class="ability-body-text">After a successful attack in combat you may attack again.</p>
           </AbilityCard>
 
-          <AbilityCard title="Аура защиты" level="ур. 5" :state="'locked'">
-            <p class="ability-body-text">Недоступно на этом уровне.</p>
+          <AbilityCard title="Aura of protection" level="lvl 5" :state="'locked'">
+            <p class="ability-body-text">Not available at this level.</p>
           </AbilityCard>
         </div>
       </div>
@@ -373,16 +373,16 @@ function log(msg: string, ...args: unknown[]) {
         <p class="stage-title">Picker single</p>
         <div class="stack narrow">
           <AbilityCard
-            title="Удар молнии"
+            title="Lightning strike"
             level="0"
             mode="pick-single"
             :state="abilitySelected ? 'selected' : 'default'"
             @toggle="abilitySelected = !abilitySelected"
           >
-            <p class="ability-body-text">Один раз за бой — +d6 к урону следующей атаки.</p>
+            <p class="ability-body-text">Once per fight — +d6 damage on the next attack.</p>
           </AbilityCard>
-          <AbilityCard title="Щитостойкость" level="0" mode="pick-single">
-            <p class="ability-body-text">Пока есть щит — броня +1.</p>
+          <AbilityCard title="Shield stance" level="0" mode="pick-single">
+            <p class="ability-body-text">While a shield is held — armor +1.</p>
           </AbilityCard>
         </div>
       </div>
@@ -390,11 +390,11 @@ function log(msg: string, ...args: unknown[]) {
       <div class="stage">
         <p class="stage-title">Variant reference</p>
         <div class="stack narrow">
-          <AbilityCard variant="reference" title="Скрытность">
-            <p class="ability-body-text">Короткая выдержка из справочника.</p>
+          <AbilityCard variant="reference" title="Stealth">
+            <p class="ability-body-text">A short excerpt from the reference.</p>
           </AbilityCard>
-          <AbilityCard variant="reference" title="Воровство">
-            <p class="ability-body-text">Ещё одна запись в режиме reference.</p>
+          <AbilityCard variant="reference" title="Thievery">
+            <p class="ability-body-text">Another entry in reference mode.</p>
           </AbilityCard>
         </div>
       </div>
@@ -404,17 +404,17 @@ function log(msg: string, ...args: unknown[]) {
     <section class="section">
       <h2 class="section-title">Button</h2>
       <div class="stage">
-        <p class="stage-title">Варианты</p>
+        <p class="stage-title">Variants</p>
         <div class="row wrap">
           <Button variant="primary">Primary</Button>
           <Button variant="hero">Hero</Button>
           <Button variant="ghost">Ghost</Button>
-          <Button variant="danger-ghost" :icon-left="IconPlus">Удалить</Button>
-          <Button variant="icon" :icon-left="IconPlus" aria-label="Добавить" />
+          <Button variant="danger-ghost" :icon-left="IconPlus">Delete</Button>
+          <Button variant="icon" :icon-left="IconPlus" aria-label="Add" />
         </div>
       </div>
       <div class="stage">
-        <p class="stage-title">Размеры</p>
+        <p class="stage-title">Sizes</p>
         <div class="row">
           <Button variant="primary" size="sm">Small</Button>
           <Button variant="primary" size="base">Base</Button>
@@ -422,11 +422,11 @@ function log(msg: string, ...args: unknown[]) {
         </div>
       </div>
       <div class="stage">
-        <p class="stage-title">С иконками</p>
+        <p class="stage-title">With icons</p>
         <div class="row">
-          <Button variant="hero" :icon-left="IconDice">Бросить</Button>
-          <Button variant="ghost" :icon-left="IconHeart">Лечить</Button>
-          <Button variant="primary" :icon-right="IconStar">Избранное</Button>
+          <Button variant="hero" :icon-left="IconDice">Roll</Button>
+          <Button variant="ghost" :icon-left="IconHeart">Heal</Button>
+          <Button variant="primary" :icon-right="IconStar">Favorite</Button>
         </div>
       </div>
     </section>
@@ -435,10 +435,10 @@ function log(msg: string, ...args: unknown[]) {
     <section class="section">
       <h2 class="section-title">Stepper</h2>
       <div class="stage">
-        <p class="stage-title">Базовый (min=0, max=20)</p>
+        <p class="stage-title">Basic (min=0, max=20)</p>
         <div class="row">
           <Stepper v-model="stepperValue" :min="0" :max="20" />
-          <span class="value-hint">значение: {{ stepperValue }}</span>
+          <span class="value-hint">value: {{ stepperValue }}</span>
         </div>
       </div>
       <div class="stage">
@@ -456,12 +456,12 @@ function log(msg: string, ...args: unknown[]) {
         <SegmentedFilter
           v-model="filterValue"
           :options="[
-            { value: 'all', label: 'Все' },
-            { value: 'weapon', label: 'Оружие' },
-            { value: 'armor', label: 'Броня' },
+            { value: 'all', label: 'All' },
+            { value: 'weapon', label: 'Weapons' },
+            { value: 'armor', label: 'Armor' },
           ]"
         />
-        <p class="value-hint">выбрано: {{ filterValue }}</p>
+        <p class="value-hint">selected: {{ filterValue }}</p>
       </div>
     </section>
 
@@ -469,29 +469,29 @@ function log(msg: string, ...args: unknown[]) {
     <section class="section">
       <h2 class="section-title">BottomSheet</h2>
       <div class="stage">
-        <Button variant="hero" @click="bottomOpen = true">Открыть каталог</Button>
+        <Button variant="hero" @click="bottomOpen = true">Open catalog</Button>
       </div>
-      <BottomSheet v-model:open="bottomOpen" title="Каталог — заглушка">
+      <BottomSheet v-model:open="bottomOpen" title="Catalog — placeholder">
         <div class="sheet-search">
-          <input class="sheet-search-input" type="text" placeholder="Поиск: меч, доспех, бинт…" />
+          <input class="sheet-search-input" type="text" placeholder="Search: sword, armor, bandage…" />
         </div>
         <SegmentedFilter
           v-model="filterValue"
           :options="[
-            { value: 'all', label: 'Все' },
-            { value: 'weapon', label: 'Оружие' },
-            { value: 'armor', label: 'Броня' },
+            { value: 'all', label: 'All' },
+            { value: 'weapon', label: 'Weapons' },
+            { value: 'armor', label: 'Armor' },
           ]"
         />
         <ul class="sheet-list">
           <li v-for="n in 6" :key="n" class="sheet-item">
-            <span class="sheet-item-name">Предмет №{{ n }}</span>
-            <span class="sheet-item-price">{{ n * 25 }} мон.</span>
+            <span class="sheet-item-name">Item #{{ n }}</span>
+            <span class="sheet-item-price">{{ n * 25 }} c.</span>
           </li>
         </ul>
         <template #footer>
-          <Button variant="ghost" @click="bottomOpen = false">Закрыть</Button>
-          <Button variant="hero">Купить выбранное</Button>
+          <Button variant="ghost" @click="bottomOpen = false">Close</Button>
+          <Button variant="hero">Buy selected</Button>
         </template>
       </BottomSheet>
     </section>
@@ -504,10 +504,10 @@ function log(msg: string, ...args: unknown[]) {
         <TabBar
           v-model="tabTop"
           :tabs="[
-            { value: 'main', label: 'Основное' },
-            { value: 'inv', label: 'Инвентарь', badge: 12 },
-            { value: 'magic', label: 'Магия', icon: IconFlask, dot: 'accent' },
-            { value: 'notes', label: 'Заметки' },
+            { value: 'main', label: 'Main' },
+            { value: 'inv', label: 'Inventory', badge: 12 },
+            { value: 'magic', label: 'Magic', icon: IconFlask, dot: 'accent' },
+            { value: 'notes', label: 'Notes' },
             { value: 'locked', label: 'Level up', disabled: true },
           ]"
         />
@@ -519,10 +519,10 @@ function log(msg: string, ...args: unknown[]) {
             v-model="tabBottom"
             variant="bottom"
             :tabs="[
-              { value: 'main', label: 'Основное', icon: IconStar },
-              { value: 'inv', label: 'Инвентарь', icon: IconBag, badge: 3 },
-              { value: 'magic', label: 'Магия', icon: IconFlask, dot: 'accent' },
-              { value: 'notes', label: 'Заметки', icon: IconHeart, dot: 'danger' },
+              { value: 'main', label: 'Main', icon: IconStar },
+              { value: 'inv', label: 'Inventory', icon: IconBag, badge: 3 },
+              { value: 'magic', label: 'Magic', icon: IconFlask, dot: 'accent' },
+              { value: 'notes', label: 'Notes', icon: IconHeart, dot: 'danger' },
             ]"
           />
         </div>
@@ -530,7 +530,7 @@ function log(msg: string, ...args: unknown[]) {
     </section>
 
     <footer class="preview-foot">
-      <p>Dev-only preview. Удаляется в шаге 13 Cleanup.</p>
+      <p>Dev-only preview. Removed in step 13, Cleanup.</p>
     </footer>
   </div>
 </template>

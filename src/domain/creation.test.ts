@@ -3,7 +3,7 @@ import { setStatRollsBatch } from './creation'
 import { makeCharacter } from '@/test/fixtures'
 
 describe('setStatRollsBatch', () => {
-  it('применяет все шесть статов одним вызовом', () => {
+  it('applies all six stats in a single call', () => {
     const char = makeCharacter()
     const next = setStatRollsBatch(char, [
       { key: 'str', roll: 10, bonus: 2 },
@@ -18,7 +18,7 @@ describe('setStatRollsBatch', () => {
     expect(next).not.toBe(char)
   })
 
-  it('частичный батч обновляет только указанные ключи', () => {
+  it('a partial batch updates only the listed keys', () => {
     const char = makeCharacter({
       statRolls: { str: 5, dex: 5, con: 5, int: 5, wis: 5, cha: 5 },
       stats:     { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
@@ -38,7 +38,7 @@ describe('setStatRollsBatch', () => {
     expect(next.stats.dex).toBe(0)
   })
 
-  it('пустой батч возвращает новый объект без изменений', () => {
+  it('an empty batch returns a new object with no changes', () => {
     const char = makeCharacter()
     const next = setStatRollsBatch(char, [])
     expect(next.statRolls).toEqual(char.statRolls)

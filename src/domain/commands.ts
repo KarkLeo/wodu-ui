@@ -16,7 +16,7 @@ export interface LevelUpPatch {
 }
 
 export type CharacterCommand =
-  // Инвентарь
+  // Inventory
   | { type: 'BUY_ITEM'; templateId: string }
   | { type: 'RECEIVE_ITEM'; item: Omit<InventoryItem, 'id'> }
   | { type: 'ADD_CUSTOM_ITEM'; name: string; price?: number; notes?: string; consumable?: boolean; quantity?: number }
@@ -26,26 +26,26 @@ export type CharacterCommand =
   | { type: 'EQUIP_ITEM'; itemId: string }
   | { type: 'UNEQUIP_ITEM'; itemId: string }
   | { type: 'SET_COINS'; amount: number }
-  // Боевые
+  // Combat
   | { type: 'APPLY_DAMAGE'; amount: number }
   | { type: 'HEAL'; amount: number }
   | { type: 'SET_TEMP_HP'; amount: number }
   | { type: 'SET_ARMOR_MOD'; amount: number }
   | { type: 'SET_DAMAGE_MOD'; amount: number }
-  // Прогрессия
+  // Progression
   | { type: 'GAIN_XP'; amount: number }
   | { type: 'LEVEL_UP'; patch: LevelUpPatch }
-  // Модификаторы характеристик (временные баффы/дебаффы)
+  // Stat modifiers (temporary buffs / debuffs)
   | { type: 'ADD_STAT_MODIFIER'; statKey: StatKey; amount: number; label: string }
   | { type: 'REMOVE_STAT_MODIFIER'; modifierId: string }
   | { type: 'CLEAR_STAT_MODIFIERS'; statKey?: StatKey }
-  // Разное
+  // Misc
   | { type: 'UPDATE_MAGIC'; magic: Magic }
   | { type: 'UPDATE_STATS'; stats: Stats }
   | { type: 'UPDATE_NOTES'; notes: string }
   | { type: 'RESET_QUICKSILVER' }
   | { type: 'FINALIZE_CHARACTER' }
-  // Создание персонажа (только для draft-статуса)
+  // Character creation (draft status only)
   | { type: 'SET_NAME'; name: string }
   | { type: 'SET_TRUE_NAME'; trueName: string }
   | { type: 'SET_CLASS'; classId: ClassId }
