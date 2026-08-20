@@ -10,10 +10,9 @@ An interactive character sheet and lightweight VTT for the tabletop RPG **World 
 
 ## Screenshots
 
-<!-- Drop images into screenshots/ and they will render here. -->
-| Character creation | In game | Level up |
+| Character creation | In game | Rolling dice |
 |---|---|---|
-| ![Creation](screenshots/creation.png) | ![In game](screenshots/in-game.png) | ![Level up](screenshots/level-up.png) |
+| ![Creation](screenshots/creation.jpg) | ![In game](screenshots/in-game.jpg) | ![Rolling dice](screenshots/dice-roll.jpg) |
 
 ## Stack
 
