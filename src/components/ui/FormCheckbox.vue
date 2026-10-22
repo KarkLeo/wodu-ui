@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import IconCheckBold from './icons/IconCheckBold.vue'
 
+defineProps<{
+  ariaLabel?: string
+  disabled?: boolean
+}>()
+
 const model = defineModel<boolean>({ required: true })
 </script>
 
 <template>
-  <label :class="['form-check', { 'is-checked': model }]">
+  <label :class="['form-check', { 'is-checked': model, 'is-disabled': disabled }]">
     <input
       type="checkbox"
       class="form-check-input"
+      :aria-label="ariaLabel"
+      :disabled="disabled"
       :checked="model"
       @change="model = ($event.target as HTMLInputElement).checked"
     />
@@ -29,12 +36,17 @@ const model = defineModel<boolean>({ required: true })
   color: var(--vtt-text-secondary);
   font-size: 13px;
 }
+.form-check.is-disabled { opacity: 0.5; cursor: not-allowed; }
 .form-check-input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
   pointer-events: none;
+}
+.form-check-input:focus-visible + .form-check-box {
+  outline: 2px solid var(--vtt-accent);
+  outline-offset: 2px;
 }
 .form-check-box {
   width: 16px;

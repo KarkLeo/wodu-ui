@@ -12,14 +12,15 @@ export const messages = {
     stepper: {
       decrease: 'Decrease',
       increase: 'Increase',
+      value: 'Value',
     },
     hpBar: {
-      editAria: 'Edit HP',
+      editAria: 'Edit HP {value}',
       decreaseAria: 'Decrease HP by 1',
       healAria: 'Restore HP',
     },
     xpBar: {
-      editAria: 'Edit experience',
+      editAria: 'Edit experience {value}',
     },
     statChip: {
       editAria: 'Edit {stat}',
@@ -150,6 +151,8 @@ export const messages = {
     submitHeal: 'Restore',
     submitTemp: 'Set',
     tempPreviewLabel: 'Temporary:',
+    modeAria: 'HP change type',
+    amountAria: 'Amount',
   },
   xpControls: {
     title: 'Experience',

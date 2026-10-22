@@ -1,5 +1,7 @@
 <script setup lang="ts" generic="T extends string">
-withDefaults(defineProps<{
+import { useRovingSelection } from '@/composables/useRovingSelection'
+
+const props = withDefaults(defineProps<{
   options: Array<{ value: T; label: string }>
   variant?: 'block' | 'pill'
   fullWidth?: boolean
@@ -9,6 +11,8 @@ withDefaults(defineProps<{
 })
 
 const model = defineModel<T>({ required: true })
+
+const { tabIndexFor, onKeydown } = useRovingSelection(() => props.options, model)
 </script>
 
 <template>
@@ -18,16 +22,18 @@ const model = defineModel<T>({ required: true })
       `is-${variant}`,
       { 'is-full': fullWidth },
     ]"
-    role="tablist"
+    role="radiogroup"
   >
     <button
       v-for="opt in options"
       :key="opt.value"
       type="button"
-      role="tab"
-      :aria-selected="model === opt.value"
+      role="radio"
+      :aria-checked="model === opt.value"
+      :tabindex="tabIndexFor(opt.value)"
       :class="['segmented-btn', { 'is-active': model === opt.value }]"
       @click="model = opt.value"
+      @keydown="onKeydown"
     >
       {{ opt.label }}
     </button>

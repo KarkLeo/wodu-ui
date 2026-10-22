@@ -39,9 +39,10 @@ function onInput(e: Event) {
 </script>
 
 <template>
-  <div :class="['sc-stepper', `sz-${props.size}`]" :aria-label="ariaLabel">
+  <div :class="['sc-stepper', `sz-${props.size}`]" role="group" :aria-label="ariaLabel">
     <button type="button" :aria-label="t('ui.stepper.decrease')" :disabled="!canDec" @click="dec">−</button>
     <input
+      :aria-label="ariaLabel ?? t('ui.stepper.value')"
       type="number"
       :value="model"
       :min="min"
@@ -101,7 +102,7 @@ function onInput(e: Event) {
   -webkit-appearance: none;
   margin: 0;
 }
-.sc-stepper input:focus { border-color: var(--vtt-accent-deep); }
+.sc-stepper input:focus-visible { border-color: var(--vtt-accent); }
 
 .sz-sm button { width: 18px; height: 18px; font-size: 12px; }
 .sz-sm input { width: 36px; font-size: 16px; padding: 3px 0; }

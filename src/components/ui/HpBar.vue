@@ -33,6 +33,10 @@ defineEmits<{
 }>()
 
 const isMobile = useIsMobile()
+const editLabel = computed(() => {
+  const value = `${Math.max(0, props.current)}/${props.max}${props.temp && props.temp > 0 ? `+${props.temp}` : ''}`
+  return t('ui.hpBar.editAria', { value })
+})
 const open = ref(false)
 
 const state = computed(() => {
@@ -70,7 +74,7 @@ const tempPct = computed(() => {
           class="hp-bar-values is-clickable"
           role="button"
           tabindex="0"
-          :aria-label="t('ui.hpBar.editAria')"
+          :aria-label="editLabel"
           @click="open = true"
           @keydown.enter.prevent="open = true"
           @keydown.space.prevent="open = true"
@@ -102,7 +106,7 @@ const tempPct = computed(() => {
       class="hp-bar-values is-clickable"
       role="button"
       tabindex="0"
-      :aria-label="t('ui.hpBar.editAria')"
+      :aria-label="editLabel"
       @click="open = true"
       @keydown.enter.prevent="open = true"
       @keydown.space.prevent="open = true"
@@ -138,12 +142,7 @@ const tempPct = computed(() => {
     <div
       class="hp-bar-track-wrap"
       :class="{ 'is-clickable': showControls }"
-      :role="showControls ? 'button' : undefined"
-      :tabindex="showControls ? 0 : undefined"
-      :aria-label="showControls ? t('ui.hpBar.editAria') : undefined"
       @click="showControls && (open = true)"
-      @keydown.enter.prevent="showControls && (open = true)"
-      @keydown.space.prevent="showControls && (open = true)"
     >
       <div class="hp-bar-track">
         <div class="hp-bar-fill" :style="{ width: `${fillPct}%` }" />
@@ -243,19 +242,11 @@ const tempPct = computed(() => {
 .hp-bar-values.is-clickable {
   cursor: pointer;
   user-select: none;
-  outline: none;
   border-radius: var(--r-xs);
   transition: filter var(--t-fast) var(--ease);
 }
 .hp-bar-values.is-clickable:hover { filter: brightness(1.15); }
-.hp-bar-values.is-clickable:focus-visible { box-shadow: 0 0 0 2px var(--vtt-border-strong); }
-.hp-bar-track-wrap.is-clickable {
-  cursor: pointer;
-  outline: none;
-}
-.hp-bar-track-wrap.is-clickable:focus-visible .hp-bar-track {
-  box-shadow: var(--shadow-inset), 0 0 0 2px var(--vtt-border-strong);
-}
+.hp-bar-track-wrap.is-clickable { cursor: pointer; }
 .hp-bar-values .hp-current { font-weight: 600; }
 .hp-bar-values .hp-max { color: var(--vtt-text-secondary); font-weight: 400; }
 .hp-bar-values .hp-sep { color: var(--vtt-text-muted); margin: 0 2px; }

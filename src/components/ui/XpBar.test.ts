@@ -30,6 +30,20 @@ describe('XpBar', () => {
     expect(w.emitted('update:current')).toEqual([[0]])
   })
 
+  it('has a single tab stop: the trigger button', () => {
+    wrapper = mount(XpBar, { props: { current: 1840, max: 3000, hint: 'to lvl 3' }, attachTo: document.body })
+    const stops = wrapper.findAll('button, [tabindex="0"]')
+    expect(stops).toHaveLength(1)
+    expect(stops[0].classes()).toContain('xp-bar-trigger')
+  })
+
+  it('names the trigger with its visible hint and the current value', () => {
+    wrapper = mount(XpBar, { props: { current: 1840, max: 3000, hint: 'to lvl 3' }, attachTo: document.body })
+    const name = wrapper.find('.xp-bar-trigger').attributes('aria-label') ?? ''
+    expect(name).toContain('to lvl 3')
+    expect(name).toContain('1840/3000')
+  })
+
   it('keeps showing the current prop until the parent updates it', async () => {
     const w = await openControls({ current: 40 })
     w.findComponent(XpControlsPanel).vm.$emit('update:current', 50)

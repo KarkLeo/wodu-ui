@@ -34,6 +34,7 @@ function onClick() {
     ]"
     :role="mode === 'pick-multi' ? 'checkbox' : mode === 'pick-single' ? 'radio' : undefined"
     :aria-checked="isPick() ? state === 'selected' : undefined"
+    :aria-disabled="isPick() && state === 'locked' ? 'true' : undefined"
     :tabindex="isPick() && state !== 'locked' ? 0 : undefined"
     @click="onClick"
     @keydown.space.prevent="onClick"

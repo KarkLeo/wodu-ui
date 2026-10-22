@@ -14,14 +14,15 @@ export const messages: Messages = {
     stepper: {
       decrease: 'Зменшити',
       increase: 'Збільшити',
+      value: 'Значення',
     },
     hpBar: {
-      editAria: 'Змінити HP',
+      editAria: 'Змінити HP {value}',
       decreaseAria: 'Зменшити HP на 1',
       healAria: 'Відновити HP',
     },
     xpBar: {
-      editAria: 'Змінити досвід',
+      editAria: 'Змінити досвід {value}',
     },
     statChip: {
       editAria: 'Редагування {stat}',
@@ -152,6 +153,8 @@ export const messages: Messages = {
     submitHeal: 'Відновити',
     submitTemp: 'Встановити',
     tempPreviewLabel: 'Тимчасово:',
+    modeAria: 'Тип зміни HP',
+    amountAria: 'Кількість',
   },
   xpControls: {
     title: 'Досвід',

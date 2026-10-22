@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useId } from 'vue'
 import { t } from '@/locales'
+
+const inputLabelId = useId()
 
 const props = defineProps<{
   current: number
@@ -39,8 +42,9 @@ function onInput(e: Event) {
     </div>
 
     <div class="xp-pop-manual">
-      <span class="xp-pop-manual-label">{{ t('xpControls.inputLabel') }}</span>
+      <span :id="inputLabelId" class="xp-pop-manual-label">{{ t('xpControls.inputLabel') }}</span>
       <input
+        :aria-labelledby="inputLabelId"
         type="number"
         :value="current"
         min="0"
@@ -155,7 +159,7 @@ function onInput(e: Event) {
   outline: none;
   transition: border-color var(--t-fast) var(--ease);
 }
-.xp-pop-manual input:focus { border-color: var(--vtt-border-gold); }
+.xp-pop-manual input:focus-visible { border-color: var(--vtt-accent); }
 .xp-pop-manual input::-webkit-outer-spin-button,
 .xp-pop-manual input::-webkit-inner-spin-button {
   -webkit-appearance: none;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
+import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle, DialogDescription } from 'reka-ui'
 import IconClose from './icons/IconClose.vue'
 import IconWarning from './icons/IconWarning.vue'
 import { t } from '@/locales'
@@ -28,10 +28,10 @@ const open = defineModel<boolean>('open', { required: true })
           <div class="cs-icon">
             <IconWarning />
           </div>
-          <div class="cs-title">{{ title }}</div>
-          <div class="cs-body">
+          <DialogTitle as="div" class="cs-title">{{ title }}</DialogTitle>
+          <DialogDescription as="div" class="cs-body">
             <slot />
-          </div>
+          </DialogDescription>
           <div class="cs-actions">
             <slot name="actions" />
           </div>

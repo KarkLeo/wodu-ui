@@ -309,7 +309,6 @@ onBeforeUnmount(stopListening)
 }
 .stat-chip .sc-base s {
   text-decoration: line-through;
-  opacity: 0.85;
 }
 
 .stat-chip.has-mod.is-buffed .sc-value { color: var(--vtt-success); }

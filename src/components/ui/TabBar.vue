@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 
 interface TabItem {
   value: string
@@ -20,6 +21,8 @@ const props = withDefaults(defineProps<{
 })
 
 const model = defineModel<string>({ required: true })
+
+const { tabIndexFor, onKeydown } = useRovingSelection(() => props.tabs, model)
 </script>
 
 <template>
@@ -37,6 +40,7 @@ const model = defineModel<string>({ required: true })
       type="button"
       role="tab"
       :aria-selected="model === tab.value"
+      :tabindex="tabIndexFor(tab.value)"
       :class="[
         'tab-item',
         {
@@ -46,6 +50,7 @@ const model = defineModel<string>({ required: true })
       ]"
       :disabled="tab.disabled"
       @click="!tab.disabled && (model = tab.value)"
+      @keydown="onKeydown"
     >
       <span v-if="tab.icon" class="tab-item-glyph"><component :is="tab.icon" /></span>
       <span class="tab-item-label">{{ tab.label }}</span>
