@@ -113,7 +113,7 @@ Thin wrappers around Reka UI for project-specific styling: `Button`, `BottomShee
 
 The in-game `StatusHeader` shows HP / XP / armor / equipped weapon damage with `InfoPopover` breakdowns. Armor and damage are read-only in the header — armor type is set by equipping items in the Inventory panel.
 
-In-game tabs: **Основное** (stats/skills/abilities) → **Инвентарь** → optionally **Магия** → **Заметки**. There is no Combat tab.
+In-game tabs (`inGame.tabs.*`): **Main** (stats/skills/abilities) → **Inventory** → optionally **Magic** → **Notes**. There is no Combat tab.
 
 ## Localization (`src/locales/`)
 
