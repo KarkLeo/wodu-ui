@@ -125,9 +125,12 @@ In-game tabs: **Основное** (stats/skills/abilities) → **Инвента
 
 ## Design References
 
-- `ref/` — scans of the original character sheet; every field must be represented faithfully
-- `mood/` — mood board defining the dark, handcrafted aesthetic
-- `docs/architecture-review*.md` — historical architecture reviews (most recent reflects current state)
+Reference materials live outside this repo, in the workspace folder next to it (paths below are relative to this repo's root):
+
+- `../materials/design-vtt/app-doc/world_of_dungeons_1979_bw.pdf` (+ `.md` / `_ru.md` transcriptions) — the original rulebook and character sheet; every field must be represented faithfully
+- `../materials/design-vtt/design/` — `palette.html` (design tokens, source of visual truth) and per-component HTML prototypes defining the dark, handcrafted aesthetic
+- `../materials/design-vtt/app-doc/rules/`, `../materials/design-vtt/app-doc/specs/` — game rules and the behavioural specs derived from them
+- `../materials/notes/architecture-review*.md` — historical architecture reviews (most recent reflects current state)
 
 ## Key Rules
 
