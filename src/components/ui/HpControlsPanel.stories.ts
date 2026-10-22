@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fn } from 'storybook/test'
 import HpControlsPanel from './HpControlsPanel.vue'
-// The panel's styles live in HpBar.vue's global <style> block, scoped under `.hp-popover`.
-import './HpBar.vue'
 
 const meta = {
   title: 'UI/HpControlsPanel',
@@ -21,7 +19,12 @@ const meta = {
     characterId: { table: { disable: true } },
     characterName: { table: { disable: true } },
   },
-  decorators: [() => ({ template: '<div class="hp-popover"><story /></div>' })],
+  decorators: [
+    () => ({
+      template: `<div style="width: 320px; padding: 14px 16px; background: var(--vtt-bg-elevated);
+        border: 1px solid var(--vtt-border-strong); border-radius: var(--r-md)"><story /></div>`,
+    }),
+  ],
   parameters: {
     docs: {
       description: {

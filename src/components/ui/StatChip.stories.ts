@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 import { fn } from 'storybook/test'
 import StatChip from './StatChip.vue'
-import Button from './Button.vue'
 import IconDice from './icons/IconDice.vue'
 
 const meta = {
@@ -122,30 +121,24 @@ export const Sizes: Story = {
 
 export const Editing: Story = {
   render: (args) => ({
-    components: { StatChip, Button },
+    components: { StatChip },
     setup() {
       const value = ref(1)
       const editing = ref(true)
-      // Stepper clicks bubble up to the chip's own button and emit toggleEdit, so only the external button closes editing.
-      function open() {
-        editing.value = true
+      function toggle() {
+        editing.value = !editing.value
         args.onToggleEdit?.()
       }
-      return { args, value, editing, open }
+      return { args, value, editing, toggle }
     },
     template: `
-      <div style="display: flex; align-items: center; gap: 16px">
-        <StatChip
-          v-bind="args"
-          v-model:value="value"
-          :editing="editing"
-          editable
-          @toggle-edit="open"
-        />
-        <Button variant="ghost" size="sm" @click="editing = !editing">
-          {{ editing ? 'Done' : 'Edit' }}
-        </Button>
-      </div>
+      <StatChip
+        v-bind="args"
+        v-model:value="value"
+        :editing="editing"
+        editable
+        @toggle-edit="toggle"
+      />
     `,
   }),
   args: { dice: undefined },

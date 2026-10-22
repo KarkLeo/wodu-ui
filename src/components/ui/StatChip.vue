@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import InfoPopover from './InfoPopover.vue'
 import Stepper from './Stepper.vue'
 import { t } from '@/locales'
@@ -46,34 +46,68 @@ const valueClass = computed(() => {
 function fmtMod(m: number): string {
   return m > 0 ? `+${m}` : `${m}`
 }
+
+const chipClass = computed(() => [
+  'stat-chip',
+  props.variant === 'row' ? 'v-row' : props.variant === 'hero' ? 'v-hero' : props.variant === 'minimal' ? 'v-minimal' : '',
+  props.size === 'sm' ? 'sc-sm' : props.size === 'lg' ? 'sc-lg' : '',
+  `is-${props.state}`,
+  { 'has-mod': props.mod !== undefined && props.mod !== 0 },
+  valueClass.value,
+])
+
+const editRoot = ref<HTMLElement | null>(null)
+
+function onPointerDownOutside(e: Event) {
+  if (editRoot.value && !editRoot.value.contains(e.target as Node)) emit('toggleEdit')
+}
+
+function stopListening() {
+  document.removeEventListener('pointerdown', onPointerDownOutside, true)
+}
+
+watch(
+  () => props.editing,
+  (editing) => {
+    stopListening()
+    if (editing) document.addEventListener('pointerdown', onPointerDownOutside, true)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(stopListening)
 </script>
 
 <template>
-  <InfoPopover v-if="hasPopover" side="right" align="start" :title="popoverTitle" @open="emit('open', $event)">
+  <div
+    v-if="editing"
+    ref="editRoot"
+    :class="[chipClass, 'is-editing']"
+    @keydown.enter="emit('toggleEdit')"
+  >
+    <span class="sc-label">{{ label }}</span>
+    <Stepper
+      v-model="(model as number)"
+      size="base"
+      :aria-label="t('ui.statChip.editAria', { stat: label })"
+    />
+    <span v-if="mod !== undefined && mod !== 0" :class="['sc-mod', modClass]">
+      {{ fmtMod(mod) }}
+    </span>
+  </div>
+
+  <InfoPopover v-else-if="hasPopover" side="right" align="start" :title="popoverTitle" @open="emit('open', $event)">
     <template #trigger>
       <button
         type="button"
-        :class="[
-          'stat-chip',
-          variant === 'row' ? 'v-row' : variant === 'hero' ? 'v-hero' : variant === 'minimal' ? 'v-minimal' : '',
-          size === 'sm' ? 'sc-sm' : size === 'lg' ? 'sc-lg' : '',
-          `is-${state}`,
-          { 'has-mod': mod !== undefined && mod !== 0, 'is-editing': editing },
-          valueClass,
-        ]"
+        :class="chipClass"
         :data-editable="editable ? 'true' : undefined"
         :disabled="state === 'disabled'"
       >
         <span class="sc-label">{{ label }}</span>
-        <span v-if="!editing" class="sc-value">{{ value }}</span>
-        <Stepper
-          v-else
-          v-model="(model as number)"
-          size="base"
-          :aria-label="t('ui.statChip.editAria', { stat: label })"
-        />
-        <span v-if="dice && !editing" class="sc-dice">{{ dice }}</span>
-        <span v-if="base !== undefined && !editing" class="sc-base">
+        <span class="sc-value">{{ value }}</span>
+        <span v-if="dice" class="sc-dice">{{ dice }}</span>
+        <span v-if="base !== undefined" class="sc-base">
           {{ t('ui.statChip.baseLabel') }} <s>{{ base }}</s>
         </span>
         <span v-if="mod !== undefined && mod !== 0" :class="['sc-mod', modClass]">
@@ -88,28 +122,15 @@ function fmtMod(m: number): string {
   <button
     v-else
     type="button"
-    :class="[
-      'stat-chip',
-      variant === 'row' ? 'v-row' : variant === 'hero' ? 'v-hero' : variant === 'minimal' ? 'v-minimal' : '',
-      size === 'sm' ? 'sc-sm' : size === 'lg' ? 'sc-lg' : '',
-      `is-${state}`,
-      { 'has-mod': mod !== undefined && mod !== 0, 'is-editing': editing },
-      valueClass,
-    ]"
+    :class="chipClass"
     :data-editable="editable ? 'true' : undefined"
     :disabled="state === 'disabled'"
     @click="editable && emit('toggleEdit')"
   >
     <span class="sc-label">{{ label }}</span>
-    <span v-if="!editing" class="sc-value">{{ value }}</span>
-    <Stepper
-      v-else
-      v-model="(model as number)"
-      size="base"
-      :aria-label="t('ui.statChip.editAria', { stat: label })"
-    />
-    <span v-if="dice && !editing" class="sc-dice">{{ dice }}</span>
-    <span v-if="base !== undefined && !editing" class="sc-base">
+    <span class="sc-value">{{ value }}</span>
+    <span v-if="dice" class="sc-dice">{{ dice }}</span>
+    <span v-if="base !== undefined" class="sc-base">
       {{ t('ui.statChip.baseLabel') }} <s>{{ base }}</s>
     </span>
     <span v-if="mod !== undefined && mod !== 0" :class="['sc-mod', modClass]">

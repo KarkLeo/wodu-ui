@@ -24,8 +24,6 @@ const props = withDefaults(defineProps<{
 
 const resolvedPopoverTitle = computed(() => props.popoverTitle || t('xpControls.title'))
 
-const model = defineModel<number>('current', { required: false })
-
 const emit = defineEmits<{
   (e: 'levelUp'): void
   (e: 'update:current', value: number): void
@@ -49,9 +47,7 @@ const fillPct = computed(() => {
 const open = ref(false)
 
 function setCurrent(v: number) {
-  const clamped = Math.max(0, Math.floor(v))
-  if (model.value !== undefined) model.value = clamped
-  else emit('update:current', clamped)
+  emit('update:current', Math.max(0, Math.floor(v)))
 }
 </script>
 
@@ -354,166 +350,5 @@ function setCurrent(v: number) {
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-
-.xp-popover .xp-pop-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--vtt-border-subtle);
-}
-.xp-popover .xp-pop-head-title {
-  font-family: var(--font-serif);
-  font-size: 18px;
-  color: var(--vtt-accent-soft);
-  letter-spacing: 0.01em;
-}
-.xp-popover .xp-pop-head-meta {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-
-.xp-popover .xp-pop-steps {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-.xp-popover .xp-step-btn {
-  height: 34px;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.xp-popover .xp-step-btn:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-  background: var(--vtt-bg-elevated);
-}
-.xp-popover .xp-step-btn.is-minus:hover {
-  border-color: var(--vtt-danger);
-  color: var(--vtt-danger-bright);
-}
-.xp-popover .xp-step-btn.is-plus:hover {
-  border-color: var(--vtt-success);
-  color: var(--vtt-success);
-}
-
-.xp-popover .xp-pop-manual {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-  border-top: 1px solid var(--vtt-border-subtle);
-  border-bottom: 1px solid var(--vtt-border-subtle);
-  margin-bottom: 14px;
-}
-.xp-popover .xp-pop-manual-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-.xp-popover .xp-pop-manual input {
-  width: 100%;
-  min-width: 0;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
-  color: var(--vtt-accent-soft);
-  font-family: var(--font-serif);
-  font-size: 18px;
-  text-align: center;
-  padding: 6px 10px;
-  outline: none;
-  transition: border-color var(--t-fast) var(--ease);
-}
-.xp-popover .xp-pop-manual input:focus { border-color: var(--vtt-border-gold); }
-.xp-popover .xp-pop-manual input::-webkit-outer-spin-button,
-.xp-popover .xp-pop-manual input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.xp-popover .xp-pop-manual input[type='number'] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-.xp-popover .xp-pop-manual-total {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--vtt-text-muted);
-  white-space: nowrap;
-}
-
-.xp-popover .xp-pop-levelup {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: rgba(212, 168, 87, 0.08);
-  border: 1px solid var(--vtt-border-gold);
-  border-radius: var(--r-sm);
-}
-.xp-popover .xp-pop-levelup-text {
-  flex: 1;
-  font-size: 13px;
-  color: var(--vtt-accent-soft);
-  line-height: 1.35;
-}
-.xp-popover .xp-pop-levelup-text b {
-  color: var(--vtt-accent);
-  font-weight: 600;
-}
-.xp-popover .xp-pop-levelup-btn {
-  padding: 10px 20px;
-  background: #A6833E;
-  border: 1px solid #8C6A3A;
-  border-radius: var(--r-pill);
-  color: #1a1205;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  cursor: pointer;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
-  transition:
-    background var(--t-fast) var(--ease),
-    border-color var(--t-fast) var(--ease),
-    filter var(--t-fast) var(--ease);
-  white-space: nowrap;
-}
-.xp-popover .xp-pop-levelup-btn:hover {
-  background: #BF9A4C;
-  border-color: #A6833E;
-  filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
-}
-.xp-popover .xp-pop-levelup.is-locked {
-  background: transparent;
-  border-color: var(--vtt-border-subtle);
-}
-.xp-popover .xp-pop-levelup.is-locked .xp-pop-levelup-text {
-  color: var(--vtt-text-muted);
-}
-.xp-popover .xp-pop-levelup.is-locked .xp-pop-levelup-btn {
-  background: transparent;
-  border-color: var(--vtt-border-subtle);
-  color: var(--vtt-text-muted);
-  cursor: not-allowed;
-  box-shadow: none;
-  filter: none;
 }
 </style>

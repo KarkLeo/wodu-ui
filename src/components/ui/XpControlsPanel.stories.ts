@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fn } from 'storybook/test'
 import XpControlsPanel from './XpControlsPanel.vue'
-// The panel's styles live in XpBar.vue's global <style> block, scoped under `.xp-popover`.
-import './XpBar.vue'
 
 const meta = {
   title: 'UI/XpControlsPanel',
@@ -14,7 +12,12 @@ const meta = {
     'onUpdate:current': fn(),
     onLevelUp: fn(),
   },
-  decorators: [() => ({ template: '<div class="xp-popover"><story /></div>' })],
+  decorators: [
+    () => ({
+      template: `<div style="width: 340px; padding: 16px 18px; background: var(--vtt-bg-elevated);
+        border: 1px solid var(--vtt-border-gold); border-radius: var(--r-md)"><story /></div>`,
+    }),
+  ],
   parameters: {
     docs: {
       description: {

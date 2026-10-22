@@ -87,7 +87,7 @@ export const Gallery: Story = {
           :key="name"
           style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px; border: 1px solid var(--vtt-border-subtle); border-radius: var(--r-sm); background: var(--vtt-bg-surface)"
         >
-          <component :is="icon" style="width: 24px; height: 24px; color: var(--vtt-accent-soft)" />
+          <component :is="icon" :size="24" style="color: var(--vtt-accent-soft)" />
           <span style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em">{{ name }}</span>
         </div>
       </div>
