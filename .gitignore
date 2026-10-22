@@ -42,3 +42,6 @@ deploy-key.pub
 instruction.md
 world_of_dungeons.txt
 .claude/
+
+# Storybook
+storybook-static/
