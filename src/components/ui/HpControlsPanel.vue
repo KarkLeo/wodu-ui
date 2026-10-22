@@ -38,8 +38,8 @@ function onDice(notation: string) {
     amount.value = record.diceTotal
     return
   }
-  // Fallback for contexts without a character (e.g. PrimitivesPreviewView):
-  // generate a quick number locally so the preview keeps working.
+  // Fallback for contexts without a character (e.g. Storybook):
+  // generate a quick number locally so the panel keeps working.
   const m = notation.match(/^(\d*)d(\d+)$/i)
   if (!m) return
   const n = m[1] ? Number(m[1]) : 1
