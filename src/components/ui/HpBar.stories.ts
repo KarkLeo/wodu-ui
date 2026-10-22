@@ -16,6 +16,9 @@ const meta = {
     size: { control: 'inline-radio', options: ['sm', 'base', 'lg'] },
   },
   decorators: [() => ({ template: '<div style="max-width: 360px"><story /></div>' })],
+  parameters: {
+    docs: { description: { component: 'Design prototype: `materials/design-vtt/design/components/hp-bar.html`' } },
+  },
 } satisfies Meta<typeof HpBar>
 
 export default meta

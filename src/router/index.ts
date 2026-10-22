@@ -44,11 +44,6 @@ const router = createRouter({
       },
     },
     {
-      path: '/_preview',
-      name: 'primitives-preview',
-      component: () => import('@/views/PrimitivesPreviewView.vue'),
-    },
-    {
       path: '/character/:id/levelup',
       name: 'level-up',
       component: () => import('@/features/level-up/LevelUpView.vue'),

@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/vue3-vite'
 import { setup } from '@storybook/vue3-vite'
+import { themes } from 'storybook/theming'
 import { createPinia } from 'pinia'
 import { LOCALES, setLocale, type Locale } from '@/locales/locale'
 
@@ -11,6 +12,7 @@ setup((app) => {
 })
 
 const preview: Preview = {
+  tags: ['autodocs'],
   globalTypes: {
     locale: {
       description: 'Interface language',
@@ -34,6 +36,7 @@ const preview: Preview = {
   parameters: {
     layout: 'padded',
     controls: { expanded: true },
+    docs: { theme: themes.dark },
     viewport: {
       // Widths match the breakpoints in src/assets/main.css.
       options: {
