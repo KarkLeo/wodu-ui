@@ -23,8 +23,9 @@ function onClick() {
 </script>
 
 <template>
-  <button
-    type="button"
+  <component
+    :is="mode === 'display' ? 'span' : 'button'"
+    :type="mode === 'display' ? undefined : 'button'"
     :class="[
       'skill-chip',
       `mode-${props.mode}`,
@@ -34,10 +35,10 @@ function onClick() {
         'is-locked': state === 'locked',
       },
     ]"
-    :disabled="state === 'locked'"
+    :disabled="mode === 'display' ? undefined : state === 'locked'"
     :role="mode === 'pick-multi' ? 'checkbox' : mode === 'pick-single' ? 'radio' : undefined"
     :aria-checked="mode === 'pick-multi' || mode === 'pick-single' ? state === 'selected' : undefined"
-    @click="onClick"
+    @click="mode !== 'display' && onClick()"
   >
     <span
       v-if="mode === 'pick-multi' || mode === 'pick-single'"
@@ -45,7 +46,7 @@ function onClick() {
     />
     <span v-if="icon" class="skill-chip-glyph"><component :is="icon" /></span>
     <span>{{ label }}</span>
-  </button>
+  </component>
 </template>
 
 <style scoped>

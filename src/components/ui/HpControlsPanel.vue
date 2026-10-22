@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { t } from '@/locales'
 import { useDiceRoller } from '@/composables/useDiceRoller'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 
 const props = withDefaults(defineProps<{
   current: number
@@ -23,8 +24,17 @@ const emit = defineEmits<{
 
 const dice = useDiceRoller()
 
-const tab = ref<'damage' | 'heal' | 'temp'>('damage')
+type Mode = 'damage' | 'heal' | 'temp'
+
+const tab = ref<Mode>('damage')
 const amount = ref<number>(0)
+
+const modes = computed(() => [
+  { value: 'damage' as Mode, label: t('hpControls.tabDamage'), class: 'tab-damage' },
+  { value: 'heal' as Mode, label: t('hpControls.tabHeal'), class: 'tab-heal' },
+  { value: 'temp' as Mode, label: t('hpControls.tabTemp'), class: '' },
+])
+const { tabIndexFor, onKeydown } = useRovingSelection(() => modes.value, tab)
 
 watch(tab, () => { amount.value = 0 })
 
@@ -91,34 +101,31 @@ const previewResult = computed(() => {
       <span class="hp-pop-title">{{ t('hpControls.title') }}</span>
       <span class="hp-pop-sub">{{ current }} / {{ max }}</span>
     </div>
-    <div class="hp-pop-tabs">
+    <div class="hp-pop-tabs" role="radiogroup" :aria-label="t('hpControls.modeAria')">
       <button
+        v-for="mode in modes"
+        :key="mode.value"
         type="button"
-        :class="['tab-damage', { active: tab === 'damage' }]"
-        @click="tab = 'damage'"
-      >{{ t('hpControls.tabDamage') }}</button>
-      <button
-        type="button"
-        :class="['tab-heal', { active: tab === 'heal' }]"
-        @click="tab = 'heal'"
-      >{{ t('hpControls.tabHeal') }}</button>
-      <button
-        type="button"
-        :class="[{ active: tab === 'temp' }]"
-        @click="tab = 'temp'"
-      >{{ t('hpControls.tabTemp') }}</button>
+        role="radio"
+        :aria-checked="tab === mode.value"
+        :tabindex="tabIndexFor(mode.value)"
+        :class="[mode.class, { active: tab === mode.value }]"
+        @click="tab = mode.value"
+        @keydown="onKeydown"
+      >{{ mode.label }}</button>
     </div>
 
     <div class="hp-amount">
-      <button type="button" @click="amount = Math.max(0, amount - 1)">−</button>
+      <button type="button" :aria-label="t('ui.stepper.decrease')" @click="amount = Math.max(0, amount - 1)">−</button>
       <input
         type="number"
         min="0"
+        :aria-label="t('hpControls.amountAria')"
         :class="[tab === 'heal' ? 'is-heal' : tab === 'temp' ? 'is-temp' : '']"
         :value="amount"
         @input="(e) => { const v = Number((e.target as HTMLInputElement).value); amount = Number.isNaN(v) ? 0 : v }"
       />
-      <button type="button" @click="amount = amount + 1">+</button>
+      <button type="button" :aria-label="t('ui.stepper.increase')" @click="amount = amount + 1">+</button>
     </div>
 
     <div class="hp-dice-quick">
@@ -244,6 +251,10 @@ const previewResult = computed(() => {
   border-bottom: 1px solid var(--vtt-border-subtle);
   outline: none;
   -moz-appearance: textfield;
+}
+.hp-amount input:focus-visible {
+  border-bottom-color: var(--vtt-accent);
+  box-shadow: 0 1px 0 0 var(--vtt-accent);
 }
 .hp-amount input.is-heal { color: var(--vtt-success); }
 .hp-amount input.is-temp { color: var(--vtt-accent); }

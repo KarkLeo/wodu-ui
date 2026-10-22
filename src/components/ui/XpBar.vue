@@ -23,6 +23,10 @@ const props = withDefaults(defineProps<{
 })
 
 const resolvedPopoverTitle = computed(() => props.popoverTitle || t('xpControls.title'))
+const triggerLabel = computed(() => {
+  const edit = t('ui.xpBar.editAria', { value: `${props.current}/${props.max}` })
+  return props.hint ? `${props.hint} · ${edit}` : edit
+})
 
 const emit = defineEmits<{
   (e: 'levelUp'): void
@@ -61,24 +65,12 @@ function setCurrent(v: number) {
   >
     <span
       :class="['xp-bar-label', { 'is-clickable': showControls }]"
-      :role="showControls ? 'button' : undefined"
-      :tabindex="showControls ? 0 : undefined"
       @click="showControls && (open = true)"
-      @keydown.enter.prevent="showControls && (open = true)"
-      @keydown.space.prevent="showControls && (open = true)"
     >XP</span>
 
     <PopoverRoot v-if="showControls && !isMobile" :open="open" @update:open="(v) => (open = v)">
       <PopoverAnchor as-child>
-        <span
-          class="xp-bar-values is-clickable"
-          role="button"
-          tabindex="0"
-          :aria-label="t('ui.xpBar.editAria')"
-          @click="open = true"
-          @keydown.enter.prevent="open = true"
-          @keydown.space.prevent="open = true"
-        >
+        <span class="xp-bar-values is-clickable" @click="open = true">
           <span class="xp-current">{{ current }}</span>
           <span class="xp-sep">/</span>
           <span class="xp-max">{{ max }}</span>
@@ -86,7 +78,7 @@ function setCurrent(v: number) {
         </span>
       </PopoverAnchor>
       <PopoverTrigger as-child>
-        <button type="button" class="xp-bar-trigger">
+        <button type="button" class="xp-bar-trigger" :aria-label="triggerLabel">
           <span v-if="hint" class="xp-bar-hint">{{ hint }}</span>
           <span v-else class="xp-bar-hint">+</span>
         </button>
@@ -108,12 +100,7 @@ function setCurrent(v: number) {
     <span
       v-else-if="showControls"
       class="xp-bar-values is-clickable"
-      role="button"
-      tabindex="0"
-      :aria-label="t('ui.xpBar.editAria')"
       @click="open = true"
-      @keydown.enter.prevent="open = true"
-      @keydown.space.prevent="open = true"
     >
       <span class="xp-current">{{ current }}</span>
       <span class="xp-sep">/</span>
@@ -124,6 +111,7 @@ function setCurrent(v: number) {
       v-if="showControls && isMobile"
       type="button"
       class="xp-bar-trigger"
+      :aria-label="triggerLabel"
       @click="open = true"
     >
       <span v-if="hint" class="xp-bar-hint">{{ hint }}</span>
@@ -140,12 +128,7 @@ function setCurrent(v: number) {
     <div
       class="xp-bar-track-wrap"
       :class="{ 'is-clickable': showControls }"
-      :role="showControls ? 'button' : undefined"
-      :tabindex="showControls ? 0 : undefined"
-      :aria-label="showControls ? t('ui.xpBar.editAria') : undefined"
       @click="showControls && (open = true)"
-      @keydown.enter.prevent="showControls && (open = true)"
-      @keydown.space.prevent="showControls && (open = true)"
     >
       <div class="xp-bar-track">
         <div class="xp-bar-fill" :style="{ width: `${fillPct}%` }" />
@@ -200,21 +183,12 @@ function setCurrent(v: number) {
 .xp-bar-values.is-clickable {
   cursor: pointer;
   user-select: none;
-  outline: none;
   border-radius: var(--r-xs);
   transition: filter var(--t-fast) var(--ease);
 }
 .xp-bar-label.is-clickable:hover,
 .xp-bar-values.is-clickable:hover { filter: brightness(1.2); }
-.xp-bar-label.is-clickable:focus-visible,
-.xp-bar-values.is-clickable:focus-visible { box-shadow: 0 0 0 2px var(--vtt-border-strong); }
-.xp-bar-track-wrap.is-clickable {
-  cursor: pointer;
-  outline: none;
-}
-.xp-bar-track-wrap.is-clickable:focus-visible .xp-bar-track {
-  box-shadow: var(--shadow-inset), 0 0 0 2px var(--vtt-border-strong);
-}
+.xp-bar-track-wrap.is-clickable { cursor: pointer; }
 .xp-bar-values .xp-current { color: var(--vtt-accent-soft); font-weight: 500; }
 .xp-bar-values .xp-sep { color: var(--vtt-text-muted); margin: 0 2px; }
 .xp-bar-values .xp-max { color: var(--vtt-text-muted); }

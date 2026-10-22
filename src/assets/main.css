@@ -38,22 +38,22 @@
   /* Accent */
   --vtt-accent: #D4A857;
   --vtt-accent-soft: #E4C9A0;
-  --vtt-accent-deep: #8C6A3A;
+  --vtt-accent-deep: #A77F45;
 
   /* Danger */
   --vtt-danger: #792B3B;
-  --vtt-danger-bright: #B23B4F;
+  --vtt-danger-bright: #CD6778;
   --vtt-danger-soft: #3A1820;
 
   /* Semantic */
-  --vtt-success: #6B8E4E;
+  --vtt-success: #6D914F;
   --vtt-warning: #C08A3E;
-  --vtt-info: #5A7A8E;
+  --vtt-info: #698BA0;
 
   /* Text */
   --vtt-text-primary: #E4C9A0;
   --vtt-text-secondary: #B6A893;
-  --vtt-text-muted: #858484;
+  --vtt-text-muted: #878686;
   --vtt-text-inverse: #0E0B08;
 
   /* Fonts */
@@ -103,6 +103,11 @@ html, body, #app {
   background: var(--vtt-bg-base);
   color: var(--vtt-text-primary);
   font-feature-settings: "locl" 1;
+}
+
+:where(button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--vtt-accent);
+  outline-offset: 2px;
 }
 
 * {

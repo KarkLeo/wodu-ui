@@ -129,7 +129,6 @@ const modClass = computed(() => {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--vtt-text-muted);
-  opacity: 0.8;
 }
 
 .status-chip.kind-damage .sc-glyph { color: var(--vtt-danger-bright); }

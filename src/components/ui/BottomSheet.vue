@@ -30,9 +30,14 @@ const open = defineModel<boolean>('open', { required: true })
                 <IconClose />
               </DialogClose>
             </div>
-            <VisuallyHidden v-else>
-              <DialogTitle>{{ t('ui.bottomSheet.dialogTitle') }}</DialogTitle>
-            </VisuallyHidden>
+            <div v-else class="bs-head is-bare">
+              <VisuallyHidden>
+                <DialogTitle>{{ t('ui.bottomSheet.dialogTitle') }}</DialogTitle>
+              </VisuallyHidden>
+              <DialogClose class="bs-close" :aria-label="t('common.close')">
+                <IconClose />
+              </DialogClose>
+            </div>
           </slot>
           <div class="bs-body">
             <slot />
@@ -55,6 +60,11 @@ const open = defineModel<boolean>('open', { required: true })
   padding: 14px 18px;
   border-bottom: 1px solid var(--vtt-border-subtle);
   flex-shrink: 0;
+}
+.bs-head.is-bare {
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+  border-bottom: 0;
 }
 .bs-title {
   font-family: var(--font-serif);

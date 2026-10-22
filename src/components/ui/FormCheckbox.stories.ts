@@ -18,7 +18,8 @@ const meta = {
       watch(() => args.modelValue, (v) => { value.value = v })
       return { args, value }
     },
-    template: '<FormCheckbox v-model="value" @update:model-value="args[\'onUpdate:modelValue\']">{{ args.default }}</FormCheckbox>',
+    template: `<FormCheckbox v-model="value" :aria-label="args.ariaLabel" :disabled="args.disabled"
+      @update:model-value="args['onUpdate:modelValue']">{{ args.default }}</FormCheckbox>`,
   }),
   parameters: {
     docs: { description: { component: 'Design prototype: `materials/design-vtt/design/components/inventory.html`' } },
@@ -40,5 +41,9 @@ export const LongLabel: Story = {
 }
 
 export const WithoutLabel: Story = {
-  args: { default: '' },
+  args: { default: '', ariaLabel: 'Equipped' },
+}
+
+export const Disabled: Story = {
+  args: { disabled: true },
 }
