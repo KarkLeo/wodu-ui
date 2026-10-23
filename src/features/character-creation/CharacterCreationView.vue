@@ -16,7 +16,10 @@ const isMobile = useIsMobile()
 const router = useRouter()
 const creation = useCreationStore()
 const characters = useCharactersStore()
-const { draft, step, isStepValid, allRolled, next, back, finish } = useCharacterCreation()
+const {
+  draft, step, isStepValid, allRolled, next, back, finish,
+  autoSkills, autoAbilities, requiredSkillPicks, requiredAbilityPicks,
+} = useCharacterCreation()
 
 const stepComponents = [StepIdentity, StepTraining, StepGear]
 const currentStepComponent = computed(() => stepComponents[step.value - 1])
@@ -43,6 +46,10 @@ const footerHint = computed(() => {
     return t('characterCreation.footerHint.s1Ready', { name: d.name.split(' ')[0] || d.name, className: className.value })
   }
   if (step.value === 2) {
+    const skillsLeft = requiredSkillPicks.value - d.skillIds.filter(id => !autoSkills.value.includes(id)).length
+    if (skillsLeft > 0) return t('characterCreation.footerHint.s2NeedSkills', { count: skillsLeft })
+    const abilitiesLeft = requiredAbilityPicks.value - d.abilityIds.filter(id => !autoAbilities.value.includes(id)).length
+    if (abilitiesLeft > 0) return t('characterCreation.footerHint.s2NeedAbilities', { count: abilitiesLeft })
     return t('characterCreation.footerHint.s2Ready', { className: className.value })
   }
   if (d.maxHp === 0) return t('characterCreation.footerHint.s3NeedHp')

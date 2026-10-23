@@ -71,6 +71,8 @@ export const messages = {
       needStats: 'Roll your attributes',
       needCustomClass: 'Enter a class name',
       s1Ready: '{name} · {className} · attributes ready',
+      s2NeedSkills: 'Choose skills · {count} left',
+      s2NeedAbilities: 'Choose abilities · {count} left',
       s2Ready: '{className} · path set',
       s3NeedHp: 'Roll hit dice',
       s3Ready: 'ready to enter the world',

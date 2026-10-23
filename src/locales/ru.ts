@@ -73,6 +73,8 @@ export const messages: Messages = {
       needStats: 'Брось атрибуты',
       needCustomClass: 'Введи имя класса',
       s1Ready: '{name} · {className} · атрибуты готовы',
+      s2NeedSkills: 'Выбери навыки · осталось {count}',
+      s2NeedAbilities: 'Выбери способности · осталось {count}',
       s2Ready: '{className} · путь определён',
       s3NeedHp: 'Брось кубики здоровья',
       s3Ready: 'готов войти в мир',
