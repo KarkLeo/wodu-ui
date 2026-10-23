@@ -50,3 +50,5 @@ function chipFor(id: AbilityId): { text: string; variant: 'magic' | 'danger' } |
     <div v-else class="lu-empty">{{ t('levelUp.steps.ability.empty') }}</div>
   </div>
 </template>
+
+<style scoped src="./stepShared.css"></style>

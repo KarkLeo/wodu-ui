@@ -37,3 +37,5 @@ const available = computed(() => SKILL_IDS.filter(id => !props.currentSkillIds.i
     <div v-else class="lu-empty">{{ t('levelUp.steps.skill.empty') }}</div>
   </div>
 </template>
+
+<style scoped src="./stepShared.css"></style>
