@@ -2,14 +2,17 @@
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { t } from '@/locales'
+import { useDebouncedField } from '@/composables/useDebouncedField'
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
-function save(e: Event) {
-  props.dispatch({ type: 'UPDATE_NOTES', notes: (e.target as HTMLTextAreaElement).value })
-}
+const notes = useDebouncedField(
+  () => props.char.notes,
+  (value) => props.dispatch({ type: 'UPDATE_NOTES', notes: value }),
+  600,
+)
 </script>
 
 <template>
@@ -17,8 +20,9 @@ function save(e: Event) {
     <h2 class="notes-title">{{ t('inGame.notes.title') }}</h2>
     <textarea
       class="notes-area"
-      :value="char.notes"
-      @blur="save"
+      :value="notes.value.value"
+      @input="notes.onInput(($event.target as HTMLTextAreaElement).value)"
+      @blur="notes.flush()"
       :placeholder="t('inGame.notes.placeholder')"
     ></textarea>
   </section>
