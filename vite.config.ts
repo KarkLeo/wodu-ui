@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { resolve } from 'path'
 import { readFileSync } from 'node:fs'
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
+import { playwright } from '@vitest/browser-playwright'
 
 const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')) as { version: string }
 
@@ -78,9 +80,30 @@ export default defineConfig({
     alias: { '@': resolve(__dirname, 'src') },
   },
   test: {
-    environment: 'happy-dom',
-    globals: true,
-    // tests/e2e/ holds a Playwright scaffold that vitest cannot run.
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'happy-dom',
+          globals: true,
+          // tests/e2e/ holds a Playwright scaffold that vitest cannot run.
+          include: ['src/**/*.{test,spec}.{ts,tsx}'],
+        },
+      },
+      {
+        extends: true,
+        plugins: [storybookTest({ configDir: '.storybook', storybookScript: 'npm run storybook -- --ci' })],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: 'chromium' }],
+          },
+        },
+      },
+    ],
   },
 })

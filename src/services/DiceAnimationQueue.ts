@@ -51,7 +51,8 @@ export async function getDiceBox(): Promise<DiceBox> {
     log.info('init: starting')
     initPromise = (async () => {
       const box = new DiceBox(OVERLAY_SELECTOR, {
-        assetPath: '/dice-assets/',
+        // BASE_URL keeps the path valid when the build is served from a subpath (Storybook on GitHub Pages).
+        assetPath: `${import.meta.env.BASE_URL}dice-assets/`,
         sounds: false,
         shadows: true,
         theme_surface: 'green-felt',

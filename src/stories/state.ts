@@ -38,7 +38,7 @@ export function withStores(seed: StoreSeed): Decorator {
 }
 
 /** Desktop size at which GameLayout switches to three columns (its breakpoint is 961px). */
-export const DESKTOP_VIEWPORT = { viewport: { value: '1280-800', isRotated: false } }
+export const DESKTOP_VIEWPORT = { viewport: { value: 'desktop', isRotated: false } }
 
 export function asActive(id: string | null): Decorator {
   return (story) => ({

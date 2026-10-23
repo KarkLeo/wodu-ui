@@ -12,7 +12,7 @@ function toAliasArray(alias: AliasOptions | undefined) {
 const config: StorybookConfig = {
   framework: '@storybook/vue3-vite',
   stories: ['../src/**/*.stories.ts'],
-  addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
+  addons: ['@storybook/addon-docs', '@storybook/addon-a11y', '@storybook/addon-vitest'],
   core: { disableTelemetry: true },
   async viteFinal(config) {
     // The app's vite.config.ts is loaded as-is; the PWA plugin would emit a service worker into the Storybook build.
