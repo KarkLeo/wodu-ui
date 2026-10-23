@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
+import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle } from 'reka-ui'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import FormCheckbox from '@/components/ui/FormCheckbox.vue'
@@ -79,12 +79,12 @@ function close() { open.value = false }
   <DialogRoot v-model:open="open">
     <DialogPortal>
       <DialogOverlay class="bs-overlay" />
-      <DialogContent class="bs-content-wrap">
+      <DialogContent class="bs-content-wrap" :aria-describedby="undefined">
         <div class="bottom-sheet custom-sheet">
           <div class="bs-head">
-            <span class="bs-title">
+            <DialogTitle as="span" class="bs-title">
               {{ isEditing ? t('inGame.inventory.customForm.titleEdit') : t('inGame.inventory.customForm.titleAdd') }}
-            </span>
+            </DialogTitle>
             <DialogClose class="bs-close" :aria-label="t('common.close')">
               <IconClose />
             </DialogClose>
