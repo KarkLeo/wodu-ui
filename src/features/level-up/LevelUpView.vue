@@ -24,7 +24,7 @@ const abilitySel = ref<AbilityId | null>(null)
 const statSel = ref<StatKey | null>(null)
 const hitDiceTotal = ref<number | null>(null)
 
-watch(() => lv.phase.value, () => {
+watch([() => lv.phase.value, () => lv.targetLevel.value], () => {
   skillSel.value = null
   abilitySel.value = null
   statSel.value = null
