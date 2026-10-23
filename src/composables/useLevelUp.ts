@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { Character, SkillId, AbilityId, StatKey, Magic } from '@/types/character'
 import { ABILITY_IDS, SKILL_IDS } from '@/types/character'
@@ -103,12 +103,19 @@ export function useLevelUp(char: ComputedRef<Character | undefined>, dispatch: D
     if (!char.value || !reward.value) return
     log.info('init', { charId: char.value.id, targetLevel: targetLevel.value, reward: reward.value })
     pending.value = {}
+    snapshots.value = {}
     done.value = { skill: false, ability: false, stat: false, hitDice: false }
     if (reward.value.damageDice) {
       pending.value.damageBonusDice = (char.value.damageBonusDice ?? 0) + reward.value.damageDice
     }
     advance()
   }
+
+  // The level can change under an open wizard (realtime update from another device);
+  // progress built for the old target level must not carry over.
+  watch(targetLevel, (next, prev) => {
+    if (next !== prev) init()
+  })
 
   function goBack(): boolean {
     const steps = activeSteps.value

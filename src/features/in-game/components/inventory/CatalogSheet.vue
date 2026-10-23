@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose } from 'reka-ui'
+import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle } from 'reka-ui'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import { GEAR_CATEGORY_IDS, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
@@ -61,10 +61,10 @@ function onBuyClick(tpl: GearTemplate) {
   <DialogRoot v-model:open="open">
     <DialogPortal>
       <DialogOverlay class="bs-overlay" />
-      <DialogContent class="bs-content-wrap">
+      <DialogContent class="bs-content-wrap" :aria-describedby="undefined">
         <div class="bottom-sheet catalog-sheet">
           <div class="bs-head">
-            <span class="bs-title">{{ t('inGame.inventory.catalog.title') }}</span>
+            <DialogTitle as="span" class="bs-title">{{ t('inGame.inventory.catalog.title') }}</DialogTitle>
             <div class="bs-head-right">
               <span class="bs-coins">{{ coins }} {{ t('inGame.inventory.coinsUnit') }}</span>
               <DialogClose class="bs-close" :aria-label="t('common.close')">

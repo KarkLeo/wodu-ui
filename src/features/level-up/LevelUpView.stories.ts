@@ -4,6 +4,7 @@ import LevelUpView from './LevelUpView.vue'
 import { build, equip, oda, wren } from '@/stories/fixtures'
 import { atRoute, withStores } from '@/stories/state'
 import { XP_THRESHOLDS } from '@/data/xpTable'
+import { useCharactersStore } from '@/stores/characters'
 
 /** Fighter, level 2, enough XP for level 3: the skill → ability → summary path rolls no dice. */
 export const tamsin = build('story-tamsin', [
@@ -99,6 +100,20 @@ export const Ability: Story = {
     await pick(canvasElement, /^Lore/)
     await next(canvasElement)
     await expect(await screen(canvasElement).findByRole('button', { name: /^Hardy/ })).toBeInTheDocument()
+  },
+}
+
+/** Another device levels Tamsin up to 5 mid-wizard: the wizard restarts for level 6 with nothing pre-filled. */
+export const LevelChangedElsewhere: Story = {
+  loaders: [atRoute(`/character/${tamsin.id}/levelup`)],
+  play: async ({ canvasElement }) => {
+    await pick(canvasElement, /^Lore/)
+    await next(canvasElement)
+    const store = useCharactersStore()
+    store.upsertLocal({ ...store.getById(tamsin.id)!, level: 5 })
+    const view = screen(canvasElement)
+    await expect(await view.findByRole('button', { name: /^Lore/ })).toBeInTheDocument()
+    await expect(await view.findByRole('button', { name: /Next/ })).toBeDisabled()
   },
 }
 

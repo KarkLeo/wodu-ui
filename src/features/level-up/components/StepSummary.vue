@@ -145,3 +145,64 @@ function formatMod(n: number) {
     </div>
   </div>
 </template>
+
+<style scoped src="./stepShared.css"></style>
+
+<style scoped>
+.lu-summary { display: flex; flex-direction: column; }
+.lu-sum-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  column-gap: 14px;
+  padding: 12px 8px;
+}
+.lu-sum-row + .lu-sum-row { border-top: 1px solid rgba(140, 106, 58, 0.1); }
+.lu-sum-glyph { width: 18px; height: 18px; color: var(--vtt-accent-deep); }
+.lu-sum-glyph svg { width: 100%; height: 100%; }
+.lu-sum-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lu-sum-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vtt-accent-deep);
+}
+.lu-sum-name {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  color: var(--vtt-text-primary);
+  line-height: 1.2;
+}
+.lu-sum-value {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--vtt-accent-soft);
+  text-align: right;
+}
+.lu-sum-value em {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  color: var(--vtt-text-muted);
+  margin-left: 6px;
+  letter-spacing: 0.08em;
+}
+.lu-sum-value.is-hp { color: var(--vtt-accent); font-size: 22px; }
+.lu-sum-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  background: rgba(107, 142, 78, 0.15);
+  border-radius: var(--r-pill);
+  color: var(--vtt-success);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+</style>

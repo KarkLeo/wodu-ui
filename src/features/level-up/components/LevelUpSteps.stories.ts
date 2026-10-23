@@ -7,19 +7,17 @@ import StepSummary from './StepSummary.vue'
 import { oda, wren } from '@/stories/fixtures'
 import { ABILITY_IDS, SKILL_IDS } from '@/types/character'
 import { tamsin } from '../LevelUpView.stories'
-// The step styles are global rules scoped under .lu-shell and live in the view's unscoped <style>.
-import '../LevelUpView.vue'
 
-const inShell: Decorator = (story) => ({
+const padded: Decorator = (story) => ({
   components: { story },
-  template: '<div class="lu-shell" style="padding: 20px 16px; color: var(--vtt-text-primary)"><story /></div>',
+  template: '<div style="padding: 20px 16px; color: var(--vtt-text-primary)"><story /></div>',
 })
 
 const meta = {
   title: 'Screens/LevelUp/Steps',
   globals: { viewport: { value: 'phone', isRotated: false } },
   parameters: { layout: 'fullscreen' },
-  decorators: [inShell],
+  decorators: [padded],
 } satisfies Meta
 
 export default meta
