@@ -12,8 +12,13 @@ Interactive character sheet for the tabletop RPG **World of Dungeons** (©1979 J
 npm run dev       # Vite dev server
 npm run build     # vue-tsc type check + Vite production build
 npm run preview   # preview production build
-npm run test      # vitest (watch mode); add --run for one-shot, --coverage for coverage
+npm run test      # unit tests (vitest project `unit`, watch mode); add --run for one-shot, --coverage for coverage
+npm run storybook        # Storybook dev server on :6006
+npm run test-storybook   # runs every story and its play function in headless Chromium (vitest project `storybook`)
+npm run build-storybook  # static Storybook into storybook-static/
 ```
+
+Node 24 from `.nvmrc`, npm 11. Before the first `test-storybook`, install the browser: `npx playwright install chromium`.
 
 Run a single test file: `npm run test -- src/utils/derived.test.ts`.
 
@@ -24,7 +29,7 @@ Run a single test file: `npm run test -- src/utils/derived.test.ts`.
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box` wrapped in `src/services/DiceBoxService.ts`
 - **Routing**: Vue Router with route guards
-- **Testing**: Vitest + happy-dom + `@vue/test-utils`. Coverage of **domain core only** — `src/utils/derived.ts` and `src/domain/reducer.ts`. Do not add tests for UI/stores/composables.
+- **Testing**: Vitest + happy-dom + `@vue/test-utils`. Coverage of **domain core only** — `src/utils/derived.ts` and `src/domain/reducer.ts`. Do not add unit tests for UI/stores/composables — UI behaviour is covered by Storybook stories with `play` functions, which CI runs.
 
 ## Routes
 
