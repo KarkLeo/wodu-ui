@@ -68,3 +68,34 @@ export const PhoneLog: Story = {
     await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Dice' }))
   },
 }
+
+const settle = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Scrolls the sheet's content area and checks the header collapses and stays collapsed,
+// the content keeps its scroll position and the header stays pinned above it.
+async function scrollSheet(canvasElement: HTMLElement, by: number) {
+  const content = canvasElement.querySelector<HTMLElement>('.app-shell-content')!
+  const header = canvasElement.querySelector<HTMLElement>('.app-shell-header')!
+  const headerTop = header.getBoundingClientRect().top
+  content.scrollTop = by
+  await settle(800)
+  await expect(content.scrollTop).toBeGreaterThan(0)
+  await expect(canvasElement.querySelector('.status-header.is-compact')).not.toBeNull()
+  await expect(header.getBoundingClientRect().top).toBe(headerTop)
+}
+
+/** Wren's main tab overflows by less than the compact header saves: scrolling must not flicker back. */
+export const PhoneScrollShortSheet: Story = {
+  globals: PHONE,
+  loaders: [atRoute(`/party/${wren.id}`)],
+  play: async ({ canvasElement }) => scrollSheet(canvasElement, 30),
+}
+
+export const DesktopScrollSheet: Story = {
+  globals: DESKTOP_VIEWPORT,
+  loaders: [atRoute(`/party/${wren.id}`)],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(await within(canvasElement).findByRole('tab', { name: 'Inventory' }))
+    await scrollSheet(canvasElement, 60)
+  },
+}
