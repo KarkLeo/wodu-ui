@@ -67,6 +67,7 @@ const preview: Preview = {
         phone: { name: 'Phone 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
         phoneMax: { name: 'Phone max 719', styles: { width: '719px', height: '900px' }, type: 'mobile' },
         tablet: { name: 'Tablet 960', styles: { width: '960px', height: '1024px' }, type: 'tablet' },
+        desktop: { name: 'Desktop 1280', styles: { width: '1280px', height: '800px' }, type: 'desktop' },
       },
     },
   },
