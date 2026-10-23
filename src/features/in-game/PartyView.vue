@@ -200,10 +200,10 @@ function scrollToIndex(i: number) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 .sheet-column-body :deep(.app-shell) {
+  flex: 1 1 auto;
   background: transparent;
 }
 
