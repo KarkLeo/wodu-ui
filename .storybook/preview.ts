@@ -3,16 +3,38 @@ import { setup } from '@storybook/vue3-vite'
 import { themes } from 'storybook/theming'
 import { createPinia } from 'pinia'
 import { LOCALES, setLocale, type Locale } from '@/locales/locale'
+import { storyRouter } from '@/stories/router'
+import { STORY_NOW } from '@/stories/fixtures'
+
+const RealDate = Date
+
+// Clock frozen at the fixtures' time, so clocks and timestamps in stories render the same on every run.
+class FixedDate extends RealDate {
+  constructor(...args: ConstructorParameters<DateConstructor> | []) {
+    if (args.length === 0) super(STORY_NOW)
+    else super(...(args as ConstructorParameters<DateConstructor>))
+  }
+  static now() {
+    return STORY_NOW
+  }
+}
 
 import '@/assets/fonts'
 import '@/assets/main.css'
 
 setup((app) => {
   app.use(createPinia())
+  app.use(storyRouter)
 })
 
 const preview: Preview = {
   tags: ['autodocs'],
+  beforeEach() {
+    globalThis.Date = FixedDate as DateConstructor
+    return () => {
+      globalThis.Date = RealDate
+    }
+  },
   globalTypes: {
     locale: {
       description: 'Interface language',
