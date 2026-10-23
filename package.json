@@ -1,7 +1,7 @@
 {
   "name": "world-of-dungeons",
   "private": true,
-  "version": "0.3.8",
+  "version": "0.3.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -29,7 +29,7 @@
     "@storybook/addon-docs": "^10.6.3",
     "@storybook/addon-vitest": "^10.6.3",
     "@storybook/vue3-vite": "^10.6.3",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^6.0.10",
     "@vitest/browser": "^5.0.5",
     "@vitest/browser-playwright": "^5.0.5",
     "@vitest/coverage-v8": "^5.0.5",
@@ -38,7 +38,7 @@
     "playwright": "^1.64.1",
     "storybook": "^10.6.3",
     "typescript": "~5.7.2",
-    "vite": "^6.3.1",
+    "vite": "^8.3.5",
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.5",
     "vue-tsc": "^3.3.13"

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import { playwright } from '@vitest/browser-playwright'
 
-const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')) as { version: string }
+const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf-8')) as { version: string }
 
 export default defineConfig({
   define: {
@@ -77,7 +77,7 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: { '@': resolve(__dirname, 'src') },
+    alias: { '@': resolve(import.meta.dirname, 'src') },
   },
   test: {
     projects: [
