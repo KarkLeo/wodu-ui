@@ -4,6 +4,7 @@ import { themes } from 'storybook/theming'
 import { createPinia } from 'pinia'
 import { LOCALES, setLocale, type Locale } from '@/locales/locale'
 import { storyRouter } from '@/stories/router'
+import { withNavigationNotice } from '@/stories/state'
 import { STORY_NOW } from '@/stories/fixtures'
 
 const RealDate = Date
@@ -50,6 +51,7 @@ const preview: Preview = {
     locale: 'en',
   },
   decorators: [
+    withNavigationNotice,
     (story, context) => {
       setLocale(context.globals.locale as Locale)
       return story()

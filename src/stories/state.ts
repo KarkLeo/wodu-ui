@@ -1,4 +1,6 @@
-import { provide, ref } from 'vue'
+import { onMounted, provide, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { action } from 'storybook/actions'
 import type { Decorator, Loader } from '@storybook/vue3-vite'
 import { GameLayoutContextKey, type Side } from '@/components/layout/gameLayoutContext'
 import type { Character } from '@/types/character'
@@ -67,6 +69,49 @@ export function inLayout(collapsed: Partial<Record<Side, boolean>> = {}): Decora
     template: '<story />',
   })
 }
+
+const logNavigation = action('navigate')
+
+/**
+ * Stories render a view directly, not through <RouterView>, so a router.push() inside the view
+ * changes the route but leaves the view mounted. Make a switch to another route visible instead of
+ * letting the stale view keep reacting (e.g. level-up re-targeting the next level after Confirm).
+ * Param-only changes (/party/a,b → /party/a) keep the same view in the app too, so they only log.
+ * Opt out with `parameters: { navigationNotice: false }`.
+ */
+export const withNavigationNotice: Decorator = (story, context) => ({
+  components: { story },
+  setup() {
+    const route = useRoute()
+    const startName = ref<string | null>(null)
+    const leftTo = ref<string | null>(null)
+    onMounted(() => {
+      startName.value = String(route.name ?? '')
+    })
+    watch(() => route.fullPath, (path) => {
+      if (startName.value === null) return
+      logNavigation(path)
+      if (context.parameters.navigationNotice !== false && String(route.name ?? '') !== startName.value) {
+        leftTo.value = path
+      }
+    })
+    return { leftTo }
+  },
+  template: `
+    <story />
+    <Teleport to="body">
+      <div v-if="leftTo" role="status" style="position: fixed; inset: 0; z-index: 10000; display: grid;
+        place-items: center; padding: 24px; background: rgba(7, 5, 10, 0.82); backdrop-filter: blur(4px)">
+        <div style="max-width: 340px; padding: 16px 18px; border: 1px solid var(--vtt-border-gold);
+          border-radius: var(--r-md); background: var(--vtt-bg-elevated); color: var(--vtt-text-primary);
+          font-family: var(--font-sans); font-size: 14px; line-height: 1.5; text-align: center">
+          The app would leave this screen here and open
+          <code style="font-family: var(--font-mono); color: var(--vtt-accent)">{{ leftTo }}</code>.
+        </div>
+      </div>
+    </Teleport>
+  `,
+})
 
 /** Navigates the story router before render, so views reading useRoute() see their params on mount. */
 export function atRoute(path: string): Loader {
