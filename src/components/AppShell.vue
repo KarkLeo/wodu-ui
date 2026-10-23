@@ -1,20 +1,41 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
 withDefaults(defineProps<{
   variant?: 'top' | 'bottom'
 }>(), { variant: 'bottom' })
 
+const headerEl = ref<HTMLElement | null>(null)
 const contentEl = ref<HTMLElement | null>(null)
 const sentinelEl = ref<HTMLElement | null>(null)
 const compact = ref(false)
+const compactSpacer = ref(0)
 let io: IntersectionObserver | null = null
+
+// Collapsing the header grows the content area; if the content overflowed by less than that,
+// scrollTop would snap to 0 and the header would expand again in a loop. A bottom spacer of the
+// saved height keeps the scroll range (sized generously first, trimmed after the compact render).
+function setCompact(next: boolean) {
+  if (next === compact.value) return
+  if (!next) {
+    compact.value = false
+    compactSpacer.value = 0
+    return
+  }
+  const fullHeight = headerEl.value?.offsetHeight ?? 0
+  compactSpacer.value = fullHeight
+  compact.value = true
+  void nextTick(() => {
+    const compactHeight = headerEl.value?.offsetHeight ?? fullHeight
+    compactSpacer.value = Math.max(0, fullHeight - compactHeight)
+  })
+}
 
 onMounted(() => {
   if (!contentEl.value || !sentinelEl.value) return
   io = new IntersectionObserver(
     (entries) => {
-      for (const e of entries) compact.value = !e.isIntersecting
+      for (const e of entries) setCompact(!e.isIntersecting)
     },
     { root: contentEl.value, threshold: 0 },
   )
@@ -28,13 +49,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div :class="['app-shell', { 'variant-mobile': variant === 'bottom' }]">
-    <header class="app-shell-header">
+    <header ref="headerEl" class="app-shell-header">
       <slot name="header" :compact="compact" />
     </header>
 
     <div ref="contentEl" class="app-shell-content">
       <div ref="sentinelEl" class="app-shell-sentinel" aria-hidden="true" />
       <slot />
+      <div v-if="compactSpacer" class="app-shell-compact-spacer" :style="{ height: `${compactSpacer}px` }" aria-hidden="true" />
     </div>
 
     <nav class="app-shell-tabs">
@@ -52,6 +74,8 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
   background: var(--vtt-bg-base);
 }
 
@@ -71,6 +95,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   padding: 0;
   position: relative;
+  overflow-y: auto;
 }
 
 .app-shell-sentinel {
@@ -105,12 +130,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 960px) {
-  .app-shell {
-    height: 100%;
-    min-height: 0;
-  }
   .app-shell-content {
-    overflow-y: auto;
     padding: 14px 14px 16px;
   }
   .app-shell-tabs {
