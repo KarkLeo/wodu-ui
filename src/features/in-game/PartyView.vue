@@ -136,6 +136,8 @@ function scrollToIndex(i: number) {
   padding: var(--s-4) 0;
   height: 100%;
   scroll-snap-type: x proximity;
+  /* The scroller runs under the side panels; snap positions must start beside them, not under them. */
+  scroll-padding-inline: calc(var(--gl-left-w) + var(--s-4)) calc(var(--gl-right-w) + var(--s-4));
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -210,6 +212,7 @@ function scrollToIndex(i: number) {
     gap: 0;
     padding: 10px 0 20px;
     scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0;
   }
   .party-center::before,
   .party-center::after { flex-basis: 0; }
