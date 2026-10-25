@@ -47,6 +47,7 @@ Route names are set with `definePageMeta({ name })` and used by `router.push({ n
 | `/character/:id` | `in-game` | `pages/character/[id]/index.vue` | — | redirects to `/party/:id` |
 | `/party/:ids` | `party` | `pages/party/[ids].vue` | `PartyView` | comma-separated ids; renders `InGameView` per character; `party` middleware filters out draft/missing ids |
 | `/character/:id/levelup` | `level-up` | `pages/character/[id]/levelup.vue` | `LevelUpView` | `level-up` middleware redirects if not `active` |
+| anything else | `slug` | `pages/[...slug].vue` | — | renders nothing, so the layout stays (the old router had no catch-all) |
 
 ## Data Model
 
