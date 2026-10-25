@@ -1,4 +1,8 @@
 node_modules
+.nuxt
+.output
+.visual
+storybook-static
 dist
 .git
 .gitignore
