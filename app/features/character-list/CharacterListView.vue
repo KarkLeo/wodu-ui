@@ -6,6 +6,7 @@ import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { usePwaInstall } from '@/pwa/useInstall'
+import { onlineDataReady } from '@/transport/bootstrap'
 
 const router = useRouter()
 const characters = useCharactersStore()
@@ -39,7 +40,11 @@ function resumeCreation(id: string) {
       </button>
     </section>
 
-    <div v-if="activeChars.length === 0 && draftChars.length === 0" class="cl-empty">
+    <div v-if="!onlineDataReady" class="cl-loading" role="status">
+      {{ t('characterList.loading') }}
+    </div>
+
+    <div v-else-if="activeChars.length === 0 && draftChars.length === 0" class="cl-empty">
       <div class="cl-empty__icon">
         <IconDice />
       </div>
@@ -165,6 +170,7 @@ function resumeCreation(id: string) {
   color: var(--vtt-text-muted);
 }
 
+.cl-loading,
 .cl-hint {
   margin: 48px auto;
   padding: 24px;

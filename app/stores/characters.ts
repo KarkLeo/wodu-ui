@@ -5,8 +5,9 @@ import { applyCommand } from '@/domain/reducer'
 import type { CharacterCommand } from '@/domain/commands'
 import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
-import { pb } from '@/transport/pb'
-import { useToastsStore } from '@/stores/toasts'
+import { backend } from '@/transport/backend'
+import { modeSession } from '@/transport/mode'
+import { reportWriteFailure } from '@/transport/writeFailure'
 import { t } from '@/locales'
 
 const log = createLogger('store:characters')
@@ -35,16 +36,21 @@ export const useCharactersStore = defineStore('characters', {
         createdAt: Date.now(),
       }
       log.debug('add', { id: character.id, status: character.status, name: character.name, classId: character.classId })
+      const session = modeSession()
+      const be = backend()
       this.upsertLocal(character)
       try {
-        await pb.collection('characters').create({ id: character.id, data: character })
-        return character
+        await be.createCharacter(character)
       } catch (err) {
-        log.error('add: PB failed', { id: character.id, err })
+        log.error('add: write failed', { id: character.id, err })
+        if (modeSession() !== session) return null
         this.removeLocal(character.id)
-        useToastsStore().push(t('errors.addFailed'), 'error')
+        reportWriteFailure(err, t('errors.addFailed'), session)
         return null
       }
+      // The mode changed while the write was in flight: the stores now hold the other mode's data.
+      if (modeSession() !== session) return null
+      return character
     },
     async dispatch(id: string, cmd: CharacterCommand): Promise<void> {
       const prev = this.list.find(c => c.id === id)
@@ -56,17 +62,21 @@ export const useCharactersStore = defineStore('characters', {
       const { character: next, changes } = applyCommand(prev, cmd)
       if (next === prev && changes.length === 0) return
 
+      const session = modeSession()
+      const be = backend()
       this.upsertLocal(next)
 
       try {
-        await pb.collection('characters').update(id, { data: next })
+        await be.updateCharacter(next)
       } catch (err) {
-        log.error('dispatch: PB update failed, rolling back', { id, cmd: cmd.type, err })
+        log.error('dispatch: write failed, rolling back', { id, cmd: cmd.type, err })
+        if (modeSession() !== session) throw err
         this.upsertLocal(prev)
-        useToastsStore().push(t('errors.dispatchFailed'), 'error')
+        reportWriteFailure(err, t('errors.dispatchFailed'), session)
         throw err
       }
 
+      if (modeSession() !== session) return
       if (next.status === 'active' && changes.length) {
         const now = Date.now()
         const entries: ChangeEntry[] = changes.map((c, i) => ({
@@ -77,13 +87,7 @@ export const useCharactersStore = defineStore('characters', {
           characterName: next.name,
         }))
         try {
-          await Promise.all(entries.map(entry =>
-            pb.collection('change_events').create({
-              id: entry.id,
-              character_id: entry.characterId,
-              data: entry,
-            }),
-          ))
+          await be.addChanges(entries)
         } catch (err) {
           log.error('dispatch: change_events write failed', { id, err })
         }
@@ -92,13 +96,16 @@ export const useCharactersStore = defineStore('characters', {
     async remove(id: string): Promise<void> {
       log.debug('remove', { id })
       const prev = this.list.find(c => c.id === id)
+      const session = modeSession()
+      const be = backend()
       this.removeLocal(id)
       try {
-        await pb.collection('characters').delete(id)
+        await be.deleteCharacter(id)
       } catch (err) {
-        log.error('remove: PB failed', { id, err })
+        log.error('remove: write failed', { id, err })
+        if (modeSession() !== session) throw err
         if (prev) this.upsertLocal(prev)
-        useToastsStore().push(t('errors.removeFailed'), 'error')
+        reportWriteFailure(err, t('errors.removeFailed'), session)
         throw err
       }
     },

@@ -10,6 +10,7 @@ import { useCharactersStore } from '@/stores/characters'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
 import { useCreationStore } from '@/stores/creation'
+import { bootstrapStatus } from '@/transport/bootstrap'
 import { storyRouter } from './router'
 
 interface StoreSeed {
@@ -27,6 +28,7 @@ export function withStores(seed: StoreSeed): Decorator {
       useCharactersStore().setAll(structuredClone(seed.characters ?? []))
       useRollHistoryStore().setAll(structuredClone(seed.rolls ?? []))
       useChangeLogStore().setAll(structuredClone(seed.changes ?? []))
+      bootstrapStatus.value = 'ready'
       if (seed.creation) {
         const creation = useCreationStore()
         creation.setDraft(seed.creation.draftId)

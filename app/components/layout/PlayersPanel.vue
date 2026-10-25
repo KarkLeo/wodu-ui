@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Character } from '@/types/character'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
+import { useModeSwitch } from '@/composables/useModeSwitch'
+import { mode, type AppMode } from '@/transport/mode'
 import Button from '@/components/ui/Button.vue'
-import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import ModeSwitch from '@/components/ui/ModeSwitch.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -19,6 +21,7 @@ const router = useRouter()
 const store = useCharactersStore()
 const creation = useCreationStore()
 const { createDraft } = useCharacterCreation()
+const { switchMode } = useModeSwitch()
 const layout = useGameLayout()
 
 const activeCharacters = computed(() =>
@@ -32,8 +35,6 @@ const openIds = computed(() => {
 })
 
 const openIdsSet = computed(() => new Set(openIds.value))
-
-const confirmResetOpen = ref(false)
 
 const localeOptions = LOCALES.map(l => ({ value: l, label: l.toUpperCase() }))
 
@@ -91,11 +92,8 @@ async function startNew() {
   router.push('/character/new')
 }
 
-function confirmReset() {
-  store.clearAll()
-  creation.reset()
-  confirmResetOpen.value = false
-  router.replace('/')
+function onModeChange(next: AppMode) {
+  void switchMode(next)
 }
 </script>
 
@@ -128,6 +126,10 @@ function confirmReset() {
   <div v-else class="players-panel">
     <div class="gl-panel-head">
       <p class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
+      <span v-if="mode === 'offline'" class="pr-offline-badge">
+        <span class="pr-offline-dot" aria-hidden="true" />
+        <span>{{ t('mode.badge') }}</span>
+      </span>
       <button
         v-if="layout"
         type="button"
@@ -164,6 +166,8 @@ function confirmReset() {
       <div v-if="!activeCharacters.length" class="players-empty">
         {{ t('gameLayout.players.empty') }}
       </div>
+
+      <p v-if="mode === 'offline'" class="players-offline-hint">{{ t('mode.offlineHint') }}</p>
     </div>
 
     <div class="gl-panel-foot">
@@ -174,12 +178,8 @@ function confirmReset() {
         :icon-left="IconPlus"
         @click="startNew"
       >{{ t('characterList.new') }}</Button>
-      <button
-        type="button"
-        class="reset-link"
-        @click="confirmResetOpen = true"
-      >{{ t('characterList.dev.reset') }}</button>
       <div class="build-id">{{ buildLine }}</div>
+      <ModeSwitch :model-value="mode" @update:model-value="onModeChange" />
       <div class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
         <button
           v-for="opt in localeOptions"
@@ -192,22 +192,6 @@ function confirmReset() {
         >{{ opt.label }}</button>
       </div>
     </div>
-
-    <ConfirmSheet
-      v-model:open="confirmResetOpen"
-      :title="t('characterList.dev.confirmTitle')"
-      variant="danger"
-    >
-      {{ t('characterList.dev.confirmBody') }}
-      <template #actions>
-        <Button variant="hero-danger" size="base" @click="confirmReset">
-          {{ t('characterList.dev.confirmAction') }}
-        </Button>
-        <Button variant="ghost" size="base" @click="confirmResetOpen = false">
-          {{ t('common.cancel') }}
-        </Button>
-      </template>
-    </ConfirmSheet>
   </div>
 </template>
 
@@ -223,11 +207,34 @@ function confirmReset() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--s-2);
   padding: var(--s-3) var(--s-4) var(--s-2);
 }
 .gl-panel-head .eyebrow {
   margin: 0;
   color: var(--vtt-accent-deep);
+}
+
+.pr-offline-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--vtt-border-gold);
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vtt-accent-soft);
+  white-space: nowrap;
+}
+.pr-offline-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--vtt-accent);
 }
 
 .btn-collapse {
@@ -384,6 +391,16 @@ function confirmReset() {
   text-align: center;
 }
 
+.players-offline-hint {
+  margin: var(--s-1) 0 0;
+  padding: 0 10px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--vtt-text-muted);
+}
+
 .gl-panel-foot {
   padding: var(--s-3) var(--s-4);
   display: flex;
@@ -392,20 +409,6 @@ function confirmReset() {
   gap: 10px;
 }
 .panel-btn-full { width: 100%; justify-content: center; }
-
-.reset-link {
-  background: transparent;
-  border: none;
-  padding: 4px 6px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: color var(--t-fast) var(--ease);
-}
-.reset-link:hover { color: var(--vtt-danger-bright); }
 
 .build-id {
   font-family: var(--font-mono);

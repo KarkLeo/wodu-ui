@@ -1,10 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { onUnmounted } from 'vue'
+import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CharacterCreationView from './CharacterCreationView.vue'
 import { useCreationStore } from '@/stores/creation'
 import { build, draftGear, draftIdentity, draftTraining } from '@/stories/fixtures'
 import { storyRouter } from '@/stories/router'
 import { atRoute, withStores } from '@/stories/state'
+import { bootstrapStatus } from '@/transport/bootstrap'
 
 const meta = {
   title: 'Screens/CharacterCreation',
@@ -82,6 +84,31 @@ export const StaleDraft: Story = {
   tags: ['no-visual'],
   decorators: [withStores({ characters: [], creation: { draftId: 'story-missing-draft', step: 2 } })],
   play: async () => {
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await expect(useCreationStore().draftId).toBeNull()
+  },
+}
+
+// Listed before withStores so that it runs after it and overrides the 'ready' status withStores sets.
+const serverDown: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const previous = bootstrapStatus.value
+    bootstrapStatus.value = 'failed'
+    onUnmounted(() => { bootstrapStatus.value = previous })
+  },
+  template: '<story />',
+})
+
+/** The online load failed: the draft is not in the store yet, so the pointer is kept until data arrives. */
+export const StaleDraftWhileServerDown: Story = {
+  tags: ['no-visual'],
+  decorators: [serverDown, withStores({ characters: [], creation: { draftId: 'story-missing-draft', step: 2 } })],
+  play: async () => {
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(storyRouter.currentRoute.value.path).toBe('/character/new')
+    await expect(useCreationStore().draftId).toBe('story-missing-draft')
+    bootstrapStatus.value = 'ready'
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
     await expect(useCreationStore().draftId).toBeNull()
   },

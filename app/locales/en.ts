@@ -37,15 +37,10 @@ export const messages = {
     customClassFallback: 'Custom class',
     draftUnnamed: 'Unnamed',
     pickFromSidebar: 'Pick a character in the left panel to open their sheet.',
+    loading: 'Loading characters…',
     empty: {
       title: 'No characters',
       hint: 'Tap “New” to begin.',
-    },
-    dev: {
-      reset: 'Full state reset',
-      confirmTitle: 'Reset state?',
-      confirmBody: 'Deletes all characters and drafts. This cannot be undone.',
-      confirmAction: 'Delete everything',
     },
   },
   characterCreation: {
@@ -568,10 +563,23 @@ export const messages = {
     removeFailed: 'Failed to delete the character. Check your connection.',
     rollSyncFailed: 'Roll made, but not synced.',
   },
-  bootstrap: {
-    failedTitle: 'No connection to the server',
-    failedHint: 'Data is temporarily unavailable.',
+  offline: {
+    loadFailed: 'Could not read saved offline data. Affected lists start empty.',
+    saveFailed: 'Could not save offline data on this device.',
+  },
+  mode: {
+    online: 'Online',
+    offline: 'Offline',
+    badge: 'Offline',
+    offlineHint: 'Offline characters live only on this device. Clearing site data deletes them.',
+  },
+  serverDown: {
+    title: 'Server unavailable',
+    body: 'Can’t reach the game server. Changes can’t be saved right now.',
+    bodyNoInternet: 'No internet connection. Changes can’t be saved right now — you can keep playing offline.',
+    reconnecting: 'Reconnecting… attempt {attempt}',
     retry: 'Retry',
+    playOffline: 'Play offline',
   },
   pwa: {
     updateAvailable: 'Update available',

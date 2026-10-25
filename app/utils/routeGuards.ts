@@ -6,7 +6,14 @@ const log = createLogger('router')
 
 type GetById = (id: string) => Character | undefined
 
-export function partyGuard(ids: string | undefined, getById: GetById): RouteLocationRaw | undefined {
+// dataReady is false while the online load has failed: a deep link must not be thrown away
+// before the data it points at could be loaded.
+export function partyGuard(
+  ids: string | undefined,
+  getById: GetById,
+  dataReady = true,
+): RouteLocationRaw | undefined {
+  if (!dataReady) return undefined
   const raw = ids ?? ''
   const list = raw.split(',').map(s => s.trim()).filter(Boolean)
   const valid = list.filter(id => {
@@ -22,7 +29,8 @@ export function partyGuard(ids: string | undefined, getById: GetById): RouteLoca
   }
 }
 
-export function levelUpGuard(id: string, getById: GetById): RouteLocationRaw | undefined {
+export function levelUpGuard(id: string, getById: GetById, dataReady = true): RouteLocationRaw | undefined {
+  if (!dataReady) return undefined
   const char = getById(id)
   if (!char || char.status !== 'active') {
     log.warn('guard:level-up → redirect', { id, reason: !char ? 'not found' : 'not active' })

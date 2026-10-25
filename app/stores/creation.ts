@@ -1,43 +1,61 @@
 import { defineStore } from 'pinia'
 import { createLogger } from '@/utils/logger'
+import { mode } from '@/transport/mode'
 
 const log = createLogger('store:creation')
 
+type Step = 1 | 2 | 3
+
+interface DraftPointer {
+  draftId: string | null
+  step: Step
+}
+
+// One pointer per mode: an online draft id must never point into the offline list, and vice versa.
 export const useCreationStore = defineStore('creation', {
   state: () => ({
-    draftId: null as string | null,
-    step: 1 as 1 | 2 | 3,
+    perMode: {
+      online: { draftId: null, step: 1 } as DraftPointer,
+      offline: { draftId: null, step: 1 } as DraftPointer,
+    },
   }),
+  getters: {
+    draftId: (state): string | null => state.perMode[mode.value].draftId,
+    step: (state): Step => state.perMode[mode.value].step,
+  },
   actions: {
     setDraft(id: string) {
-      log.debug('setDraft', { id })
-      this.draftId = id
+      log.debug('setDraft', { id, mode: mode.value })
+      this.perMode[mode.value].draftId = id
     },
-    setStep(n: 1 | 2 | 3) {
+    setStep(n: Step) {
       log.debug('setStep', { n })
-      this.step = n
+      this.perMode[mode.value].step = n
     },
     nextStep() {
-      if (this.step < 3) {
-        const next = (this.step + 1) as 1 | 2 | 3
-        log.debug('nextStep', { from: this.step, to: next })
-        this.step = next
+      const cur = this.perMode[mode.value]
+      if (cur.step < 3) {
+        const next = (cur.step + 1) as Step
+        log.debug('nextStep', { from: cur.step, to: next })
+        cur.step = next
       }
     },
     prevStep() {
-      if (this.step > 1) {
-        const next = (this.step - 1) as 1 | 2 | 3
-        log.debug('prevStep', { from: this.step, to: next })
-        this.step = next
+      const cur = this.perMode[mode.value]
+      if (cur.step > 1) {
+        const next = (cur.step - 1) as Step
+        log.debug('prevStep', { from: cur.step, to: next })
+        cur.step = next
       }
     },
     reset() {
-      log.debug('reset', { prevDraftId: this.draftId, prevStep: this.step })
-      this.draftId = null
-      this.step = 1
+      const cur = this.perMode[mode.value]
+      log.debug('reset', { prevDraftId: cur.draftId, prevStep: cur.step, mode: mode.value })
+      cur.draftId = null
+      cur.step = 1
     },
   },
   persist: {
-    key: 'wod.creation.v1',
+    key: 'wod.creation.v2',
   },
 })

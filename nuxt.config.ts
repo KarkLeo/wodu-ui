@@ -57,6 +57,18 @@ const pwaPlugins = VitePWA({
           cacheableResponse: { statuses: [0, 200] },
         },
       },
+      // The layout background is too large to precache (Workbox skips files over 2 MiB), so it is
+      // cached on first use; without it an offline relaunch loses the background.
+      {
+        urlPattern: ({ url, sameOrigin }) =>
+          sameOrigin && url.pathname.startsWith('/_nuxt/') && /\.(?:jpe?g|webp|png)$/.test(url.pathname),
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'images',
+          expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+          cacheableResponse: { statuses: [0, 200] },
+        },
+      },
       // No route for PocketBase (/api/, /_/): unmatched requests bypass the worker. A NetworkOnly route
       // would pipe the realtime stream through it, and that open fetch keeps a new worker from activating.
     ],

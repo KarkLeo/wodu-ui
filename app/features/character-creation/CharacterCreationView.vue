@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useCreationStore } from '@/stores/creation'
 import { useCharactersStore } from '@/stores/characters'
+import { onlineDataReady } from '@/transport/bootstrap'
 import { t } from '@/locales'
 import { className as classNameOf } from '@/locales/content'
 import StepIdentity from './steps/StepIdentity.vue'
@@ -80,12 +81,16 @@ function onNextOrFinish() {
   else next()
 }
 
-onMounted(() => {
+// A persisted draftId can outlive its record (deleted elsewhere, or never saved before a reload).
+// Judge only once the data is loaded: during a server outage the store is empty but the pointer is fine.
+let staleChecked = false
+watch(onlineDataReady, (ready) => {
+  if (!ready || staleChecked) return
+  staleChecked = true
   if (draft.value) return
-  // A persisted draftId can outlive its record (deleted elsewhere, or never saved before a reload).
   creation.reset()
   router.push('/')
-})
+}, { immediate: true })
 </script>
 
 <template>
