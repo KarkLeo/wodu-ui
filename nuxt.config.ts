@@ -4,6 +4,63 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }
 
+const pwaPlugins = VitePWA({
+  strategies: 'generateSW',
+  registerType: 'autoUpdate',
+  injectRegister: false,
+  manifest: false,
+  outDir: fileURLToPath(new URL('./.output/public', import.meta.url)),
+  workbox: {
+    // includeAssets resolves against Vite's publicDir, which Nuxt leaves empty, so the webmanifest is globbed instead.
+    globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,webmanifest}'],
+    // 200.html, 404.html and the prerendered character/new/index.html are copies of the index.html shell.
+    globIgnores: ['**/dice-assets/**', '200.html', '404.html', 'character/**'],
+    dontCacheBustURLsMatching: /^_nuxt\//,
+    navigateFallback: '/index.html',
+    // /_/ is PocketBase's admin UI; a bare /^\/_/ would also catch Nuxt's /_nuxt/ assets.
+    navigateFallbackDenylist: [/^\/api\//, /^\/_\//],
+    cleanupOutdatedCaches: true,
+    clientsClaim: true,
+    skipWaiting: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts-stylesheets',
+          expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+          cacheableResponse: { statuses: [0, 200] },
+        },
+      },
+      {
+        urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts-files',
+          expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+          cacheableResponse: { statuses: [0, 200] },
+        },
+      },
+      {
+        urlPattern: ({ url, sameOrigin }) =>
+          sameOrigin && url.pathname.startsWith('/dice-assets/'),
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'dice-assets',
+          expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+          cacheableResponse: { statuses: [0, 200] },
+        },
+      },
+      {
+        urlPattern: ({ url }) =>
+          url.pathname.startsWith('/api/') || url.pathname.startsWith('/_/'),
+        handler: 'NetworkOnly',
+      },
+    ],
+  },
+  devOptions: { enabled: false },
+})
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-25',
   ssr: false,
@@ -34,70 +91,17 @@ export default defineNuxtConfig({
       __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
       __PUBLIC_BASE__: JSON.stringify('/'),
     },
-    plugins: [
-      // Options carried over verbatim from the Vite build; they do not yet account for Nuxt's
-      // output (assets under /_nuxt/, index.html emitted by nuxt generate).
-      VitePWA({
-        strategies: 'generateSW',
-        registerType: 'autoUpdate',
-        injectRegister: false,
-        manifest: false,
-        includeAssets: [
-          'favicon.ico',
-          'favicon-16x16.png',
-          'favicon-32x32.png',
-          'apple-touch-icon.png',
-          'android-chrome-192x192.png',
-          'android-chrome-512x512.png',
-          'site.webmanifest',
-        ],
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          globIgnores: ['**/dice-assets/**'],
-          navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//, /^\/_/],
-          cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
-          runtimeCaching: [
-            {
-              urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-stylesheets',
-                expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-            {
-              urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-files',
-                expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-            {
-              urlPattern: ({ url, sameOrigin }) =>
-                sameOrigin && url.pathname.startsWith('/dice-assets/'),
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'dice-assets',
-                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-            {
-              urlPattern: ({ url }) =>
-                url.pathname.startsWith('/api/') || url.pathname.startsWith('/_'),
-              handler: 'NetworkOnly',
-            },
-          ],
-        },
-        devOptions: { enabled: false },
-      }),
-    ],
+  },
+  hooks: {
+    'vite:extendConfig'(config, { isClient }) {
+      if (!isClient) return
+      // The build plugin would write sw.js into the client bundle dir, which Nitro never copies to
+      // .output/public; the worker is generated after Nitro has assembled the output instead.
+      config.plugins?.push(pwaPlugins.filter((p) => p.name !== 'vite-plugin-pwa:build'))
+    },
+    async 'nitro:build:public-assets'() {
+      await pwaPlugins.find((p) => p.name === 'vite-plugin-pwa')?.api?.generateSW()
+    },
   },
   app: {
     head: {
