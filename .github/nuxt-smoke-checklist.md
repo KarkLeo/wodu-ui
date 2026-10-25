@@ -10,6 +10,7 @@ The visual baseline renders components through Storybook and never runs Nuxt cod
 - [ ] Cold deep link (fresh tab, typed URL) to `/party/:ids` and to `/character/:id/levelup` renders the screen.
 - [ ] Party guard, cold deep link with a partly invalid party: `/party/<valid>,<missing>` lands on `/party/<valid>`; `/party/<missing>` and `/party/<draft>` land on `/`.
 - [ ] Level-up guard: `/character/<missing>/levelup` and `/character/<draft>/levelup` land on `/`.
+- [ ] Unknown URLs (`/does-not-exist`, `/character/x/y/z`) keep the dark layout (players panel, dice drawer) with an empty main area and run no guard — the catch-all page `pages/[...slug].vue`, not Nuxt's 404 screen.
 - [ ] Changing only the params of the open route keeps the view mounted: with `/party/a` open on the Inventory tab, adding a second character (`/party/a,b`) keeps the first sheet on Inventory.
 
 ## Gameplay
