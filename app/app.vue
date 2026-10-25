@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { NuxtPage } from '#components'
 import '@/assets/fonts'
@@ -6,14 +7,35 @@ import DiceOverlay from '@/components/DiceOverlay.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt.vue'
+import ServerDownOverlay from '@/components/ServerDownOverlay.vue'
 import GameLayout from '@/components/layout/GameLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
-import { bootstrap, bootstrapStatus } from '@/transport/bootstrap'
-import { t } from '@/locales'
+import { mode } from '@/transport/mode'
+import { attempt, connection, probing, retryNow } from '@/transport/connection'
+import { useModeSwitch } from '@/composables/useModeSwitch'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
 // default key includes the params and would remount it.
 const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
+
+const { switchMode } = useModeSwitch()
+
+const serverDown = computed(() => mode.value === 'online' && connection.value === 'down')
+// The loop resets the count when it starts and bumps it only when the first probe fires a second later.
+const shownAttempt = computed(() => Math.max(1, attempt.value))
+
+const browserOnline = ref(navigator.onLine)
+function syncOnline() {
+  browserOnline.value = navigator.onLine
+}
+onMounted(() => {
+  window.addEventListener('online', syncOnline)
+  window.addEventListener('offline', syncOnline)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('online', syncOnline)
+  window.removeEventListener('offline', syncOnline)
+})
 </script>
 
 <template>
@@ -21,15 +43,16 @@ const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
   <ToastHost />
   <PwaUpdatePrompt />
 
-  <div v-if="bootstrapStatus === 'failed'" class="bootstrap-banner" role="alert">
-    <div class="bootstrap-banner__title">{{ t('bootstrap.failedTitle') }}</div>
-    <div class="bootstrap-banner__hint">{{ t('bootstrap.failedHint') }}</div>
-    <button type="button" class="bootstrap-banner__retry" @click="bootstrap()">
-      {{ t('bootstrap.retry') }}
-    </button>
-  </div>
+  <ServerDownOverlay
+    v-if="serverDown"
+    :attempt="shownAttempt"
+    :no-internet="!browserOnline"
+    :probing="probing"
+    @retry="retryNow"
+    @play-offline="switchMode('offline')"
+  />
 
-  <GameLayout>
+  <GameLayout :inert="serverDown">
     <NuxtPage :page-key="pageKey" />
 
     <template #left>
@@ -41,45 +64,3 @@ const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
     </template>
   </GameLayout>
 </template>
-
-<style scoped>
-.bootstrap-banner {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1100;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: rgba(28, 22, 16, 0.96);
-  border: 1px solid rgba(180, 70, 60, 0.55);
-  border-radius: var(--r-md);
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: #f3c8c2;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  max-width: 92vw;
-}
-.bootstrap-banner__title { font-weight: 600; }
-.bootstrap-banner__hint {
-  font-style: italic;
-  color: var(--vtt-text-muted);
-  font-size: 12px;
-}
-.bootstrap-banner__retry {
-  margin-left: auto;
-  padding: 6px 10px;
-  background: transparent;
-  border: 1px solid rgba(140, 106, 58, 0.55);
-  border-radius: var(--r-sm);
-  color: var(--vtt-accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.bootstrap-banner__retry:hover { background: rgba(140, 106, 58, 0.2); }
-</style>

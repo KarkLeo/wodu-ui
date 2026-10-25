@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { ClientResponseError } from 'pocketbase'
 import { pb } from '@/transport/pb'
 import { mode } from './mode'
@@ -14,6 +14,10 @@ const MAX_DELAY_MS = 15000
 
 export const connection: Ref<ConnectionState> = ref('ok')
 export const attempt: Ref<number> = ref(0)
+
+const probingFlag = ref(false)
+// Read-only for the UI: Retry is unavailable while a probe is in flight, since retryNow() would be a no-op.
+export const probing: ComputedRef<boolean> = computed(() => probingFlag.value)
 
 export function isNetworkError(err: unknown): boolean {
   if (err instanceof ClientResponseError) return err.status === 0 && !err.isAbort
@@ -38,7 +42,6 @@ export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 let graceTimer: ReturnType<typeof setTimeout> | null = null
 let loopTimer: ReturnType<typeof setTimeout> | null = null
 let looping = false
-let probing = false
 let generation = 0
 let reconnectHandler: (() => Promise<void>) | null = null
 
@@ -55,7 +58,7 @@ function clearLoopTimer() {
 function cancelLoop() {
   generation += 1
   looping = false
-  probing = false
+  probingFlag.value = false
   clearLoopTimer()
 }
 
@@ -66,8 +69,8 @@ function scheduleProbe(gen: number) {
 }
 
 async function probe(gen: number) {
-  if (probing || gen !== generation) return
-  probing = true
+  if (probingFlag.value || gen !== generation) return
+  probingFlag.value = true
   clearLoopTimer()
   attempt.value += 1
   try {
@@ -82,7 +85,7 @@ async function probe(gen: number) {
     log.debug('reconnect probe failed', { err })
     if (gen === generation) scheduleProbe(gen)
   } finally {
-    if (gen === generation) probing = false
+    if (gen === generation) probingFlag.value = false
   }
 }
 

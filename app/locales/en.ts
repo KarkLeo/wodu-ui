@@ -41,12 +41,6 @@ export const messages = {
       title: 'No characters',
       hint: 'Tap “New” to begin.',
     },
-    dev: {
-      reset: 'Full state reset',
-      confirmTitle: 'Reset state?',
-      confirmBody: 'Deletes all characters and drafts. This cannot be undone.',
-      confirmAction: 'Delete everything',
-    },
   },
   characterCreation: {
     shell: {
@@ -572,10 +566,19 @@ export const messages = {
     loadFailed: 'Could not read saved offline data. Affected lists start empty.',
     saveFailed: 'Could not save offline data on this device.',
   },
-  bootstrap: {
-    failedTitle: 'No connection to the server',
-    failedHint: 'Data is temporarily unavailable.',
+  mode: {
+    online: 'Online',
+    offline: 'Offline',
+    badge: 'Offline',
+    offlineHint: 'Offline characters live only on this device. Clearing site data deletes them.',
+  },
+  serverDown: {
+    title: 'Server unavailable',
+    body: 'Can’t reach the game server. Changes can’t be saved right now.',
+    bodyNoInternet: 'No internet connection. Changes can’t be saved right now — you can keep playing offline.',
+    reconnecting: 'Reconnecting… attempt {attempt}',
     retry: 'Retry',
+    playOffline: 'Play offline',
   },
   pwa: {
     updateAvailable: 'Update available',
