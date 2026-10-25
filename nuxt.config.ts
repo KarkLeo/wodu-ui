@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-10-25',
   ssr: false,
   imports: { autoImport: false },
+  components: { dirs: [] },
   modules: ['@pinia/nuxt'],
   // Placeholder: main.css moves to app/assets/ in the next task.
   css: ['~/../src/assets/main.css'],
