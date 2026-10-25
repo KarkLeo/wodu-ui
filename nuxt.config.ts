@@ -9,6 +9,9 @@ const pwaPlugins = VitePWA({
   strategies: 'generateSW',
   registerType: 'autoUpdate',
   injectRegister: false,
+  // Nuxt builds the client with a relative Vite base, which would register ./sw.js and fail on deep links.
+  base: '/',
+  scope: '/',
   manifest: false,
   outDir: fileURLToPath(new URL('./.output/public', import.meta.url)),
   workbox: {
