@@ -325,7 +325,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--s-2);
 }
-@media (max-width: 479px) {
+@container (max-width: 479px) {
   .cc-attr-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .cc-attr {
@@ -411,7 +411,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--s-2);
 }
-@media (max-width: 479px) {
+@container (max-width: 479px) {
   .cc-class-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .cc-class {

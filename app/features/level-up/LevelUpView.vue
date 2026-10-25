@@ -252,9 +252,14 @@ onMounted(() => {
 }
 @media (min-width: 720px) {
   .cc-shell {
+    /* Centred, but never under GameLayout's side panels: shrinks first, then shifts off-centre. */
+    --cc-w: min(720px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
+    width: var(--cc-w);
+    max-width: none;
     height: calc(100% - 80px);
     max-height: 880px;
-    margin: 40px auto;
+    margin: 40px auto 40px
+      clamp(var(--gl-inset-left, 0px), (100% - var(--cc-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--cc-w));
     border-radius: var(--r-lg);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(140, 106, 58, 0.18);
   }
