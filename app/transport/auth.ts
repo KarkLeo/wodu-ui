@@ -3,7 +3,7 @@ import type { RecordModel } from 'pocketbase'
 import { pb } from '@/transport/pb'
 import { currentLocale, setLocale, LOCALES, type Locale } from '@/locales'
 import { BOOTSTRAP_TIMEOUT_MS, isNetworkError, withTimeout } from './connection'
-import { isAuthRejected, isNotUniqueEmailError, resolveLanguage } from './authHelpers'
+import { isAuthRejected, isCreateSkippable, resolveLanguage } from './authHelpers'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('transport:auth')
@@ -55,7 +55,7 @@ export async function requestCode(email: string): Promise<string> {
   try {
     await users().create({ email, password, passwordConfirm: password })
   } catch (err) {
-    if (!isNotUniqueEmailError(err)) throw err
+    if (!isCreateSkippable(err)) throw err
   }
   const { otpId } = await users().requestOTP(email)
   return otpId

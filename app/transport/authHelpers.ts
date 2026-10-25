@@ -31,8 +31,14 @@ export function isNotUniqueEmailError(err: unknown): boolean {
   return data?.email?.code === 'validation_not_unique'
 }
 
+// Not 404: Traefik answers it while the backend container is redeploying, and that must not sign anyone out.
 export function isAuthRejected(err: unknown): boolean {
-  return err instanceof ClientResponseError && [401, 403, 404].includes(err.status)
+  return err instanceof ClientResponseError && [401, 403].includes(err.status)
+}
+
+// A rate-limited create may well be a returning player, so the code request still goes ahead.
+export function isCreateSkippable(err: unknown): boolean {
+  return isNotUniqueEmailError(err) || (err instanceof ClientResponseError && err.status === 429)
 }
 
 function isLocale(value: string): value is Locale {
@@ -47,4 +53,16 @@ export function authGate(mode: AppMode, signedIn: boolean, name: string): AuthGa
   if (mode === 'offline') return 'none'
   if (!signedIn) return 'sign-in'
   return name ? 'none' : 'name'
+}
+
+export function canLoadOnline(mode: AppMode, signedIn: boolean): boolean {
+  return mode === 'online' && signedIn
+}
+
+export type SessionTransition = 'start' | 'stop' | null
+
+// Sign-in state can change in another tab (the SDK syncs its store through the storage event).
+export function sessionTransition(wasSignedIn: boolean, isSignedIn: boolean, mode: AppMode): SessionTransition {
+  if (mode !== 'online' || wasSignedIn === isSignedIn) return null
+  return isSignedIn ? 'start' : 'stop'
 }

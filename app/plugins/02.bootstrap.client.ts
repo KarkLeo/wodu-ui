@@ -3,10 +3,12 @@ import { pb } from '@/transport/pb'
 import { mode } from '@/transport/mode'
 import { bootstrap } from '@/transport/bootstrap'
 import { restoreSession } from '@/transport/auth'
+import { watchSession } from '@/transport/session'
 import { startOfflineSession } from '@/composables/useModeSwitch'
 
 export default defineNuxtPlugin(async () => {
   pb.baseURL = useRuntimeConfig().public.pbUrl
+  watchSession()
   if (mode.value === 'offline') {
     startOfflineSession()
     return

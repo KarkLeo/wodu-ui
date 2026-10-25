@@ -3,6 +3,7 @@ import { pb, type CharacterRow, type RollRow, type ChangeRow } from '@/transport
 import { HISTORY_LIMIT } from './limits'
 import { mode } from './mode'
 import { signedIn } from './auth'
+import { canLoadOnline } from './authHelpers'
 import {
   BOOTSTRAP_TIMEOUT_MS,
   connection,
@@ -43,8 +44,9 @@ export function markRollPlayedLocally(id: string) {
 // after the mode left online, must not touch the stores or the realtime connection.
 let loadGen = 0
 
+// Signed out counts as stale too, so a reconnect after sign-out cannot reload or resubscribe anonymously.
 function isCurrent(gen: number): boolean {
-  return gen === loadGen && mode.value === 'online'
+  return gen === loadGen && canLoadOnline(mode.value, signedIn.value)
 }
 
 // Set when the realtime connection drops, cleared on the next PB_CONNECT.
@@ -268,7 +270,7 @@ async function reloadOnline() {
 
 export async function bootstrap() {
   // Signed out, the server answers with empty lists, which would look like an empty table.
-  if (mode.value !== 'online' || !signedIn.value) return
+  if (!canLoadOnline(mode.value, signedIn.value)) return
   const gen = ++loadGen
   onReconnect(reloadOnline)
   bootstrapStatus.value = 'loading'

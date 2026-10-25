@@ -9,10 +9,6 @@ import {
   updateProfile,
   verifyCode,
 } from '@/transport/auth'
-import { bootstrap, stopOnline } from '@/transport/bootstrap'
-import { useCharactersStore } from '@/stores/characters'
-import { useRollHistoryStore } from '@/stores/rollHistory'
-import { useChangeLogStore } from '@/stores/changeLog'
 import { setLocale, type Locale } from '@/locales'
 import { createLogger } from '@/utils/logger'
 
@@ -21,10 +17,9 @@ const log = createLogger('account')
 export function useAccount() {
   const router = useRouter()
 
+  // transport/session.ts starts and stops the online session when the sign-in state changes.
   async function signIn(otpId: string, code: string): Promise<void> {
     await verifyCode(otpId, code)
-    // Not awaited: the name step can show while the table loads.
-    void bootstrap()
   }
 
   async function rename(name: string): Promise<void> {
@@ -38,10 +33,6 @@ export function useAccount() {
   }
 
   async function signOut(): Promise<void> {
-    stopOnline()
-    useCharactersStore().clearAll()
-    useRollHistoryStore().clearAll()
-    useChangeLogStore().clearAll()
     clearSession()
     await router.push('/')
   }
