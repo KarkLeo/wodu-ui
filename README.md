@@ -16,20 +16,20 @@ An interactive character sheet and lightweight VTT for the tabletop RPG **World 
 
 ## Stack
 
-Vue 3 + TypeScript (strict) · Vite · Pinia (persisted) · Vue Router · Reka UI · vite-plugin-pwa · Vitest · PocketBase as the sync backend.
+Vue 3 + TypeScript (strict) · Nuxt 4 (SPA mode, static build) · Pinia (persisted) · Vue Router · Reka UI · vite-plugin-pwa · Vitest · PocketBase as the sync backend.
 
 ## Running locally
 
 ```bash
 npm install
 cp .env.example .env      # VITE_PB_URL — where the PocketBase instance lives
-npm run dev               # http://localhost:5173
+npm run dev               # http://localhost:3000
 ```
 
 Other scripts:
 
 ```bash
-npm run build             # vue-tsc (strict) + production build
+npm run build             # vue-tsc (strict) + static build into .output/public
 npm run preview
 npm run test              # vitest, watch mode
 npm run test -- --run     # one-shot
@@ -42,7 +42,8 @@ The app needs a reachable PocketBase instance to boot — see [wodu-api](https:/
 The interesting part is that **all game logic is client-side and pure**. The backend is a dumb JSON store with realtime fan-out; it never parses or validates the domain.
 
 ```
-src/
+app/
+  pages/       routes (file-based) — thin wrappers around the feature screens
   domain/      pure reducer + command types — the entire rules engine
   utils/       derived values (armor, damage formulas, HP breakdowns)
   data/        static game data: classes, abilities, gear, spheres
@@ -58,17 +59,17 @@ Every gameplay mutation goes through one path:
 
 ```
 UI → composable → store.dispatch(id, command)
-                → applyCommand(character, command)   // pure, src/domain/reducer.ts
+                → applyCommand(character, command)   // pure, app/domain/reducer.ts
                 → new Character                      // optimistic local + push to backend
 ```
 
-Nothing outside `src/domain/` mutates a character. That keeps the rules engine testable in isolation, which is where the test suite lives — `domain/` and `utils/derived.ts` are covered, UI is not. Ability and item effects are data-driven tables (`src/data/abilities.ts`, `src/data/gear.ts`), so adding a new ability is a data change, not a new branch in the derivation code.
+Nothing outside `app/domain/` mutates a character. That keeps the rules engine testable in isolation, which is where the test suite lives — `domain/` and `utils/derived.ts` are covered, UI is not. Ability and item effects are data-driven tables (`app/data/abilities.ts`, `app/data/gear.ts`), so adding a new ability is a data change, not a new branch in the derivation code.
 
 Trade-offs worth naming: state is overwritten wholesale rather than event-sourced, so concurrent edits are last-write-wins — deliberate for a game played by people sitting at one table. The backend is currently a hard dependency for boot; local-first persistence exists only for the creation wizard.
 
 ## Localization
 
-Three languages (en/ru/uk), switchable at runtime. `src/locales/en.ts` is the structural type authority — `ru.ts` and `uk.ts` are typed against it, so a missing or extra key fails the build.
+Three languages (en/ru/uk), switchable at runtime. `app/locales/en.ts` is the structural type authority — `ru.ts` and `uk.ts` are typed against it, so a missing or extra key fails the build.
 
 ## Credits
 

@@ -11,10 +11,11 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
+    __PUBLIC_BASE__: JSON.stringify('/'),
   },
   plugins: [vue()],
   resolve: {
-    alias: { '@': resolve(import.meta.dirname, 'src') },
+    alias: { '@': resolve(import.meta.dirname, 'app') },
   },
   test: {
     projects: [
@@ -25,7 +26,7 @@ export default defineConfig({
           environment: 'happy-dom',
           globals: true,
           // tests/e2e/ holds a Playwright scaffold that vitest cannot run.
-          include: ['src/**/*.{test,spec}.{ts,tsx}'],
+          include: ['app/**/*.{test,spec}.{ts,tsx}'],
         },
       },
       {
@@ -60,7 +61,7 @@ export default defineConfig({
             instances: [{ browser: 'chromium' }],
             expect: {
               toMatchScreenshot: {
-                // Paths carry no directory, browser or platform so that moving src/ does not orphan the baseline.
+                // Paths carry no directory, browser or platform so that moving sources does not orphan the baseline.
                 resolveScreenshotPath: ({ testFileName, testName, ext }) =>
                   resolve(import.meta.dirname, '.visual/baseline', testFileName, testName + ext),
                 resolveDiffPath: ({ testFileName, testName, ext }) =>

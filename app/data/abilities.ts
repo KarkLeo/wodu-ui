@@ -5,7 +5,7 @@ export type DamageScope = 'all' | 'melee' | 'ranged'
 
 // Ids for the wizard's starting cantrips (see ABILITY_EFFECTS.incantations below).
 // Stored on Character.magic.cantrips as ids, never translated strings — see
-// content.cantripName() in src/locales/content.ts for the display-side lookup.
+// content.cantripName() in app/locales/content.ts for the display-side lookup.
 export const CANTRIP_IDS = ['candle', 'shadow', 'throwVoice'] as const
 export type CantripId = (typeof CANTRIP_IDS)[number]
 

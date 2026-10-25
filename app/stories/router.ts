@@ -2,7 +2,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 const Empty = { render: () => null }
 
-// Same names and paths as src/router, without guards or lazy views: stories render the view
+// Same names and paths as app/pages, without middleware or lazy views: stories render the view
 // themselves and only need useRoute()/useRouter() to resolve.
 export const storyRouter = createRouter({
   history: createMemoryHistory(),

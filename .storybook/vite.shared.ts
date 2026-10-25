@@ -12,7 +12,7 @@ export const define = {
 export const alias = [
   // Stories never talk to PocketBase; the mock must win over the generic '@' alias.
   { find: /^@\/transport\/pb$/, replacement: fileURLToPath(new URL('./mocks/pb.ts', import.meta.url)) },
-  { find: /^@\//, replacement: `${root}src/` },
+  { find: /^@\//, replacement: `${root}app/` },
 ]
 
 export function toAliasArray(a: AliasOptions | undefined) {
