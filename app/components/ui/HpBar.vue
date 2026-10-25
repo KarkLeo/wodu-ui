@@ -355,8 +355,8 @@ const tempPct = computed(() => {
   max-width: 340px;
   padding: 14px 16px;
   background: rgba(36, 28, 21, 0.96);
-  backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--vtt-border-strong);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-2);
@@ -371,7 +371,7 @@ const tempPct = computed(() => {
   background: transparent;
   border: 0;
   box-shadow: none;
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 </style>

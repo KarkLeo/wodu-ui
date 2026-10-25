@@ -286,8 +286,8 @@ onBeforeUnmount(stopListening)
   border: 1px solid var(--vtt-border-strong);
   line-height: 1;
   pointer-events: none;
-  backdrop-filter: blur(6px) saturate(1.1);
   -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  backdrop-filter: blur(6px) saturate(1.1);
 }
 .stat-chip .sc-mod.is-buff {
   color: var(--vtt-success);

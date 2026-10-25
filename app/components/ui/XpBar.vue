@@ -304,8 +304,8 @@ function setCurrent(v: number) {
   min-width: 0;
   max-width: 360px;
   background: rgba(26, 21, 16, 0.88);
-  backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--vtt-border-gold);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-2);
@@ -322,7 +322,7 @@ function setCurrent(v: number) {
   background: transparent;
   border: 0;
   box-shadow: none;
-  backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 </style>

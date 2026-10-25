@@ -278,13 +278,13 @@ function confirmReset() {
 }
 .player-row:hover {
   background: rgba(228, 201, 160, 0.04);
-  backdrop-filter: blur(14px) saturate(1.15);
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
 }
 .player-row.is-active {
   background: rgba(212, 168, 87, 0.08);
-  backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  backdrop-filter: blur(18px) saturate(1.25);
 }
 .player-row.is-active::before {
   content: "";

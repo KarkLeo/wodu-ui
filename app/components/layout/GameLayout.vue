@@ -240,8 +240,8 @@ watch(() => route.fullPath, closeMobOverlays)
   content: "";
   position: absolute; inset: 0;
   background: rgba(7, 5, 10, 0.78);
-  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-mask-image: linear-gradient(to bottom,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 1) 55%,
@@ -287,8 +287,8 @@ watch(() => route.fullPath, closeMobOverlays)
   content: "";
   position: absolute; inset: 0;
   background: rgba(7, 5, 10, 0.78);
-  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-mask-image: linear-gradient(to right,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 1) 55%,
@@ -317,8 +317,8 @@ watch(() => route.fullPath, closeMobOverlays)
   content: "";
   position: absolute; inset: 0;
   background: rgba(7, 5, 10, 0.78);
-  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-mask-image: linear-gradient(to left,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 1) 55%,
@@ -354,8 +354,8 @@ watch(() => route.fullPath, closeMobOverlays)
   position: absolute; left: 0; top: 0; bottom: 0;
   width: 100%;
   background: rgba(7, 5, 10, 0.62);
-  backdrop-filter: blur(28px) saturate(1.2);
   -webkit-backdrop-filter: blur(28px) saturate(1.2);
+  backdrop-filter: blur(28px) saturate(1.2);
   display: flex; flex-direction: column;
   z-index: 8;
 }

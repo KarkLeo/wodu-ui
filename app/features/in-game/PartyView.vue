@@ -157,8 +157,8 @@ function scrollToIndex(i: number) {
   display: flex;
   flex-direction: column;
   background: linear-gradient(to bottom, rgba(36, 28, 21, 0.78), rgba(26, 21, 16, 0.82));
-  backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
   border-radius: var(--r-lg);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(140, 106, 58, 0.2);
   overflow: hidden;
