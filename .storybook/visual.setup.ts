@@ -15,7 +15,15 @@ beforeEach(() => {
 afterEach(async (ctx) => {
   if (ctx.task.result?.state === 'fail' || ctx.task.mode !== 'run') return
   await document.fonts.ready
-  await expect(page).toMatchScreenshot({
-    screenshotOptions: { mask: Array.from(document.querySelectorAll('canvas')) },
-  })
+  // Stories render in an iframe of fixed size, so content taller than the viewport is clipped unless the viewport grows to fit it.
+  const { innerWidth: width, innerHeight: height } = window
+  const fullHeight = Math.max(height, document.documentElement.scrollHeight)
+  if (fullHeight > height) await page.viewport(width, fullHeight)
+  try {
+    await expect(page).toMatchScreenshot({
+      screenshotOptions: { target: 'page', fullPage: true, mask: [page.elementLocator(document.body).locator('canvas')] },
+    })
+  } finally {
+    if (fullHeight > height) await page.viewport(width, height)
+  }
 })
