@@ -64,8 +64,10 @@ function resumeCreation(id: string) {
 
 <style scoped>
 .cl-screen {
-  max-width: 640px;
-  margin: 0 auto;
+  /* Centred, but never under GameLayout's side panels: shrinks first, then shifts off-centre. */
+  --cl-w: min(640px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
+  width: var(--cl-w);
+  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--cl-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--cl-w));
   padding: 24px 16px 48px;
   display: flex;
   flex-direction: column;

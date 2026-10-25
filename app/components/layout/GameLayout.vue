@@ -162,6 +162,9 @@ watch(() => route.fullPath, closeMobOverlays)
   --gl-left-w: 280px;
   --gl-right-w: 340px;
   --gl-top-h: 52px;
+  /* The side panels overlay .gl-center. Content that must stay clickable keeps clear of these insets. */
+  --gl-inset-left: calc(var(--gl-left-w) + var(--s-4));
+  --gl-inset-right: calc(var(--gl-right-w) + var(--s-4));
 
   position: relative;
   min-height: 100dvh;
@@ -420,6 +423,8 @@ watch(() => route.fullPath, closeMobOverlays)
 @media (max-width: 960px) {
   .gl-shell {
     --gl-top-h: 44px;
+    --gl-inset-left: 0px;
+    --gl-inset-right: 0px;
     background-attachment: scroll;
   }
   .gl-top { display: none; }
