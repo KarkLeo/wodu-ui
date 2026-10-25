@@ -1,14 +1,12 @@
 import { registerSW } from 'virtual:pwa-register'
-import { updateReady } from './updateState'
+import { onApplyUpdate, updateReady } from './updateState'
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000
 
 export const updateSW = registerSW({
   immediate: true,
-  // autoUpdate would reload the page as soon as a new worker activates, which can land mid-request
-  // (e.g. while the creation wizard saves a draft). The new build is offered instead; it also loads
-  // on the next start.
-  onNeedReload() {
+  // Also fires on every start while a worker from an earlier visit is still waiting.
+  onNeedRefresh() {
     updateReady.value = true
   },
   onRegisteredSW(_swUrl, registration) {
@@ -25,4 +23,11 @@ export const updateSW = registerSW({
       if (document.visibilityState === 'visible') check()
     })
   },
+})
+
+onApplyUpdate(async () => {
+  // registerSW reloads on its own only if the page already had a controller when it registered,
+  // which a page opened on the first visit never has.
+  navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true })
+  await updateSW(true)
 })

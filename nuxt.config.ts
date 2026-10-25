@@ -7,7 +7,10 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 
 const pwaPlugins = VitePWA({
   strategies: 'generateSW',
-  registerType: 'autoUpdate',
+  // A new worker waits until the user applies it from PwaUpdatePrompt. Taking over a live page
+  // (autoUpdate + skipWaiting) purges the old build's chunks from the precache, and the server no
+  // longer has them either, so the page breaks or loads blank.
+  registerType: 'prompt',
   injectRegister: false,
   // Nuxt builds the client with a relative Vite base, which would register ./sw.js and fail on deep links.
   base: '/',
@@ -25,7 +28,6 @@ const pwaPlugins = VitePWA({
     navigateFallbackDenylist: [/^\/api\//, /^\/_\//],
     cleanupOutdatedCaches: true,
     clientsClaim: true,
-    skipWaiting: true,
     runtimeCaching: [
       {
         urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
@@ -55,11 +57,8 @@ const pwaPlugins = VitePWA({
           cacheableResponse: { statuses: [0, 200] },
         },
       },
-      {
-        urlPattern: ({ url }) =>
-          url.pathname.startsWith('/api/') || url.pathname.startsWith('/_/'),
-        handler: 'NetworkOnly',
-      },
+      // No route for PocketBase (/api/, /_/): unmatched requests bypass the worker. A NetworkOnly route
+      // would pipe the realtime stream through it, and that open fetch keeps a new worker from activating.
     ],
   },
   devOptions: { enabled: false },
