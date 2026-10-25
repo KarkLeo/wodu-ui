@@ -1,4 +1,4 @@
-// In-memory stand-in for src/transport/pb.ts: writes succeed, reads return nothing, realtime is silent.
+// In-memory stand-in for app/transport/pb.ts: writes succeed, reads return nothing, realtime is silent.
 const stamp = () => new Date().toISOString()
 
 function collection() {

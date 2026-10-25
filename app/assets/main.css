@@ -1,20 +1,20 @@
 /*
  * /BREAKPOINTS-ANCHOR/
- * Responsive breakpoints. JS source of truth: src/composables/breakpoints.ts
+ * Responsive breakpoints. JS source of truth: app/composables/breakpoints.ts
  * (BP_MOBILE_MAX = 719 — phone; BP_TABLET_MAX = 960 — tablet / narrow landscape).
  *
  * @media (max-width: 719px)  — mobile (kept in sync with useIsMobile)
  * @media (max-width: 960px)  — tablet / fab mode
  *
  * Used in (when changing a value, update every one of them):
- *   - src/composables/useIsMobile.ts
- *   - src/components/AppShell.vue
- *   - src/components/DiceDrawer.vue
- *   - src/components/layout/GameLayout.vue
- *   - src/components/layout/PlayersPanel.vue
- *   - src/features/character-creation/CharacterCreationView.vue
- *   - src/features/in-game/PartyView.vue
- *   - src/features/level-up/LevelUpView.vue
+ *   - app/composables/useIsMobile.ts
+ *   - app/components/AppShell.vue
+ *   - app/components/DiceDrawer.vue
+ *   - app/components/layout/GameLayout.vue
+ *   - app/components/layout/PlayersPanel.vue
+ *   - app/features/character-creation/CharacterCreationView.vue
+ *   - app/features/in-game/PartyView.vue
+ *   - app/features/level-up/LevelUpView.vue
  */
 
 *, *::before, *::after {

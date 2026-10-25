@@ -4,7 +4,7 @@ import { alias, define, toAliasArray } from './vite.shared.ts'
 
 const config: StorybookConfig = {
   framework: '@storybook/vue3-vite',
-  stories: ['../src/**/*.stories.ts'],
+  stories: ['../app/**/*.stories.ts'],
   addons: ['@storybook/addon-docs', '@storybook/addon-a11y', '@storybook/addon-vitest'],
   core: {
     disableTelemetry: true,

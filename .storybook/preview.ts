@@ -62,7 +62,7 @@ const preview: Preview = {
     controls: { expanded: true },
     docs: { theme: themes.dark },
     viewport: {
-      // Widths match the breakpoints in src/assets/main.css.
+      // Widths match the breakpoints in app/assets/main.css.
       options: {
         phone: { name: 'Phone 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
         phoneMax: { name: 'Phone max 719', styles: { width: '719px', height: '900px' }, type: 'mobile' },

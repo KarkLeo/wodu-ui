@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }
 
@@ -8,8 +9,8 @@ export default defineNuxtConfig({
   imports: { autoImport: false },
   components: { dirs: [] },
   modules: ['@pinia/nuxt'],
-  // Placeholder: main.css moves to app/assets/ in the next task.
-  css: ['~/../src/assets/main.css'],
+  alias: { '@': fileURLToPath(new URL('./app', import.meta.url)) },
+  css: ['~/assets/main.css'],
   runtimeConfig: {
     public: {
       pbUrl: process.env.VITE_PB_URL ?? 'http://127.0.0.1:8090',
