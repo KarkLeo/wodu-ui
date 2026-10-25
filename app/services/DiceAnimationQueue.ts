@@ -51,8 +51,9 @@ export async function getDiceBox(): Promise<DiceBox> {
     log.info('init: starting')
     initPromise = (async () => {
       const box = new DiceBox(OVERLAY_SELECTOR, {
-        // BASE_URL keeps the path valid when the build is served from a subpath (Storybook on GitHub Pages).
-        assetPath: `${import.meta.env.BASE_URL}dice-assets/`,
+        // Not import.meta.env.BASE_URL: under Nuxt that is the asset dir (/_nuxt/), not the site root.
+        // Storybook sets its own base so the path stays valid on GitHub Pages.
+        assetPath: `${__PUBLIC_BASE__}dice-assets/`,
         sounds: false,
         shadows: true,
         theme_surface: 'green-felt',

@@ -49,3 +49,8 @@ storybook-static/
 # Local visual baseline
 .visual/
 .vitest/
+
+# Nuxt
+.nuxt/
+.output/
+.data/

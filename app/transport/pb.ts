@@ -3,9 +3,8 @@ import type { Character } from '@/types/character'
 import type { RollRecord } from '@/types/dice'
 import type { ChangeEntry } from '@/types/changeLog'
 
-const PB_URL = import.meta.env.VITE_PB_URL ?? 'http://127.0.0.1:8090'
-
-export const pb = new PocketBase(PB_URL)
+// The bootstrap plugin points this at runtimeConfig.public.pbUrl before the first request.
+export const pb = new PocketBase('http://127.0.0.1:8090')
 
 pb.autoCancellation(false)
 // TODO: auth not implemented; collections are public. Remove when login lands.

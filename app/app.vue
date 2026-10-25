@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import { NuxtPage } from '#components'
+import '@/assets/fonts'
 import DiceOverlay from '@/components/DiceOverlay.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
 import ToastHost from '@/components/ToastHost.vue'
@@ -7,6 +10,10 @@ import GameLayout from '@/components/layout/GameLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import { bootstrap, bootstrapStatus } from '@/transport/bootstrap'
 import { t } from '@/locales'
+
+// RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
+// default key includes the params and would remount it.
+const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
 </script>
 
 <template>
@@ -23,7 +30,7 @@ import { t } from '@/locales'
   </div>
 
   <GameLayout>
-    <RouterView />
+    <NuxtPage :page-key="pageKey" />
 
     <template #left>
       <PlayersPanel />
