@@ -29,8 +29,8 @@ Run a single test file: `npm run test -- app/utils/derived.test.ts`.
 - **Framework**: Nuxt 4 in SPA mode (`ssr: false`, static `nuxt generate`), Vue 3 + TypeScript (strict). Application code lives in `app/`; `@/` points at `app/`
 - **Auto-imports are off** (`imports.autoImport: false`, `components.dirs: []`). Every file imports what it uses explicitly, components included
 - **Nuxt APIs** (`#app`, `#imports`, `#components`: `definePageMeta`, `defineNuxtRouteMiddleware`, `navigateTo`, `useRuntimeConfig`, `defineNuxtPlugin`, `NuxtPage`) are used only in `app/pages/`, `app/middleware/`, `app/plugins/` and `app/app.vue`. Components, composables and stores never import from them, so Storybook renders them without a Nuxt runtime; pass the value in as a prop or wrap it instead. They keep using `useRoute`/`useRouter` from `vue-router`
-- **Startup**: `app/plugins/02.bootstrap.client.ts` points PocketBase at `runtimeConfig.public.pbUrl` (from `VITE_PB_URL` at build time). In online mode it awaits `bootstrap()` before the first navigation and render; `bootstrap()` subscribes to realtime and then fetches the data under one `BOOTSTRAP_TIMEOUT_MS` (6 s) deadline, so a hanging server delays the first render instead of blocking it. In offline mode it calls `startOfflineSession()` and sends nothing to PocketBase
-- **State / Persistence**: Pinia. Where the data lives depends on the app mode (see *App modes*): online data lives on the server, offline data in localStorage. localStorage keys: `wod.mode.v1`, `wod.offline.characters.v1`, `wod.offline.rolls.v1`, `wod.offline.changes.v1` (hand-rolled in `app/transport/offlineStorage.ts`), `wod.creation.v2` (`pinia-plugin-persistedstate`), `wod.locale.v1`. The old `wod.characters.v1`, `wod.rollHistory.v1` and `wod.creation.v1` keys are dead; nothing reads them
+- **Startup**: `app/plugins/02.bootstrap.client.ts` points PocketBase at `runtimeConfig.public.pbUrl` (from `VITE_PB_URL` at build time). In online mode it awaits `restoreSession()` (refreshes the saved sign-in) and then `bootstrap()` before the first navigation and render; `bootstrap()` does nothing while signed out, and `app.vue` shows the sign-in screen instead; `bootstrap()` subscribes to realtime and then fetches the data under one `BOOTSTRAP_TIMEOUT_MS` (6 s) deadline, so a hanging server delays the first render instead of blocking it. In offline mode it calls `startOfflineSession()` and sends nothing to PocketBase
+- **State / Persistence**: Pinia. Where the data lives depends on the app mode (see *App modes*): online data lives on the server, offline data in localStorage. localStorage keys: `pocketbase_auth` (the SDK's sign-in token), `wod.mode.v1`, `wod.offline.characters.v1`, `wod.offline.rolls.v1`, `wod.offline.changes.v1` (hand-rolled in `app/transport/offlineStorage.ts`), `wod.creation.v2` (`pinia-plugin-persistedstate`), `wod.locale.v1`. The old `wod.characters.v1`, `wod.rollHistory.v1` and `wod.creation.v1` keys are dead; nothing reads them
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box-threejs` wrapped in `app/services/DiceAnimationQueue.ts`
 - **Routing**: Nuxt file-based pages in `app/pages/` (vue-router underneath); guards are named route middleware in `app/middleware/` over pure functions in `app/utils/routeGuards.ts`
@@ -96,7 +96,7 @@ Item use-effects similarly: `GearTemplate.useEffect` (`'quicksilver'` etc.) driv
 
 Two modes, switched in the players panel footer (`ModeSwitch`, above the language buttons) and remembered under `wod.mode.v1`. Online and offline data are fully separate: nothing syncs, imports or exports between them.
 
-- **Online** (default): PocketBase is the store. The initial load comes from `bootstrap()`, realtime keeps other players' changes coming in, and writes go to the server optimistically, rolling back on failure. No game data is kept on the device; only the creation draft pointer is.
+- **Online** (default): only for signed-in accounts (see *Accounts*). PocketBase is the store. The initial load comes from `bootstrap()`, realtime keeps other players' changes coming in, and writes go to the server optimistically, rolling back on failure. No game data is kept on the device; only the creation draft pointer is.
 - **Offline**: characters, roll history and the change log live only on the device, under the `wod.offline.*` keys. Writes never roll back, and no request goes to PocketBase. The panel shows an offline badge and a hint that clearing site data deletes these characters.
 
 Switching goes through `useModeSwitch().switchMode()`: stop the current mode, clear the three stores, go to `/`, load the other mode. The creation draft pointer (`wod.creation.v2`) is kept per mode, so each mode resumes its own draft.
@@ -108,6 +108,17 @@ Switching goes through `useModeSwitch().switchMode()`: stop the current mode, cl
 - `writeFailure.ts` — `reportWriteFailure(err, message, session)`, the toast policy for rolled-back writes described above
 - `offlineStorage.ts` — offline load, persistence watcher, toasts for unreadable data or a failed write; picks up changes another offline tab writes (`storage` event) instead of overwriting them
 - `pb.ts` (client and row types), `shapes.ts` (shape checks for stored data), `limits.ts` (`HISTORY_LIMIT`)
+
+## Accounts (`app/transport/auth.ts`, `app/features/sign-in/`)
+
+Online mode needs a signed-in, verified account; offline mode never asks for one. Sign-in is a one-time email code only (PocketBase OTP on `users`, 8 digits, 3 minutes). PocketBase sends a code only to an existing user, so `requestCode()` first creates the user with a random throwaway password and ignores "email already exists". A successful code sign-in marks the account verified. Stored per user: `email`, `name`, `language`.
+
+- `authHelpers.ts` — pure helpers with unit tests: email/code sanitising, `defaultDisplayName`, error classifiers, `resolveLanguage`, `authGate(mode, signedIn, name)` → `'sign-in' | 'name' | 'none'`
+- `auth.ts` — `currentUser`, `signedIn`, `requestCode`, `verifyCode`, `restoreSession()` (`'signed-in' | 'signed-out' | 'unreachable'`: 401/403/404 signs out, a network failure or 5xx keeps the token and lets the overlay handle it), `updateProfile`, `deleteOwnAccount`, `clearSession`
+- `app.vue` renders `SignInView` (email → code, or the display-name step when `name` is empty) in place of `GameLayout` while `authGate` is not `'none'`; the URL is kept, so a deep link opens after sign-in
+- Language: on sign-in an empty profile language takes the device's; afterwards the profile wins, and the locale buttons write to it while signed in (`useAccount().setLanguage`)
+- `AccountMenu` (players-panel footer, online only): change name, sign out, delete account. Sign out and delete stop the online session and clear the three stores; offline data is untouched
+- Stories use the in-memory auth in `.storybook/mocks/pb.ts` (`signInMock()`, `WRONG_CODE`)
 
 **Server unavailable.** In online mode, while `connection === 'down'`, `app.vue` shows `ServerDownOverlay`: a Reka alert dialog over a blurred veil, with the app underneath made `inert`. It shows a reconnect counter, **Retry** and **Play offline** (switches mode at once); with no internet (`navigator.onLine` false) the text says so. It disappears on its own once the server answers and the data is reloaded. The route guards do not redirect away from a deep link while online data has not loaded; the party and level-up pages re-check once it has.
 
@@ -130,11 +141,13 @@ The game-data stores (characters, roll history, change log) do not persist thems
 - `useMercury(char, dispatch)` — quicksilver overdose UI flow (the gear use-effect)
 - `useUnifiedLog()` — merged feed of change log + roll history for the in-game log panel
 - `useModeSwitch()` — `switchMode(next)`; also exports `startOfflineSession()`, which the bootstrap plugin uses
+- `useAccount()` — `user`, `signedIn`, `requestCode`, `signIn` (code, then `bootstrap()`), `rename`, `setLanguage`, `signOut`, `deleteAccount`
 
 ## Features (`app/features/`)
 
 Feature-based folder structure:
 
+- `sign-in/` — `SignInView` + `steps/` (EmailStep, CodeStep, NameStep), `AuthScreen`, `AuthField`
 - `character-list/` — `CharacterListView`
 - `character-creation/` — `CharacterCreationView` + `steps/` (StepIdentity, StepTraining, StepGear)
 - `in-game/` — `PartyView`, `InGameView`, `components/` (StatusHeader, StatsPanel, SkillsPanel, AbilitiesPanel, InventoryPanel + `inventory/` subcomponents, MagicPanel + `magic/` subcomponents, NotesPanel)
