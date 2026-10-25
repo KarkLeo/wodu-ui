@@ -48,7 +48,16 @@ class MockResponseError extends Error {
   }
 }
 
-function collection(name?: string) {
+// One object per collection name, so stories can spy on its methods.
+const collections = new Map<string, ReturnType<typeof makeCollection>>()
+
+function collection(name = '') {
+  let c = collections.get(name)
+  if (!c) collections.set(name, c = makeCollection(name))
+  return c
+}
+
+function makeCollection(name: string) {
   const base = {
     create: async <T extends Record<string, unknown>>(body: T) => ({ ...body, created: stamp(), updated: stamp() }),
     update: async <T extends Record<string, unknown>>(id: string, body: T) => {
@@ -64,7 +73,6 @@ function collection(name?: string) {
     subscribe: async () => async () => {},
     unsubscribe: async () => {},
   }
-  if (name !== 'users') return base
   return {
     ...base,
     requestOTP: async () => ({ otpId: 'otp-mock' }),
