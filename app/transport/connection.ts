@@ -16,7 +16,7 @@ export const attempt: Ref<number> = ref(0)
 
 export function isNetworkError(err: unknown): boolean {
   if (err instanceof ClientResponseError) return err.status === 0 && !err.isAbort
-  if (err instanceof TypeError) return true
+  if (err instanceof TypeError) return /fetch|network|load failed/i.test(err.message)
   return err instanceof Error && err.message === 'timeout'
 }
 
@@ -38,6 +38,7 @@ let graceTimer: ReturnType<typeof setTimeout> | null = null
 let loopTimer: ReturnType<typeof setTimeout> | null = null
 let looping = false
 let probing = false
+let generation = 0
 let reconnectHandler: (() => Promise<void>) | null = null
 
 function clearGrace() {
@@ -50,29 +51,37 @@ function clearLoopTimer() {
   loopTimer = null
 }
 
-function scheduleProbe() {
+function cancelLoop() {
+  generation += 1
+  looping = false
+  probing = false
   clearLoopTimer()
-  if (!looping) return
-  loopTimer = setTimeout(() => { void probe() }, reconnectDelay(attempt.value))
 }
 
-async function probe() {
-  if (probing || !looping) return
+function scheduleProbe(gen: number) {
+  clearLoopTimer()
+  if (gen !== generation) return
+  loopTimer = setTimeout(() => { void probe(gen) }, reconnectDelay(attempt.value))
+}
+
+async function probe(gen: number) {
+  if (probing || gen !== generation) return
   probing = true
   clearLoopTimer()
   attempt.value += 1
   try {
     await withTimeout(pb.health.check(), BOOTSTRAP_TIMEOUT_MS)
+    if (gen !== generation) return
     if (reconnectHandler) await reconnectHandler()
-    if (!looping) return
+    if (gen !== generation) return
     looping = false
     attempt.value = 0
     connection.value = 'ok'
   } catch (err) {
     log.debug('reconnect probe failed', { err })
-    if (looping) scheduleProbe()
+    if (gen === generation) scheduleProbe(gen)
   } finally {
-    probing = false
+    if (gen === generation) probing = false
   }
 }
 
@@ -80,27 +89,33 @@ function startLoop() {
   if (looping) return
   looping = true
   attempt.value = 0
-  scheduleProbe()
+  scheduleProbe(generation)
 }
 
-export function reportNetworkProblem(): void {
+function goDown() {
+  clearGrace()
+  connection.value = 'down'
+  startLoop()
+}
+
+export function reportNetworkProblem(opts?: { immediate?: boolean }): void {
   if (connection.value === 'down') return
+  if (opts?.immediate) {
+    goDown()
+    return
+  }
   connection.value = 'checking'
   if (graceTimer) return
   graceTimer = setTimeout(() => {
     graceTimer = null
-    if (connection.value === 'checking') {
-      connection.value = 'down'
-      startLoop()
-    }
+    if (connection.value === 'checking') goDown()
   }, GRACE_MS)
 }
 
 export function markReachable(): void {
   clearGrace()
   if (connection.value === 'down' || connection.value === 'checking') {
-    looping = false
-    clearLoopTimer()
+    cancelLoop()
     connection.value = 'ok'
     attempt.value = 0
   }
@@ -109,7 +124,7 @@ export function markReachable(): void {
 export function retryNow(): void {
   if (connection.value !== 'down') return
   looping = true
-  void probe()
+  void probe(generation)
 }
 
 export function onReconnect(fn: () => Promise<void>): void {
@@ -118,8 +133,7 @@ export function onReconnect(fn: () => Promise<void>): void {
 
 export function stopConnectionMonitor(): void {
   clearGrace()
-  clearLoopTimer()
-  looping = false
+  cancelLoop()
   connection.value = 'ok'
   attempt.value = 0
 }

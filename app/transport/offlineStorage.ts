@@ -35,6 +35,8 @@ function readKey<T>(key: string, isValid: (x: unknown) => x is T): { items: T[];
   }
 }
 
+let hydrated = false
+
 export function loadOffline(): void {
   const chars = readKey(OFFLINE_KEYS.characters, isCharacterShape)
   const rolls = readKey(OFFLINE_KEYS.rolls, isRollRecordShape)
@@ -43,6 +45,7 @@ export function loadOffline(): void {
   useCharactersStore().setAll(chars.items)
   useRollHistoryStore().setAll(rolls.items)
   useChangeLogStore().setAll(changes.items)
+  hydrated = true
 
   if (chars.corrupt || rolls.corrupt || changes.corrupt) {
     useToastsStore().push(t('offline.loadFailed'), 'error')
@@ -56,7 +59,7 @@ export function startOfflinePersistence(): () => void {
   let warned = false
 
   function write(key: string, value: unknown) {
-    if (mode.value !== 'offline') return
+    if (mode.value !== 'offline' || !hydrated) return
     try {
       localStorage.setItem(key, JSON.stringify(value))
     } catch {
@@ -71,5 +74,8 @@ export function startOfflinePersistence(): () => void {
     watch(() => rollHistory.records, v => write(OFFLINE_KEYS.rolls, v), { deep: true }),
     watch(() => changeLog.entries, v => write(OFFLINE_KEYS.changes, v), { deep: true }),
   ]
-  return () => stops.forEach(stop => stop())
+  return () => {
+    hydrated = false
+    stops.forEach(stop => stop())
+  }
 }

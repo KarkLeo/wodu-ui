@@ -9,6 +9,7 @@ describe('isNetworkError', () => {
     expect(isNetworkError(new ClientResponseError({ status: 400 }))).toBe(false)
     expect(isNetworkError(new TypeError('Failed to fetch'))).toBe(true)
     expect(isNetworkError(new Error('timeout'))).toBe(true)
+    expect(isNetworkError(new TypeError('x is not a function'))).toBe(false)
   })
 })
 
