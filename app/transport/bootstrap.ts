@@ -5,6 +5,7 @@ import { mode } from './mode'
 import {
   BOOTSTRAP_TIMEOUT_MS,
   connection,
+  isNetworkError,
   markReachable,
   onReconnect,
   reportNetworkProblem,
@@ -48,10 +49,40 @@ function isCurrent(gen: number): boolean {
 // Set when the realtime connection drops, cleared on the next PB_CONNECT.
 let realtimeDropped = false
 
+// Subscriptions open before the snapshot is fetched, so nothing another player does in between is lost.
+// Events that arrive while a snapshot is loading are held here and replayed on top of it; the stores
+// skip duplicates (rolls, changes) and stale versions (characters, by `updated`).
+let heldEvents: (() => void)[] | null = null
+let holdDepth = 0
+
+function onRealtime(apply: () => void) {
+  if (heldEvents) heldEvents.push(apply)
+  else apply()
+}
+
+function holdRealtime() {
+  holdDepth += 1
+  heldEvents ??= []
+}
+
+function releaseRealtime() {
+  holdDepth = Math.max(0, holdDepth - 1)
+  if (holdDepth > 0) return
+  const events = heldEvents ?? []
+  heldEvents = null
+  for (const apply of events) apply()
+}
+
+function dropHeldRealtime() {
+  holdDepth = 0
+  heldEvents = null
+}
+
 // The SDK retries a dropped EventSource on its own, and unsubscribe() alone only closes a connection
 // that is already established. disconnect() is private in its types but is the only way to stop those
 // retries, which would otherwise keep reaching PocketBase after a switch to offline mode.
 function closeRealtime() {
+  dropHeldRealtime()
   pb.realtime.onDisconnect = undefined
   realtimeDropped = false
   const realtime = pb.realtime as unknown as { disconnect?: unknown }
@@ -119,16 +150,19 @@ async function subscribeAll(gen: number) {
           sseLog.warn('characters: malformed payload, ignoring', { id: e.record.id })
           return
         }
-        characters.upsertLocal(e.record.data, e.record.updated)
+        const { data, updated } = e.record
+        onRealtime(() => characters.upsertLocal(data, updated))
       } else if (e.action === 'delete') {
-        characters.removeLocal(e.record.id)
+        const id = e.record.id
+        onRealtime(() => characters.removeLocal(id))
       }
     }),
 
     pb.collection('roll_events').subscribe<RollRow>('*', (e) => {
       sseLog.debug('roll_events', { action: e.action, id: e.record.id })
       if (e.action === 'delete') {
-        rollHistory.removeLocal(e.record.id)
+        const id = e.record.id
+        onRealtime(() => rollHistory.removeLocal(id))
         return
       }
       if (e.action !== 'create') return
@@ -137,19 +171,22 @@ async function subscribeAll(gen: number) {
         return
       }
       const record = e.record.data
-      rollHistory.addLocal(record)
-      if (playedLocally.has(record.id)) {
-        playedLocally.delete(record.id)
-        return
-      }
-      const dice = record.discardedDice ? [...record.dice, ...record.discardedDice] : record.dice
-      void enqueueDice(dice, record.notation)
+      onRealtime(() => {
+        rollHistory.addLocal(record)
+        if (playedLocally.has(record.id)) {
+          playedLocally.delete(record.id)
+          return
+        }
+        const dice = record.discardedDice ? [...record.dice, ...record.discardedDice] : record.dice
+        void enqueueDice(dice, record.notation)
+      })
     }),
 
     pb.collection('change_events').subscribe<ChangeRow>('*', (e) => {
       sseLog.debug('change_events', { action: e.action, id: e.record.id })
       if (e.action === 'delete') {
-        changeLog.removeLocal(e.record.id)
+        const id = e.record.id
+        onRealtime(() => changeLog.removeLocal(id))
         return
       }
       if (e.action !== 'create') return
@@ -157,7 +194,8 @@ async function subscribeAll(gen: number) {
         sseLog.warn('change_events: malformed payload, ignoring', { id: e.record.id })
         return
       }
-      changeLog.addLocal(e.record.data)
+      const entry = e.record.data
+      onRealtime(() => changeLog.addLocal(entry))
     }),
 
     // The SDK reconnects by itself after a short drop (PocketBase also closes idle connections after a
@@ -181,23 +219,40 @@ async function subscribeAll(gen: number) {
   log.info('SSE subscriptions registered', { collections: COLLECTIONS })
 }
 
+function remaining(deadline: number): number {
+  return Math.max(0, deadline - Date.now())
+}
+
+// Applies a fresh snapshot, then the realtime events that arrived while it was loading. The fetch has
+// its own timeout, so a hanging request cannot keep the events held.
+async function fetchAndApply(gen: number, deadline: number) {
+  holdRealtime()
+  try {
+    const state = await withTimeout(fetchInitialState(), remaining(deadline))
+    if (!isCurrent(gen)) return
+    applyInitialState(state)
+  } finally {
+    // Otherwise closeRealtime() has already dropped them for the newer load or the mode switch.
+    if (isCurrent(gen)) releaseRealtime()
+  }
+}
+
+// Subscribe first, then fetch, under one deadline: a hanging realtime connection must not double the wait.
 async function loadAndSubscribe(gen: number) {
-  const state = await withTimeout(fetchInitialState(), BOOTSTRAP_TIMEOUT_MS)
-  if (!isCurrent(gen)) return
-  applyInitialState(state)
+  const deadline = Date.now() + BOOTSTRAP_TIMEOUT_MS
   await withTimeout(subscribeAll(gen), BOOTSTRAP_TIMEOUT_MS)
+  if (!isCurrent(gen)) return
+  await fetchAndApply(gen, deadline)
 }
 
 // Data only: the SDK has already restored the subscriptions on reconnect.
 async function refreshOnline() {
   const gen = loadGen
   try {
-    const state = await withTimeout(fetchInitialState(), BOOTSTRAP_TIMEOUT_MS)
-    if (!isCurrent(gen)) return
-    applyInitialState(state)
+    await fetchAndApply(gen, Date.now() + BOOTSTRAP_TIMEOUT_MS)
   } catch (err) {
     log.warn('refresh after realtime reconnect failed', { err })
-    if (isCurrent(gen)) reportNetworkProblem()
+    if (isCurrent(gen) && isNetworkError(err)) reportNetworkProblem()
   }
 }
 

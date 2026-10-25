@@ -37,10 +37,16 @@ function readKey<T>(key: string, isValid: (x: unknown) => x is T): { items: T[];
 
 let hydrated = false
 
+function readOfflineLists() {
+  return {
+    chars: readKey(OFFLINE_KEYS.characters, isCharacterShape),
+    rolls: readKey(OFFLINE_KEYS.rolls, isRollRecordShape),
+    changes: readKey(OFFLINE_KEYS.changes, isChangeEntryShape),
+  }
+}
+
 export function loadOffline(): void {
-  const chars = readKey(OFFLINE_KEYS.characters, isCharacterShape)
-  const rolls = readKey(OFFLINE_KEYS.rolls, isRollRecordShape)
-  const changes = readKey(OFFLINE_KEYS.changes, isChangeEntryShape)
+  const { chars, rolls, changes } = readOfflineLists()
 
   useCharactersStore().setAll(chars.items)
   useRollHistoryStore().setAll(rolls.items)
@@ -52,16 +58,24 @@ export function loadOffline(): void {
   }
 }
 
+const OFFLINE_KEY_SET: ReadonlySet<string> = new Set(Object.values(OFFLINE_KEYS))
+
 export function startOfflinePersistence(): () => void {
   const characters = useCharactersStore()
   const rollHistory = useRollHistoryStore()
   const changeLog = useChangeLogStore()
   let warned = false
+  // What this tab last wrote or read back per key. A write that would only repeat it is skipped, so lists
+  // reloaded after another tab's change are not written straight back (and do not bounce between tabs).
+  const known = new Map<string, string>()
 
   function write(key: string, value: unknown) {
     if (mode.value !== 'offline' || !hydrated) return
+    const json = JSON.stringify(value)
+    if (known.get(key) === json) return
     try {
-      localStorage.setItem(key, JSON.stringify(value))
+      localStorage.setItem(key, json)
+      known.set(key, json)
     } catch {
       if (warned) return
       warned = true
@@ -69,13 +83,28 @@ export function startOfflinePersistence(): () => void {
     }
   }
 
+  // Another offline tab changed the lists: take its version instead of overwriting it on the next write.
+  function onStorage(e: StorageEvent) {
+    if (mode.value !== 'offline' || !hydrated) return
+    if (e.key !== null && !OFFLINE_KEY_SET.has(e.key)) return
+    const { chars, rolls, changes } = readOfflineLists()
+    characters.setAll(chars.items)
+    rollHistory.setAll(rolls.items)
+    changeLog.setAll(changes.items)
+    known.set(OFFLINE_KEYS.characters, JSON.stringify(characters.list))
+    known.set(OFFLINE_KEYS.rolls, JSON.stringify(rollHistory.records))
+    known.set(OFFLINE_KEYS.changes, JSON.stringify(changeLog.entries))
+  }
+
   const stops = [
     watch(() => characters.list, v => write(OFFLINE_KEYS.characters, v), { deep: true }),
     watch(() => rollHistory.records, v => write(OFFLINE_KEYS.rolls, v), { deep: true }),
     watch(() => changeLog.entries, v => write(OFFLINE_KEYS.changes, v), { deep: true }),
   ]
+  window.addEventListener('storage', onStorage)
   return () => {
     hydrated = false
+    window.removeEventListener('storage', onStorage)
     stops.forEach(stop => stop())
   }
 }
