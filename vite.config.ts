@@ -104,6 +104,35 @@ export default defineConfig({
           },
         },
       },
+      {
+        extends: true,
+        plugins: [
+          storybookTest({
+            configDir: '.storybook',
+            tags: { exclude: ['no-visual'] },
+            storybookScript: 'npm run storybook -- --ci',
+          }),
+        ],
+        test: {
+          name: 'visual',
+          setupFiles: ['.storybook/visual.setup.ts'],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: 'chromium' }],
+            expect: {
+              toMatchScreenshot: {
+                // Paths carry no directory, browser or platform so that moving src/ does not orphan the baseline.
+                resolveScreenshotPath: ({ testFileName, testName, ext }) =>
+                  resolve(import.meta.dirname, '.visual/baseline', testFileName, testName + ext),
+                resolveDiffPath: ({ testFileName, testName, ext }) =>
+                  resolve(import.meta.dirname, '.visual/diff', testFileName, testName + ext),
+              },
+            },
+          },
+        },
+      },
     ],
   },
 })

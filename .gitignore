@@ -45,3 +45,7 @@ world_of_dungeons.txt
 
 # Storybook
 storybook-static/
+
+# Local visual baseline
+.visual/
+.vitest/

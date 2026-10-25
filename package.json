@@ -1,7 +1,7 @@
 {
   "name": "world-of-dungeons",
   "private": true,
-  "version": "0.3.10",
+  "version": "0.3.11",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,9 @@
     "test": "vitest --project unit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "vitest --project storybook --run"
+    "test-storybook": "vitest --project storybook --run",
+    "test-visual": "vitest --project visual --run",
+    "test-visual:update": "vitest --project visual --run --update"
   },
   "dependencies": {
     "@3d-dice/dice-box-threejs": "^0.0.12",
