@@ -9,7 +9,11 @@ const log = createLogger('transport:connection')
 export type ConnectionState = 'ok' | 'checking' | 'down'
 
 export const GRACE_MS = 3000
-export const BOOTSTRAP_TIMEOUT_MS = 8000
+// The grace period ends with one health check, so a failed write or a network handover that is already
+// over does not raise the overlay.
+export const GRACE_PROBE_TIMEOUT_MS = 3000
+// One deadline for the whole initial load and subscribe, and for each reconnect probe.
+export const BOOTSTRAP_TIMEOUT_MS = 6000
 const MAX_DELAY_MS = 15000
 
 export const connection: Ref<ConnectionState> = ref('ok')
@@ -40,14 +44,41 @@ export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 let graceTimer: ReturnType<typeof setTimeout> | null = null
+let graceExpired = false
+let graceProbeActive = false
+// Bumped whenever a grace period starts or ends, so a health check from an earlier one is ignored.
+let graceGen = 0
 let loopTimer: ReturnType<typeof setTimeout> | null = null
 let looping = false
 let generation = 0
 let reconnectHandler: (() => Promise<void>) | null = null
 
+export type ProblemOutcome = 'ok' | 'down'
+let outcomeWaiters: ((outcome: ProblemOutcome) => void)[] = []
+
+function setConnection(next: ConnectionState) {
+  connection.value = next
+  if (next === 'checking' || outcomeWaiters.length === 0) return
+  const waiters = outcomeWaiters
+  outcomeWaiters = []
+  for (const resolve of waiters) resolve(next)
+}
+
+/**
+ * How the current network problem ends: 'down' once the overlay is up, 'ok' when the server turned out
+ * to be reachable (or the monitor was stopped). Resolves at once when no grace period is running.
+ */
+export function problemOutcome(): Promise<ProblemOutcome> {
+  if (connection.value !== 'checking') return Promise.resolve(connection.value)
+  return new Promise(resolve => { outcomeWaiters.push(resolve) })
+}
+
 function clearGrace() {
   if (graceTimer) clearTimeout(graceTimer)
   graceTimer = null
+  graceExpired = false
+  graceProbeActive = false
+  graceGen += 1
 }
 
 function clearLoopTimer() {
@@ -80,7 +111,7 @@ async function probe(gen: number) {
     if (gen !== generation) return
     looping = false
     attempt.value = 0
-    connection.value = 'ok'
+    setConnection('ok')
   } catch (err) {
     log.debug('reconnect probe failed', { err })
     if (gen === generation) scheduleProbe(gen)
@@ -98,8 +129,26 @@ function startLoop() {
 
 function goDown() {
   clearGrace()
-  connection.value = 'down'
+  setConnection('down')
   startLoop()
+}
+
+// A failed check before the grace period is over (an early probe on the browser's `online` event)
+// decides nothing; the one that ends after it does.
+async function graceProbe(gen: number) {
+  graceProbeActive = true
+  let reachable = false
+  try {
+    await withTimeout(pb.health.check(), GRACE_PROBE_TIMEOUT_MS)
+    reachable = true
+  } catch (err) {
+    log.debug('grace health check failed', { err })
+  }
+  if (gen !== graceGen) return
+  graceProbeActive = false
+  if (connection.value !== 'checking' || mode.value !== 'online') return
+  if (reachable) markReachable()
+  else if (graceExpired) goDown()
 }
 
 export function reportNetworkProblem(opts?: { immediate?: boolean }): void {
@@ -109,11 +158,14 @@ export function reportNetworkProblem(opts?: { immediate?: boolean }): void {
     goDown()
     return
   }
-  connection.value = 'checking'
-  if (graceTimer) return
+  if (connection.value === 'checking') return
+  clearGrace()
+  const gen = graceGen
+  setConnection('checking')
   graceTimer = setTimeout(() => {
     graceTimer = null
-    if (connection.value === 'checking') goDown()
+    graceExpired = true
+    if (!graceProbeActive) void graceProbe(gen)
   }, GRACE_MS)
 }
 
@@ -121,7 +173,7 @@ export function markReachable(): void {
   clearGrace()
   if (connection.value === 'down' || connection.value === 'checking') {
     cancelLoop()
-    connection.value = 'ok'
+    setConnection('ok')
     attempt.value = 0
   }
 }
@@ -132,6 +184,13 @@ export function retryNow(): void {
   void probe(generation)
 }
 
+/** Checks the server now instead of waiting for the next timer, e.g. when the browser is back online. */
+export function probeNow(): void {
+  if (mode.value !== 'online') return
+  if (connection.value === 'down') retryNow()
+  else if (connection.value === 'checking' && !graceProbeActive) void graceProbe(graceGen)
+}
+
 export function onReconnect(fn: () => Promise<void>): void {
   reconnectHandler = fn
 }
@@ -139,6 +198,6 @@ export function onReconnect(fn: () => Promise<void>): void {
 export function stopConnectionMonitor(): void {
   clearGrace()
   cancelLoop()
-  connection.value = 'ok'
+  setConnection('ok')
   attempt.value = 0
 }

@@ -1,11 +1,10 @@
 import { rollNotation as engineRoll } from '@/services/DiceEngine'
 import { isAnimating, enqueueCoalesced as enqueueDice } from '@/services/DiceAnimationQueue'
 import { backend } from '@/transport/backend'
-import { isNetworkError } from '@/transport/connection'
 import { modeSession } from '@/transport/mode'
+import { reportWriteFailure } from '@/transport/writeFailure'
 import { markRollPlayedLocally } from '@/transport/bootstrap'
 import { useRollHistoryStore } from '@/stores/rollHistory'
-import { useToastsStore } from '@/stores/toasts'
 import { parseDamageNotation } from '@/utils/derived'
 import type { RollMode, RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
@@ -26,7 +25,7 @@ function persistRoll(record: RollRecord): void {
     .addRoll(record)
     .catch((err: unknown) => {
       log.error('persistRoll: write failed', { id: record.id, err })
-      if (modeSession() === session && !isNetworkError(err)) useToastsStore().push(t('errors.rollSyncFailed'), 'error')
+      reportWriteFailure(err, t('errors.rollSyncFailed'), session)
     })
 }
 

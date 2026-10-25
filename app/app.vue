@@ -11,7 +11,7 @@ import ServerDownOverlay from '@/components/ServerDownOverlay.vue'
 import GameLayout from '@/components/layout/GameLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import { mode } from '@/transport/mode'
-import { attempt, connection, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
+import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useModeSwitch } from '@/composables/useModeSwitch'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
@@ -34,12 +34,17 @@ function onBrowserOffline() {
   syncOnline()
   reportNetworkProblem()
 }
+// Back online: check the server now rather than wait out the grace period or the reconnect backoff.
+function onBrowserOnline() {
+  syncOnline()
+  probeNow()
+}
 onMounted(() => {
-  window.addEventListener('online', syncOnline)
+  window.addEventListener('online', onBrowserOnline)
   window.addEventListener('offline', onBrowserOffline)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('online', syncOnline)
+  window.removeEventListener('online', onBrowserOnline)
   window.removeEventListener('offline', onBrowserOffline)
 })
 </script>

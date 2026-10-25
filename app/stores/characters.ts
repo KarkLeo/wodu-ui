@@ -6,19 +6,13 @@ import type { CharacterCommand } from '@/domain/commands'
 import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
 import { backend } from '@/transport/backend'
-import { isNetworkError } from '@/transport/connection'
 import { modeSession } from '@/transport/mode'
-import { useToastsStore } from '@/stores/toasts'
+import { reportWriteFailure } from '@/transport/writeFailure'
 import { t } from '@/locales'
 
 const log = createLogger('store:characters')
 
 const lastUpdatedById = new Map<string, string>()
-
-// A network failure is explained by the server-unavailable overlay; a toast on top would only repeat it.
-function toastUnlessNetwork(err: unknown, message: string) {
-  if (!isNetworkError(err)) useToastsStore().push(message, 'error')
-}
 
 interface CharacterMeta { id: string; updated: string }
 
@@ -51,7 +45,7 @@ export const useCharactersStore = defineStore('characters', {
         log.error('add: write failed', { id: character.id, err })
         if (modeSession() !== session) return null
         this.removeLocal(character.id)
-        toastUnlessNetwork(err, t('errors.addFailed'))
+        reportWriteFailure(err, t('errors.addFailed'), session)
         return null
       }
       // The mode changed while the write was in flight: the stores now hold the other mode's data.
@@ -78,7 +72,7 @@ export const useCharactersStore = defineStore('characters', {
         log.error('dispatch: write failed, rolling back', { id, cmd: cmd.type, err })
         if (modeSession() !== session) throw err
         this.upsertLocal(prev)
-        toastUnlessNetwork(err, t('errors.dispatchFailed'))
+        reportWriteFailure(err, t('errors.dispatchFailed'), session)
         throw err
       }
 
@@ -111,7 +105,7 @@ export const useCharactersStore = defineStore('characters', {
         log.error('remove: write failed', { id, err })
         if (modeSession() !== session) throw err
         if (prev) this.upsertLocal(prev)
-        toastUnlessNetwork(err, t('errors.removeFailed'))
+        reportWriteFailure(err, t('errors.removeFailed'), session)
         throw err
       }
     },
