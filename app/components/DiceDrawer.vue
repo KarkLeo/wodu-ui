@@ -501,8 +501,8 @@ function logDelta(e: ChangeEntry): string | undefined {
   padding: 10px 12px;
   background: rgba(36, 28, 21, 0.55);
   border-radius: var(--r-md);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   transition: background var(--t-fast) var(--ease);
 }
 .dice-row:hover { background: rgba(36, 28, 21, 0.72); }
@@ -613,8 +613,8 @@ function logDelta(e: ChangeEntry): string | undefined {
   padding: 10px 12px;
   background: rgba(36, 28, 21, 0.55);
   border-radius: var(--r-md);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   transition: background var(--t-fast) var(--ease);
 }
 .log-row:hover { background: rgba(36, 28, 21, 0.72); }

@@ -156,8 +156,8 @@ onMounted(() => {
   background:
     linear-gradient(to bottom, rgba(26, 21, 16, 0.62), rgba(14, 11, 8, 0.7)),
     rgba(7, 5, 10, 0.35);
-  backdrop-filter: blur(22px) saturate(1.1);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  backdrop-filter: blur(22px) saturate(1.1);
   position: relative;
   color: var(--vtt-text-primary);
 }

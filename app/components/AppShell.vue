@@ -137,8 +137,8 @@ onBeforeUnmount(() => {
     order: 4;
     z-index: 4;
     background: rgba(7, 5, 10, 0.78);
-    backdrop-filter: blur(22px) saturate(1.1);
     -webkit-backdrop-filter: blur(22px) saturate(1.1);
+    backdrop-filter: blur(22px) saturate(1.1);
   }
   .app-shell-fab-slot {
     bottom: 86px;
