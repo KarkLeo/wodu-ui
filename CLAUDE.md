@@ -34,6 +34,7 @@ Run a single test file: `npm run test -- app/utils/derived.test.ts`.
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box-threejs` wrapped in `app/services/DiceAnimationQueue.ts`
 - **Routing**: Nuxt file-based pages in `app/pages/` (vue-router underneath); guards are named route middleware in `app/middleware/` over pure functions in `app/utils/routeGuards.ts`
+- **Tooling globals**: Storybook builds through `viteFinal` + `.storybook/vite.shared.ts`. `__APP_VERSION__` and `__BUILD_TIMESTAMP__` are frozen there on purpose (the visual baseline depends on them) — do not make them read `package.json`. A new global define or alias must be added to `nuxt.config.ts`, `vitest.config.ts` and `.storybook/vite.shared.ts`, and declared in `app/types/globals.d.ts`
 - **Testing**: Vitest + happy-dom + `@vue/test-utils`. Coverage of **domain core only** — `app/utils/derived.ts`, `app/domain/reducer.ts` and the route guards in `app/utils/routeGuards.ts`. Do not add unit tests for UI/stores/composables — UI behaviour is covered by Storybook stories with `play` functions, which CI runs.
 
 ## Routes

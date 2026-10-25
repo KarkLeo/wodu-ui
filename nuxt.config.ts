@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -8,13 +9,16 @@ const pwaPlugins = VitePWA({
   strategies: 'generateSW',
   registerType: 'autoUpdate',
   injectRegister: false,
+  // Nuxt builds the client with a relative Vite base, which would register ./sw.js and fail on deep links.
+  base: '/',
+  scope: '/',
   manifest: false,
   outDir: fileURLToPath(new URL('./.output/public', import.meta.url)),
   workbox: {
     // includeAssets resolves against Vite's publicDir, which Nuxt leaves empty, so the webmanifest is globbed instead.
     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,webmanifest}'],
-    // 200.html, 404.html and the prerendered character/new/index.html are copies of the index.html shell.
-    globIgnores: ['**/dice-assets/**', '200.html', '404.html', 'character/**'],
+    // 200.html and 404.html are copies of the index.html shell.
+    globIgnores: ['**/dice-assets/**', '200.html', '404.html'],
     dontCacheBustURLsMatching: /^_nuxt\//,
     navigateFallback: '/index.html',
     // /_/ is PocketBase's admin UI; a bare /^\/_/ would also catch Nuxt's /_nuxt/ assets.
@@ -80,6 +84,10 @@ export default defineNuxtConfig({
       },
     },
   },
+  nitro: {
+    // The generated copy would make nginx redirect /character/new to /character/new/; the SPA fallback serves it.
+    prerender: { ignore: ['/character'] },
+  },
   runtimeConfig: {
     public: {
       pbUrl: process.env.VITE_PB_URL ?? 'http://127.0.0.1:8090',
@@ -99,12 +107,19 @@ export default defineNuxtConfig({
       // .output/public; the worker is generated after Nitro has assembled the output instead.
       config.plugins?.push(pwaPlugins.filter((p) => p.name !== 'vite-plugin-pwa:build'))
     },
-    async 'nitro:build:public-assets'() {
-      await pwaPlugins.find((p) => p.name === 'vite-plugin-pwa')?.api?.generateSW()
+    async 'nitro:build:public-assets'(nitro) {
+      const generateSW = pwaPlugins.find((p) => p.name === 'vite-plugin-pwa')?.api?.generateSW
+      if (!generateSW) {
+        throw new Error('vite-plugin-pwa plugin or its api.generateSW not found; the build would ship without a service worker')
+      }
+      await generateSW()
+      const swPath = join(nitro.options.output.publicDir, 'sw.js')
+      if (!existsSync(swPath)) throw new Error(`Service worker was not generated at ${swPath}`)
     },
   },
   app: {
     head: {
+      htmlAttrs: { lang: 'en' },
       title: 'World of Dungeons',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1.0' }],
       link: [

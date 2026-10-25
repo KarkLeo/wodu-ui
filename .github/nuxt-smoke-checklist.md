@@ -1,6 +1,6 @@
-# Nuxt port — app smoke checklist
+# App smoke checklist
 
-The visual baseline renders components through Storybook and never runs Nuxt code, so it cannot catch app-level breakage (global CSS order, the `#__nuxt` root, `app.vue`, route middleware, bootstrap, PWA, realtime). Walk this list after every port PR into `feature/WODU-18-nuxt-port`, once against `npm run dev` and once against the production output (`npm run build`, then serve `.output/public` with an SPA fallback), with PocketBase running (`./pocketbase serve` in `wodu-api/`). Record the result per item in the PR.
+The visual baseline renders components through Storybook and never runs Nuxt code, so it cannot catch app-level breakage (global CSS order, the `#__nuxt` root, `app.vue`, route middleware, bootstrap, PWA, realtime). Walk this list before a release or after any change to the app shell, routing, bootstrap, PWA or deploy config, once against `npm run dev` and once against the production output (`npm run build`, then serve `.output/public` with an SPA fallback), with PocketBase running (`./pocketbase serve` in `wodu-api/`). Record the result per item in the PR.
 
 ## Routes
 
@@ -32,4 +32,6 @@ The visual baseline renders components through Storybook and never runs Nuxt cod
 
 ## PWA
 
+- [ ] Docker image: cold load and refresh of `/character/new` behind the image (`docker build` + `docker run`) answers 200 with no redirect and `Cache-Control: no-cache`.
+- [ ] Vite to Nuxt service-worker update path behind the real `nginx.conf`: an install of the previous Vite build picks up the new `sw.js` and shell after a reload.
 - [ ] Install and update: an install of the current Vite build picks up the Nuxt build (new service worker, old precache cleaned, `/_nuxt/` assets not caught by the `/_` NetworkOnly and navigate-fallback denylist rules). Verified in the PWA task, not before.

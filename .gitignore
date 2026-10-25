@@ -53,3 +53,4 @@ storybook-static/
 # Nuxt
 .nuxt/
 .output/
+.data/
