@@ -25,10 +25,15 @@ The visual baseline renders components through Storybook and never runs Nuxt cod
 - [ ] Realtime: two browser contexts on the same party; an HP change and a roll in one appear in the other without a reload.
 - [ ] Footer shows the current `package.json` version.
 
-## Backend failures at start
+## Offline mode and server failures
 
-- [ ] Backend down (connection refused): the app renders with an empty store and the `bootstrap.failedTitle` banner; after PocketBase is back, Retry loads the data and the banner goes away. Same as the Vite build.
-- [ ] Backend hanging (requests to PocketBase never answer): the page stays on the app background `#0E0B08` (`rgb(14, 11, 8)`), never white. Nothing else is expected to render — the timeout and connection UI are WODU-27.
+Run these against the production output: the service worker only exists there. Use a fresh browser profile per item (Playwright: a new persistent context), so an earlier mode, draft or worker does not leak in. `context.setOffline(true)` stands in for "no internet"; a route that never answers stands in for a hanging server.
+
+- [ ] Offline campfire: with the worker controlling the page, switch to Offline, then cut the network. Create a character, roll a stat, apply damage, level up. Close the browser and relaunch it with no network: the worker serves the app, and the character, the rolls and the change log are all back. No request goes to PocketBase at any point after the switch.
+- [ ] Separation: back online, switch to Online. The list is exactly the server's characters and none of the offline ones. Start an online draft and take it to step 2, then switch to Offline: the offline list is shown and opening `/character/new` resumes the offline draft, not the online one. Switch back: the online draft resumes on step 2. (The New character button always starts a fresh draft; resume through a draft card or the `/character/new` route.)
+- [ ] Hanging server on start: with every request to PocketBase left unanswered, a cold load of `/party/<real id>` shows the server-unavailable overlay within about 8 s and the URL does not change. Once requests are answered again, the overlay goes away and the party opens. With PocketBase stopped instead (connection refused), the same overlay appears right after load; the page is never white or blank.
+- [ ] Drop mid-game: in online mode with a sheet open, stop PocketBase. The overlay appears after the 3 s grace period, and clicks on the sheet under it do nothing. Start PocketBase again: the overlay goes and the data is reloaded. A roll from a second browser context then shows up exactly once in the first one's log (no duplicate subscriptions). A blip of about 1 s (stop and start right away) shows no overlay.
+- [ ] No internet in online mode: open the installed app with no network while the switch is on Online. The overlay says there is no internet connection, and Play offline switches to Offline and the app works. In a session that loses the network, the overlay appears with the same text once something fails to reach the server (for example a write).
 
 ## PWA
 
