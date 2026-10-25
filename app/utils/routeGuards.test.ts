@@ -25,6 +25,7 @@ describe('partyGuard', () => {
   it('redirects to the list when no id is valid', () => {
     expect(partyGuard('missing', getById)).toEqual({ name: 'character-list' })
     expect(partyGuard('', getById)).toEqual({ name: 'character-list' })
+    expect(partyGuard(undefined, getById)).toEqual({ name: 'character-list' })
   })
 })
 

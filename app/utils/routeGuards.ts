@@ -6,7 +6,7 @@ const log = createLogger('router')
 
 type GetById = (id: string) => Character | undefined
 
-export function partyGuard(ids: string, getById: GetById): RouteLocationRaw | undefined {
+export function partyGuard(ids: string | undefined, getById: GetById): RouteLocationRaw | undefined {
   const raw = ids ?? ''
   const list = raw.split(',').map(s => s.trim()).filter(Boolean)
   const valid = list.filter(id => {
