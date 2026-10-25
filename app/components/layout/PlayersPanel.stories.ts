@@ -5,6 +5,7 @@ import PlayersPanel from './PlayersPanel.vue'
 import { brann, wren, mirel, sage, draftGear, PARTY } from '@/stories/fixtures'
 import { atRoute, DESKTOP_VIEWPORT, inLayout, withStores } from '@/stories/state'
 import { mode } from '@/transport/mode'
+import { signInMock } from '../../../.storybook/mocks/pb'
 
 // Same width GameLayout gives the left column; collapse and rail only exist above 960px.
 const desktopColumn: Decorator = (story) => ({
@@ -33,6 +34,9 @@ const meta = {
     (story) => ({ components: { story }, template: '<div style="height: 100dvh; display: flex; flex-direction: column"><story /></div>' }),
     withStores({ characters: [...PARTY, sage, draftGear] }),
   ],
+  beforeEach() {
+    signInMock()
+  },
 } satisfies Meta<typeof PlayersPanel>
 
 export default meta
@@ -45,6 +49,7 @@ export const OneOpen: Story = {
     await expect(await canvas.findByRole('radio', { name: 'Online' })).toHaveAttribute('aria-checked', 'true')
     await expect(canvas.queryByText('Offline characters', { exact: false })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Full state reset' })).toBeNull()
+    await expect(canvas.getByRole('button', { name: /anna@mail\.com/ })).toBeVisible()
   },
 }
 
@@ -93,6 +98,7 @@ export const Offline: Story = {
     await expect(canvas.getByText(/live only on this device/)).toBeVisible()
     await expect(canvas.getByRole('button', { name: new RegExp(sage.name) })).toBeVisible()
     await expect(canvas.queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
   },
 }
 

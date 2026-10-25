@@ -6,14 +6,16 @@ import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useModeSwitch } from '@/composables/useModeSwitch'
+import { useAccount } from '@/composables/useAccount'
 import { mode, type AppMode } from '@/transport/mode'
 import Button from '@/components/ui/Button.vue'
 import ModeSwitch from '@/components/ui/ModeSwitch.vue'
+import AccountMenu from './AccountMenu.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import { useGameLayout } from './gameLayoutContext'
-import { t, currentLocale, setLocale, LOCALES, type Locale } from '@/locales'
+import { t, currentLocale, LOCALES, type Locale } from '@/locales'
 import { className } from '@/locales/content'
 
 const route = useRoute()
@@ -22,6 +24,7 @@ const store = useCharactersStore()
 const creation = useCreationStore()
 const { createDraft } = useCharacterCreation()
 const { switchMode } = useModeSwitch()
+const { user, setLanguage } = useAccount()
 const layout = useGameLayout()
 
 const activeCharacters = computed(() =>
@@ -179,6 +182,7 @@ function onModeChange(next: AppMode) {
         @click="startNew"
       >{{ t('characterList.new') }}</Button>
       <div class="build-id">{{ buildLine }}</div>
+      <AccountMenu v-if="mode === 'online' && user" :user="user" />
       <ModeSwitch :model-value="mode" @update:model-value="onModeChange" />
       <div class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
         <button
@@ -188,7 +192,7 @@ function onModeChange(next: AppMode) {
           class="pr-locale-btn"
           :class="{ 'is-active': currentLocale === opt.value }"
           :aria-pressed="currentLocale === opt.value"
-          @click="setLocale(opt.value as Locale)"
+          @click="setLanguage(opt.value as Locale)"
         >{{ opt.label }}</button>
       </div>
     </div>
