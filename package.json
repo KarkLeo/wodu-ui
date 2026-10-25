@@ -1,7 +1,7 @@
 {
   "name": "world-of-dungeons",
   "private": true,
-  "version": "0.3.11",
+  "version": "0.3.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,13 +12,17 @@
     "build-storybook": "storybook build",
     "test-storybook": "vitest --project storybook --run",
     "test-visual": "vitest --project visual --run",
-    "test-visual:update": "vitest --project visual --run --update"
+    "test-visual:update": "vitest --project visual --run --update",
+    "dev:nuxt": "nuxt dev",
+    "generate": "nuxt generate"
   },
   "dependencies": {
     "@3d-dice/dice-box-threejs": "^0.0.12",
     "@dice-roller/rpg-dice-roller": "^5.5.1",
     "@fontsource/montserrat": "^5.3.0",
     "@fontsource/spectral": "^5.3.0",
+    "@pinia/nuxt": "^1.0.3",
+    "nuxt": "^4.6.2",
     "pinia": "^4.1.0",
     "pinia-plugin-persistedstate": "^4.7.1",
     "pocketbase": "^0.28.1",
