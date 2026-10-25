@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CharacterCreationView from './CharacterCreationView.vue'
+import { useCreationStore } from '@/stores/creation'
 import { build, draftGear, draftIdentity, draftTraining } from '@/stories/fixtures'
+import { storyRouter } from '@/stories/router'
 import { atRoute, withStores } from '@/stories/state'
 
 const meta = {
@@ -73,6 +75,16 @@ export const GearBeforeHpRoll: Story = {
 
 export const Gear: Story = {
   decorators: [withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
+}
+
+/** The persisted draftId points at a draft that is gone: the wizard clears it and returns to the list. */
+export const StaleDraft: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [], creation: { draftId: 'story-missing-draft', step: 2 } })],
+  play: async () => {
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await expect(useCreationStore().draftId).toBeNull()
+  },
 }
 
 export const NextFromIdentity: Story = {
