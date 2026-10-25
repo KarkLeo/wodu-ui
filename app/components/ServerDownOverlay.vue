@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref, useId } from 'vue'
+import { ref } from 'vue'
+import {
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogRoot,
+  AlertDialogTitle,
+} from 'reka-ui'
 import Button from '@/components/ui/Button.vue'
 import { t } from '@/locales'
 
@@ -16,14 +24,12 @@ const emit = defineEmits<{
   (e: 'playOffline'): void
 }>()
 
-const titleId = useId()
-const bodyId = useId()
-
 const retryButton = ref<InstanceType<typeof Button> | null>(null)
 
-onMounted(() => {
-  (retryButton.value?.$el as HTMLElement | undefined)?.focus()
-})
+function focusRetry(event: Event) {
+  event.preventDefault()
+  ;(retryButton.value?.$el as HTMLElement | undefined)?.focus()
+}
 
 // aria-disabled rather than disabled: a disabled button drops keyboard focus out of the dialog.
 function retry() {
@@ -31,41 +37,47 @@ function retry() {
 }
 </script>
 
+<!--
+  A Reka dialog rather than a plain fixed layer: an open sheet (also a Reka dialog, portalled outside
+  the inert GameLayout) disables pointer events on <body> and traps focus. Only a dialog stacked on
+  top of it through Reka's layer stack gets pointer events and focus back.
+-->
 <template>
-  <div class="sdo-veil">
-    <div
-      class="sdo-card"
-      role="alertdialog"
-      aria-modal="true"
-      :aria-labelledby="titleId"
-      :aria-describedby="bodyId"
-    >
-      <div class="sdo-head">
-        <span class="sdo-dot" aria-hidden="true" />
-        <span :id="titleId" class="sdo-title">{{ t('serverDown.title') }}</span>
-      </div>
-      <p :id="bodyId" class="sdo-body">
-        {{ t(noInternet ? 'serverDown.bodyNoInternet' : 'serverDown.body') }}
-      </p>
-      <p class="sdo-status" aria-live="polite">{{ t('serverDown.reconnecting', { attempt }) }}</p>
-      <div class="sdo-actions">
-        <Button
-          ref="retryButton"
-          variant="primary"
-          size="sm"
-          class="sdo-btn"
-          :aria-disabled="probing ? 'true' : undefined"
-          @click="retry"
-        >{{ t('serverDown.retry') }}</Button>
-        <Button
-          variant="hero"
-          size="sm"
-          class="sdo-btn"
-          @click="emit('playOffline')"
-        >{{ t('serverDown.playOffline') }}</Button>
-      </div>
-    </div>
-  </div>
+  <AlertDialogRoot :open="true">
+    <AlertDialogPortal>
+      <AlertDialogOverlay class="sdo-veil" />
+      <AlertDialogContent
+        class="sdo-card"
+        @escape-key-down.prevent
+        @open-auto-focus="focusRetry"
+      >
+        <div class="sdo-head">
+          <span class="sdo-dot" aria-hidden="true" />
+          <AlertDialogTitle as="span" class="sdo-title">{{ t('serverDown.title') }}</AlertDialogTitle>
+        </div>
+        <AlertDialogDescription as="p" class="sdo-body">
+          {{ t(noInternet ? 'serverDown.bodyNoInternet' : 'serverDown.body') }}
+        </AlertDialogDescription>
+        <p class="sdo-status">{{ t('serverDown.reconnecting', { attempt }) }}</p>
+        <div class="sdo-actions">
+          <Button
+            ref="retryButton"
+            variant="primary"
+            size="sm"
+            class="sdo-btn"
+            :aria-disabled="probing ? 'true' : undefined"
+            @click="retry"
+          >{{ t('serverDown.retry') }}</Button>
+          <Button
+            variant="hero"
+            size="sm"
+            class="sdo-btn"
+            @click="emit('playOffline')"
+          >{{ t('serverDown.playOffline') }}</Button>
+        </div>
+      </AlertDialogContent>
+    </AlertDialogPortal>
+  </AlertDialogRoot>
 </template>
 
 <style scoped>
@@ -74,17 +86,18 @@ function retry() {
   position: fixed;
   inset: 0;
   z-index: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--s-4);
   background: rgba(7, 5, 10, 0.72);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
 .sdo-card {
-  width: 100%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 901;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2 * var(--s-4));
   max-width: 340px;
   display: flex;
   flex-direction: column;

@@ -77,7 +77,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-text-secondary);
   border-color: var(--vtt-border-subtle);
 }
-.v-ghost:hover:not(:disabled) {
+.v-ghost:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--vtt-border-strong);
   color: var(--vtt-accent-soft);
 }
@@ -87,7 +87,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   border-color: var(--vtt-border-strong);
   color: var(--vtt-accent-soft);
 }
-.v-primary:hover:not(:disabled) {
+.v-primary:hover:not(:disabled):not([aria-disabled='true']) {
   background: #2e241a;
   border-color: var(--vtt-border-gold);
   color: var(--vtt-accent);
@@ -100,7 +100,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   font-weight: 600;
   filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
 }
-.v-hero:hover:not(:disabled) {
+.v-hero:hover:not(:disabled):not([aria-disabled='true']) {
   background: #BF9A4C;
   border-color: #A6833E;
   filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
@@ -113,7 +113,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   font-weight: 600;
   filter: drop-shadow(0 0 10px rgba(178, 59, 79, 0.35));
 }
-.v-hero-danger:hover:not(:disabled) {
+.v-hero-danger:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--vtt-danger-bright);
   border-color: var(--vtt-danger-bright);
   filter: drop-shadow(0 0 14px rgba(178, 59, 79, 0.5));
@@ -126,7 +126,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   letter-spacing: 0.04em;
   gap: 6px;
 }
-.v-danger-ghost:hover:not(:disabled) {
+.v-danger-ghost:hover:not(:disabled):not([aria-disabled='true']) {
   color: var(--vtt-danger-bright);
   border-color: var(--vtt-border-subtle);
   background: rgba(178, 59, 79, 0.06);
@@ -141,7 +141,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-text-secondary);
   border-radius: var(--r-pill);
 }
-.v-icon:hover:not(:disabled) {
+.v-icon:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--vtt-border-strong);
   color: var(--vtt-accent-soft);
 }
