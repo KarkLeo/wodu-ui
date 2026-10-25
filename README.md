@@ -4,7 +4,7 @@
 
 An interactive character sheet and lightweight VTT for the tabletop RPG **World of Dungeons**. Mobile-first PWA: roll 3D dice, track HP/XP and inventory, level up, and share a live party view with the table.
 
-**Live demo → [wod.karkleo.com](https://wod.karkleo.com/)**
+**Live demo → [wodu.karkleo.com](https://wodu.karkleo.com/)**
 
 > The demo runs against a public prototype backend with no authentication — anything you create there is visible and editable by anyone. Do not put real data in it.
 
