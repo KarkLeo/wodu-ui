@@ -104,7 +104,7 @@ Switching goes through `useModeSwitch().switchMode()`: stop the current mode, cl
 - `mode.ts` — `mode` ref, `setMode`, and `modeSession()`, a counter that lets an in-flight online write detect a mode switch and drop its result
 - `backend.ts` — the `Backend` interface the stores and the dice roller write through; `backend()` returns `pbBackend` or `localBackend` for the current mode
 - `bootstrap.ts` — online load with a timeout, realtime subscriptions, `reloadOnline()` after a reconnect, `stopOnline()`; exports `onlineDataReady`, which the route guards wait for
-- `connection.ts` — `connection` state (`ok` / `checking` / `down`). A network failure (failed write, realtime drop) starts a `GRACE_MS` (3 s) grace period, so short blips show nothing; after that a backoff loop probes `/api/health`, reloads and resubscribes when it answers
+- `connection.ts` — `connection` state (`ok` / `checking` / `down`). A network failure (failed write, realtime drop, the browser firing `offline`) starts a `GRACE_MS` (3 s) grace period, so short blips show nothing; after that a backoff loop probes `/api/health`, reloads and resubscribes when it answers
 - `offlineStorage.ts` — offline load, persistence watcher, toasts for unreadable data or a failed write
 - `pb.ts` (client and row types), `shapes.ts` (shape checks for stored data), `limits.ts` (`HISTORY_LIMIT`)
 

@@ -11,7 +11,7 @@ import ServerDownOverlay from '@/components/ServerDownOverlay.vue'
 import GameLayout from '@/components/layout/GameLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import { mode } from '@/transport/mode'
-import { attempt, connection, probing, retryNow } from '@/transport/connection'
+import { attempt, connection, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useModeSwitch } from '@/composables/useModeSwitch'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
@@ -28,13 +28,19 @@ const browserOnline = ref(navigator.onLine)
 function syncOnline() {
   browserOnline.value = navigator.onLine
 }
+// An open realtime stream can outlive the network for minutes, so losing it would go unnoticed
+// until the next write. reportNetworkProblem() ignores offline mode and applies the usual grace.
+function onBrowserOffline() {
+  syncOnline()
+  reportNetworkProblem()
+}
 onMounted(() => {
   window.addEventListener('online', syncOnline)
-  window.addEventListener('offline', syncOnline)
+  window.addEventListener('offline', onBrowserOffline)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('online', syncOnline)
-  window.removeEventListener('offline', syncOnline)
+  window.removeEventListener('offline', onBrowserOffline)
 })
 </script>
 
