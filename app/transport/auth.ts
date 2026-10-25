@@ -86,8 +86,9 @@ export async function restoreSession(): Promise<'signed-in' | 'signed-out' | 'un
       pb.authStore.clear()
       return 'signed-out'
     }
-    if (isNetworkError(err)) return 'unreachable'
-    throw err
+    // Anything else (a 5xx, say) is the server's trouble, not a reason to sign the player out.
+    if (!isNetworkError(err)) log.warn('session refresh failed', { err })
+    return 'unreachable'
   }
   await syncLanguage().catch(err => log.warn('language sync failed', { err }))
   return 'signed-in'

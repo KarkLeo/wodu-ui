@@ -10,15 +10,20 @@ import PwaUpdatePrompt from '@/components/PwaUpdatePrompt.vue'
 import ServerDownOverlay from '@/components/ServerDownOverlay.vue'
 import GameLayout from '@/components/layout/GameLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
+import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useModeSwitch } from '@/composables/useModeSwitch'
+import { currentUser, signedIn } from '@/transport/auth'
+import { authGate } from '@/transport/authHelpers'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
 // default key includes the params and would remount it.
 const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
 
 const { switchMode } = useModeSwitch()
+
+const gate = computed(() => authGate(mode.value, signedIn.value, currentUser.value?.name ?? ''))
 
 const serverDown = computed(() => mode.value === 'online' && connection.value === 'down')
 // The loop resets the count when it starts and bumps it only when the first probe fires a second later.
@@ -63,7 +68,14 @@ onBeforeUnmount(() => {
     @play-offline="switchMode('offline')"
   />
 
-  <GameLayout :inert="serverDown">
+  <SignInView
+    v-if="gate !== 'none'"
+    :gate="gate"
+    :inert="serverDown"
+    @play-offline="switchMode('offline')"
+  />
+
+  <GameLayout v-else :inert="serverDown">
     <NuxtPage :page-key="pageKey" />
 
     <template #left>
