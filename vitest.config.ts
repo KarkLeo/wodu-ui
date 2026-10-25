@@ -11,6 +11,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
+    __PUBLIC_BASE__: JSON.stringify('/'),
   },
   plugins: [vue()],
   resolve: {

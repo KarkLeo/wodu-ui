@@ -98,7 +98,7 @@
   --t-slow: 480ms;
 }
 
-html, body, #app {
+html, body, #__nuxt {
   min-height: 100%;
   background: var(--vtt-bg-base);
   color: var(--vtt-text-primary);

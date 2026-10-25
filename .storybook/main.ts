@@ -17,7 +17,8 @@ const config: StorybookConfig = {
   async viteFinal(config) {
     return {
       ...config,
-      define: { ...config.define, ...define },
+      // Storybook builds with base './', which keeps public/ paths valid under the GitHub Pages subpath.
+      define: { ...config.define, ...define, __PUBLIC_BASE__: JSON.stringify(config.base ?? '/') },
       resolve: { ...config.resolve, alias: [...alias, ...toAliasArray(config.resolve?.alias)] },
     }
   },

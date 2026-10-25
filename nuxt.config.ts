@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { VitePWA } from 'vite-plugin-pwa'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }
 
@@ -11,6 +12,16 @@ export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
   alias: { '@': fileURLToPath(new URL('./app', import.meta.url)) },
   css: ['~/assets/main.css'],
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        noUncheckedIndexedAccess: false,
+        noUnusedLocals: true,
+        noUnusedParameters: true,
+        noFallthroughCasesInSwitch: true,
+      },
+    },
+  },
   runtimeConfig: {
     public: {
       pbUrl: process.env.VITE_PB_URL ?? 'http://127.0.0.1:8090',
@@ -20,7 +31,72 @@ export default defineNuxtConfig({
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
+      __PUBLIC_BASE__: JSON.stringify('/'),
     },
+    plugins: [
+      // Options carried over verbatim from the Vite build; they do not yet account for Nuxt's
+      // output (assets under /_nuxt/, index.html emitted by nuxt generate).
+      VitePWA({
+        strategies: 'generateSW',
+        registerType: 'autoUpdate',
+        injectRegister: false,
+        manifest: false,
+        includeAssets: [
+          'favicon.ico',
+          'favicon-16x16.png',
+          'favicon-32x32.png',
+          'apple-touch-icon.png',
+          'android-chrome-192x192.png',
+          'android-chrome-512x512.png',
+          'site.webmanifest',
+        ],
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          globIgnores: ['**/dice-assets/**'],
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//, /^\/_/],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          runtimeCaching: [
+            {
+              urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-stylesheets',
+                expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-files',
+                expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              urlPattern: ({ url, sameOrigin }) =>
+                sameOrigin && url.pathname.startsWith('/dice-assets/'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'dice-assets',
+                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              urlPattern: ({ url }) =>
+                url.pathname.startsWith('/api/') || url.pathname.startsWith('/_'),
+              handler: 'NetworkOnly',
+            },
+          ],
+        },
+        devOptions: { enabled: false },
+      }),
+    ],
   },
   app: {
     head: {
