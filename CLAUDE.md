@@ -29,7 +29,7 @@ Run a single test file: `npm run test -- app/utils/derived.test.ts`.
 - **Framework**: Nuxt 4 in SPA mode (`ssr: false`, static `nuxt generate`), Vue 3 + TypeScript (strict). Application code lives in `app/`; `@/` points at `app/`
 - **Auto-imports are off** (`imports.autoImport: false`, `components.dirs: []`). Every file imports what it uses explicitly, components included
 - **Nuxt APIs** (`#app`, `#imports`, `#components`: `definePageMeta`, `defineNuxtRouteMiddleware`, `navigateTo`, `useRuntimeConfig`, `defineNuxtPlugin`, `NuxtPage`) are used only in `app/pages/`, `app/middleware/`, `app/plugins/` and `app/app.vue`. Components, composables and stores never import from them, so Storybook renders them without a Nuxt runtime; pass the value in as a prop or wrap it instead. They keep using `useRoute`/`useRouter` from `vue-router`
-- **Startup**: `app/plugins/02.bootstrap.client.ts` points PocketBase at `runtimeConfig.public.pbUrl` (from `VITE_PB_URL` at build time). In online mode it awaits `bootstrap()` before the first navigation and render; `bootstrap()` gives up after `BOOTSTRAP_TIMEOUT_MS` (8 s), so a hanging server delays the first render instead of blocking it. In offline mode it calls `startOfflineSession()` and sends nothing to PocketBase
+- **Startup**: `app/plugins/02.bootstrap.client.ts` points PocketBase at `runtimeConfig.public.pbUrl` (from `VITE_PB_URL` at build time). In online mode it awaits `bootstrap()` before the first navigation and render; `bootstrap()` subscribes to realtime and then fetches the data under one `BOOTSTRAP_TIMEOUT_MS` (6 s) deadline, so a hanging server delays the first render instead of blocking it. In offline mode it calls `startOfflineSession()` and sends nothing to PocketBase
 - **State / Persistence**: Pinia. Where the data lives depends on the app mode (see *App modes*): online data lives on the server, offline data in localStorage. localStorage keys: `wod.mode.v1`, `wod.offline.characters.v1`, `wod.offline.rolls.v1`, `wod.offline.changes.v1` (hand-rolled in `app/transport/offlineStorage.ts`), `wod.creation.v2` (`pinia-plugin-persistedstate`), `wod.locale.v1`. The old `wod.characters.v1`, `wod.rollHistory.v1` and `wod.creation.v1` keys are dead; nothing reads them
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box-threejs` wrapped in `app/services/DiceAnimationQueue.ts`
@@ -73,7 +73,7 @@ All gameplay state mutations go through commands. **Never** mutate `Character` f
 - `reducer.ts` — `applyCommand(char, cmd): Character` — pure function, returns a new character
 - `inventory.ts`, `combat.ts`, `progression.ts`, `creation.ts`, `modifiers.ts` — domain logic modules consumed by the reducer
 
-Flow: composable → `store.dispatch(id, cmd)` → `applyCommand` → `backend()` write (PocketBase online, localStorage offline). The legacy `characters.update(id, patch)` exists only for the creation wizard's free-form edits; do not use it from gameplay.
+Flow: composable → `store.dispatch(id, cmd)` → `applyCommand` → `backend()` write (PocketBase online, localStorage offline). The creation wizard dispatches draft-only commands the same way.
 
 ## Derived Values (`app/utils/derived.ts`)
 
@@ -103,18 +103,19 @@ Switching goes through `useModeSwitch().switchMode()`: stop the current mode, cl
 
 - `mode.ts` — `mode` ref, `setMode`, and `modeSession()`, a counter that lets an in-flight online write detect a mode switch and drop its result
 - `backend.ts` — the `Backend` interface the stores and the dice roller write through; `backend()` returns `pbBackend` or `localBackend` for the current mode
-- `bootstrap.ts` — online load with a timeout, realtime subscriptions, `reloadOnline()` after a reconnect, `stopOnline()`; exports `onlineDataReady`, which the route guards wait for
-- `connection.ts` — `connection` state (`ok` / `checking` / `down`). A network failure (failed write, realtime drop, the browser firing `offline`) starts a `GRACE_MS` (3 s) grace period, so short blips show nothing; after that a backoff loop probes `/api/health`, reloads and resubscribes when it answers
-- `offlineStorage.ts` — offline load, persistence watcher, toasts for unreadable data or a failed write
+- `bootstrap.ts` — online load (subscribe first, then fetch, under one timeout; realtime events that arrive during the fetch are replayed on top of it), `reloadOnline()` after a reconnect, `stopOnline()`; exports `onlineDataReady`, which the route guards and the character list wait for
+- `connection.ts` — `connection` state (`ok` / `checking` / `down`). A network failure (failed write, realtime drop, the browser firing `offline`) starts a `GRACE_MS` (3 s) grace period that ends with one `/api/health` check: if the server answers, the state goes back to `ok` and no overlay is shown (a single failed write or a Wi-Fi/cellular handover never raises it); only if the check fails does it go `down`, and a backoff loop then probes `/api/health`, reloads and resubscribes when it answers. The browser's `online` event triggers a check at once (`probeNow()`). `problemOutcome()` tells a failed write how the problem ended, so `transport/writeFailure.ts` shows the `errors.*Failed` toast when the server was reachable after all (the change was rolled back) and leaves it to the overlay otherwise
+- `writeFailure.ts` — `reportWriteFailure(err, message, session)`, the toast policy for rolled-back writes described above
+- `offlineStorage.ts` — offline load, persistence watcher, toasts for unreadable data or a failed write; picks up changes another offline tab writes (`storage` event) instead of overwriting them
 - `pb.ts` (client and row types), `shapes.ts` (shape checks for stored data), `limits.ts` (`HISTORY_LIMIT`)
 
 **Server unavailable.** In online mode, while `connection === 'down'`, `app.vue` shows `ServerDownOverlay`: a Reka alert dialog over a blurred veil, with the app underneath made `inert`. It shows a reconnect counter, **Retry** and **Play offline** (switches mode at once); with no internet (`navigator.onLine` false) the text says so. It disappears on its own once the server answers and the data is reloaded. The route guards do not redirect away from a deep link while online data has not loaded; the party and level-up pages re-check once it has.
 
 ## Stores (`app/stores/`)
 
-None of these persist themselves; the app mode decides where their data comes from and goes.
+The game-data stores (characters, roll history, change log) do not persist themselves; the app mode decides where their data comes from and goes. Only the creation store persists itself, through `pinia-plugin-persistedstate`.
 
-- `useCharactersStore` — State: `list`, `activeId`. Getters: `active`, `getById(id)`. Actions: `dispatch(id, cmd)`, `setActive`, `update` (legacy, creation only). Auto-records change-log entries on `dispatch` for active characters.
+- `useCharactersStore` — State: `list`, `activeId`. Getters: `active`, `getById(id)`. Actions: `add`, `dispatch(id, cmd)`, `remove`, `setActive`. Auto-records change-log entries on `dispatch` for active characters.
 - `useCreationStore` — wizard state per mode: `draftId`, `step` (1–3), persisted under `wod.creation.v2`
 - `useChangeLogStore` — recent gameplay changes (HP, XP, inventory) for the unified log
 - `useRollHistoryStore` — dice roll history (3D dice rolls + manual)
