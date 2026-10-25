@@ -568,6 +568,10 @@ export const messages = {
     removeFailed: 'Failed to delete the character. Check your connection.',
     rollSyncFailed: 'Roll made, but not synced.',
   },
+  offline: {
+    loadFailed: 'Could not read saved offline data. Affected lists start empty.',
+    saveFailed: 'Could not save offline data on this device.',
+  },
   bootstrap: {
     failedTitle: 'No connection to the server',
     failedHint: 'Data is temporarily unavailable.',
