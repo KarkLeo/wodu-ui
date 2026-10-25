@@ -37,6 +37,7 @@ export const messages = {
     customClassFallback: 'Custom class',
     draftUnnamed: 'Unnamed',
     pickFromSidebar: 'Pick a character in the left panel to open their sheet.',
+    loading: 'Loading characters…',
     empty: {
       title: 'No characters',
       hint: 'Tap “New” to begin.',

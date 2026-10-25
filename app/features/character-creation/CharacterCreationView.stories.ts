@@ -1,3 +1,4 @@
+import { onUnmounted } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CharacterCreationView from './CharacterCreationView.vue'
@@ -92,7 +93,9 @@ export const StaleDraft: Story = {
 const serverDown: Decorator = (story) => ({
   components: { story },
   setup() {
+    const previous = bootstrapStatus.value
     bootstrapStatus.value = 'failed'
+    onUnmounted(() => { bootstrapStatus.value = previous })
   },
   template: '<story />',
 })

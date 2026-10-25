@@ -1,5 +1,5 @@
 import { useRouter } from 'vue-router'
-import { mode, setMode, type AppMode } from '@/transport/mode'
+import { mode, modeSession, setMode, type AppMode } from '@/transport/mode'
 import { bootstrap, stopOnline } from '@/transport/bootstrap'
 import { loadOffline, startOfflinePersistence } from '@/transport/offlineStorage'
 import { useCharactersStore } from '@/stores/characters'
@@ -29,12 +29,13 @@ export function useModeSwitch() {
     if (mode.value === 'online') stopOnline()
     else stopOfflineSession()
     setMode(next)
+    const session = modeSession()
     useCharactersStore().clearAll()
     useRollHistoryStore().clearAll()
     useChangeLogStore().clearAll()
     await router.push('/')
     // A later switch may have run while the navigation was pending; it owns the stores now.
-    if (mode.value !== next) return
+    if (modeSession() !== session) return
     if (next === 'offline') startOfflineSession()
     else await bootstrap()
   }

@@ -39,6 +39,7 @@ export const messages: Messages = {
     customClassFallback: 'Свій клас',
     draftUnnamed: 'Без імені',
     pickFromSidebar: 'Обери персонажа на лівій панелі, щоб відкрити лист.',
+    loading: 'Завантажуємо персонажів…',
     empty: {
       title: 'Немає персонажів',
       hint: 'Натисни «Новий», щоб почати.',
