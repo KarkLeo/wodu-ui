@@ -16,6 +16,8 @@ dist
 .worktrees
 .obsidian
 .superpowers
+tests
+.data
 docs
 mood
 ref
