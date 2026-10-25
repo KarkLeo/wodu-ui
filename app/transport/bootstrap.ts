@@ -45,12 +45,18 @@ function isCurrent(gen: number): boolean {
   return gen === loadGen && mode.value === 'online'
 }
 
+// Set when the realtime connection drops, cleared on the next PB_CONNECT.
+let realtimeDropped = false
+
 // The SDK retries a dropped EventSource on its own, and unsubscribe() alone only closes a connection
 // that is already established. disconnect() is private in its types but is the only way to stop those
 // retries, which would otherwise keep reaching PocketBase after a switch to offline mode.
 function closeRealtime() {
   pb.realtime.onDisconnect = undefined
-  ;(pb.realtime as unknown as { disconnect(): void }).disconnect()
+  realtimeDropped = false
+  const realtime = pb.realtime as unknown as { disconnect?: unknown }
+  if (typeof realtime.disconnect === 'function') realtime.disconnect.call(pb.realtime)
+  else log.warn('closeRealtime: the SDK has no disconnect(); a dropped connection may keep retrying')
   void pb.realtime.unsubscribe()
 }
 
@@ -155,16 +161,22 @@ async function subscribeAll(gen: number) {
     }),
 
     // The SDK reconnects by itself after a short drop (PocketBase also closes idle connections after a
-    // few minutes); within the grace period that counts as recovery. Once down, the reconnect loop owns
-    // recovery because it reloads what was missed.
+    // few minutes): that counts as recovery, and a refresh picks up events missed while disconnected.
+    // Once down, the reconnect loop owns recovery and reloads everything itself.
     pb.realtime.subscribe('PB_CONNECT', () => {
-      if (connection.value === 'checking') markReachable()
+      if (!realtimeDropped) return
+      realtimeDropped = false
+      if (connection.value === 'down') return
+      markReachable()
+      void refreshOnline()
     }),
   ])
 
   if (!isCurrent(gen)) return
   pb.realtime.onDisconnect = () => {
-    if (mode.value === 'online') reportNetworkProblem()
+    if (mode.value !== 'online') return
+    realtimeDropped = true
+    reportNetworkProblem()
   }
   log.info('SSE subscriptions registered', { collections: COLLECTIONS })
 }
@@ -174,6 +186,19 @@ async function loadAndSubscribe(gen: number) {
   if (!isCurrent(gen)) return
   applyInitialState(state)
   await withTimeout(subscribeAll(gen), BOOTSTRAP_TIMEOUT_MS)
+}
+
+// Data only: the SDK has already restored the subscriptions on reconnect.
+async function refreshOnline() {
+  const gen = loadGen
+  try {
+    const state = await withTimeout(fetchInitialState(), BOOTSTRAP_TIMEOUT_MS)
+    if (!isCurrent(gen)) return
+    applyInitialState(state)
+  } catch (err) {
+    log.warn('refresh after realtime reconnect failed', { err })
+    if (isCurrent(gen)) reportNetworkProblem()
+  }
 }
 
 async function reloadOnline() {

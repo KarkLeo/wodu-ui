@@ -14,7 +14,16 @@ function readStoredMode(): AppMode {
 
 export const mode: Ref<AppMode> = ref(readStoredMode())
 
+let session = 0
+
+// Bumped on every switch, so async work started in one mode can tell it must not touch the stores
+// of the next one (the mode alone can't: online → offline → online looks unchanged).
+export function modeSession(): number {
+  return session
+}
+
 export function setMode(next: AppMode): void {
+  session += 1
   mode.value = next
   try {
     localStorage.setItem(MODE_STORAGE_KEY, next)

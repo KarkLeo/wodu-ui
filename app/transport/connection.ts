@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { ClientResponseError } from 'pocketbase'
 import { pb } from '@/transport/pb'
+import { mode } from './mode'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('transport:connection')
@@ -99,7 +100,8 @@ function goDown() {
 }
 
 export function reportNetworkProblem(opts?: { immediate?: boolean }): void {
-  if (connection.value === 'down') return
+  // An online request that fails after a switch to offline must not start probing PocketBase.
+  if (mode.value === 'offline' || connection.value === 'down') return
   if (opts?.immediate) {
     goDown()
     return

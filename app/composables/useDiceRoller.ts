@@ -2,6 +2,7 @@ import { rollNotation as engineRoll } from '@/services/DiceEngine'
 import { isAnimating, enqueueCoalesced as enqueueDice } from '@/services/DiceAnimationQueue'
 import { backend } from '@/transport/backend'
 import { isNetworkError } from '@/transport/connection'
+import { modeSession } from '@/transport/mode'
 import { markRollPlayedLocally } from '@/transport/bootstrap'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useToastsStore } from '@/stores/toasts'
@@ -20,11 +21,12 @@ function persistRoll(record: RollRecord): void {
   useRollHistoryStore().addLocal(record)
   const dice = record.discardedDice ? [...record.dice, ...record.discardedDice] : record.dice
   void enqueueDice(dice, record.notation)
+  const session = modeSession()
   void backend()
     .addRoll(record)
     .catch((err: unknown) => {
       log.error('persistRoll: write failed', { id: record.id, err })
-      if (!isNetworkError(err)) useToastsStore().push(t('errors.rollSyncFailed'), 'error')
+      if (modeSession() === session && !isNetworkError(err)) useToastsStore().push(t('errors.rollSyncFailed'), 'error')
     })
 }
 
