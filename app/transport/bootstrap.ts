@@ -2,6 +2,7 @@ import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { pb, type CharacterRow, type RollRow, type ChangeRow } from '@/transport/pb'
 import { HISTORY_LIMIT } from './limits'
 import { mode } from './mode'
+import { signedIn } from './auth'
 import {
   BOOTSTRAP_TIMEOUT_MS,
   connection,
@@ -266,7 +267,8 @@ async function reloadOnline() {
 }
 
 export async function bootstrap() {
-  if (mode.value !== 'online') return
+  // Signed out, the server answers with empty lists, which would look like an empty table.
+  if (mode.value !== 'online' || !signedIn.value) return
   const gen = ++loadGen
   onReconnect(reloadOnline)
   bootstrapStatus.value = 'loading'

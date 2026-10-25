@@ -7,8 +7,6 @@ import type { ChangeEntry } from '@/types/changeLog'
 export const pb = new PocketBase('http://127.0.0.1:8090')
 
 pb.autoCancellation(false)
-// TODO: auth not implemented; collections are public. Remove when login lands.
-pb.authStore.clear()
 
 export interface CharacterRow {
   id: string
