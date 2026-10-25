@@ -1,16 +1,20 @@
 import { registerSW } from 'virtual:pwa-register'
-import { onApplyUpdate, updateReady } from './updateState'
+import { applyUpdate, onApplyUpdate, updateReady } from './updateState'
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000
 
 export const updateSW = registerSW({
   immediate: true,
-  // Also fires on every start while a worker from an earlier visit is still waiting.
   onNeedRefresh() {
     updateReady.value = true
   },
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return
+
+    // A worker that was already waiting when this page loaded came from an earlier visit. The page has
+    // only just started, so switching to the new build now loses nothing; reloading open tabs keeps
+    // their old shell otherwise, since the worker cannot activate while any of them is open.
+    if (registration.waiting) void applyUpdate()
 
     const check = () => {
       if (registration.installing || !navigator.onLine) return
