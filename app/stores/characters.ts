@@ -5,13 +5,19 @@ import { applyCommand } from '@/domain/reducer'
 import type { CharacterCommand } from '@/domain/commands'
 import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
-import { pb } from '@/transport/pb'
+import { backend } from '@/transport/backend'
+import { isNetworkError } from '@/transport/connection'
 import { useToastsStore } from '@/stores/toasts'
 import { t } from '@/locales'
 
 const log = createLogger('store:characters')
 
 const lastUpdatedById = new Map<string, string>()
+
+// A network failure is explained by the server-unavailable overlay; a toast on top would only repeat it.
+function toastUnlessNetwork(err: unknown, message: string) {
+  if (!isNetworkError(err)) useToastsStore().push(message, 'error')
+}
 
 interface CharacterMeta { id: string; updated: string }
 
@@ -37,12 +43,12 @@ export const useCharactersStore = defineStore('characters', {
       log.debug('add', { id: character.id, status: character.status, name: character.name, classId: character.classId })
       this.upsertLocal(character)
       try {
-        await pb.collection('characters').create({ id: character.id, data: character })
+        await backend().createCharacter(character)
         return character
       } catch (err) {
-        log.error('add: PB failed', { id: character.id, err })
+        log.error('add: write failed', { id: character.id, err })
         this.removeLocal(character.id)
-        useToastsStore().push(t('errors.addFailed'), 'error')
+        toastUnlessNetwork(err, t('errors.addFailed'))
         return null
       }
     },
@@ -59,11 +65,11 @@ export const useCharactersStore = defineStore('characters', {
       this.upsertLocal(next)
 
       try {
-        await pb.collection('characters').update(id, { data: next })
+        await backend().updateCharacter(next)
       } catch (err) {
-        log.error('dispatch: PB update failed, rolling back', { id, cmd: cmd.type, err })
+        log.error('dispatch: write failed, rolling back', { id, cmd: cmd.type, err })
         this.upsertLocal(prev)
-        useToastsStore().push(t('errors.dispatchFailed'), 'error')
+        toastUnlessNetwork(err, t('errors.dispatchFailed'))
         throw err
       }
 
@@ -77,13 +83,7 @@ export const useCharactersStore = defineStore('characters', {
           characterName: next.name,
         }))
         try {
-          await Promise.all(entries.map(entry =>
-            pb.collection('change_events').create({
-              id: entry.id,
-              character_id: entry.characterId,
-              data: entry,
-            }),
-          ))
+          await backend().addChanges(entries)
         } catch (err) {
           log.error('dispatch: change_events write failed', { id, err })
         }
@@ -94,11 +94,11 @@ export const useCharactersStore = defineStore('characters', {
       const prev = this.list.find(c => c.id === id)
       this.removeLocal(id)
       try {
-        await pb.collection('characters').delete(id)
+        await backend().deleteCharacter(id)
       } catch (err) {
-        log.error('remove: PB failed', { id, err })
+        log.error('remove: write failed', { id, err })
         if (prev) this.upsertLocal(prev)
-        useToastsStore().push(t('errors.removeFailed'), 'error')
+        toastUnlessNetwork(err, t('errors.removeFailed'))
         throw err
       }
     },

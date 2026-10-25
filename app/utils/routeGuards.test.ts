@@ -27,6 +27,12 @@ describe('partyGuard', () => {
     expect(partyGuard('', getById)).toEqual({ name: 'character-list' })
     expect(partyGuard(undefined, getById)).toEqual({ name: 'character-list' })
   })
+
+  it('does not redirect while online data is not loaded', () => {
+    expect(partyGuard('missing', getById, false)).toBeUndefined()
+    expect(partyGuard('a,missing', getById, false)).toBeUndefined()
+    expect(partyGuard('missing', getById, true)).toEqual({ name: 'character-list' })
+  })
 })
 
 describe('levelUpGuard', () => {
@@ -37,5 +43,9 @@ describe('levelUpGuard', () => {
   it('redirects drafts and missing characters to the list', () => {
     expect(levelUpGuard('d', getById)).toEqual({ name: 'character-list' })
     expect(levelUpGuard('missing', getById)).toEqual({ name: 'character-list' })
+  })
+
+  it('does not redirect while online data is not loaded', () => {
+    expect(levelUpGuard('missing', getById, false)).toBeUndefined()
   })
 })

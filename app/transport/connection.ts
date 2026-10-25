@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { ClientResponseError } from 'pocketbase'
-import { pb } from './pb'
+import { pb } from '@/transport/pb'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('transport:connection')

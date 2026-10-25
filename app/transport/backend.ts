@@ -1,4 +1,4 @@
-import { pb } from './pb'
+import { pb } from '@/transport/pb'
 import { mode } from './mode'
 import { isNetworkError, reportNetworkProblem } from './connection'
 import { useChangeLogStore } from '@/stores/changeLog'

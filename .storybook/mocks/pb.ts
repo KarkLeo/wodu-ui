@@ -17,4 +17,11 @@ export const pb = {
   collection,
   autoCancellation() {},
   authStore: { clear() {} },
+  health: { check: async () => ({ code: 200, message: 'ok', data: {} }) },
+  realtime: {
+    onDisconnect: undefined as ((subs: string[]) => void) | undefined,
+    subscribe: async () => async () => {},
+    unsubscribe: async () => {},
+    disconnect() {},
+  },
 }
