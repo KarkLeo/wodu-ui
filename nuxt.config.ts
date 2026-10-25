@@ -15,6 +15,7 @@ export default defineNuxtConfig({
   typescript: {
     tsConfig: {
       compilerOptions: {
+        // Nuxt turns this on by default; the Vite build never had it, and enabling it is not part of the port.
         noUncheckedIndexedAccess: false,
         noUnusedLocals: true,
         noUnusedParameters: true,
