@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { updateReady } from '@/pwa/updateState'
+import { applyUpdate, updateReady } from '@/pwa/updateState'
 import { t } from '@/locales'
 
 const updating = ref(false)
 
-function apply() {
+async function apply() {
   updating.value = true
-  window.location.reload()
+  await applyUpdate()
 }
 
 function dismiss() {
