@@ -606,6 +606,14 @@ export const messages = {
       later: 'Later',
       done: 'Done',
     },
+    menu: {
+      changeName: 'Change name',
+      signOut: 'Sign out',
+      deleteAccount: 'Delete account',
+      deleteTitle: 'Delete your account?',
+      deleteBody: 'Your email and name are erased. Characters stay at the table.',
+      deleteConfirm: 'Delete',
+    },
     errors: {
       invalidEmail: 'That doesn’t look like an email.',
       wrongCode: 'Wrong or expired code.',

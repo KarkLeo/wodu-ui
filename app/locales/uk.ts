@@ -608,6 +608,14 @@ export const messages: Messages = {
       later: 'Пізніше',
       done: 'Готово',
     },
+    menu: {
+      changeName: 'Змінити ім’я',
+      signOut: 'Вийти',
+      deleteAccount: 'Видалити акаунт',
+      deleteTitle: 'Видалити акаунт?',
+      deleteBody: 'Ваш email та ім’я буде стерто. Персонажі залишаться за столом.',
+      deleteConfirm: 'Видалити',
+    },
     errors: {
       invalidEmail: 'Це не схоже на email.',
       wrongCode: 'Неправильний або прострочений код.',
