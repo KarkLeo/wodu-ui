@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRegisterSW } from 'virtual:pwa-register/vue'
+import { updateReady } from '@/pwa/updateState'
 import { t } from '@/locales'
 
-const { needRefresh, updateServiceWorker } = useRegisterSW({ immediate: true })
 const updating = ref(false)
 
-async function apply() {
+function apply() {
   updating.value = true
-  await updateServiceWorker(true)
+  window.location.reload()
 }
 
 function dismiss() {
-  needRefresh.value = false
+  updateReady.value = false
 }
 </script>
 
 <template>
-  <div v-if="needRefresh" class="pwa-prompt" role="status">
+  <div v-if="updateReady" class="pwa-prompt" role="status">
     <div class="pwa-prompt__text">{{ t('pwa.updateAvailable') }}</div>
     <button
       type="button"

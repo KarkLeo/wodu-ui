@@ -81,7 +81,10 @@ function onNextOrFinish() {
 }
 
 onMounted(() => {
-  if (!creation.draftId) router.push('/')
+  if (draft.value) return
+  // A persisted draftId can outlive its record (deleted elsewhere, or never saved before a reload).
+  creation.reset()
+  router.push('/')
 })
 </script>
 
