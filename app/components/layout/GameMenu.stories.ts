@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import GameMenu from './GameMenu.vue'
-import { brann, crookhollow, olden, PARTY, sage, wren, CROOKHOLLOW_META, GAMES, MEMBERS, OLDEN_META } from '@/stories/fixtures'
+import { crookhollow, olden, PARTY, sage, wren, CROOKHOLLOW_META, GAMES, MEMBERS, OLDEN_META } from '@/stories/fixtures'
 import { atRoute, withGameTable, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
@@ -56,7 +56,31 @@ export const AsMaster: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement)
-    await expect(items(menu)).toEqual(['Invite players', 'Members', 'Bring one of mine', 'Home', 'Delete game'])
+    await expect(items(menu)).toEqual(['Game settings', 'Bring one of mine', 'Home'])
+  },
+}
+
+/** A masterless game: nobody has the master's items, everyone the player's. */
+export const Masterless: Story = {
+  args: { game: { ...crookhollow, master: '' } },
+  decorators: [withGameTable({ ...crookhollow, master: '' }, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement)
+    await expect(items(menu)).toEqual(['Invite players', 'Members', 'Bring one of mine', 'Home', 'Leave game'])
+  },
+}
+
+/** The master's game settings are a screen of their own. */
+export const OpensSettings: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement)
+    await userEvent.click(menu.getByRole('menuitem', { name: 'Game settings' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/settings`))
   },
 }
 
@@ -83,13 +107,15 @@ export const OpensInvite: Story = {
 }
 
 export const OpensMembers: Story = {
-  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  args: { game: olden },
+  decorators: [withGameTable(olden, [...PARTY, sage], OLDEN_META)],
+  loaders: [atRoute(`/games/${olden.id}`)],
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement)
     await userEvent.click(menu.getByRole('menuitem', { name: 'Members' }))
-    const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Members' })
-    await expect(within(dialog).getAllByRole('listitem')).toHaveLength(3)
+    const dialog = within(await screen(canvasElement).findByRole('dialog', { name: 'Members' }))
+    await expect(dialog.getAllByRole('listitem')).toHaveLength(3)
+    await expect(dialog.queryByRole('button', { name: /^Remove/ })).toBeNull()
   },
 }
 
@@ -173,26 +199,5 @@ export const LeaveFails: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Leave' }))
     await waitFor(() => expect(toastTexts()).toContain('Couldn’t leave the game. Try again.'))
     await expect(storyRouter.currentRoute.value.path).toBe(`/games/${olden.id}`)
-  },
-}
-
-/** The master deletes the game: home without the toast, and my characters there are free at once. */
-export const DeleteConfirm: Story = {
-  tags: ['no-visual'],
-  parameters: { navigationNotice: false },
-  decorators: [recheck, withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: async ({ canvasElement }) => {
-    const remove = spyOn(pb.collection('games'), 'delete')
-    const menu = await openMenu(canvasElement)
-    await userEvent.click(menu.getByRole('menuitem', { name: 'Delete game' }))
-    const dialog = await screen(canvasElement).findByRole('dialog', { name: `Delete “${crookhollow.name}”?` })
-    await expect(remove).not.toHaveBeenCalled()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
-    await expect(remove).toHaveBeenCalledWith(crookhollow.id)
-    await expect(useCharactersStore().metaOf(brann.id)?.game).toBe('')
-    await expect(useCharactersStore().getById(wren.id)).toBeUndefined()
-    await expect(toastTexts()).not.toContain(leftToast)
   },
 }

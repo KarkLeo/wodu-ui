@@ -134,6 +134,8 @@ button.gs-row:disabled { opacity: 0.5; cursor: not-allowed; }
   white-space: nowrap;
 }
 .gs-pill.is-master { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+/* Under the name, so a phone-wide row keeps the name readable next to two buttons. */
+.gs-row-actions { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 /* ── Invite: the code and link to copy ── */
 .gs-field { display: flex; flex-direction: column; gap: 6px; }

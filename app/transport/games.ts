@@ -10,6 +10,7 @@ import { useGamesStore } from '@/stores/games'
 import { useCharactersStore } from '@/stores/characters'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
+import { gameNameError } from '@/utils/gameName'
 import { generateInviteCode } from '@/utils/inviteCode'
 import type { Game, GameMember } from '@/types/game'
 import { createLogger } from '@/utils/logger'
@@ -264,6 +265,33 @@ export async function resetInviteCode(gameId: string): Promise<string> {
     useGamesStore().upsertGame(known ? { ...known, inviteCode: game.inviteCode } : game)
   }
   return game.inviteCode
+}
+
+/** Master: renames the game (trimmed, 1–80 characters, as on create). */
+export async function renameGame(gameId: string, name: string): Promise<void> {
+  me()
+  const trimmed = name.trim()
+  const invalid = gameNameError(trimmed)
+  if (invalid) throw new Error(`renameGame: invalid name (${invalid})`)
+  const current = staysCurrent()
+  const row = await call(() => pb.collection('games').update<GameRow>(gameId, { name: trimmed }))
+  if (!current()) return
+  const known = useGamesStore().byId(gameId)
+  useGamesStore().upsertGame(known ? { ...known, name: trimmed } : toGame(row))
+}
+
+/**
+ * Master: hands the master role to another member of the game. The server refuses anyone who is
+ * not a member; afterwards I am a player there and keep my own characters.
+ */
+export async function transferMaster(gameId: string, userId: string): Promise<void> {
+  const user = me()
+  if (userId === user || !memberRowOf(gameId, userId)) throw new Error('transferMaster: the new master must be another member')
+  const current = staysCurrent()
+  const row = await call(() => pb.collection('games').update<GameRow>(gameId, { master: userId }))
+  if (!current()) return
+  const known = useGamesStore().byId(gameId)
+  useGamesStore().upsertGame(known ? { ...known, master: userId } : toGame(row))
 }
 
 /** Master: deletes the game. Its characters become free and stay with their owners. */
