@@ -3,7 +3,7 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import JoinByCodeSheet from './JoinByCodeSheet.vue'
 
 const meta = {
-  title: 'Screens/Home/JoinByCodeSheet',
+  title: 'Screens/Cabinet/JoinByCodeSheet',
   component: JoinByCodeSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, 'onUpdate:open': fn(), onSubmit: fn() },

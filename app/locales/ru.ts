@@ -568,10 +568,6 @@ export const messages: Messages = {
   games: {
     leftOrRemoved: 'Вы больше не в этой игре.',
     loading: 'Загрузка…',
-    tabs: {
-      games: 'Игры',
-      characters: 'Персонажи',
-    },
     list: {
       roleMaster: 'мастер',
       rolePlayer: 'игрок',
@@ -740,8 +736,34 @@ export const messages: Messages = {
     badge: 'Офлайн',
     offlineHint: 'Офлайн-персонажи хранятся только на этом устройстве. Очистка данных сайта удалит их.',
   },
+  nav: {
+    cabinet: 'Кабинет',
+    games: 'Игры',
+    characters: 'Персонажи',
+    offlineTable: 'Офлайн-стол',
+    profile: 'Профиль',
+    home: 'На главную',
+  },
+  profile: {
+    title: 'Профиль',
+    name: 'Имя',
+    changeName: 'Изменить имя',
+    change: 'Изменить',
+    email: 'Email',
+    language: 'Язык',
+    version: 'Версия',
+    signOut: 'Выйти',
+    signOutTitle: 'Выйти из аккаунта?',
+    signOutBody: 'Персонажи офлайн-стола останутся на этом устройстве.',
+    signOutConfirm: 'Выйти',
+    deleteAccount: 'Удалить аккаунт',
+    deleteTitle: 'Удалить аккаунт?',
+    deleteBody: 'Ваш email, имя и персонажи будут стёрты. Ваши игры останутся, и их игроки смогут стать мастером.',
+    deleteConfirm: 'Удалить',
+  },
   landing: {
     signIn: 'Войти',
+    openCabinet: 'Открыть кабинет',
   },
   auth: {
     tagline: 'лист персонажа для игры за столом',
@@ -775,14 +797,6 @@ export const messages: Messages = {
       hint: 'Это видят мастер и другие игроки. Не путать с именем персонажа.',
       later: 'Позже',
       done: 'Готово',
-    },
-    menu: {
-      changeName: 'Изменить имя',
-      signOut: 'Выйти',
-      deleteAccount: 'Удалить аккаунт',
-      deleteTitle: 'Удалить аккаунт?',
-      deleteBody: 'Ваш email, имя и персонажи будут стёрты. Ваши игры останутся, и их игроки смогут стать мастером.',
-      deleteConfirm: 'Удалить',
     },
     errors: {
       network: 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.',

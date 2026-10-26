@@ -566,10 +566,6 @@ export const messages = {
   games: {
     leftOrRemoved: 'You’re no longer in that game.',
     loading: 'Loading…',
-    tabs: {
-      games: 'Games',
-      characters: 'Characters',
-    },
     list: {
       roleMaster: 'master',
       rolePlayer: 'player',
@@ -738,8 +734,34 @@ export const messages = {
     badge: 'Offline',
     offlineHint: 'Offline characters live only on this device. Clearing site data deletes them.',
   },
+  nav: {
+    cabinet: 'Cabinet',
+    games: 'Games',
+    characters: 'Characters',
+    offlineTable: 'Offline table',
+    profile: 'Profile',
+    home: 'Home',
+  },
+  profile: {
+    title: 'Profile',
+    name: 'Name',
+    changeName: 'Change name',
+    change: 'Change',
+    email: 'Email',
+    language: 'Language',
+    version: 'Version',
+    signOut: 'Sign out',
+    signOutTitle: 'Sign out of your account?',
+    signOutBody: 'Offline-table characters stay on this device.',
+    signOutConfirm: 'Sign out',
+    deleteAccount: 'Delete account',
+    deleteTitle: 'Delete your account?',
+    deleteBody: 'Your email, name and characters are erased. Games you run stay; their players can take over as master.',
+    deleteConfirm: 'Delete',
+  },
   landing: {
     signIn: 'Sign in',
+    openCabinet: 'Open cabinet',
   },
   auth: {
     tagline: 'character sheet for the table',
@@ -773,14 +795,6 @@ export const messages = {
       hint: 'The master and other players see this. Not your character’s name.',
       later: 'Later',
       done: 'Done',
-    },
-    menu: {
-      changeName: 'Change name',
-      signOut: 'Sign out',
-      deleteAccount: 'Delete account',
-      deleteTitle: 'Delete your account?',
-      deleteBody: 'Your email, name and characters are erased. Games you run stay; their players can take over as master.',
-      deleteConfirm: 'Delete',
     },
     errors: {
       network: 'No connection to the server. Check the internet and try again.',

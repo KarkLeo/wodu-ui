@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { definePageMeta } from '#imports'
-import HomeView from '@/features/home/HomeView.vue'
+import GamesView from '@/features/cabinet/GamesView.vue'
 
-// Today's Home (games and characters tabs) until the cabinet pages replace it.
-definePageMeta({ name: 'games' })
+// `cabinet`: app.vue renders it under the cabinet header, behind sign-in, without the table's panels.
+definePageMeta({ name: 'games', shell: 'cabinet' })
 </script>
 
 <template>
-  <HomeView />
+  <GamesView />
 </template>

@@ -10,7 +10,7 @@ import { currentUser } from '@/transport/auth'
 import type { Character } from '@/types/character'
 import { t } from '@/locales'
 import { className } from '@/locales/content'
-import './home.css'
+import './cabinet.css'
 
 const router = useRouter()
 const characters = useCharactersStore()
@@ -81,7 +81,7 @@ async function createCharacter() {
     </button>
   </section>
 
-  <section class="hm-list" :aria-label="t('games.tabs.characters')">
+  <section class="hm-list" :aria-label="t('nav.characters')">
     <button
       v-for="c in active"
       :key="c.id"

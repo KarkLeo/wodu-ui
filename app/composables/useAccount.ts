@@ -1,4 +1,4 @@
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { mode } from '@/transport/mode'
 import {
   clearSession,
@@ -11,11 +11,13 @@ import {
 } from '@/transport/auth'
 import { setLocale, type Locale } from '@/locales'
 import { createLogger } from '@/utils/logger'
+import { modeForPath } from '@/utils/routeMode'
 
 const log = createLogger('account')
 
 export function useAccount() {
   const router = useRouter()
+  const route = useRoute()
 
   // transport/session.ts starts and stops the online session when the sign-in state changes.
   async function signIn(otpId: string, code: string): Promise<void> {
@@ -26,9 +28,12 @@ export function useAccount() {
     await updateProfile({ name: name.trim() })
   }
 
+  // A signed-in player's choice goes to the profile, also from the landing, which belongs to no mode and
+  // may run offline (opened cold); the offline table never reaches the server.
   function setLanguage(next: Locale): void {
     setLocale(next)
-    if (mode.value !== 'online' || !signedIn.value) return
+    const onLanding = modeForPath(route.path) === null
+    if (!signedIn.value || (mode.value !== 'online' && !onLanding)) return
     updateProfile({ language: next }).catch(err => log.warn('language not saved to profile', { err }))
   }
 

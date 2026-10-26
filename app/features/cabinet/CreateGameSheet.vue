@@ -8,7 +8,7 @@ import type { Game } from '@/types/game'
 import { GAME_NAME_MAX, gameNameError } from '@/utils/gameName'
 import { t } from '@/locales'
 import { createLogger } from '@/utils/logger'
-import './home.css'
+import './cabinet.css'
 
 const log = createLogger('home:create-game')
 

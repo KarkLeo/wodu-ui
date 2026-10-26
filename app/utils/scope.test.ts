@@ -5,6 +5,7 @@ import {
   eventFilter,
   freeIfGameUnknown,
   homeLocation,
+  panelHomeLocation,
   levelUpLocation,
   newCharacterLocation,
   partyLocation,
@@ -127,14 +128,26 @@ describe('homeLocation', () => {
 })
 
 describe('tableLocation', () => {
-  it('a game goes back to its table, anything else home', () => {
+  it('a game goes back to its table, the free-characters table to the characters', () => {
     expect(tableLocation(game)).toEqual({ name: 'game', params: { gameId: 'G' } })
-    expect(tableLocation(solo)).toEqual({ name: 'games' })
-    expect(tableLocation(home)).toEqual({ name: 'games' })
+    expect(tableLocation(solo)).toEqual({ name: 'characters' })
+    expect(tableLocation(home)).toEqual({ name: 'characters' })
   })
 
   it('offline stays on the offline table', () => {
     expect(tableLocation(home, true)).toEqual({ name: 'offline' })
+  })
+})
+
+describe('panelHomeLocation', () => {
+  it('a game table goes to the games, the free-characters table to the characters', () => {
+    expect(panelHomeLocation(game)).toEqual({ name: 'games' })
+    expect(panelHomeLocation(solo)).toEqual({ name: 'characters' })
+    expect(panelHomeLocation(home)).toEqual({ name: 'characters' })
+  })
+
+  it('the offline table goes to the landing', () => {
+    expect(panelHomeLocation(home, true)).toEqual({ name: 'landing' })
   })
 })
 
@@ -150,7 +163,7 @@ describe('partyLocation', () => {
 
   it('with no sheet left goes back to the table', () => {
     expect(partyLocation(game, [])).toEqual({ name: 'game', params: { gameId: 'G' } })
-    expect(partyLocation(solo, [])).toEqual({ name: 'games' })
+    expect(partyLocation(solo, [])).toEqual({ name: 'characters' })
   })
 
   it('offline opens the sheets under /offline, and with none left returns to the offline table', () => {

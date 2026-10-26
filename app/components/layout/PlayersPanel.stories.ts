@@ -53,8 +53,10 @@ export const OneOpen: Story = {
   loaders: [atRoute(`/party/${brann.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByRole('button', { name: /anna@mail\.com/ })).toBeVisible()
-    // The mode follows the address now: no online/offline switch in the footer.
+    // Variant A: the account, the mode switch and (online) the language left the panel; "Home" took their place.
+    await expect(await canvas.findByRole('button', { name: 'Home' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
+    await expect(canvas.queryByRole('group', { name: 'Language' })).toBeNull()
     await expect(canvas.queryByRole('radio', { name: 'Online' })).toBeNull()
     await expect(canvas.queryByText('Offline characters', { exact: false })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Full state reset' })).toBeNull()
@@ -107,6 +109,9 @@ export const Offline: Story = {
     await expect(canvas.getByRole('button', { name: new RegExp(sage.name) })).toBeVisible()
     await expect(canvas.queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
     await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
+    // No profile offline, so the language stays at the bottom of the panel, under "Home".
+    await expect(canvas.getByRole('button', { name: 'Home' })).toBeVisible()
+    await expect(canvas.getByRole('group', { name: 'Language' })).toBeVisible()
   },
 }
 

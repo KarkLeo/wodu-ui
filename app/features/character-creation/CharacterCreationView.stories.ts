@@ -83,12 +83,12 @@ export const Gear: Story = {
   decorators: [withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
 }
 
-/** The persisted draftId points at a draft that is gone: the wizard clears it and returns to the list. */
+/** The persisted draftId points at a draft that is gone: the wizard clears it and returns to the characters page. */
 export const StaleDraft: Story = {
   tags: ['no-visual'],
   decorators: [withStores({ characters: [], creation: { draftId: 'story-missing-draft', step: 2 } })],
   play: async () => {
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/characters'))
     await expect(useCreationStore().draftId).toBeNull()
   },
 }
@@ -113,7 +113,7 @@ export const StaleDraftWhileServerDown: Story = {
     await expect(storyRouter.currentRoute.value.path).toBe('/character/new')
     await expect(useCreationStore().draftId).toBe('story-missing-draft')
     bootstrapStatus.value = 'ready'
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/characters'))
     await expect(useCreationStore().draftId).toBeNull()
   },
 }

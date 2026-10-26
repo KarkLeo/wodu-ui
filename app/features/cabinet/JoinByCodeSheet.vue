@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button.vue'
 import AuthField from '@/features/sign-in/AuthField.vue'
 import { normalizeInviteCode } from '@/utils/inviteCode'
 import { t } from '@/locales'
-import './home.css'
+import './cabinet.css'
 
 const open = defineModel<boolean>('open', { required: true })
 /** The normalised code; joining itself happens on the invite route. */

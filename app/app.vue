@@ -9,6 +9,7 @@ import ToastHost from '@/components/ToastHost.vue'
 import PwaUpdatePrompt from '@/components/PwaUpdatePrompt.vue'
 import ServerDownOverlay from '@/components/ServerDownOverlay.vue'
 import GameLayout from '@/components/layout/GameLayout.vue'
+import CabinetLayout from '@/features/cabinet/CabinetLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
@@ -31,8 +32,9 @@ const route = useRoute()
 
 const gate = computed(() => authGate(route.path, signedIn.value, currentUser.value?.name ?? ''))
 
-// A page outside the table (the landing) renders on its own: no players panel, no dice drawer, no gate.
-const bare = computed(() => route.meta.shell === 'bare')
+// The frame comes from the page's meta: the landing alone (no panels, no gate), the cabinet pages under
+// their header, everything else in the table layout.
+const shell = computed(() => route.meta.shell ?? 'table')
 
 // The open table follows the route; online loading (events, the game's characters) follows the table.
 const { tableScope } = useTable()
@@ -102,7 +104,7 @@ onBeforeUnmount(() => {
     @retry="retryNow"
   />
 
-  <NuxtPage v-if="bare" :page-key="pageKey" />
+  <NuxtPage v-if="shell === 'bare'" :page-key="pageKey" />
 
   <SignInView
     v-else-if="gate !== 'none'"
@@ -110,6 +112,10 @@ onBeforeUnmount(() => {
     :invite-game-name="inviteGameName"
     :inert="serverDown"
   />
+
+  <CabinetLayout v-else-if="shell === 'cabinet'" :inert="serverDown">
+    <NuxtPage :page-key="pageKey" />
+  </CabinetLayout>
 
   <GameLayout v-else :inert="serverDown">
     <NuxtPage :page-key="pageKey" />

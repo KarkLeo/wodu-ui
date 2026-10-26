@@ -9,6 +9,8 @@ export const storyRouter = createRouter({
   routes: [
     { path: '/', name: 'landing', component: Empty },
     { path: '/games', name: 'games', component: Empty },
+    { path: '/characters', name: 'characters', component: Empty },
+    { path: '/profile', name: 'profile', component: Empty },
     { path: '/character/new', name: 'character-new', component: Empty },
     { path: '/character/:id', name: 'in-game', component: Empty },
     { path: '/party/:ids', name: 'party', component: Empty },

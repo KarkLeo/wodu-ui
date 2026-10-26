@@ -1,4 +1,4 @@
-import { onMounted, provide, ref, watch } from 'vue'
+import { onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { action } from 'storybook/actions'
 import type { Decorator, Loader } from '@storybook/vue3-vite'
@@ -14,6 +14,7 @@ import { useChangeLogStore } from '@/stores/changeLog'
 import { useCreationStore } from '@/stores/creation'
 import { bootstrapStatus } from '@/transport/bootstrap'
 import { setScope } from '@/transport/scope'
+import { mode } from '@/transport/mode'
 import { authStore, seedRecords, signInMock } from '../../.storybook/mocks/pb'
 import { storyRouter } from './router'
 import { MEMBERS } from './fixtures'
@@ -76,6 +77,24 @@ export function withGameTable(game: Game, characters: Character[], meta: Record<
     scope: { kind: 'game', gameId: game.id },
   })
 }
+
+/**
+ * Online data still on its way, e.g. a cabinet page opened from the landing. List it before withStores,
+ * so it runs after it and overrides the 'ready' status withStores sets.
+ */
+export const withOnlineLoading: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const previous = { mode: mode.value, status: bootstrapStatus.value }
+    mode.value = 'online'
+    bootstrapStatus.value = 'loading'
+    onUnmounted(() => {
+      mode.value = previous.mode
+      bootstrapStatus.value = previous.status
+    })
+  },
+  template: '<story />',
+})
 
 /** Desktop size at which GameLayout switches to three columns (its breakpoint is 961px). */
 export const DESKTOP_VIEWPORT = { viewport: { value: 'desktop', isRotated: false } }

@@ -65,10 +65,19 @@ export function homeLocation(offline: boolean): RouteLocationRaw {
   return offline ? { name: 'offline' } : { name: 'games' }
 }
 
-/** The table with no sheet open: a game's own table, the offline table, or home outside a game. */
+/**
+ * The table with no sheet open: a game's own table, the offline table, or, outside games, the characters
+ * page that lists the free characters.
+ */
 export function tableLocation(scope: Scope, offline = false): RouteLocationRaw {
   if (offline) return { name: 'offline' }
-  return scope.kind === 'game' ? { name: 'game', params: { gameId: scope.gameId } } : homeLocation(false)
+  return scope.kind === 'game' ? { name: 'game', params: { gameId: scope.gameId } } : { name: 'characters' }
+}
+
+/** The players panel's "Home": a game table to the games, the free-characters table to the characters, offline to the landing. */
+export function panelHomeLocation(scope: Scope, offline = false): RouteLocationRaw {
+  if (offline) return { name: 'landing' }
+  return scope.kind === 'game' ? { name: 'games' } : { name: 'characters' }
 }
 
 /** Open sheets stay on their table: a game's party route inside a game, the party route outside, /offline offline. */

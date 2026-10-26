@@ -1,10 +1,32 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { onUnmounted } from 'vue'
+import type { Decorator } from '@storybook/vue3-vite'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import LandingView from './LandingView.vue'
 import { atRoute, DESKTOP_VIEWPORT } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
-import { currentLocale } from '@/locales'
-import { authStore, clearPbRequests, pbRequests } from '../../../.storybook/mocks/pb'
+import { currentLocale, t } from '@/locales'
+import { mode } from '@/transport/mode'
+import { authStore, clearPbRequests, pb, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
+
+const signedIn: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    signInMock()
+  },
+  template: '<story />',
+})
+
+// Opened cold at /, the app starts offline so the landing never needs the server; set directly, restored after.
+const coldStart: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const previous = mode.value
+    mode.value = 'offline'
+    onUnmounted(() => { mode.value = previous })
+  },
+  template: '<story />',
+})
 
 const meta = {
   title: 'Screens/Landing',
@@ -66,5 +88,30 @@ export const SwitchesLanguage: Story = {
     await expect(canvas.getByRole('button', { name: 'RU' })).toHaveAttribute('aria-pressed', 'true')
     await expect(canvas.getByRole('button', { name: 'Войти' })).toBeVisible()
     await expect(pbRequests()).toEqual([])
+  },
+}
+
+/** Signed in, the way in is the cabinet itself. */
+export const SignedIn: Story = {
+  decorators: [signedIn],
+  parameters: { navigationNotice: false },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByRole('button', { name: 'Sign in' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Open cabinet' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
+  },
+}
+
+/** Signed in, the language goes to the profile even on a cold start at /, which runs offline. */
+export const SignedInLanguageSavesProfile: Story = {
+  tags: ['no-visual'],
+  decorators: [coldStart, signedIn],
+  play: async ({ canvasElement }) => {
+    const update = spyOn(pb.collection('users'), 'update')
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'UK' }))
+    await expect(currentLocale.value).toBe('uk')
+    await expect(update).toHaveBeenCalledWith('user-mock', { language: 'uk' })
+    await expect(within(canvasElement).getByRole('button', { name: t('landing.openCabinet') })).toBeVisible()
   },
 }

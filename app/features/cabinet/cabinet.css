@@ -1,4 +1,4 @@
-/* Shared by the home tabs: the character-list card look, a role/where pill, the empty state. */
+/* Shared by the cabinet pages: the card look, a role/where pill, the empty state. */
 .hm-list { display: flex; flex-direction: column; gap: 10px; }
 .hm-label {
   font-family: var(--font-mono);
@@ -125,3 +125,14 @@
 .hm-form { display: flex; flex-direction: column; gap: var(--s-4); }
 .hm-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 .hm-submit { align-self: flex-end; }
+
+.hm-heading { margin: 0; padding-left: 4px; }
+.hm-loading {
+  margin: 48px auto;
+  padding: 24px;
+  text-align: center;
+  color: var(--vtt-text-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+}
