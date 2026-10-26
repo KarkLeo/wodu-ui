@@ -30,11 +30,21 @@ export function eventFilter(scope: Scope): string | null {
 
 const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new'])
 
-/** The table a route opens. Offline mode has no games, so it always stays home. */
-export function scopeForRoute(name: string | undefined, gameId: string | undefined, online: boolean): Scope {
+/**
+ * The table a route opens. Offline mode has no games, so it always stays home. The level-up route
+ * carries no game id: it takes the table of its character's game (`characterGame`, '' when the
+ * character is free or its game is not one the player knows).
+ */
+export function scopeForRoute(
+  name: string | undefined,
+  gameId: string | undefined,
+  online: boolean,
+  characterGame = '',
+): Scope {
   if (!online) return { kind: 'home' }
   if (name && GAME_ROUTES.has(name) && gameId) return { kind: 'game', gameId }
   if (name === 'party') return { kind: 'solo' }
+  if (name === 'level-up') return characterGame ? { kind: 'game', gameId: characterGame } : { kind: 'solo' }
   return { kind: 'home' }
 }
 

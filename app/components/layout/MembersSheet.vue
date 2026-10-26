@@ -36,6 +36,10 @@ function askRemove(member: GameMember) {
   confirmOpen.value = true
 }
 
+function displayName(m: GameMember): string {
+  return m.name || t('games.table.unknownOwner')
+}
+
 function initial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || '?'
 }
@@ -54,7 +58,7 @@ async function confirmRemove() {
       <li v-for="m in members" :key="m.id" class="gs-row">
         <span class="gs-avatar" aria-hidden="true">{{ initial(m.name) }}</span>
         <span class="gs-body">
-          <span class="gs-name">{{ m.name || t('games.table.unknownOwner') }}</span>
+          <span class="gs-name">{{ displayName(m) }}</span>
           <span class="gs-pills">
             <span v-if="m.user === game.master" class="gs-pill is-master">{{ t('games.members.master') }}</span>
             <span v-if="m.user === me" class="gs-pill">{{ t('games.members.you') }}</span>
@@ -64,7 +68,7 @@ async function confirmRemove() {
           v-if="master && m.user !== me"
           variant="danger-ghost"
           size="sm"
-          :aria-label="t('games.members.removeLabel', { name: m.name })"
+          :aria-label="t('games.members.removeLabel', { name: displayName(m) })"
           @click="askRemove(m)"
         >{{ t('games.members.remove') }}</Button>
       </li>
@@ -74,7 +78,7 @@ async function confirmRemove() {
   <ConfirmSheet
     v-model:open="confirmOpen"
     variant="danger"
-    :title="t('games.members.removeTitle', { name: target?.name ?? '' })"
+    :title="t('games.members.removeTitle', { name: target ? displayName(target) : '' })"
   >
     <p>{{ t('games.members.removeBody') }}</p>
     <template #actions>

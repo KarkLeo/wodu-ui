@@ -15,12 +15,12 @@ import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useModeSwitch } from '@/composables/useModeSwitch'
+import { useTable } from '@/composables/useTable'
 import { currentUser, signedIn } from '@/transport/auth'
 import { authGate } from '@/transport/authHelpers'
 import { setScope } from '@/transport/scope'
 import { findGameByCode } from '@/transport/games'
 import { normalizeInviteCode } from '@/utils/inviteCode'
-import { scopeForRoute } from '@/utils/scope'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
 // default key includes the params and would remount it.
@@ -33,11 +33,8 @@ const gate = computed(() => authGate(mode.value, signedIn.value, currentUser.val
 const route = useRoute()
 
 // The open table follows the route; online loading (events, the game's characters) follows the table.
-watch(
-  () => [route.name, route.params.gameId, mode.value] as const,
-  ([name, gameId, m]) => setScope(scopeForRoute(String(name ?? ''), gameId as string | undefined, m === 'online')),
-  { immediate: true },
-)
+const { tableScope } = useTable()
+watch(tableScope, setScope, { immediate: true })
 
 // An invite link opened while signed out shows the game's name above the sign-in form.
 const inviteGameName = ref<string | undefined>()

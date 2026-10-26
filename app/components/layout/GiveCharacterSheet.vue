@@ -27,6 +27,10 @@ const others = computed(() => games.membersOf(props.gameId).filter(m => m.user !
 const target = ref<GameMember | null>(null)
 const confirmOpen = ref(false)
 
+function displayName(m: GameMember): string {
+  return m.name || t('games.table.unknownOwner')
+}
+
 function pick(member: GameMember) {
   target.value = member
   confirmOpen.value = true
@@ -52,7 +56,7 @@ async function confirmGive() {
           <button type="button" class="gs-row" :disabled="busy" @click="pick(m)">
             <span class="gs-avatar" aria-hidden="true">{{ m.name.trim().charAt(0).toUpperCase() || '?' }}</span>
             <span class="gs-body">
-              <span class="gs-name">{{ m.name || t('games.table.unknownOwner') }}</span>
+              <span class="gs-name">{{ displayName(m) }}</span>
             </span>
           </button>
         </li>
@@ -63,11 +67,12 @@ async function confirmGive() {
 
   <ConfirmSheet
     v-model:open="confirmOpen"
-    :title="t('games.sheet.giveConfirmTitle', { name, player: target?.name ?? '' })"
+    variant="danger"
+    :title="t('games.sheet.giveConfirmTitle', { name, player: target ? displayName(target) : '' })"
   >
-    <p>{{ t('games.sheet.giveConfirmBody', { player: target?.name ?? '' }) }}</p>
+    <p>{{ t('games.sheet.giveConfirmBody', { player: target ? displayName(target) : '' }) }}</p>
     <template #actions>
-      <Button variant="hero" :disabled="busy" @click="confirmGive">{{ t('games.sheet.giveConfirm') }}</Button>
+      <Button variant="hero-danger" :disabled="busy" @click="confirmGive">{{ t('games.sheet.giveConfirm') }}</Button>
       <Button variant="ghost" @click="confirmOpen = false">{{ t('common.cancel') }}</Button>
     </template>
   </ConfirmSheet>

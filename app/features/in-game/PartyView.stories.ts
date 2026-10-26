@@ -120,3 +120,30 @@ export const CharacterLeavesWhileOpen: Story = {
     await expect(within(canvasElement).getByRole('button', { name: `Actions for ${brann.name}` })).toBeVisible()
   },
 }
+
+/**
+ * The master gives their character to a player from its column: the character stays at the table (now
+ * Kostya's, so its actions go), and no dialog or overlay is left blocking the page.
+ */
+export const GiveFromColumn: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  play: async ({ canvasElement }) => {
+    const update = spyOn(pb.collection('characters'), 'update')
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: `Actions for ${brann.name}` }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Give to a player' }))
+    const sheet = within(await body(canvasElement).findByRole('dialog', { name: `Give ${brann.name} to a player` }))
+    await userEvent.click(sheet.getByRole('button', { name: 'Kostya' }))
+    const confirm = within(await body(canvasElement).findByRole('dialog', { name: `Give ${brann.name} to Kostya?` }))
+    await userEvent.click(confirm.getByRole('button', { name: 'Give' }))
+    await waitFor(() => expect(update).toHaveBeenCalledWith(brann.id, { owner: 'user-kostya' }))
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(canvasElement.ownerDocument.body.style.pointerEvents).not.toBe('none'))
+    await expect(columns(canvasElement)).toHaveLength(2)
+    await expect(within(canvasElement).queryByRole('button', { name: `Actions for ${brann.name}` })).toBeNull()
+    const [first] = within(canvasElement).getAllByRole('button', { name: 'Close sheet' })
+    await userEvent.click(first!)
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/party/${wren.id}`))
+  },
+}

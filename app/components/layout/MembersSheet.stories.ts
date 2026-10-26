@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import MembersSheet from './MembersSheet.vue'
-import { crookhollow, olden, PARTY, wren, CROOKHOLLOW_META, OLDEN_META } from '@/stories/fixtures'
+import { crookhollow, olden, MEMBERS, PARTY, wren, CROOKHOLLOW_META, OLDEN_META } from '@/stories/fixtures'
 import { withGameTable } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -75,5 +75,16 @@ export const RemoveCancel: Story = {
     await userEvent.click(confirm.getByRole('button', { name: 'Cancel' }))
     await expect(removeMembership).not.toHaveBeenCalled()
     await expect(sheet.getAllByRole('listitem')).toHaveLength(3)
+  },
+}
+
+/** A member without a display name: the row and the remove button use the same placeholder. */
+export const UnnamedMember: Story = {
+  decorators: [withGameTable(crookhollow, PARTY, CROOKHOLLOW_META, MEMBERS.map(m => (m.user === 'user-yana' ? { ...m, name: '' } : m)))],
+  play: async ({ canvasElement }) => {
+    const sheet = await dialog(canvasElement)
+    await expect(sheet.getAllByRole('listitem')[2]).toHaveTextContent('—')
+    await userEvent.click(sheet.getByRole('button', { name: 'Remove —' }))
+    await expect(await body(canvasElement).findByRole('dialog', { name: 'Remove — from the game?' })).toBeVisible()
   },
 }

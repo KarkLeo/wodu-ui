@@ -71,9 +71,24 @@ describe('scopeForRoute', () => {
     expect(scopeForRoute('game', '', true)).toEqual({ kind: 'home' })
   })
 
+  it('level-up takes the table of its character\'s game', () => {
+    expect(scopeForRoute('level-up', undefined, true, 'G')).toEqual({ kind: 'game', gameId: 'G' })
+  })
+
+  it('level-up of a free character is the solo table', () => {
+    expect(scopeForRoute('level-up', undefined, true, '')).toEqual({ kind: 'solo' })
+    expect(scopeForRoute('level-up', undefined, true)).toEqual({ kind: 'solo' })
+  })
+
+  it('a character game only matters on the level-up route', () => {
+    expect(scopeForRoute('character-list', undefined, true, 'G')).toEqual({ kind: 'home' })
+    expect(scopeForRoute('party', undefined, true, 'G')).toEqual({ kind: 'solo' })
+  })
+
   it('offline mode stays home', () => {
     expect(scopeForRoute('game', 'G', false)).toEqual({ kind: 'home' })
     expect(scopeForRoute('party', undefined, false)).toEqual({ kind: 'home' })
+    expect(scopeForRoute('level-up', undefined, false, 'G')).toEqual({ kind: 'home' })
   })
 })
 
