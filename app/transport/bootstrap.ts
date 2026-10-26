@@ -320,7 +320,29 @@ async function loadAndSubscribe(gen: number) {
   await fetchAndApply(gen, deadline)
 }
 
-// Another table is open: its log replaces the old one. Realtime events held meanwhile are replayed on top.
+function fetchGameCharacters(gameId: string) {
+  return pb.collection('characters').getFullList<CharacterRow>({ filter: pb.filter('game = {:g}', { g: gameId }) })
+}
+
+// Nothing arrives for a teammate's character that left the game, and a join whose load failed has none
+// of them yet, so opening a game's table settles its characters against the server.
+function applyGameCharacters(gameId: string, rows: CharacterRow[]) {
+  const characters = useCharactersStore()
+  const valid = rows.filter(r => isCharacterShape(r.data))
+  for (const r of valid) characters.upsertLocal(r.data, r.updated, { owner: r.owner, game: r.game })
+  const present = new Set(valid.map(r => r.id))
+  const mine = me()
+  // My own characters stay readable wherever they are, and their moves arrive through realtime.
+  const gone = characters.list.filter((c) => {
+    const m = characters.meta[c.id]
+    return m?.game === gameId && m.owner !== mine && !present.has(c.id)
+  })
+  for (const c of gone) characters.removeLocal(c.id)
+  return { characters: valid.length, dropped: gone.length }
+}
+
+// Another table is open: its log replaces the old one, and a game's characters are re-read. Realtime
+// events held meanwhile are replayed on top.
 async function reloadEvents() {
   const gen = loadGen
   const events = ++eventsGen
@@ -330,9 +352,13 @@ async function reloadEvents() {
   if (eventFilter(target) === null) return
   holdRealtime()
   try {
-    const rows = await withTimeout(fetchEvents(target), BOOTSTRAP_TIMEOUT_MS)
+    const [rows, charRows] = await withTimeout(Promise.all([
+      fetchEvents(target),
+      target.kind === 'game' ? fetchGameCharacters(target.gameId) : Promise.resolve(null),
+    ]), BOOTSTRAP_TIMEOUT_MS)
     if (!isCurrent(gen) || events !== eventsGen) return
-    log.info('events reloaded for the open table', { scope: target.kind, ...applyEvents(rows) })
+    const table = target.kind === 'game' && charRows ? applyGameCharacters(target.gameId, charRows) : null
+    log.info('open table reloaded', { scope: target.kind, ...applyEvents(rows), table })
   } catch (err) {
     if (!isCurrent(gen) || events !== eventsGen) return
     log.warn('loading the events of the open table failed', { err })

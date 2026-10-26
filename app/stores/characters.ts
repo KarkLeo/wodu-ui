@@ -6,9 +6,9 @@ import type { CharacterCommand } from '@/domain/commands'
 import type { ChangeEntry } from '@/types/changeLog'
 import { createLogger } from '@/utils/logger'
 import { backend } from '@/transport/backend'
-import { modeSession } from '@/transport/mode'
+import { ClientResponseError } from 'pocketbase'
+import { mode, modeSession } from '@/transport/mode'
 import { reportWriteFailure } from '@/transport/writeFailure'
-import { mode } from '@/transport/mode'
 import { currentUser } from '@/transport/auth'
 import { useToastsStore } from '@/stores/toasts'
 import { useGamesStore } from '@/stores/games'
@@ -96,8 +96,19 @@ export const useCharactersStore = defineStore('characters', {
       try {
         await be.updateCharacter(next)
       } catch (err) {
+        if (modeSession() !== session) {
+          log.error('dispatch: write failed after a mode switch', { id, cmd: cmd.type, err })
+          throw err
+        }
+        // Someone else's character that left this table (taken out, its owner gone): the server no
+        // longer lets this player read it, so it leaves the table instead of rolling back.
+        if (err instanceof ClientResponseError && err.status === 404 && this.metaOf(id)?.owner !== currentUser.value?.id) {
+          log.error('dispatch: character is no longer at this table', { id, cmd: cmd.type, err })
+          this.removeLocal(id)
+          useToastsStore().push(t('errors.characterGone'), 'error')
+          throw err
+        }
         log.error('dispatch: write failed, rolling back', { id, cmd: cmd.type, err })
-        if (modeSession() !== session) throw err
         this.upsertLocal(prev)
         reportWriteFailure(err, t('errors.dispatchFailed'), session)
         throw err
