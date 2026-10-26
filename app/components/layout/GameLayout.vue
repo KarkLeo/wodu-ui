@@ -7,6 +7,7 @@ import IconClose from '@/components/ui/icons/IconClose.vue'
 import { t } from '@/locales'
 import bgUrl from '@/assets/bg.jpeg'
 import { GameLayoutContextKey, type Side } from './gameLayoutContext'
+import { useTable } from '@/composables/useTable'
 
 const leftOpenMobile = ref(false)
 const rightOpenMobile = ref(false)
@@ -52,6 +53,8 @@ function closeMobOverlays() {
 
 const route = useRoute()
 watch(() => route.fullPath, closeMobOverlays)
+
+const { game } = useTable()
 </script>
 
 <template>
@@ -81,7 +84,11 @@ watch(() => route.fullPath, closeMobOverlays)
       >
         <IconMenu :size="16" />
       </button>
-      <div class="gl-mob-center-title">
+      <div v-if="game" class="gl-mob-center-title">
+        <span class="t">{{ game.name }}</span>
+        <span class="o">{{ dateStr }} · {{ timeStr }}</span>
+      </div>
+      <div v-else class="gl-mob-center-title">
         <span class="t"><b>{{ dateStr }}</b> · {{ timeStr }}</span>
         <span class="o">{{ t('gameLayout.topTitle') }}</span>
       </div>

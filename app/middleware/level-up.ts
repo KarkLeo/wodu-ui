@@ -4,6 +4,13 @@ import { levelUpGuard } from '@/utils/routeGuards'
 import { onlineDataReady } from '@/transport/bootstrap'
 
 export default defineNuxtRouteMiddleware((to) => {
-  const redirect = levelUpGuard(to.params.id as string, useCharactersStore().getById, onlineDataReady.value)
+  const characters = useCharactersStore()
+  const redirect = levelUpGuard(
+    to.params.id as string,
+    characters.getById,
+    onlineDataReady.value,
+    characters.canEditCharacter,
+    id => characters.metaOf(id)?.game ?? '',
+  )
   if (redirect) return navigateTo(redirect)
 })

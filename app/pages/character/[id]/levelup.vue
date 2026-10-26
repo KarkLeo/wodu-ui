@@ -15,7 +15,13 @@ const characters = useCharactersStore()
 // See pages/party/[ids].vue: re-run the guard the middleware skipped while the online load had failed.
 watch(onlineDataReady, (ready) => {
   if (!ready || mode.value !== 'online') return
-  const redirect = levelUpGuard(route.params.id as string, characters.getById)
+  const redirect = levelUpGuard(
+    route.params.id as string,
+    characters.getById,
+    true,
+    characters.canEditCharacter,
+    id => characters.metaOf(id)?.game ?? '',
+  )
   if (redirect) void navigateTo(redirect)
 }, { immediate: true })
 </script>

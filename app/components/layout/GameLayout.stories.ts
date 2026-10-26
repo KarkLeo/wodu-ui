@@ -4,8 +4,8 @@ import GameLayout from './GameLayout.vue'
 import PlayersPanel from './PlayersPanel.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
 import PartyView from '@/features/in-game/PartyView.vue'
-import { brann, wren, sage, PARTY, ROLLS, CHANGES } from '@/stories/fixtures'
-import { atRoute, DESKTOP_VIEWPORT, withStores } from '@/stories/state'
+import { brann, wren, sage, PARTY, ROLLS, CHANGES, crookhollow, CROOKHOLLOW_META } from '@/stories/fixtures'
+import { atRoute, DESKTOP_VIEWPORT, withGameTable, withStores } from '@/stories/state'
 
 const PHONE = { viewport: { value: 'phone', isRotated: false } }
 
@@ -98,4 +98,30 @@ export const DesktopScrollSheet: Story = {
     await userEvent.click(await within(canvasElement).findByRole('tab', { name: 'Inventory' }))
     await scrollSheet(canvasElement, 60)
   },
+}
+
+/** In a game the phone top bar is titled with the game's name. */
+export const PhoneGame: Story = {
+  globals: PHONE,
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  play: async ({ canvasElement }) => {
+    const title = canvasElement.querySelector('.gl-mob-center-title .t')
+    await expect(title).toHaveTextContent(crookhollow.name)
+  },
+}
+
+export const PhoneGamePlayers: Story = {
+  globals: PHONE,
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Players' }))
+  },
+}
+
+export const DesktopGame: Story = {
+  globals: DESKTOP_VIEWPORT,
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
 }

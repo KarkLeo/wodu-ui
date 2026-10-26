@@ -45,7 +45,7 @@ function rollSides(sides: number): number {
 function onDice(notation: string) {
   if (props.characterId) {
     const record = dice.rollFree(props.characterId, props.characterName, notation)
-    amount.value = record.diceTotal
+    if (record) amount.value = record.diceTotal
     return
   }
   // Fallback for contexts without a character (e.g. Storybook):

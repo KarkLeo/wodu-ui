@@ -3,7 +3,7 @@ import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CharacterCreationView from './CharacterCreationView.vue'
 import { useCreationStore } from '@/stores/creation'
-import { build, draftGear, draftIdentity, draftTraining } from '@/stories/fixtures'
+import { build, crookhollow, draftGear, draftIdentity, draftTraining, inGame, MEMBERS } from '@/stories/fixtures'
 import { storyRouter } from '@/stories/router'
 import { atRoute, withStores } from '@/stories/state'
 import { bootstrapStatus } from '@/transport/bootstrap'
@@ -120,5 +120,26 @@ export const NextFromIdentity: Story = {
     const view = screen(canvasElement)
     await userEvent.click(await view.findByRole('button', { name: /Next/ }))
     await expect(await view.findByRole('button', { name: '2', current: 'step' })).toBeInTheDocument()
+  },
+}
+
+const gameDraft = withStores({
+  characters: [draftIdentity],
+  creation: { draftId: draftIdentity.id, step: 1 },
+  games: [crookhollow],
+  members: MEMBERS.filter(m => m.game === crookhollow.id),
+  meta: { [draftIdentity.id]: inGame(crookhollow) },
+  scope: { kind: 'game', gameId: crookhollow.id },
+})
+
+/** Closing the wizard inside a game returns to that game's table. */
+export const CloseInGame: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  decorators: [gameDraft],
+  loaders: [atRoute(`/games/${crookhollow.id}/new`)],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(await screen(canvasElement).findByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
   },
 }

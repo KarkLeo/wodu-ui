@@ -5,6 +5,7 @@ import { modeSession } from '@/transport/mode'
 import { reportWriteFailure } from '@/transport/writeFailure'
 import { markRollPlayedLocally } from '@/transport/bootstrap'
 import { useRollHistoryStore } from '@/stores/rollHistory'
+import { refuseReadOnly, useCharactersStore } from '@/stores/characters'
 import { parseDamageNotation } from '@/utils/derived'
 import type { RollMode, RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
@@ -27,6 +28,13 @@ function persistRoll(record: RollRecord): void {
       log.error('persistRoll: write failed', { id: record.id, err })
       reportWriteFailure(err, t('errors.rollSyncFailed'), session)
     })
+}
+
+// A guard behind the UI: a read-only sheet offers no dice, but nothing may record a roll for it anyway.
+function mayRoll(characterId: string): boolean {
+  if (useCharactersStore().canEditCharacter(characterId)) return true
+  refuseReadOnly('roll', characterId)
+  return false
 }
 
 export function useDiceRoller() {
@@ -80,7 +88,8 @@ export function useDiceRoller() {
     characterName?: string
     minTotal?: number
     rollMode?: RollMode
-  }): RollRecord {
+  }): RollRecord | null {
+    if (!mayRoll(params.characterId)) return null
     log.debug('roll', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
     const record = buildRecord(params)
     persistRoll(record)
@@ -172,7 +181,7 @@ export function useDiceRoller() {
     }>,
     ctx: { characterId: string; characterName?: string },
   ): RollRecord[] {
-    if (items.length === 0) return []
+    if (items.length === 0 || !mayRoll(ctx.characterId)) return []
     const records = items.map(item => buildRecord({ ...item, characterId: ctx.characterId, characterName: ctx.characterName }))
     log.debug('rollBatch', { count: records.length })
     for (const record of records) persistRoll(record)

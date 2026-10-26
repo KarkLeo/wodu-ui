@@ -7,18 +7,30 @@ import { t } from '@/locales'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { usePwaInstall } from '@/pwa/useInstall'
 import { onlineDataReady } from '@/transport/bootstrap'
+import { currentUser } from '@/transport/auth'
+import { mode } from '@/transport/mode'
+import { scope } from '@/transport/scope'
+import { charactersInScope } from '@/utils/scope'
 
 const router = useRouter()
 const characters = useCharactersStore()
 const creation = useCreationStore()
 const install = usePwaInstall()
 
-const activeChars = computed(() => characters.list.filter(c => c.status === 'active'))
-const draftChars = computed(() => characters.list.filter(c => c.status === 'draft'))
+// Online, this view is a game's table with no sheet open: only that game's characters, and only my drafts.
+const visible = computed(() => {
+  if (mode.value !== 'online') return characters.list
+  const me = currentUser.value?.id ?? null
+  return charactersInScope(characters.list, characters.metaView, scope.value, me)
+    .filter(c => c.status === 'active' || characters.metaOf(c.id)?.owner === me)
+})
+const activeChars = computed(() => visible.value.filter(c => c.status === 'active'))
+const draftChars = computed(() => visible.value.filter(c => c.status === 'draft'))
 
 function resumeCreation(id: string) {
   creation.setDraft(id)
-  router.push('/character/new')
+  const gameId = mode.value === 'online' ? characters.metaOf(id)?.game : ''
+  router.push(gameId ? { name: 'game-character-new', params: { gameId } } : '/character/new')
 }
 </script>
 

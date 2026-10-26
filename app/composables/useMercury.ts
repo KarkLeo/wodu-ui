@@ -52,13 +52,18 @@ export function useMercury(getChar: () => Character, dispatch: Dispatcher) {
     if (!id) return
     const char = getChar()
     try {
-      await rollStat(
+      const record = await rollStat(
         char.id,
         char.name,
         'con',
         t('inGame.inventory.overdose.rollLabel'),
         effectiveStat(char, 'con'),
       )
+      // Refused (a read-only character): the roll already said so, and the potion stays untouched.
+      if (!record) {
+        pendingItemId.value = null
+        return
+      }
     } catch (err) {
       log.error('overdose roll failed', err)
     }

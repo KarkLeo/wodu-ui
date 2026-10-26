@@ -24,7 +24,32 @@ async function sendCodeTo(canvasElement: HTMLElement, email: string) {
   await userEvent.click(canvas.getByRole('button', { name: 'Get code' }))
 }
 
-export const Email: Story = {}
+export const Email: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByText('Invitation')).not.toBeInTheDocument()
+  },
+}
+
+/** Opened from an invite link: the game's name above the form (no master name, see the games spec). */
+export const InviteBanner: Story = {
+  args: { inviteGameName: 'Shadows over Crookhollow' },
+  play: async ({ canvasElement }) => {
+    const banner = within(canvasElement).getByRole('complementary', { name: 'Invitation' })
+    await expect(banner).toHaveTextContent('Shadows over Crookhollow')
+    await expect(within(canvasElement).getByLabelText('Email')).toBeVisible()
+  },
+}
+
+/** The banner belongs to the email step only; the code step keeps the screen for the code. */
+export const InviteBannerOnCodeStep: Story = {
+  tags: ['no-visual'],
+  args: { inviteGameName: 'Shadows over Crookhollow' },
+  play: async ({ canvasElement }) => {
+    await sendCodeTo(canvasElement, 'anna@mail.com')
+    await expect(await within(canvasElement).findByText('Check your email')).toBeVisible()
+    await expect(within(canvasElement).queryByText('Shadows over Crookhollow')).not.toBeInTheDocument()
+  },
+}
 
 export const EmailInvalid: Story = {
   tags: ['no-visual'],

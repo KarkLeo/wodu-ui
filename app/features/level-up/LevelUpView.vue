@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useLevelUp } from '@/composables/useLevelUp'
+import { useTable } from '@/composables/useTable'
 import type { SkillId, AbilityId, StatKey } from '@/types/character'
 import { t } from '@/locales'
 import { skillName as skillNameOf, abilityName as abilityNameOf, statShort } from '@/locales/content'
@@ -16,6 +17,7 @@ import { useIsMobile } from '@/composables/useIsMobile'
 const isMobile = useIsMobile()
 
 const router = useRouter()
+const { partyRoute, tableRoute } = useTable()
 const { id, char, dispatch } = useActiveCharacter()
 const lv = useLevelUp(char, dispatch)
 
@@ -107,22 +109,22 @@ function onPrimary() {
       return
     case 'confirm':
       lv.confirm()
-      router.push(`/character/${id.value}`)
+      router.push(partyRoute([id.value]))
       return
   }
 }
 
 function onBack() {
-  if (!lv.goBack()) router.push(`/character/${id.value}`)
+  if (!lv.goBack()) router.push(partyRoute([id.value]))
 }
 
 function onClose() {
-  router.push(`/character/${id.value}`)
+  router.push(partyRoute([id.value]))
 }
 
 onMounted(() => {
   if (!char.value || !lv.reward.value) {
-    router.push('/')
+    router.push(tableRoute())
     return
   }
   lv.init()

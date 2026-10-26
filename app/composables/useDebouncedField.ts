@@ -4,6 +4,8 @@ export interface DebouncedField {
   value: Ref<string>
   onInput: (v: string) => void
   flush: () => void
+  /** Drops pending input without committing it and shows the source value again. */
+  discard: () => void
 }
 
 export function useDebouncedField(
@@ -33,6 +35,12 @@ export function useDebouncedField(
     commit(value.value)
   }
 
+  function discard() {
+    clearTimer()
+    dirty = false
+    value.value = source()
+  }
+
   function onInput(v: string) {
     value.value = v
     dirty = true
@@ -46,5 +54,5 @@ export function useDebouncedField(
 
   onBeforeUnmount(flush)
 
-  return { value, onInput, flush }
+  return { value, onInput, flush, discard }
 }

@@ -5,6 +5,7 @@ import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
 import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { findGearTemplate } from '@/data/gear'
 import { t } from '@/locales'
 import { gearName } from '@/locales/content'
@@ -22,6 +23,7 @@ type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
+const readonly = useSheetReadonly()
 const inv = useInventory(props.dispatch)
 const {
   overdoseOpen,
@@ -176,58 +178,60 @@ function openAddCustom() {
       <div v-if="!backpack.length" class="inv-empty">{{ t('inGame.inventory.empty') }}</div>
     </InvSection>
 
-    <InvToolbar
-      @open-catalog="catalogOpen = true"
-      @open-custom="openAddCustom"
-    />
+    <template v-if="!readonly">
+      <InvToolbar
+        @open-catalog="catalogOpen = true"
+        @open-custom="openAddCustom"
+      />
 
-    <CatalogSheet
-      v-model:open="catalogOpen"
-      :coins="char.coins"
-      @buy="onBuyTemplate"
-      @request-gm="onRequestGm"
-    />
+      <CatalogSheet
+        v-model:open="catalogOpen"
+        :coins="char.coins"
+        @buy="onBuyTemplate"
+        @request-gm="onRequestGm"
+      />
 
-    <CustomItemSheet
-      v-model:open="customOpen"
-      :editing="editingItem"
-      @save="onSaveCustom"
-      @remove="onRemoveCustom"
-    />
+      <CustomItemSheet
+        v-model:open="customOpen"
+        :editing="editingItem"
+        @save="onSaveCustom"
+        @remove="onRemoveCustom"
+      />
 
-    <ConfirmSheet
-      v-if="gmPending"
-      v-model:open="gmOpen"
-      variant="gold"
-      :title="t('inGame.inventory.gm.title')"
-    >
-      <p>
-        {{ t('inGame.inventory.gm.body', { name: gearName(gmPending.templateId), price: gmPending.price ?? 0, coins: char.coins }) }}
-      </p>
-      <template #actions>
-        <Button variant="hero" @click="gmApprove">{{ t('inGame.inventory.gm.approve') }}</Button>
-        <Button variant="ghost" @click="gmCancel">{{ t('inGame.inventory.gm.discuss') }}</Button>
-      </template>
-    </ConfirmSheet>
+      <ConfirmSheet
+        v-if="gmPending"
+        v-model:open="gmOpen"
+        variant="gold"
+        :title="t('inGame.inventory.gm.title')"
+      >
+        <p>
+          {{ t('inGame.inventory.gm.body', { name: gearName(gmPending.templateId), price: gmPending.price ?? 0, coins: char.coins }) }}
+        </p>
+        <template #actions>
+          <Button variant="hero" @click="gmApprove">{{ t('inGame.inventory.gm.approve') }}</Button>
+          <Button variant="ghost" @click="gmCancel">{{ t('inGame.inventory.gm.discuss') }}</Button>
+        </template>
+      </ConfirmSheet>
 
-    <ConfirmSheet
-      v-model:open="overdoseOpen"
-      variant="danger"
-      :title="t('inGame.inventory.overdose.title')"
-    >
-      <p>
-        {{ t('inGame.inventory.overdose.body', { count: char.quicksilverCount ?? 0, level: char.level }) }}
-      </p>
-      <template #actions>
-        <Button variant="hero" :disabled="isRolling" @click="rollOverdose">
-          {{ t('inGame.inventory.overdose.roll') }}
-        </Button>
-        <Button variant="primary" @click="resetQuicksilver">
-          {{ t('inGame.inventory.overdose.reset') }}
-        </Button>
-        <Button variant="ghost" @click="overdoseOpen = false">{{ t('common.cancel') }}</Button>
-      </template>
-    </ConfirmSheet>
+      <ConfirmSheet
+        v-model:open="overdoseOpen"
+        variant="danger"
+        :title="t('inGame.inventory.overdose.title')"
+      >
+        <p>
+          {{ t('inGame.inventory.overdose.body', { count: char.quicksilverCount ?? 0, level: char.level }) }}
+        </p>
+        <template #actions>
+          <Button variant="hero" :disabled="isRolling" @click="rollOverdose">
+            {{ t('inGame.inventory.overdose.roll') }}
+          </Button>
+          <Button variant="primary" @click="resetQuicksilver">
+            {{ t('inGame.inventory.overdose.reset') }}
+          </Button>
+          <Button variant="ghost" @click="overdoseOpen = false">{{ t('common.cancel') }}</Button>
+        </template>
+      </ConfirmSheet>
+    </template>
   </section>
 </template>
 
