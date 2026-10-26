@@ -187,6 +187,7 @@ export const messages: Messages = {
       placeholder: '2d6+1, d20, 4d6…',
       error: 'Невірний формат. Приклад: 2d6, 1d8+2, 3d6+1d4',
       hint: 'Відкрий лист персонажа, щоб кидати.',
+      readOnly: 'Кидати за {name} не можна.',
       submit: 'Кинути',
     },
     actions: {
@@ -297,6 +298,9 @@ export const messages: Messages = {
       magic: 'Магія',
       notes: 'Нотатки',
     },
+    readonly: {
+      owner: 'Персонаж гравця {name}',
+    },
     statusHeader: {
       back: 'Назад',
       levelLabel: 'рів.',
@@ -354,6 +358,7 @@ export const messages: Messages = {
     notes: {
       title: 'Нотатки',
       placeholder: 'Нотатки про персонажа, світ, сюжет…',
+      empty: 'Нотаток поки немає.',
     },
     inventory: {
       empty: 'У рюкзаку порожньо',

@@ -185,6 +185,7 @@ export const messages = {
       placeholder: '2d6+1, d20, 4d6…',
       error: 'Invalid format. Example: 2d6, 1d8+2, 3d6+1d4',
       hint: 'Open a character sheet to roll.',
+      readOnly: 'You can’t roll for {name}.',
       submit: 'Roll',
     },
     actions: {
@@ -295,6 +296,9 @@ export const messages = {
       magic: 'Magic',
       notes: 'Notes',
     },
+    readonly: {
+      owner: '{name}’s character',
+    },
     statusHeader: {
       back: 'Back',
       levelLabel: 'lvl',
@@ -352,6 +356,7 @@ export const messages = {
     notes: {
       title: 'Notes',
       placeholder: 'Notes about the character, world, story…',
+      empty: 'No notes yet.',
     },
     inventory: {
       empty: 'Backpack is empty',

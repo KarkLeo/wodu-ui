@@ -1,8 +1,9 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import DiceDrawer from './DiceDrawer.vue'
-import { brann, PARTY, ROLLS, CHANGES } from '@/stories/fixtures'
+import { brann, oda, PARTY, ROLLS, CHANGES } from '@/stories/fixtures'
 import { asActive, DESKTOP_VIEWPORT, inLayout, withStores } from '@/stories/state'
+import { asTeammate } from '@/stories/readonly'
 
 // Same width GameLayout gives the right column; collapse and rail only exist above 960px.
 const desktopColumn: Decorator = (story) => ({
@@ -102,5 +103,17 @@ export const CollapseToRail: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByLabelText('Collapse', { selector: 'button' }))
     await expect(await canvas.findByLabelText('Log', { selector: 'button' })).toBeInTheDocument()
+  },
+}
+
+/** The active sheet is a teammate's (read-only): the drawer offers no roll for it and says why. */
+export const ReadOnlyActive: Story = {
+  decorators: [asActive(oda.id), asTeammate(PARTY)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(`You can’t roll for ${oda.name}.`)).toBeVisible()
+    await expect(canvas.getByRole('button', { name: '2d6' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Advantage' })).toBeDisabled()
+    await expect(canvas.getByPlaceholderText('2d6+1, d20, 4d6…')).toBeDisabled()
   },
 }

@@ -4,6 +4,7 @@ import type { Character, Ritual, Spirit, Magic, AbilityId } from '@/types/charac
 import type { CharacterCommand } from '@/domain/commands'
 import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { grantsSection } from '@/data/abilities'
 import { t } from '@/locales'
 import { cantripName } from '@/locales/content'
@@ -19,6 +20,8 @@ import IconPlus from '@/components/ui/icons/IconPlus.vue'
 type Dispatcher = (cmd: CharacterCommand) => void
 
 const props = defineProps<{ char: Character; abilityIds: AbilityId[]; dispatch: Dispatcher }>()
+
+const readonly = useSheetReadonly()
 
 const {
   count: quicksilverCount,
@@ -96,7 +99,7 @@ function onDrink() {
           {{ t('inGame.magic.spirits.title') }}
           <b>· {{ magic.spirits.length }}</b>
         </span>
-        <button class="mg-section-add" @click="addSpirit">
+        <button v-if="!readonly" class="mg-section-add" @click="addSpirit">
           <IconPlus />
           {{ t('inGame.magic.spirits.add') }}
         </button>
@@ -118,7 +121,7 @@ function onDrink() {
           {{ t('inGame.magic.rituals.title') }}
           <b>· {{ magic.rituals.length }}</b>
         </span>
-        <button class="mg-section-add" @click="addRitual">
+        <button v-if="!readonly" class="mg-section-add" @click="addRitual">
           <IconPlus />
           {{ t('inGame.magic.rituals.add') }}
         </button>
@@ -147,6 +150,7 @@ function onDrink() {
     </div>
 
     <ConfirmSheet
+      v-if="!readonly"
       v-model:open="overdoseOpen"
       variant="danger"
       :title="t('inGame.magic.overdose.title')"

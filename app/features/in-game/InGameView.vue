@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
+import { provideSheetReadonly } from '@/composables/useSheetReadonly'
+import { useCharactersStore } from '@/stores/characters'
 import AppShell from '@/components/AppShell.vue'
 import TabBar from '@/components/ui/TabBar.vue'
 import StatusHeader from './components/StatusHeader.vue'
@@ -18,6 +20,8 @@ type Tab = 'main' | 'inventory' | 'magic' | 'notes'
 const props = defineProps<{ id?: string }>()
 
 const { id, char, dispatch } = useActiveCharacter(() => props.id)
+const characters = useCharactersStore()
+provideSheetReadonly(computed(() => !characters.canEditCharacter(id.value)))
 
 const activeTab = ref<Tab>('main')
 

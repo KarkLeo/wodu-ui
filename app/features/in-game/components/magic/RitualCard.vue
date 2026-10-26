@@ -5,6 +5,7 @@ import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import Button from '@/components/ui/Button.vue'
 import { t } from '@/locales'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 
 const props = defineProps<{ ritual: Ritual }>()
 const emit = defineEmits<{
@@ -12,7 +13,10 @@ const emit = defineEmits<{
   (e: 'remove'): void
 }>()
 
+const readonly = useSheetReadonly()
 const editing = ref(false)
+// The sheet can turn read-only while a form is open (the character left the game).
+watch(readonly, (ro) => { if (ro) editing.value = false })
 const expanded = ref(false)
 const draft = ref({ name: props.ritual.name, description: props.ritual.description })
 
@@ -37,7 +41,7 @@ function save() {
 function onBodyTap() {
   if (editing.value) return
   if (isEmpty.value) {
-    openEdit()
+    if (!readonly.value) openEdit()
     return
   }
   expanded.value = !expanded.value
@@ -52,7 +56,7 @@ function onBodyTap() {
         <template v-else-if="isEmpty">{{ t('inGame.magic.rituals.empty') }}</template>
         <template v-else>{{ ritual.name || t('inGame.magic.rituals.empty') }}</template>
       </div>
-      <div class="ritual-actions">
+      <div v-if="!readonly" class="ritual-actions">
         <button
           v-if="!editing && !isEmpty"
           class="btn-icon-sm"
@@ -73,14 +77,16 @@ function onBodyTap() {
       </div>
     </div>
 
-    <p
-      v-if="!editing"
-      class="ritual-desc"
-      :class="{ 'is-placeholder': isEmpty }"
-      @click="onBodyTap"
-    >
-      {{ isEmpty ? t('inGame.magic.rituals.emptyHint') : ritual.description }}
-    </p>
+    <template v-if="!editing">
+      <p
+        v-if="!(readonly && isEmpty)"
+        class="ritual-desc"
+        :class="{ 'is-placeholder': isEmpty }"
+        @click="onBodyTap"
+      >
+        {{ isEmpty ? t('inGame.magic.rituals.emptyHint') : ritual.description }}
+      </p>
+    </template>
 
     <form v-else class="ritual-edit-form" @submit.prevent="save">
       <div class="form-row">

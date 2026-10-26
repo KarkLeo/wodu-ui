@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import IconWarning from '@/components/ui/icons/IconWarning.vue'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { t } from '@/locales'
 
 const props = defineProps<{
@@ -15,6 +16,8 @@ const emit = defineEmits<{
   (e: 'drink'): void
   (e: 'reset'): void
 }>()
+
+const readonly = useSheetReadonly()
 
 const over = computed(() => Math.max(0, props.count - props.limit))
 const subtitle = computed(() => {
@@ -42,7 +45,7 @@ const title = computed(() =>
         <span>{{ t('inGame.magic.quicksilver.nextIsRoll') }}</span>
       </div>
     </div>
-    <div class="qs-actions">
+    <div v-if="!readonly" class="qs-actions">
       <Button
         :variant="overdose ? 'hero-danger' : 'hero'"
         class="qs-drink"

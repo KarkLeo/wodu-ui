@@ -5,6 +5,7 @@ import { mirel } from '@/stories/fixtures'
 import { withStores } from '@/stories/state'
 import { applyCommand } from '@/domain/reducer'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
+import { asTeammate, expectNoEditControls, sheetFor } from '@/stories/readonly'
 
 // Mirel with one more dose in the backpack, so she can drink past the daily limit.
 const mirelStocked = applyCommand(mirel, { type: 'BUY_ITEM', templateId: 'mercury' }).character
@@ -63,5 +64,17 @@ export const NewSpirit: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Spirit' }))
     await expect(await within(canvasElement).findByText('New spirit')).toBeVisible()
+  },
+}
+
+/** A teammate's magic: spirits, rituals and the quicksilver count stay; no drink, new day, add, edit or remove. */
+export const ReadOnly: Story = {
+  render,
+  decorators: [sheetFor(mirel.id), asTeammate([mirel])],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText('Illas of the Sparks')).toBeVisible()
+    await expect(canvas.getByText('Whisper of Stone')).toBeVisible()
+    await expectNoEditControls(canvasElement)
   },
 }

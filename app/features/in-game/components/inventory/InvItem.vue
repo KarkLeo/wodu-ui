@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { InventoryItem } from '@/types/character'
 import { isConsumable } from '@/domain/inventory'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import ItemIcon from './ItemIcon.vue'
 import ItemStatChip from './ItemStatChip.vue'
 import IconCheck from '@/components/ui/icons/IconCheck.vue'
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   (e: 'remove'): void
 }>()
 
+const readonly = useSheetReadonly()
 const consumable = computed(() => isConsumable(props.item))
 const qty = computed(() => props.item.quantity ?? 1)
 const displayName = computed(() => gearName(props.item.templateId, props.item.name))
@@ -35,7 +37,7 @@ const armorChip = computed(() => {
 </script>
 
 <template>
-  <div :class="['inv-item', { 'is-equipped': item.equipped }]">
+  <div :class="['inv-item', { 'is-equipped': item.equipped, 'is-readonly': readonly }]">
     <ItemIcon
       :kind="item.descriptor.kind"
       :equipped="item.equipped"
@@ -53,7 +55,7 @@ const armorChip = computed(() => {
       <ItemStatChip v-if="armorChip" variant="armor">{{ armorChip }}</ItemStatChip>
       <ItemStatChip v-if="consumable && qty > 1" variant="qty">×{{ qty }}</ItemStatChip>
     </div>
-    <div class="inv-item-actions">
+    <div v-if="!readonly" class="inv-item-actions">
       <button
         v-if="consumable"
         type="button"
@@ -110,6 +112,7 @@ const armorChip = computed(() => {
   transition: border-color var(--t-fast) var(--ease);
 }
 .inv-item:hover { border-color: var(--vtt-border-strong); }
+.inv-item.is-readonly { grid-template-columns: auto minmax(0, 1fr) auto; }
 .inv-item.is-equipped {
   border-left: 2px solid var(--vtt-accent);
   padding-left: 13px;

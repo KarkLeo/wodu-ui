@@ -8,6 +8,7 @@ import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import Button from '@/components/ui/Button.vue'
 import { t } from '@/locales'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 
 const props = defineProps<{ spirit: Spirit }>()
 const emit = defineEmits<{
@@ -15,7 +16,10 @@ const emit = defineEmits<{
   (e: 'remove'): void
 }>()
 
+const readonly = useSheetReadonly()
 const editing = ref(false)
+// The sheet can turn read-only while a form is open (the character left the game).
+watch(readonly, (ro) => { if (ro) editing.value = false })
 
 const draft = ref({
   name: props.spirit.name,
@@ -58,8 +62,8 @@ function save() {
 
 <template>
   <div
-    :class="['spirit-card', { 'is-empty': isEmpty && !editing, 'is-editing': editing, 'is-clickable': isEmpty && !editing }]"
-    @click="isEmpty && !editing && openEdit()"
+    :class="['spirit-card', { 'is-empty': isEmpty && !editing, 'is-editing': editing, 'is-clickable': isEmpty && !editing && !readonly }]"
+    @click="isEmpty && !editing && !readonly && openEdit()"
   >
     <div class="spirit-head">
       <div class="spirit-sigil">{{ editing ? (draft.name[0]?.toUpperCase() || '?') : sigil }}</div>
@@ -68,7 +72,7 @@ function save() {
         <template v-else-if="isEmpty">{{ t('inGame.magic.spirits.empty') }}</template>
         <template v-else>{{ spirit.name || t('inGame.magic.spirits.empty') }}</template>
       </div>
-      <div class="spirit-actions">
+      <div v-if="!readonly" class="spirit-actions">
         <button
           v-if="!editing && !isEmpty"
           class="btn-icon-sm"
@@ -90,7 +94,7 @@ function save() {
     </div>
 
     <template v-if="!editing">
-      <p class="spirit-appearance">
+      <p v-if="!(readonly && isEmpty)" class="spirit-appearance">
         {{ isEmpty ? t('inGame.magic.spirits.emptyHint') : spirit.appearance }}
       </p>
       <div class="spirit-spheres">

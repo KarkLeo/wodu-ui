@@ -187,6 +187,7 @@ export const messages: Messages = {
       placeholder: '2d6+1, d20, 4d6…',
       error: 'Неверный формат. Пример: 2d6, 1d8+2, 3d6+1d4',
       hint: 'Откройте лист персонажа, чтобы бросать.',
+      readOnly: 'Бросать за {name} нельзя.',
       submit: 'Бросить',
     },
     actions: {
@@ -297,6 +298,9 @@ export const messages: Messages = {
       magic: 'Магия',
       notes: 'Заметки',
     },
+    readonly: {
+      owner: 'Персонаж игрока {name}',
+    },
     statusHeader: {
       back: 'Назад',
       levelLabel: 'ур.',
@@ -354,6 +358,7 @@ export const messages: Messages = {
     notes: {
       title: 'Заметки',
       placeholder: 'Заметки по персонажу, миру, сюжету…',
+      empty: 'Заметок пока нет.',
     },
     inventory: {
       empty: 'В рюкзаке пусто',
