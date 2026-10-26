@@ -22,6 +22,14 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+export const WithInvite: Story = {
+  args: { inviteGameName: 'Shadows over Crookhollow' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('complementary', { name: 'Invitation' }))
+      .toHaveTextContent('Shadows over Crookhollow')
+  },
+}
+
 export const WithError: Story = {
   args: { email: 'anna', error: 'That doesn’t look like an email.' },
   play: async ({ canvasElement }) => {

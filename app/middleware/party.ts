@@ -1,9 +1,8 @@
 import { defineNuxtRouteMiddleware, navigateTo } from '#app'
-import { useCharactersStore } from '@/stores/characters'
-import { partyGuard } from '@/utils/routeGuards'
+import { partyRouteRedirect } from '@/composables/useRouteRecheck'
 import { onlineDataReady } from '@/transport/bootstrap'
 
 export default defineNuxtRouteMiddleware((to) => {
-  const redirect = partyGuard(to.params.ids as string, useCharactersStore().getById, onlineDataReady.value)
+  const redirect = partyRouteRedirect(to.params.ids as string | undefined, onlineDataReady.value)
   if (redirect) return navigateTo(redirect)
 })

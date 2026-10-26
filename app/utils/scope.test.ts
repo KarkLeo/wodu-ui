@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { charactersInScope, eventInScope, eventFilter } from './scope'
+import { charactersInScope, eventInScope, eventFilter, scopeForRoute } from './scope'
 import { makeCharacter } from '@/test/fixtures'
 import type { CharacterMeta, Scope } from '@/types/game'
 
@@ -50,5 +50,29 @@ describe('eventFilter', () => {
     expect(eventFilter(game)).toBe('game = "G"')
     expect(eventFilter(solo)).toBe('game = ""')
     expect(eventFilter(home)).toBeNull()
+  })
+})
+
+describe('scopeForRoute', () => {
+  it('game routes open that game', () => {
+    for (const name of ['game', 'game-party', 'game-character-new']) {
+      expect(scopeForRoute(name, 'G', true)).toEqual({ kind: 'game', gameId: 'G' })
+    }
+  })
+
+  it('the party route online is the solo table', () => {
+    expect(scopeForRoute('party', undefined, true)).toEqual({ kind: 'solo' })
+  })
+
+  it('everything else is home', () => {
+    expect(scopeForRoute('character-list', undefined, true)).toEqual({ kind: 'home' })
+    expect(scopeForRoute('join', undefined, true)).toEqual({ kind: 'home' })
+    expect(scopeForRoute(undefined, undefined, true)).toEqual({ kind: 'home' })
+    expect(scopeForRoute('game', '', true)).toEqual({ kind: 'home' })
+  })
+
+  it('offline mode stays home', () => {
+    expect(scopeForRoute('game', 'G', false)).toEqual({ kind: 'home' })
+    expect(scopeForRoute('party', undefined, false)).toEqual({ kind: 'home' })
   })
 })

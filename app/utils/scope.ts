@@ -26,3 +26,13 @@ export function eventFilter(scope: Scope): string | null {
   if (scope.kind === 'solo') return 'game = ""'
   return null
 }
+
+const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new'])
+
+/** The table a route opens. Offline mode has no games, so it always stays home. */
+export function scopeForRoute(name: string | undefined, gameId: string | undefined, online: boolean): Scope {
+  if (!online) return { kind: 'home' }
+  if (name && GAME_ROUTES.has(name) && gameId) return { kind: 'game', gameId }
+  if (name === 'party') return { kind: 'solo' }
+  return { kind: 'home' }
+}

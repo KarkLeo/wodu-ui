@@ -103,7 +103,14 @@ function makeCollection(name: string) {
       throw new MockResponseError(404)
     },
     getFullList: async () => [],
-    getList: async () => ({ page: 1, perPage: 0, totalItems: 0, totalPages: 0, items: [] }),
+    // Answers only the invite lookup (findGameByCode): records whose invite_code equals `query.code`.
+    getList: async (_page?: number, _perPage?: number, options: { query?: Record<string, unknown> } = {}) => {
+      const code = options.query?.code
+      const items = typeof code === 'string'
+        ? [...recordsOf(name).values()].filter(r => r.invite_code === code).map(r => ({ ...r }))
+        : []
+      return { page: 1, perPage: items.length, totalItems: items.length, totalPages: items.length ? 1 : 0, items }
+    },
     subscribe: async () => async () => {},
     unsubscribe: async () => {},
   }

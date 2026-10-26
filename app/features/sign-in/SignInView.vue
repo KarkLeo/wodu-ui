@@ -16,7 +16,11 @@ import { reportNetworkProblem } from '@/transport/connection'
 import { t } from '@/locales'
 import { createLogger } from '@/utils/logger'
 
-defineProps<{ gate: 'sign-in' | 'name' }>()
+defineProps<{
+  gate: 'sign-in' | 'name'
+  /** Set while an invite link is open: the name of the game it points at. */
+  inviteGameName?: string
+}>()
 
 const emit = defineEmits<{ playOffline: [] }>()
 
@@ -98,6 +102,7 @@ function saveName(name: string) {
   <EmailStep
     v-else
     v-model:email="email"
+    :invite-game-name="inviteGameName"
     :busy="busy"
     :error="error"
     @submit="sendCode"

@@ -3,6 +3,7 @@ import type { CharacterCommand, LevelUpPatch } from '@/domain/commands'
 import type { Character, StatKey } from '@/types/character'
 import type { ChangeEntry } from '@/types/changeLog'
 import type { RollRecord } from '@/types/dice'
+import type { CharacterMeta, Game, GameMember } from '@/types/game'
 import { CLASSES } from '@/data/classes'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
@@ -239,3 +240,29 @@ export const CHANGES: ChangeEntry[] = [
   ], STORY_NOW - 8 * 60_000),
   ...changesFor(wren, [{ type: 'HEAL', amount: 2 }], STORY_NOW - 2 * 60_000),
 ]
+
+// ── Games ──────────────────────────────────────────────────────────────────
+
+/** The signed-in mock user (`signInMock()` in .storybook/mocks/pb.ts). */
+export const STORY_USER = 'user-mock'
+
+/** A game the story user runs. */
+export const crookhollow: Game = { id: 'story-game-crookhollow', name: 'Shadows over Crookhollow', master: STORY_USER, inviteCode: 'K7QX29AB' }
+/** A game the story user plays in; Seva is its master. */
+export const olden: Game = { id: 'story-game-olden', name: 'Olden’s Tower', master: 'user-seva', inviteCode: 'M4RT8WZN' }
+
+export const GAMES = [crookhollow, olden]
+
+const member = (game: Game, user: string, name: string): GameMember => ({ id: `${game.id}-${user}`, game: game.id, user, name })
+
+export const MEMBERS: GameMember[] = [
+  member(crookhollow, STORY_USER, 'Anna'),
+  member(crookhollow, 'user-kostya', 'Kostya'),
+  member(crookhollow, 'user-yana', 'Yana'),
+  member(olden, 'user-seva', 'Seva'),
+  member(olden, STORY_USER, 'Anna'),
+  member(olden, 'user-kostya', 'Kostya'),
+]
+
+/** The story user's own character in a game. */
+export const inGame = (game: Game): CharacterMeta => ({ owner: STORY_USER, game: game.id })
