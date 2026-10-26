@@ -1,5 +1,6 @@
 import { pb } from '@/transport/pb'
 import { mode } from './mode'
+import { characterCreateBody, eventCreateBody } from './rows'
 import { isNetworkError, reportNetworkProblem } from './connection'
 import { useChangeLogStore } from '@/stores/changeLog'
 import type { Character } from '@/types/character'
@@ -25,25 +26,21 @@ async function guarded(op: () => Promise<unknown>): Promise<void> {
 
 export const pbBackend: Backend = {
   createCharacter: c =>
-    guarded(() => pb.collection('characters').create({ id: c.id, data: c })),
+    guarded(async () => {
+      const ownerId = pb.authStore.record?.id
+      if (!ownerId) throw new Error('createCharacter: not signed in')
+      await pb.collection('characters').create(characterCreateBody(c, ownerId))
+    }),
   updateCharacter: c =>
     guarded(() => pb.collection('characters').update(c.id, { data: c })),
   deleteCharacter: id =>
     guarded(() => pb.collection('characters').delete(id)),
   addChanges: entries =>
     guarded(() => Promise.all(entries.map(entry =>
-      pb.collection('change_events').create({
-        id: entry.id,
-        character_id: entry.characterId,
-        data: entry,
-      }),
+      pb.collection('change_events').create(eventCreateBody(entry)),
     ))),
   addRoll: r =>
-    guarded(() => pb.collection('roll_events').create({
-      id: r.id,
-      character_id: r.characterId,
-      data: r,
-    })),
+    guarded(() => pb.collection('roll_events').create(eventCreateBody(r))),
 }
 
 export const localBackend: Backend = {

@@ -611,7 +611,7 @@ export const messages = {
       signOut: 'Sign out',
       deleteAccount: 'Delete account',
       deleteTitle: 'Delete your account?',
-      deleteBody: 'Your email and name are erased. Characters stay at the table.',
+      deleteBody: 'Your email, name and characters are erased.',
       deleteConfirm: 'Delete',
     },
     errors: {

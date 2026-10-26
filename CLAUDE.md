@@ -96,7 +96,7 @@ Item use-effects similarly: `GearTemplate.useEffect` (`'quicksilver'` etc.) driv
 
 Two modes, switched in the players panel footer (`ModeSwitch`, above the language buttons) and remembered under `wod.mode.v1`. Online and offline data are fully separate: nothing syncs, imports or exports between them.
 
-- **Online** (default): only for signed-in accounts (see *Accounts*). PocketBase is the store. The initial load comes from `bootstrap()`, realtime keeps other players' changes coming in, and writes go to the server optimistically, rolling back on failure. No game data is kept on the device; only the creation draft pointer is.
+- **Online** (default): only for signed-in accounts (see *Accounts*). PocketBase is the store. Each account sees only its own characters (and their rolls and changes) until games arrive: creates send `owner` and events send `character` (`transport/rows.ts`). The initial load comes from `bootstrap()`, realtime keeps other players' changes coming in, and writes go to the server optimistically, rolling back on failure. No game data is kept on the device; only the creation draft pointer is.
 - **Offline**: characters, roll history and the change log live only on the device, under the `wod.offline.*` keys. Writes never roll back, and no request goes to PocketBase. The panel shows an offline badge and a hint that clearing site data deletes these characters.
 
 Switching goes through `useModeSwitch().switchMode()`: stop the current mode, clear the three stores, go to `/`, load the other mode. The creation draft pointer (`wod.creation.v2`) is kept per mode, so each mode resumes its own draft.

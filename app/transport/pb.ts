@@ -11,6 +11,7 @@ pb.autoCancellation(false)
 export interface CharacterRow {
   id: string
   data: Character
+  owner: string
   created: string
   updated: string
 }
@@ -19,6 +20,7 @@ export interface RollRow {
   id: string
   data: RollRecord
   character_id: string
+  character: string
   created: string
 }
 
@@ -26,5 +28,6 @@ export interface ChangeRow {
   id: string
   data: ChangeEntry
   character_id: string
+  character: string
   created: string
 }
