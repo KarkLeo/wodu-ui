@@ -7,7 +7,9 @@ import type { CharacterCommand, HpHistoryEntry } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
 import { createLogger } from '@/utils/logger'
+import { mode } from '@/transport/mode'
 import { scope } from '@/transport/scope'
+import { partyLocation } from '@/utils/scope'
 import { useTable } from './useTable'
 
 const log = createLogger('creation')
@@ -119,7 +121,7 @@ export function useCharacterCreation() {
     const game = characters.metaOf(id)?.game ?? ''
     characters.setActive(id)
     creation.reset()
-    router.push(game ? `/games/${game}/party/${id}` : `/party/${id}`)
+    router.push(partyLocation(game ? { kind: 'game', gameId: game } : { kind: 'solo' }, [id], mode.value === 'offline'))
   }
 
   function setName(name: string) { dispatch({ type: 'SET_NAME', name }) }

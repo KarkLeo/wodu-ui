@@ -19,6 +19,8 @@ import {
   isReadyToLevelUp,
 } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
+import { levelUpLocation } from '@/utils/scope'
+import { mode } from '@/transport/mode'
 import { className as classNameOf, gearName } from '@/locales/content'
 import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
@@ -139,7 +141,7 @@ function onXpUpdate(v: number) {
   if (delta !== 0) dispatch({ type: 'GAIN_XP', amount: delta })
 }
 function onLevelUp() {
-  router.push(`/character/${charId.value}/levelup`)
+  router.push(levelUpLocation(charId.value, mode.value === 'offline'))
 }
 
 const coinsModel = computed<number>({

@@ -71,7 +71,7 @@ async function confirmDelete() {
   const ok = await run('deleteGame', t('games.remove.failed'), () => exitGameQuietly(gameId, () => deleteGame(gameId)))
   if (!ok) return
   deleteOpen.value = false
-  void router.replace({ name: 'character-list' })
+  void router.replace({ name: 'games' })
 }
 
 function backToTable() {

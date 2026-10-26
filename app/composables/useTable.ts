@@ -3,7 +3,7 @@ import { useRoute, type RouteLocationRaw } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { mode } from '@/transport/mode'
-import { partyLocation, scopeForRoute, tableLocation } from '@/utils/scope'
+import { levelUpLocation, newCharacterLocation, partyLocation, scopeForRoute, tableLocation } from '@/utils/scope'
 
 /**
  * The table the current route shows (a game's, or the one outside games) and where its navigation
@@ -27,6 +27,7 @@ export function useTable() {
     mode.value === 'online',
     characterGame.value,
   ))
+  const offline = computed(() => mode.value === 'offline')
   const gameId = computed(() => (tableScope.value.kind === 'game' ? tableScope.value.gameId : null))
   const game = computed(() => (gameId.value ? games.byId(gameId.value) : undefined))
 
@@ -34,7 +35,9 @@ export function useTable() {
     tableScope,
     gameId,
     game,
-    tableRoute: (): RouteLocationRaw => tableLocation(tableScope.value),
-    partyRoute: (ids: string[]): RouteLocationRaw => partyLocation(tableScope.value, ids),
+    tableRoute: (): RouteLocationRaw => tableLocation(tableScope.value, offline.value),
+    partyRoute: (ids: string[]): RouteLocationRaw => partyLocation(tableScope.value, ids, offline.value),
+    newCharacterRoute: (): RouteLocationRaw => newCharacterLocation(tableScope.value, offline.value),
+    levelUpRoute: (id: string): RouteLocationRaw => levelUpLocation(id, offline.value),
   }
 }

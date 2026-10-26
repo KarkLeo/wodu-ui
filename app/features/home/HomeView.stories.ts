@@ -13,7 +13,7 @@ const meta = {
   component: HomeView,
   globals: { viewport: { value: 'phone', isRotated: false } },
   parameters: { layout: 'fullscreen' },
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/games')],
   beforeEach() {
     localStorage.removeItem(TAB_KEY)
     return () => localStorage.removeItem(TAB_KEY)

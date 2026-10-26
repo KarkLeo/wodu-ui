@@ -5,16 +5,14 @@ import type { Character } from '@/types/character'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
-import { useModeSwitch } from '@/composables/useModeSwitch'
 import { useAccount } from '@/composables/useAccount'
 import { useTable } from '@/composables/useTable'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
-import { mode, type AppMode } from '@/transport/mode'
+import { mode } from '@/transport/mode'
 import { charactersInScope } from '@/utils/scope'
 import { isMaster } from '@/utils/permissions'
 import Button from '@/components/ui/Button.vue'
-import ModeSwitch from '@/components/ui/ModeSwitch.vue'
 import AccountMenu from './AccountMenu.vue'
 import GameMenu from './GameMenu.vue'
 import MasterlessNotice from './MasterlessNotice.vue'
@@ -30,11 +28,10 @@ const router = useRouter()
 const store = useCharactersStore()
 const creation = useCreationStore()
 const { createDraft } = useCharacterCreation()
-const { switchMode } = useModeSwitch()
 const { user, setLanguage } = useAccount()
 const layout = useGameLayout()
 const games = useGamesStore()
-const { tableScope, gameId, game, partyRoute } = useTable()
+const { tableScope, gameId, game, partyRoute, newCharacterRoute } = useTable()
 
 const me = computed(() => currentUser.value?.id ?? null)
 
@@ -119,11 +116,7 @@ async function startNew() {
   creation.reset()
   const draft = await createDraft()
   if (!draft) return
-  router.push(gameId.value ? { name: 'game-character-new', params: { gameId: gameId.value } } : { name: 'character-new' })
-}
-
-function onModeChange(next: AppMode) {
-  void switchMode(next)
+  router.push(newCharacterRoute())
 }
 </script>
 
@@ -220,7 +213,6 @@ function onModeChange(next: AppMode) {
       >{{ t('characterList.new') }}</Button>
       <div class="build-id">{{ buildLine }}</div>
       <AccountMenu v-if="mode === 'online' && user" :user="user" />
-      <ModeSwitch :model-value="mode" @update:model-value="onModeChange" />
       <div class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
         <button
           v-for="opt in localeOptions"

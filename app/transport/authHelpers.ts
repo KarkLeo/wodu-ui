@@ -1,6 +1,7 @@
 import { ClientResponseError } from 'pocketbase'
 import { LOCALES, type Locale } from '@/locales'
 import type { AppMode } from './mode'
+import { modeForPath } from '@/utils/routeMode'
 import { isNetworkError } from './connection'
 
 export const OTP_LENGTH = 8
@@ -50,8 +51,10 @@ export function resolveLanguage(profile: string, device: Locale): { apply: Local
   return isLocale(profile) ? { apply: profile, writeBack: false } : { apply: device, writeBack: true }
 }
 
-export function authGate(mode: AppMode, signedIn: boolean, name: string): AuthGate {
-  if (mode === 'offline') return 'none'
+// Decided by the address, not by the running mode: while a navigation between the areas is pending,
+// the page still on screen keeps its own gate.
+export function authGate(path: string, signedIn: boolean, name: string): AuthGate {
+  if (modeForPath(path) !== 'online') return 'none'
   if (!signedIn) return 'sign-in'
   return name ? 'none' : 'name'
 }

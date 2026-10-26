@@ -58,6 +58,29 @@ export function seedRecords(name: string, rows: MockRecord[]) {
   for (const row of rows) r.set(row.id, { ...row })
 }
 
+// Every call that would reach the server, as 'collection.method' (or 'realtime.subscribe', 'health.check'),
+// so a story can prove a screen sends nothing, e.g. the offline table.
+const requests: string[] = []
+
+export function pbRequests(): readonly string[] {
+  return requests
+}
+
+export function clearPbRequests(): void {
+  requests.length = 0
+}
+
+function recorded<T extends Record<string, unknown>>(prefix: string, methods: T): T {
+  for (const [key, value] of Object.entries(methods)) {
+    if (typeof value !== 'function') continue
+    ;(methods as Record<string, unknown>)[key] = (...args: unknown[]) => {
+      requests.push(`${prefix}.${key}`)
+      return (value as (...a: unknown[]) => unknown)(...args)
+    }
+  }
+  return methods
+}
+
 // Server-generated ids for collections whose ids the client does not send (game_members).
 const serverId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 15)
 
@@ -114,7 +137,7 @@ function makeCollection(name: string) {
     subscribe: async () => async () => {},
     unsubscribe: async () => {},
   }
-  return {
+  return recorded(name, {
     ...base,
     requestOTP: async () => ({ otpId: 'otp-mock' }),
     authWithOTP: async (_otpId: string, code: string) => {
@@ -123,7 +146,7 @@ function makeCollection(name: string) {
       return { token: authStore.token, record: authStore.record }
     },
     authRefresh: async () => ({ token: authStore.token, record: authStore.record }),
-  }
+  })
 }
 
 export const pb = {
@@ -134,11 +157,13 @@ export const pb = {
     return raw.replace(/\{:(\w+)\}/g, (_m, key: string) => JSON.stringify(params[key] ?? null))
   },
   authStore,
-  health: { check: async () => ({ code: 200, message: 'ok', data: {} }) },
+  health: recorded('health', { check: async () => ({ code: 200, message: 'ok', data: {} }) }),
   realtime: {
     onDisconnect: undefined as ((subs: string[]) => void) | undefined,
-    subscribe: async () => async () => {},
-    unsubscribe: async () => {},
+    ...recorded('realtime', {
+      subscribe: async () => async () => {},
+      unsubscribe: async () => {},
+    }),
     disconnect() {},
   },
 }

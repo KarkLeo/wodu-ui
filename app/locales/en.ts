@@ -610,9 +610,6 @@ export const messages = {
     join: {
       checking: 'Checking the invite…',
       joining: 'Joining “{game}”…',
-      offlineTitle: 'This invite needs online mode',
-      offlineBody: 'Games live on the server. Switch to online mode and sign in to join.',
-      goOnline: 'Switch to online',
       memberTitle: 'You’re already in “{game}”',
       openTable: 'Open the table',
       failed: 'Couldn’t join the game. Try again.',
@@ -738,10 +735,11 @@ export const messages = {
     saveFailed: 'Could not save offline data on this device.',
   },
   mode: {
-    online: 'Online',
-    offline: 'Offline',
     badge: 'Offline',
     offlineHint: 'Offline characters live only on this device. Clearing site data deletes them.',
+  },
+  landing: {
+    signIn: 'Sign in',
   },
   auth: {
     tagline: 'character sheet for the table',

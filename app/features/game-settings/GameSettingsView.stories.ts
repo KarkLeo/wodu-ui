@@ -223,7 +223,7 @@ export const DeleteGame: Story = {
     const confirm = within(await body(canvasElement).findByRole('dialog', { name: `Delete “${crookhollow.name}”?` }))
     await expect(remove).not.toHaveBeenCalled()
     await userEvent.click(confirm.getByRole('button', { name: 'Delete' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(remove).toHaveBeenCalledWith(crookhollow.id)
     await expect(useCharactersStore().metaOf(brann.id)?.game).toBe('')
     await expect(toastTexts()).not.toContain('You’re no longer in that game.')
@@ -273,7 +273,7 @@ export const RemovedWhileOpen: Story = {
   decorators: [recheck],
   play: async () => {
     useGamesStore().removeGame(crookhollow.id)
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(toastTexts()).toContain('You’re no longer in that game.')
   },
 }

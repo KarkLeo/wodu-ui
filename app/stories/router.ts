@@ -7,7 +7,8 @@ const Empty = { render: () => null }
 export const storyRouter = createRouter({
   history: createMemoryHistory(),
   routes: [
-    { path: '/', name: 'character-list', component: Empty },
+    { path: '/', name: 'landing', component: Empty },
+    { path: '/games', name: 'games', component: Empty },
     { path: '/character/new', name: 'character-new', component: Empty },
     { path: '/character/:id', name: 'in-game', component: Empty },
     { path: '/party/:ids', name: 'party', component: Empty },
@@ -17,5 +18,9 @@ export const storyRouter = createRouter({
     { path: '/games/:gameId/new', name: 'game-character-new', component: Empty },
     { path: '/games/:gameId/settings', name: 'game-settings', component: Empty },
     { path: '/join/:code', name: 'join', component: Empty },
+    { path: '/offline', name: 'offline', component: Empty },
+    { path: '/offline/party/:ids', name: 'offline-party', component: Empty },
+    { path: '/offline/new', name: 'offline-character-new', component: Empty },
+    { path: '/offline/character/:id/levelup', name: 'offline-level-up', component: Empty },
   ],
 })

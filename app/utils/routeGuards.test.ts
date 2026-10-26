@@ -23,24 +23,30 @@ describe('partyGuard', () => {
     expect(partyGuard('a, d ,b', getById)).toEqual({ name: 'party', params: { ids: 'a,b' } })
   })
 
-  it('redirects to the list when no id is valid', () => {
-    expect(partyGuard('missing', getById)).toEqual({ name: 'character-list' })
-    expect(partyGuard('', getById)).toEqual({ name: 'character-list' })
-    expect(partyGuard(undefined, getById)).toEqual({ name: 'character-list' })
+  it('redirects to the games when no id is valid', () => {
+    expect(partyGuard('missing', getById)).toEqual({ name: 'games' })
+    expect(partyGuard('', getById)).toEqual({ name: 'games' })
+    expect(partyGuard(undefined, getById)).toEqual({ name: 'games' })
   })
 
   it('does not redirect while online data is not loaded', () => {
     expect(partyGuard('missing', getById, false)).toBeUndefined()
     expect(partyGuard('a,missing', getById, false)).toBeUndefined()
-    expect(partyGuard('missing', getById, true)).toEqual({ name: 'character-list' })
+    expect(partyGuard('missing', getById, true)).toEqual({ name: 'games' })
   })
 
   it('keeps only the characters `allowed` accepts', () => {
     const onlyA = (c: Character) => c.id === 'a'
     expect(partyGuard('a', getById, true, onlyA)).toBeUndefined()
     expect(partyGuard('a,b', getById, true, onlyA)).toEqual({ name: 'party', params: { ids: 'a' } })
-    expect(partyGuard('b', getById, true, onlyA)).toEqual({ name: 'character-list' })
+    expect(partyGuard('b', getById, true, onlyA)).toEqual({ name: 'games' })
     expect(partyGuard('b', getById, false, onlyA)).toBeUndefined()
+  })
+
+  it('offline trims to the offline party route and falls back to the offline table', () => {
+    expect(partyGuard('a', getById, true, () => true, true)).toBeUndefined()
+    expect(partyGuard('a,missing', getById, true, () => true, true)).toEqual({ name: 'offline-party', params: { ids: 'a' } })
+    expect(partyGuard('missing', getById, true, () => true, true)).toEqual({ name: 'offline' })
   })
 })
 
@@ -66,8 +72,8 @@ describe('gameGuard', () => {
   })
 
   it('sends a non-member home', () => {
-    expect(gameGuard('H', isMember)).toEqual({ name: 'character-list' })
-    expect(gameGuard('', isMember)).toEqual({ name: 'character-list' })
+    expect(gameGuard('H', isMember)).toEqual({ name: 'games' })
+    expect(gameGuard('', isMember)).toEqual({ name: 'games' })
   })
 
   it('does not redirect while online data is not loaded', () => {
@@ -88,12 +94,12 @@ describe('gameSettingsGuard', () => {
   })
 
   it('sends a non-member home', () => {
-    expect(gameSettingsGuard('H', isMember, isMaster)).toEqual({ name: 'character-list' })
-    expect(gameSettingsGuard('', isMember, isMaster)).toEqual({ name: 'character-list' })
+    expect(gameSettingsGuard('H', isMember, isMaster)).toEqual({ name: 'games' })
+    expect(gameSettingsGuard('', isMember, isMaster)).toEqual({ name: 'games' })
   })
 
   it('sends everyone home offline, where nobody is a member', () => {
-    expect(gameSettingsGuard('G', () => false, () => false)).toEqual({ name: 'character-list' })
+    expect(gameSettingsGuard('G', () => false, () => false)).toEqual({ name: 'games' })
   })
 
   it('does not redirect while online data is not loaded', () => {
@@ -151,8 +157,8 @@ describe('levelUpGuard', () => {
   })
 
   it('redirects drafts and missing characters to the list', () => {
-    expect(levelUpGuard('d', getById)).toEqual({ name: 'character-list' })
-    expect(levelUpGuard('missing', getById)).toEqual({ name: 'character-list' })
+    expect(levelUpGuard('d', getById)).toEqual({ name: 'games' })
+    expect(levelUpGuard('missing', getById)).toEqual({ name: 'games' })
   })
 
   it('does not redirect while online data is not loaded', () => {
@@ -169,8 +175,14 @@ describe('levelUpGuard', () => {
     expect(levelUpGuard('b', getById, true, () => false)).toEqual({ name: 'party', params: { ids: 'b' } })
   })
 
+  it('offline sends a draft or a missing character back to the offline table', () => {
+    expect(levelUpGuard('d', getById, true, () => true, () => '', true)).toEqual({ name: 'offline' })
+    expect(levelUpGuard('missing', getById, true, () => true, () => '', true)).toEqual({ name: 'offline' })
+    expect(levelUpGuard('a', getById, true, () => true, () => '', true)).toBeUndefined()
+  })
+
   it('lets an editable character through and still refuses drafts first', () => {
     expect(levelUpGuard('a', getById, true, () => true, () => 'g1')).toBeUndefined()
-    expect(levelUpGuard('d', getById, true, () => false)).toEqual({ name: 'character-list' })
+    expect(levelUpGuard('d', getById, true, () => false)).toEqual({ name: 'games' })
   })
 })

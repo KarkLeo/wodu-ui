@@ -1,5 +1,4 @@
-import { onUnmounted } from 'vue'
-import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ClientResponseError } from 'pocketbase'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import JoinView from './JoinView.vue'
@@ -7,8 +6,7 @@ import { crookhollow, MEMBERS } from '@/stories/fixtures'
 import { atRoute, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useGamesStore } from '@/stores/games'
-import { mode } from '@/transport/mode'
-import { authStore, pb, seedRecords } from '../../../.storybook/mocks/pb'
+import { pb, seedRecords } from '../../../.storybook/mocks/pb'
 
 // A game the story user is not in yet; its record exists on the "server" only.
 const ember = { id: 'story-game-ember', name: 'Ember Road', master: 'user-seva', invite_code: 'EMBR2345' }
@@ -25,19 +23,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const at = (code: string) => ({ args: { code }, loaders: [atRoute(`/join/${code}`)] })
-
-// Listed before withStores so that it runs after it. Sets the mode directly, so nothing is persisted.
-const offline: Decorator = (story) => ({
-  components: { story },
-  setup() {
-    const previous = mode.value
-    mode.value = 'offline'
-    onUnmounted(() => {
-      mode.value = previous
-    })
-  },
-  template: '<story />',
-})
 
 export const Joins: Story = {
   ...at('embr-2345'),
@@ -73,7 +58,7 @@ export const NotFoundGoesHome: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: 'Home' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
   },
 }
 
@@ -103,32 +88,6 @@ export const AlreadyMemberOpensTable: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: 'Open the table' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
-  },
-}
-
-/** Offline mode never joins on its own; the button switches to online and keeps the invite open. */
-export const Offline: Story = {
-  ...at('EMBR2345'),
-  decorators: [offline],
-  play: async ({ canvasElement }) => {
-    const getList = spyOn(pb.collection('games'), 'getList')
-    const canvas = within(canvasElement)
-    await expect(canvas.getByText('This invite needs online mode')).toBeVisible()
-    await expect(getList).not.toHaveBeenCalled()
-  },
-}
-
-export const OfflineSwitchesToOnline: Story = {
-  ...at('EMBR2345'),
-  tags: ['no-visual'],
-  decorators: [offline],
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    // Signed out, so the switch stops at the sign-in gate instead of loading the account.
-    authStore.clear()
-    await userEvent.click(canvas.getByRole('button', { name: 'Switch to online' }))
-    await waitFor(() => expect(mode.value).toBe('online'))
-    await expect(storyRouter.currentRoute.value.path).toBe('/join/EMBR2345')
   },
 }
 

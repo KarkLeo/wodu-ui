@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import { useRoute, type RouteLocationNormalizedLoaded } from 'vue-router'
 import { NuxtPage } from '#components'
-import { useRoute } from '#imports'
 import '@/assets/fonts'
 import DiceOverlay from '@/components/DiceOverlay.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
@@ -14,23 +13,26 @@ import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
-import { useModeSwitch } from '@/composables/useModeSwitch'
 import { useTable } from '@/composables/useTable'
 import { currentUser, signedIn } from '@/transport/auth'
 import { authGate } from '@/transport/authHelpers'
 import { setScope } from '@/transport/scope'
 import { findGameByCode } from '@/transport/games'
 import { normalizeInviteCode } from '@/utils/inviteCode'
+import { modeForPath } from '@/utils/routeMode'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
 // default key includes the params and would remount it.
 const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
 
-const { switchMode } = useModeSwitch()
-
-const gate = computed(() => authGate(mode.value, signedIn.value, currentUser.value?.name ?? ''))
-
+// The router's own route, not Nuxt's: Nuxt's follows the rendered page, and the sign-in screen renders
+// none, so leaving it (back to the landing, "Play offline") would never update it.
 const route = useRoute()
+
+const gate = computed(() => authGate(route.path, signedIn.value, currentUser.value?.name ?? ''))
+
+// A page outside the table (the landing) renders on its own: no players panel, no dice drawer, no gate.
+const bare = computed(() => route.meta.shell === 'bare')
 
 // The open table follows the route; online loading (events, the game's characters) follows the table.
 const { tableScope } = useTable()
@@ -57,7 +59,8 @@ watch(
   { immediate: true },
 )
 
-const serverDown = computed(() => mode.value === 'online' && connection.value === 'down')
+// Only on the account's pages: the landing and the offline table never need the server.
+const serverDown = computed(() => mode.value === 'online' && connection.value === 'down' && modeForPath(route.path) === 'online')
 // The loop resets the count when it starts and bumps it only when the first probe fires a second later.
 const shownAttempt = computed(() => Math.max(1, attempt.value))
 
@@ -97,15 +100,15 @@ onBeforeUnmount(() => {
     :no-internet="!browserOnline"
     :probing="probing"
     @retry="retryNow"
-    @play-offline="switchMode('offline')"
   />
 
+  <NuxtPage v-if="bare" :page-key="pageKey" />
+
   <SignInView
-    v-if="gate !== 'none'"
+    v-else-if="gate !== 'none'"
     :gate="gate"
     :invite-game-name="inviteGameName"
     :inert="serverDown"
-    @play-offline="switchMode('offline')"
   />
 
   <GameLayout v-else :inert="serverDown">

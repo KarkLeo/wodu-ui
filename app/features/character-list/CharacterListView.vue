@@ -10,7 +10,7 @@ import { onlineDataReady } from '@/transport/bootstrap'
 import { currentUser } from '@/transport/auth'
 import { mode } from '@/transport/mode'
 import { scope } from '@/transport/scope'
-import { charactersInScope } from '@/utils/scope'
+import { charactersInScope, newCharacterLocation } from '@/utils/scope'
 
 const router = useRouter()
 const characters = useCharactersStore()
@@ -30,7 +30,7 @@ const draftChars = computed(() => visible.value.filter(c => c.status === 'draft'
 function resumeCreation(id: string) {
   creation.setDraft(id)
   const gameId = mode.value === 'online' ? characters.metaOf(id)?.game : ''
-  router.push(gameId ? { name: 'game-character-new', params: { gameId } } : '/character/new')
+  router.push(newCharacterLocation(gameId ? { kind: 'game', gameId } : { kind: 'home' }, mode.value === 'offline'))
 }
 </script>
 

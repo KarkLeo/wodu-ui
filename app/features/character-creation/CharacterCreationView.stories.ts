@@ -84,7 +84,7 @@ export const StaleDraft: Story = {
   tags: ['no-visual'],
   decorators: [withStores({ characters: [], creation: { draftId: 'story-missing-draft', step: 2 } })],
   play: async () => {
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(useCreationStore().draftId).toBeNull()
   },
 }
@@ -109,7 +109,7 @@ export const StaleDraftWhileServerDown: Story = {
     await expect(storyRouter.currentRoute.value.path).toBe('/character/new')
     await expect(useCreationStore().draftId).toBe('story-missing-draft')
     bootstrapStatus.value = 'ready'
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(useCreationStore().draftId).toBeNull()
   },
 }

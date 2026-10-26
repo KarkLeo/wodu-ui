@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { onMounted, ref } from 'vue'
 import ServerDownOverlay from './ServerDownOverlay.vue'
+import { atRoute } from '@/stories/state'
+import { storyRouter } from '@/stories/router'
 import BottomSheet from './ui/BottomSheet.vue'
 import Button from './ui/Button.vue'
 
@@ -15,7 +17,6 @@ const meta = {
     noInternet: false,
     probing: false,
     onRetry: fn(),
-    onPlayOffline: fn(),
   },
   // A stand-in for the app underneath, so the veil has something to cover.
   render: (args) => ({
@@ -59,8 +60,11 @@ export const NoInternet: Story = {
   },
 }
 
+/** Retry asks the parent; "Play offline" opens the offline table. */
 export const RetryAndPlayOffline: Story = {
   tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  loaders: [atRoute('/games')],
   play: async ({ args, canvasElement }) => {
     const dialog = await screen(canvasElement).findByRole('alertdialog', { name: 'Server unavailable' })
     const retry = within(dialog).getByRole('button', { name: 'Retry' })
@@ -69,7 +73,7 @@ export const RetryAndPlayOffline: Story = {
     await userEvent.click(retry)
     await expect(args.onRetry).toHaveBeenCalledOnce()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Play offline' }))
-    await expect(args.onPlayOffline).toHaveBeenCalledOnce()
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/offline'))
 
     await expect(hitsElement(screen(canvasElement).getByTestId('behind'))).toBe(false)
   },
@@ -91,6 +95,8 @@ export const Probing: Story = {
  * overlay must take pointer events and focus from the sheet, which lives outside the inert layout.
  */
 export const OverOpenSheet: Story = {
+  parameters: { navigationNotice: false },
+  loaders: [atRoute('/games')],
   render: (args) => ({
     components: { ServerDownOverlay, BottomSheet, Button },
     setup() {
@@ -117,7 +123,7 @@ export const OverOpenSheet: Story = {
     await userEvent.click(retry)
     await expect(args.onRetry).toHaveBeenCalledOnce()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Play offline' }))
-    await expect(args.onPlayOffline).toHaveBeenCalledOnce()
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/offline'))
 
     await expect(hitsElement(body.getByTestId('sheet-action'))).toBe(false)
   },

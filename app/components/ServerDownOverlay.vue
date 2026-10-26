@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   AlertDialogContent,
   AlertDialogDescription,
@@ -21,8 +22,14 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'retry'): void
-  (e: 'playOffline'): void
 }>()
+
+const router = useRouter()
+
+// The offline table runs on device storage only, so it works while the server is away.
+function playOffline() {
+  void router.push({ name: 'offline' })
+}
 
 const retryButton = ref<InstanceType<typeof Button> | null>(null)
 
@@ -72,7 +79,7 @@ function retry() {
             variant="hero"
             size="sm"
             class="sdo-btn"
-            @click="emit('playOffline')"
+            @click="playOffline"
           >{{ t('serverDown.playOffline') }}</Button>
         </div>
       </AlertDialogContent>
