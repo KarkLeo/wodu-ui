@@ -14,7 +14,8 @@ import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import AuthField from '@/features/sign-in/AuthField.vue'
 import { useAccount } from '@/composables/useAccount'
-import { NAME_MAX } from '@/transport/authHelpers'
+import { NAME_MAX, signInErrorKey } from '@/transport/authHelpers'
+import { reportNetworkProblem } from '@/transport/connection'
 import type { UserRecord } from '@/transport/auth'
 import { t } from '@/locales'
 import { createLogger } from '@/utils/logger'
@@ -30,18 +31,29 @@ const renameOpen = ref(false)
 const draftName = ref('')
 const deleteOpen = ref(false)
 const busy = ref(false)
+const error = ref<string | null>(null)
 
 function openRename() {
   draftName.value = props.user.name
+  error.value = null
   renameOpen.value = true
+}
+
+function openDelete() {
+  error.value = null
+  deleteOpen.value = true
 }
 
 async function act(action: () => Promise<void>) {
   busy.value = true
+  error.value = null
   try {
     await action()
   } catch (err) {
-    log.warn('account action failed', { err })
+    const key = signInErrorKey(err, 'save', false)
+    if (key === 'auth.errors.network') reportNetworkProblem()
+    else log.warn('account action failed', { err })
+    error.value = t(key)
   } finally {
     busy.value = false
   }
@@ -84,7 +96,7 @@ function confirmDelete() {
         <DropdownMenuSeparator class="am-sep" />
         <DropdownMenuItem class="am-item" @select="openRename">{{ t('auth.menu.changeName') }}</DropdownMenuItem>
         <DropdownMenuItem class="am-item" @select="signOut">{{ t('auth.menu.signOut') }}</DropdownMenuItem>
-        <DropdownMenuItem class="am-item is-danger" @select="deleteOpen = true">{{ t('auth.menu.deleteAccount') }}</DropdownMenuItem>
+        <DropdownMenuItem class="am-item is-danger" @select="openDelete">{{ t('auth.menu.deleteAccount') }}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
@@ -99,6 +111,7 @@ function confirmDelete() {
         :maxlength="NAME_MAX"
         autocomplete="nickname"
       />
+      <p v-if="error" class="am-error" role="alert">{{ error }}</p>
       <Button type="submit" variant="hero" class="am-save" :disabled="busy || !draftName.trim()">
         {{ t('common.save') }}
       </Button>
@@ -107,6 +120,7 @@ function confirmDelete() {
 
   <ConfirmSheet v-model:open="deleteOpen" variant="danger" :title="t('auth.menu.deleteTitle')">
     <p>{{ t('auth.menu.deleteBody') }}</p>
+    <p v-if="error" class="am-error" role="alert">{{ error }}</p>
     <template #actions>
       <Button variant="hero-danger" :disabled="busy" @click="confirmDelete">{{ t('auth.menu.deleteConfirm') }}</Button>
       <Button variant="ghost" @click="deleteOpen = false">{{ t('common.cancel') }}</Button>
@@ -167,6 +181,7 @@ function confirmDelete() {
 .am-chev { color: var(--vtt-text-muted); font-size: 12px; }
 
 .am-form { display: flex; flex-direction: column; gap: var(--s-4); }
+.am-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 .am-save { align-self: flex-end; }
 </style>
 

@@ -594,11 +594,11 @@ export const messages = {
       resend: 'Send again',
       resendIn: 'Send again · {time}',
       back: '← different email',
-      spamHint: 'No email? Check Spam.',
+      spamHint: 'No email? Check Spam. It comes from “World of Dungeons”.',
     },
     name: {
       heading: 'Welcome',
-      sub: 'account created',
+      sub: 'one more step',
       title: 'What should the table call you?',
       label: 'Player name',
       optional: '— a nickname is fine',
@@ -615,6 +615,8 @@ export const messages = {
       deleteConfirm: 'Delete',
     },
     errors: {
+      network: 'No connection to the server. Check the internet and try again.',
+      expiredCode: 'The code has expired. Send a new one.',
       invalidEmail: 'That doesn’t look like an email.',
       wrongCode: 'Wrong or expired code.',
       tooMany: 'Too many attempts. Wait a minute and try again.',

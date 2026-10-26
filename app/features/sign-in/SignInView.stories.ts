@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, spyOn, userEvent, waitFor, within } from 'storybook/test'
+import { ClientResponseError } from 'pocketbase'
 import SignInView from './SignInView.vue'
 import { authStore, pb, signInMock } from '../../../.storybook/mocks/pb'
 
@@ -106,5 +107,27 @@ export const PlayOffline: Story = {
   play: async ({ args, canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Play offline, no account' }))
     await expect(args.onPlayOffline).toHaveBeenCalledOnce()
+  },
+}
+
+export const NetworkErrorOnGetCode: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('users'), 'requestOTP').mockRejectedValueOnce(new ClientResponseError({ status: 0 }))
+    await sendCodeTo(canvasElement, 'anna@mail.com')
+    await expect(await within(canvasElement).findByRole('alert')).toHaveTextContent(/No connection to the server/)
+  },
+}
+
+export const NameSaveFails: Story = {
+  tags: ['no-visual'],
+  args: { gate: 'name' },
+  beforeEach() {
+    signInMock({ email: 'anna@mail.com', name: '' })
+  },
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('users'), 'update').mockRejectedValueOnce(new ClientResponseError({ status: 500 }))
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Done' }))
+    await expect(await within(canvasElement).findByRole('alert')).toHaveTextContent('Something went wrong. Try again.')
   },
 }

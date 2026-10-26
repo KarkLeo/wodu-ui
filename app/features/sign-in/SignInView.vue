@@ -4,8 +4,15 @@ import EmailStep from './steps/EmailStep.vue'
 import CodeStep from './steps/CodeStep.vue'
 import NameStep from './steps/NameStep.vue'
 import { useAccount } from '@/composables/useAccount'
-import { defaultDisplayName, isPlausibleEmail, normalizeEmail } from '@/transport/authHelpers'
-import { isNetworkError, reportNetworkProblem } from '@/transport/connection'
+import {
+  defaultDisplayName,
+  isPlausibleEmail,
+  normalizeEmail,
+  OTP_TTL_MS,
+  signInErrorKey,
+  type SignInAction,
+} from '@/transport/authHelpers'
+import { reportNetworkProblem } from '@/transport/connection'
 import { t } from '@/locales'
 import { createLogger } from '@/utils/logger'
 
@@ -25,26 +32,17 @@ const error = ref<string | null>(null)
 
 const suggestedName = computed(() => defaultDisplayName(user.value?.email ?? ''))
 
-function messageFor(err: unknown): string | null {
-  if (isNetworkError(err)) {
-    // The server-unavailable overlay explains it; an inline error on top would repeat it.
-    reportNetworkProblem()
-    return null
-  }
-  const status = (err as { status?: number }).status
-  if (status === 429) return t('auth.errors.tooMany')
-  if (status === 400 && step.value === 'code') return t('auth.errors.wrongCode')
-  log.warn('sign-in step failed', { err })
-  return t('auth.errors.generic')
-}
-
-async function run(action: () => Promise<void>) {
+async function run(action: SignInAction, work: () => Promise<void>) {
   busy.value = true
   error.value = null
   try {
-    await action()
+    await work()
   } catch (err) {
-    error.value = messageFor(err)
+    const key = signInErrorKey(err, action, Date.now() > sentAt.value + OTP_TTL_MS)
+    // The overlay takes over if the server stays unreachable; the inline line covers a short blip.
+    if (key === 'auth.errors.network') reportNetworkProblem()
+    else if (key === 'auth.errors.generic') log.warn('sign-in step failed', { action, err })
+    error.value = t(key)
   } finally {
     busy.value = false
   }
@@ -56,7 +54,7 @@ function sendCode() {
     error.value = t('auth.errors.invalidEmail')
     return
   }
-  void run(async () => {
+  void run('request', async () => {
     otpId.value = await requestCode(address)
     email.value = address
     sentAt.value = Date.now()
@@ -65,14 +63,14 @@ function sendCode() {
 }
 
 function resend() {
-  void run(async () => {
+  void run('resend', async () => {
     otpId.value = await requestCode(email.value)
     sentAt.value = Date.now()
   })
 }
 
 function submitCode(code: string) {
-  void run(() => signIn(otpId.value, code))
+  void run('verify', () => signIn(otpId.value, code))
 }
 
 function back() {
@@ -81,12 +79,12 @@ function back() {
 }
 
 function saveName(name: string) {
-  void run(() => rename(name))
+  void run('save', () => rename(name))
 }
 </script>
 
 <template>
-  <NameStep v-if="gate === 'name'" :suggested="suggestedName" :busy="busy" @save="saveName" />
+  <NameStep v-if="gate === 'name'" :suggested="suggestedName" :busy="busy" :error="error" @save="saveName" />
   <CodeStep
     v-else-if="step === 'code'"
     :email="email"

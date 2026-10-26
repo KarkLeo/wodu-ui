@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import bgUrl from '@/assets/bg.jpeg'
-import { t, currentLocale, setLocale, LOCALES } from '@/locales'
+import { t, currentLocale, LOCALES } from '@/locales'
+import { useAccount } from '@/composables/useAccount'
+
+const { setLanguage } = useAccount()
 
 defineProps<{
   title: string
@@ -22,7 +25,7 @@ defineProps<{
             class="as-locale-btn"
             :class="{ 'is-active': currentLocale === l }"
             :aria-pressed="currentLocale === l"
-            @click="setLocale(l)"
+            @click="setLanguage(l)"
           >{{ l.toUpperCase() }}</button>
         </div>
       </div>

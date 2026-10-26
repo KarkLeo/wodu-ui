@@ -69,7 +69,6 @@ watch(() => props.sentAt, () => {
         :aria-label="t('auth.code.title')"
         inputmode="numeric"
         autocomplete="one-time-code"
-        :maxlength="OTP_LENGTH + 4"
         :disabled="busy"
         autofocus
         @input="onInput"

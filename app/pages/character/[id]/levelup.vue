@@ -17,7 +17,7 @@ watch(onlineDataReady, (ready) => {
   if (!ready || mode.value !== 'online') return
   const redirect = levelUpGuard(route.params.id as string, characters.getById)
   if (redirect) void navigateTo(redirect)
-})
+}, { immediate: true })
 </script>
 
 <template>

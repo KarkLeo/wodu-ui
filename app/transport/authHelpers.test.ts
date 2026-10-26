@@ -12,6 +12,7 @@ import {
   resolveLanguage,
   sanitizeCode,
   sessionTransition,
+  signInErrorKey,
 } from './authHelpers'
 
 const emailError = (code: string) =>
@@ -109,5 +110,28 @@ describe('sessionTransition', () => {
     expect(sessionTransition(false, true, 'offline')).toBe(null)
     expect(sessionTransition(true, false, 'offline')).toBe(null)
     expect(sessionTransition(true, true, 'online')).toBe(null)
+  })
+})
+
+describe('signInErrorKey', () => {
+  const status = (code: number) => new ClientResponseError({ status: code })
+
+  it('tells a wrong code from an expired one', () => {
+    expect(signInErrorKey(status(400), 'verify', false)).toBe('auth.errors.wrongCode')
+    expect(signInErrorKey(status(400), 'verify', true)).toBe('auth.errors.expiredCode')
+  })
+
+  it('does not call a refused resend a wrong code', () => {
+    expect(signInErrorKey(status(400), 'resend', false)).toBe('auth.errors.generic')
+  })
+
+  it('says so when the server cannot be reached or does not answer in time', () => {
+    expect(signInErrorKey(status(0), 'request', false)).toBe('auth.errors.network')
+    expect(signInErrorKey(new Error('timeout'), 'save', false)).toBe('auth.errors.network')
+  })
+
+  it('maps rate limiting and anything else', () => {
+    expect(signInErrorKey(status(429), 'verify', false)).toBe('auth.errors.tooMany')
+    expect(signInErrorKey(status(500), 'save', false)).toBe('auth.errors.generic')
   })
 })
