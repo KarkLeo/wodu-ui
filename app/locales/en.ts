@@ -562,6 +562,7 @@ export const messages = {
     addFailed: 'Failed to create the character. Check your connection.',
     removeFailed: 'Failed to delete the character. Check your connection.',
     rollSyncFailed: 'Roll made, but not synced.',
+    readOnly: 'You can’t change this character.',
   },
   offline: {
     loadFailed: 'Could not read saved offline data. Affected lists start empty.',

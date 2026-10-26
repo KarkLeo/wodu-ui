@@ -7,6 +7,7 @@ import type { CharacterCommand, HpHistoryEntry } from '@/domain/commands'
 import { CLASSES } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
 import { createLogger } from '@/utils/logger'
+import { scope } from '@/transport/scope'
 
 const log = createLogger('creation')
 
@@ -51,7 +52,9 @@ export function useCharacterCreation() {
       log.debug('createDraft: reusing existing', { id: creation.draftId })
       return characters.getById(creation.draftId)!
     }
-    log.info('createDraft: new')
+    const s = scope.value
+    const game = s.kind === 'game' ? s.gameId : ''
+    log.info('createDraft: new', { game })
     const char = await characters.add({
       status: 'draft',
       classId: 'fighter',
@@ -69,7 +72,7 @@ export function useCharacterCreation() {
       coins: 60,
       damageBonusDice: 0,
       notes: '',
-    })
+    }, { game })
     if (!char) {
       log.warn('createDraft: add returned null')
       return null
@@ -111,9 +114,10 @@ export function useCharacterCreation() {
       router.push('/')
       return
     }
+    const game = characters.metaOf(id)?.game ?? ''
     characters.setActive(id)
     creation.reset()
-    router.push(`/character/${id}`)
+    router.push(game ? `/games/${game}/party/${id}` : `/party/${id}`)
   }
 
   function setName(name: string) { dispatch({ type: 'SET_NAME', name }) }

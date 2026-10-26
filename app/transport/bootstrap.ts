@@ -1,8 +1,8 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
-import { pb, type CharacterRow, type RollRow, type ChangeRow } from '@/transport/pb'
+import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { pb, type CharacterRow, type RollRow, type ChangeRow, type GameRow, type GameMemberRow } from '@/transport/pb'
 import { HISTORY_LIMIT } from './limits'
 import { mode } from './mode'
-import { restoreSession, signedIn } from './auth'
+import { currentUser, restoreSession, signedIn } from './auth'
 import { canLoadOnline } from './authHelpers'
 import {
   BOOTSTRAP_TIMEOUT_MS,
@@ -15,16 +15,21 @@ import {
   withTimeout,
 } from './connection'
 import { isCharacterShape, isRollRecordShape, isChangeEntryShape } from './shapes'
+import { scope } from './scope'
+import { forgetGame, loadGame, toGame, toMember } from './games'
 import { useCharactersStore } from '@/stores/characters'
+import { useGamesStore } from '@/stores/games'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
 import { enqueueCoalesced as enqueueDice } from '@/services/DiceAnimationQueue'
+import { eventFilter, eventInScope } from '@/utils/scope'
+import type { Scope } from '@/types/game'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('transport:pb')
 const sseLog = createLogger('transport:sse')
 
-const COLLECTIONS = ['characters', 'roll_events', 'change_events'] as const
+const COLLECTIONS = ['games', 'game_members', 'characters', 'roll_events', 'change_events'] as const
 
 export type BootstrapStatus = 'loading' | 'ready' | 'failed'
 export const bootstrapStatus: Ref<BootstrapStatus> = ref('loading')
@@ -47,6 +52,16 @@ let loadGen = 0
 // Signed out counts as stale too, so a reconnect after sign-out cannot reload or resubscribe anonymously.
 function isCurrent(gen: number): boolean {
   return gen === loadGen && canLoadOnline(mode.value, signedIn.value)
+}
+
+// True from bootstrap() until stopOnline(): only then does a scope change reload the events.
+let started = false
+
+// Bumped by every scope change: an event load for a scope the player has already left must not land.
+let eventsGen = 0
+
+function me(): string | null {
+  return currentUser.value?.id ?? null
 }
 
 // Set when the realtime connection drops, cleared on the next PB_CONNECT.
@@ -94,58 +109,107 @@ function closeRealtime() {
   void pb.realtime.unsubscribe()
 }
 
-function fetchInitialState() {
-  log.info('loadInitialState: starting')
-  return Promise.all([
-    pb.collection('characters').getFullList<CharacterRow>(),
-    pb.collection('roll_events').getList<RollRow>(1, HISTORY_LIMIT, { sort: '-created' }),
-    pb.collection('change_events').getList<ChangeRow>(1, HISTORY_LIMIT, { sort: '-created' }),
+// The home screen shows no log, so it loads no events.
+async function fetchEvents(target: Scope) {
+  const filter = eventFilter(target)
+  if (filter === null) return { rolls: [] as RollRow[], changes: [] as ChangeRow[] }
+  const [rolls, changes] = await Promise.all([
+    pb.collection('roll_events').getList<RollRow>(1, HISTORY_LIMIT, { sort: '-created', filter }),
+    pb.collection('change_events').getList<ChangeRow>(1, HISTORY_LIMIT, { sort: '-created', filter }),
   ])
+  return { rolls: rolls.items, changes: changes.items }
+}
+
+type EventRows = Awaited<ReturnType<typeof fetchEvents>>
+
+async function fetchInitialState() {
+  log.info('loadInitialState: starting')
+  const events = eventsGen
+  const [games, members, chars, { rolls, changes }] = await Promise.all([
+    pb.collection('games').getFullList<GameRow>(),
+    pb.collection('game_members').getFullList<GameMemberRow>({ expand: 'user' }),
+    pb.collection('characters').getFullList<CharacterRow>(),
+    fetchEvents(scope.value),
+  ])
+  return { games, members, chars, rolls, changes, events }
 }
 
 type InitialState = Awaited<ReturnType<typeof fetchInitialState>>
 
-function applyInitialState([chars, rolls, changes]: InitialState) {
-  const characters = useCharactersStore()
-  const rollHistory = useRollHistoryStore()
-  const changeLog = useChangeLogStore()
-
-  const validCharRows = chars.filter(r => isCharacterShape(r.data))
-  const validRolls = rolls.items.map(r => r.data).filter(isRollRecordShape)
-  const validChanges = changes.items.map(r => r.data).filter(isChangeEntryShape)
-
-  const droppedChars = chars.length - validCharRows.length
-  const droppedRolls = rolls.items.length - validRolls.length
-  const droppedChanges = changes.items.length - validChanges.length
-  if (droppedChars || droppedRolls || droppedChanges) {
-    log.warn('loadInitialState: dropped malformed records', {
-      chars: droppedChars,
-      rolls: droppedRolls,
-      changes: droppedChanges,
-    })
+function applyEvents({ rolls, changes }: EventRows) {
+  const validRolls = rolls.map(r => r.data).filter(isRollRecordShape)
+  const validChanges = changes.map(r => r.data).filter(isChangeEntryShape)
+  const droppedRolls = rolls.length - validRolls.length
+  const droppedChanges = changes.length - validChanges.length
+  if (droppedRolls || droppedChanges) {
+    log.warn('events: dropped malformed records', { rolls: droppedRolls, changes: droppedChanges })
   }
+  useRollHistoryStore().setAll(validRolls)
+  useChangeLogStore().setAll(validChanges)
+  return { rolls: validRolls.length, changes: validChanges.length }
+}
 
-  characters.setAll(
+function applyInitialState(state: InitialState) {
+  const validCharRows = state.chars.filter(r => isCharacterShape(r.data))
+  const droppedChars = state.chars.length - validCharRows.length
+  if (droppedChars) log.warn('loadInitialState: dropped malformed characters', { chars: droppedChars })
+
+  useGamesStore().setAll(state.games.map(toGame), state.members.map(toMember))
+  useCharactersStore().setAll(
     validCharRows.map(r => r.data),
-    validCharRows.map(r => ({ id: r.id, updated: r.updated })),
+    validCharRows.map(r => ({ id: r.id, updated: r.updated, owner: r.owner, game: r.game })),
   )
-  rollHistory.setAll(validRolls)
-  changeLog.setAll(validChanges)
+  // The player switched tables while this was loading; that switch loads its own events.
+  const events = state.events === eventsGen ? applyEvents(state) : 'skipped'
 
   log.info('loadInitialState: done', {
+    games: state.games.length,
     characters: validCharRows.length,
-    rolls: validRolls.length,
-    changes: validChanges.length,
+    events,
   })
 }
 
 async function subscribeAll(gen: number) {
   closeRealtime()
+  const games = useGamesStore()
   const characters = useCharactersStore()
   const rollHistory = useRollHistoryStore()
   const changeLog = useChangeLogStore()
 
   await Promise.all([
+    pb.collection('games').subscribe<GameRow>('*', (e) => {
+      sseLog.debug('games', { action: e.action, id: e.record.id })
+      const row = e.record
+      if (e.action === 'create' || e.action === 'update') onRealtime(() => games.upsertGame(toGame(row)))
+      else if (e.action === 'delete') onRealtime(() => forgetGame(row.id))
+    }),
+
+    // Losing a membership sends only the membership's own delete: the rest of the game is dropped here.
+    pb.collection('game_members').subscribe<GameMemberRow>('*', (e) => {
+      sseLog.debug('game_members', { action: e.action, id: e.record.id })
+      const row = e.record
+      if (e.action === 'create') {
+        onRealtime(() => {
+          const known = !!games.byId(row.game)
+          games.upsertMember(toMember(row))
+          // Joined from another session or device: nothing else about the game arrives on its own.
+          if (row.user === me() && !known) {
+            void loadGame(row.game).catch((err: unknown) => {
+              log.warn('loading a joined game failed', { game: row.game, err })
+              if (isNetworkError(err)) reportNetworkProblem()
+            })
+          }
+        })
+      } else if (e.action === 'delete') {
+        onRealtime(() => {
+          games.removeMember(row.id)
+          if (row.user === me()) forgetGame(row.game)
+          // A member who left or was removed took their characters along, and those are unreadable now.
+          else characters.removeGameOthers(row.game, me(), row.user)
+        })
+      }
+    }, { expand: 'user' }),
+
     pb.collection('characters').subscribe<CharacterRow>('*', (e) => {
       sseLog.debug('characters', { action: e.action, id: e.record.id })
       if (e.action === 'create' || e.action === 'update') {
@@ -153,8 +217,8 @@ async function subscribeAll(gen: number) {
           sseLog.warn('characters: malformed payload, ignoring', { id: e.record.id })
           return
         }
-        const { data, updated } = e.record
-        onRealtime(() => characters.upsertLocal(data, updated))
+        const { data, updated, owner, game } = e.record
+        onRealtime(() => characters.upsertLocal(data, updated, { owner, game }))
       } else if (e.action === 'delete') {
         const id = e.record.id
         onRealtime(() => characters.removeLocal(id))
@@ -174,7 +238,12 @@ async function subscribeAll(gen: number) {
         return
       }
       const record = e.record.data
+      const row = { character: e.record.character, game: e.record.game }
       onRealtime(() => {
+        if (!eventInScope(row, scope.value)) {
+          playedLocally.delete(record.id)
+          return
+        }
         rollHistory.addLocal(record)
         if (playedLocally.has(record.id)) {
           playedLocally.delete(record.id)
@@ -198,7 +267,10 @@ async function subscribeAll(gen: number) {
         return
       }
       const entry = e.record.data
-      onRealtime(() => changeLog.addLocal(entry))
+      const row = { character: e.record.character, game: e.record.game }
+      onRealtime(() => {
+        if (eventInScope(row, scope.value)) changeLog.addLocal(entry)
+      })
     }),
 
     // The SDK reconnects by itself after a short drop (PocketBase also closes idle connections after a
@@ -248,6 +320,32 @@ async function loadAndSubscribe(gen: number) {
   await fetchAndApply(gen, deadline)
 }
 
+// Another table is open: its log replaces the old one. Realtime events held meanwhile are replayed on top.
+async function reloadEvents() {
+  const gen = loadGen
+  const events = ++eventsGen
+  const target = scope.value
+  useRollHistoryStore().clearAll()
+  useChangeLogStore().clearAll()
+  if (eventFilter(target) === null) return
+  holdRealtime()
+  try {
+    const rows = await withTimeout(fetchEvents(target), BOOTSTRAP_TIMEOUT_MS)
+    if (!isCurrent(gen) || events !== eventsGen) return
+    log.info('events reloaded for the open table', { scope: target.kind, ...applyEvents(rows) })
+  } catch (err) {
+    if (!isCurrent(gen) || events !== eventsGen) return
+    log.warn('loading the events of the open table failed', { err })
+    if (isNetworkError(err)) reportNetworkProblem()
+  } finally {
+    if (isCurrent(gen)) releaseRealtime()
+  }
+}
+
+const stopScopeWatch = watch(scope, () => {
+  if (started && isCurrent(loadGen)) void reloadEvents()
+})
+
 // Data only: the SDK has already restored the subscriptions on reconnect.
 async function refreshOnline() {
   const gen = loadGen
@@ -274,6 +372,7 @@ export async function bootstrap() {
   // Signed out, the server answers with empty lists, which would look like an empty table.
   if (!canLoadOnline(mode.value, signedIn.value)) return
   const gen = ++loadGen
+  started = true
   onReconnect(reloadOnline)
   bootstrapStatus.value = 'loading'
   try {
@@ -292,7 +391,10 @@ export async function bootstrap() {
 
 export function stopOnline(): void {
   loadGen += 1
+  eventsGen += 1
+  started = false
   closeRealtime()
+  useGamesStore().clearAll()
   stopConnectionMonitor()
   playedLocally.clear()
   bootstrapStatus.value = 'loading'
@@ -301,6 +403,7 @@ export function stopOnline(): void {
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     log.info('HMR dispose: closing realtime')
+    stopScopeWatch()
     closeRealtime()
   })
 }
