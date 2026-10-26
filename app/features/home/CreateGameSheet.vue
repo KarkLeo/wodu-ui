@@ -5,11 +5,10 @@ import Button from '@/components/ui/Button.vue'
 import AuthField from '@/features/sign-in/AuthField.vue'
 import { createGame } from '@/transport/games'
 import type { Game } from '@/types/game'
+import { GAME_NAME_MAX, gameNameError } from '@/utils/gameName'
 import { t } from '@/locales'
 import { createLogger } from '@/utils/logger'
 import './home.css'
-
-const NAME_MAX = 80
 
 const log = createLogger('home:create-game')
 
@@ -21,9 +20,9 @@ const busy = ref(false)
 const failed = ref(false)
 
 const trimmed = computed(() => name.value.trim())
-const tooLong = computed(() => trimmed.value.length > NAME_MAX)
+const tooLong = computed(() => gameNameError(name.value) === 'tooLong')
 const error = computed(() => {
-  if (tooLong.value) return t('games.create.tooLong', { max: NAME_MAX })
+  if (tooLong.value) return t('games.create.tooLong', { max: GAME_NAME_MAX })
   return failed.value ? t('games.create.failed') : null
 })
 

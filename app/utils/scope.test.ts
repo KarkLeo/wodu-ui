@@ -55,7 +55,7 @@ describe('eventFilter', () => {
 
 describe('scopeForRoute', () => {
   it('game routes open that game', () => {
-    for (const name of ['game', 'game-party', 'game-character-new']) {
+    for (const name of ['game', 'game-party', 'game-character-new', 'game-settings']) {
       expect(scopeForRoute(name, 'G', true)).toEqual({ kind: 'game', gameId: 'G' })
     }
   })

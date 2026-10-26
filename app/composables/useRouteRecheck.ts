@@ -6,12 +6,17 @@ import { useToastsStore } from '@/stores/toasts'
 import { currentUser } from '@/transport/auth'
 import { onlineDataReady } from '@/transport/bootstrap'
 import { mode } from '@/transport/mode'
-import { gameGuard, gamePartyGuard, partyGameRedirect, partyGuard } from '@/utils/routeGuards'
+import { gameGuard, gamePartyGuard, gameSettingsGuard, partyGameRedirect, partyGuard } from '@/utils/routeGuards'
+import { isMaster } from '@/utils/permissions'
 import { t } from '@/locales'
 
 export function isGameMember(gameId: string): boolean {
   const me = currentUser.value?.id
   return !!me && useGamesStore().membersOf(gameId).some(m => m.user === me)
+}
+
+export function isGameMaster(gameId: string): boolean {
+  return isMaster(useGamesStore().byId(gameId), currentUser.value?.id ?? null)
 }
 
 let quietExit: string | null = null
@@ -42,10 +47,17 @@ interface Redirect {
   leftGame?: string
 }
 
-/** The `game`, `game-party` and `game-character-new` routes: members only; a party keeps the game's own characters. */
+/**
+ * The game routes: members only; a party keeps the game's own characters; the settings are the
+ * master's, so a player (e.g. right after handing the role over) goes back to the table.
+ */
 export function gameRouteRedirect(name: string, gameId: string, ids: string | undefined, dataReady: boolean): Redirect | undefined {
   const toHome = gameGuard(gameId, isGameMember, dataReady)
   if (toHome) return { to: toHome, leftGame: gameId }
+  if (name === 'game-settings') {
+    const toTable = gameSettingsGuard(gameId, isGameMember, isGameMaster, dataReady)
+    return toTable ? { to: toTable } : undefined
+  }
   if (name !== 'game-party') return undefined
   const characters = useCharactersStore()
   const toParty = gamePartyGuard(gameId, ids, characters.getById, characters.metaOf, dataReady)
@@ -66,7 +78,7 @@ export function applyRedirect(redirect: Redirect): RouteLocationRaw {
   return redirect.to
 }
 
-const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new'])
+const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings'])
 
 /**
  * Re-runs the route middleware's checks while the page is open: once online data arrives (the

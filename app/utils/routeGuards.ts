@@ -70,6 +70,22 @@ export function gameGuard(
   }
 }
 
+/** Game settings: the master only. A player goes back to the game's table, anyone else home. */
+export function gameSettingsGuard(
+  gameId: string,
+  isMember: (id: string) => boolean,
+  isMaster: (id: string) => boolean,
+  dataReady = true,
+): RouteLocationRaw | undefined {
+  if (!dataReady) return undefined
+  const toHome = gameGuard(gameId, isMember, dataReady)
+  if (toHome) return toHome
+  if (!isMaster(gameId)) {
+    log.warn('guard:game-settings → redirect', { gameId, reason: 'not the master' })
+    return { name: 'game', params: { gameId } }
+  }
+}
+
 /** Keeps only the game's own non-draft characters; with none left, the table stays open without a sheet. */
 export function gamePartyGuard(
   gameId: string,
