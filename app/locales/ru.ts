@@ -596,11 +596,11 @@ export const messages: Messages = {
       resend: 'Отправить ещё раз',
       resendIn: 'Ещё раз · {time}',
       back: '← другой email',
-      spamHint: 'Нет письма? Загляните в «Спам».',
+      spamHint: 'Нет письма? Загляните в «Спам». Отправитель — «World of Dungeons».',
     },
     name: {
       heading: 'Добро пожаловать',
-      sub: 'аккаунт создан',
+      sub: 'ещё один шаг',
       title: 'Как вас называть за столом?',
       label: 'Имя игрока',
       optional: '— можно ник',
@@ -617,6 +617,8 @@ export const messages: Messages = {
       deleteConfirm: 'Удалить',
     },
     errors: {
+      network: 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.',
+      expiredCode: 'Срок действия кода истёк. Отправьте новый.',
       invalidEmail: 'Это не похоже на email.',
       wrongCode: 'Неверный или истёкший код.',
       tooMany: 'Слишком много попыток. Подождите минуту и попробуйте снова.',

@@ -72,3 +72,13 @@ export const ResendOpen: Story = {
     await expect(args.onResend).toHaveBeenCalledOnce()
   },
 }
+
+export const PasteLongText: Story = {
+  tags: ['no-visual'],
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(codeInput(canvasElement))
+    await userEvent.paste('Your code: 2451-1566 (World of Dungeons)')
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
+    await expect(args.onSubmit).toHaveBeenCalledWith('24511566')
+  },
+}

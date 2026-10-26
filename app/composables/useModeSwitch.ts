@@ -1,6 +1,7 @@
 import { useRouter } from 'vue-router'
 import { mode, modeSession, setMode, type AppMode } from '@/transport/mode'
 import { bootstrap, stopOnline } from '@/transport/bootstrap'
+import { restoreSession } from '@/transport/auth'
 import { loadOffline, startOfflinePersistence } from '@/transport/offlineStorage'
 import { useCharactersStore } from '@/stores/characters'
 import { useRollHistoryStore } from '@/stores/rollHistory'
@@ -37,7 +38,12 @@ export function useModeSwitch() {
     // A later switch may have run while the navigation was pending; it owns the stores now.
     if (modeSession() !== session) return
     if (next === 'offline') startOfflineSession()
-    else await bootstrap()
+    else {
+      // The token may have expired, or the account been deleted, while this device was offline.
+      await restoreSession()
+      if (modeSession() !== session) return
+      await bootstrap()
+    }
   }
 
   return { switchMode }

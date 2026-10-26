@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, spyOn, userEvent, within } from 'storybook/test'
 import AuthScreen from './AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
 import { currentLocale } from '@/locales'
+import { pb, signInMock } from '../../../.storybook/mocks/pb'
 
 const meta = {
   title: 'Screens/SignIn/AuthScreen',
@@ -54,5 +55,18 @@ export const LocaleButtons: Story = {
     await userEvent.click(within(group).getByRole('button', { name: 'RU' }))
     await expect(currentLocale.value).toBe('ru')
     await expect(within(group).getByRole('button', { name: 'RU' })).toHaveAttribute('aria-pressed', 'true')
+  },
+}
+
+export const LocaleWritesProfileWhenSignedIn: Story = {
+  tags: ['no-visual'],
+  beforeEach() {
+    signInMock()
+  },
+  play: async ({ canvasElement }) => {
+    const update = spyOn(pb.collection('users'), 'update')
+    const group = within(canvasElement).getByRole('group')
+    await userEvent.click(within(group).getByRole('button', { name: 'UK' }))
+    await expect(update).toHaveBeenCalledWith('user-mock', { language: 'uk' })
   },
 }

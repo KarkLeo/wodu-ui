@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
+import { ClientResponseError } from 'pocketbase'
 import AccountMenu from './AccountMenu.vue'
 import { authStore, pb, signInMock } from '../../../.storybook/mocks/pb'
 
@@ -77,5 +78,31 @@ export const DeleteConfirm: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     await expect(remove).toHaveBeenCalledWith('user-mock')
     await waitFor(() => expect(authStore.isValid).toBe(false))
+  },
+}
+
+export const RenameFails: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('users'), 'update').mockRejectedValueOnce(new ClientResponseError({ status: 500 }))
+    const menu = await openMenu(canvasElement)
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Change name' }))
+    const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Change name' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await expect(await within(dialog).findByRole('alert')).toHaveTextContent('Something went wrong. Try again.')
+    await expect(dialog).toBeVisible()
+  },
+}
+
+export const DeleteFails: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('users'), 'delete').mockRejectedValueOnce(new ClientResponseError({ status: 0 }))
+    const menu = await openMenu(canvasElement)
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Delete account' }))
+    const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Delete your account?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    await expect(await within(dialog).findByRole('alert')).toHaveTextContent(/No connection to the server/)
+    await expect(authStore.isValid).toBe(true)
   },
 }

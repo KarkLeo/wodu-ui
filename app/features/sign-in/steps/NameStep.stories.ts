@@ -7,7 +7,7 @@ const meta = {
   component: NameStep,
   globals: { viewport: { value: 'phone', isRotated: false } },
   parameters: { layout: 'fullscreen' },
-  args: { suggested: 'anna', busy: false, onSave: fn() },
+  args: { suggested: 'anna', busy: false, error: null, onSave: fn() },
 } satisfies Meta<typeof NameStep>
 
 export default meta
@@ -37,5 +37,12 @@ export const BlankFallsBackToSuggestion: Story = {
     await userEvent.type(canvas.getByLabelText(/Player name/), '   ')
     await userEvent.click(canvas.getByRole('button', { name: 'Done' }))
     await expect(args.onSave).toHaveBeenCalledWith('anna')
+  },
+}
+
+export const WithError: Story = {
+  args: { error: 'Something went wrong. Try again.' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('alert')).toHaveTextContent('Something went wrong. Try again.')
   },
 }

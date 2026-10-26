@@ -9,6 +9,7 @@ import { t } from '@/locales'
 const props = defineProps<{
   suggested: string
   busy: boolean
+  error: string | null
 }>()
 
 const emit = defineEmits<{ save: [name: string] }>()
@@ -32,6 +33,7 @@ function done() {
         :maxlength="NAME_MAX"
         autocomplete="nickname"
       />
+      <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
       <div class="ns-actions">
         <Button variant="ghost" size="lg" class="auth-wide" :disabled="busy" @click="emit('save', suggested)">
           {{ t('auth.name.later') }}

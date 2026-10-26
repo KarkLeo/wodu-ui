@@ -596,11 +596,11 @@ export const messages: Messages = {
       resend: 'Надіслати ще раз',
       resendIn: 'Ще раз · {time}',
       back: '← інший email',
-      spamHint: 'Немає листа? Загляньте в «Спам».',
+      spamHint: 'Немає листа? Загляньте в «Спам». Відправник — «World of Dungeons».',
     },
     name: {
       heading: 'Ласкаво просимо',
-      sub: 'акаунт створено',
+      sub: 'ще один крок',
       title: 'Як вас називати за столом?',
       label: 'Ім’я гравця',
       optional: '— можна нік',
@@ -617,6 +617,8 @@ export const messages: Messages = {
       deleteConfirm: 'Видалити',
     },
     errors: {
+      network: 'Немає зв’язку із сервером. Перевірте інтернет і спробуйте ще раз.',
+      expiredCode: 'Термін дії коду минув. Надішліть новий.',
       invalidEmail: 'Це не схоже на email.',
       wrongCode: 'Неправильний або прострочений код.',
       tooMany: 'Забагато спроб. Зачекайте хвилину й спробуйте знову.',

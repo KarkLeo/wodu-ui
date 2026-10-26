@@ -2,7 +2,7 @@ import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { pb, type CharacterRow, type RollRow, type ChangeRow } from '@/transport/pb'
 import { HISTORY_LIMIT } from './limits'
 import { mode } from './mode'
-import { signedIn } from './auth'
+import { restoreSession, signedIn } from './auth'
 import { canLoadOnline } from './authHelpers'
 import {
   BOOTSTRAP_TIMEOUT_MS,
@@ -260,6 +260,8 @@ async function refreshOnline() {
 }
 
 async function reloadOnline() {
+  // The account may have been deleted or signed out elsewhere while the server was away.
+  await restoreSession()
   const gen = ++loadGen
   if (!isCurrent(gen)) return
   closeRealtime()

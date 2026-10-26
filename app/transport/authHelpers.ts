@@ -1,6 +1,7 @@
 import { ClientResponseError } from 'pocketbase'
 import { LOCALES, type Locale } from '@/locales'
 import type { AppMode } from './mode'
+import { isNetworkError } from './connection'
 
 export const OTP_LENGTH = 8
 export const OTP_TTL_MS = 180_000
@@ -65,4 +66,21 @@ export type SessionTransition = 'start' | 'stop' | null
 export function sessionTransition(wasSignedIn: boolean, isSignedIn: boolean, mode: AppMode): SessionTransition {
   if (mode !== 'online' || wasSignedIn === isSignedIn) return null
   return isSignedIn ? 'start' : 'stop'
+}
+
+export type SignInAction = 'request' | 'resend' | 'verify' | 'save'
+
+export type SignInErrorKey =
+  | 'auth.errors.network'
+  | 'auth.errors.tooMany'
+  | 'auth.errors.wrongCode'
+  | 'auth.errors.expiredCode'
+  | 'auth.errors.generic'
+
+export function signInErrorKey(err: unknown, action: SignInAction, codeExpired: boolean): SignInErrorKey {
+  if (isNetworkError(err)) return 'auth.errors.network'
+  const status = err instanceof ClientResponseError ? err.status : (err as { status?: number } | null)?.status
+  if (status === 429) return 'auth.errors.tooMany'
+  if (status === 400 && action === 'verify') return codeExpired ? 'auth.errors.expiredCode' : 'auth.errors.wrongCode'
+  return 'auth.errors.generic'
 }
