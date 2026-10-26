@@ -64,11 +64,17 @@ export const ReadOnly: Story = {
 export const ReadOnlyConsumable: Story = {
   args: { item: quicksilver },
   decorators: [readonlySheet],
-  play: async ({ canvasElement }) => expectNoEditControls(canvasElement),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('Quicksilver (dose)')).toBeVisible()
+    await expectNoEditControls(canvasElement)
+  },
 }
 
 export const ReadOnlyCustom: Story = {
   args: { item: locket },
   decorators: [readonlySheet],
-  play: async ({ canvasElement }) => expectNoEditControls(canvasElement),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('Silver locket')).toBeVisible()
+    await expectNoEditControls(canvasElement)
+  },
 }

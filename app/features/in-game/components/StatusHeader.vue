@@ -45,10 +45,10 @@ const readonly = useSheetReadonly()
 const characters = useCharactersStore()
 const games = useGamesStore()
 
-const ownerName = computed(() => {
+const ownerMarker = computed(() => {
   const meta = characters.metaOf(charId.value)
   const name = meta?.game ? games.membersOf(meta.game).find(m => m.user === meta.owner)?.name : ''
-  return name || t('games.table.unknownOwner')
+  return name ? t('inGame.readonly.owner', { name }) : t('inGame.readonly.ownerUnknown')
 })
 
 const className = computed(() => {
@@ -186,7 +186,7 @@ async function handleRollDamage() {
           </span>
           {{ char.trueName }}
         </span>
-        <span v-if="readonly && !compact" class="sh-owner">{{ t('inGame.readonly.owner', { name: ownerName }) }}</span>
+        <span v-if="readonly && !compact" class="sh-owner">{{ ownerMarker }}</span>
       </div>
     </div>
 

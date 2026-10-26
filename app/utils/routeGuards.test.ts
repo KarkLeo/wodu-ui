@@ -131,4 +131,19 @@ describe('levelUpGuard', () => {
   it('does not redirect while online data is not loaded', () => {
     expect(levelUpGuard('missing', getById, false)).toBeUndefined()
   })
+
+  it('sends a character the player cannot edit back to its sheet on its game table', () => {
+    const canEdit = (id: string) => id === 'a'
+    expect(levelUpGuard('b', getById, true, canEdit, () => 'g1'))
+      .toEqual({ name: 'game-party', params: { gameId: 'g1', ids: 'b' } })
+  })
+
+  it('sends a free character the player cannot edit to the party route', () => {
+    expect(levelUpGuard('b', getById, true, () => false)).toEqual({ name: 'party', params: { ids: 'b' } })
+  })
+
+  it('lets an editable character through and still refuses drafts first', () => {
+    expect(levelUpGuard('a', getById, true, () => true, () => 'g1')).toBeUndefined()
+    expect(levelUpGuard('d', getById, true, () => false)).toEqual({ name: 'character-list' })
+  })
 })

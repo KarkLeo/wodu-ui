@@ -298,6 +298,7 @@ export const messages = {
     },
     readonly: {
       owner: '{name}’s character',
+      ownerUnknown: 'Someone else’s character',
     },
     statusHeader: {
       back: 'Back',

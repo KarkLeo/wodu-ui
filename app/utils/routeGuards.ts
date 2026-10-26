@@ -2,6 +2,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import type { Character } from '@/types/character'
 import type { CharacterMeta } from '@/types/game'
 import { createLogger } from '@/utils/logger'
+import { partyLocation } from '@/utils/scope'
 
 const log = createLogger('router')
 
@@ -89,11 +90,26 @@ export function gamePartyGuard(
   }
 }
 
-export function levelUpGuard(id: string, getById: GetById, dataReady = true): RouteLocationRaw | undefined {
+/**
+ * A character the player cannot edit (a teammate's) goes back to its sheet on its table: `gameOf` gives
+ * its game, '' for a free character.
+ */
+export function levelUpGuard(
+  id: string,
+  getById: GetById,
+  dataReady = true,
+  canEdit: (id: string) => boolean = () => true,
+  gameOf: (id: string) => string = () => '',
+): RouteLocationRaw | undefined {
   if (!dataReady) return undefined
   const char = getById(id)
   if (!char || char.status !== 'active') {
     log.warn('guard:level-up → redirect', { id, reason: !char ? 'not found' : 'not active' })
     return { name: 'character-list' }
+  }
+  if (!canEdit(id)) {
+    log.warn('guard:level-up → redirect', { id, reason: 'read-only' })
+    const gameId = gameOf(id)
+    return partyLocation(gameId ? { kind: 'game', gameId } : { kind: 'solo' }, [id])
   }
 }

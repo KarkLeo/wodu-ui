@@ -300,6 +300,7 @@ export const messages: Messages = {
     },
     readonly: {
       owner: 'Персонаж гравця {name}',
+      ownerUnknown: 'Чужий персонаж',
     },
     statusHeader: {
       back: 'Назад',

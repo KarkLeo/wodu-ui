@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import { expectNoEditControls } from '@/stories/readonly'
 import HpBar from './HpBar.vue'
 
@@ -57,7 +57,10 @@ export const WithEffects: Story = {
 /** What a read-only sheet shows: the value, no −/+ and nothing that opens the HP panel (or its dice). */
 export const ReadOnly: Story = {
   args: { current: 9, showControls: false },
-  play: async ({ canvasElement }) => expectNoEditControls(canvasElement),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('9')).toBeVisible()
+    await expectNoEditControls(canvasElement)
+  },
 }
 
 export const Sizes: Story = {
