@@ -613,7 +613,7 @@ export const messages: Messages = {
       signOut: 'Выйти',
       deleteAccount: 'Удалить аккаунт',
       deleteTitle: 'Удалить аккаунт?',
-      deleteBody: 'Ваш email и имя будут стёрты. Персонажи останутся за столом.',
+      deleteBody: 'Ваш email, имя и персонажи будут стёрты.',
       deleteConfirm: 'Удалить',
     },
     errors: {
