@@ -16,7 +16,7 @@ import {
 } from './connection'
 import { isCharacterShape, isRollRecordShape, isChangeEntryShape } from './shapes'
 import { scope } from './scope'
-import { forgetGame, loadGame, toGame, toMember } from './games'
+import { forgetGame, healStuckCharacters, loadGame, toGame, toMember } from './games'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useRollHistoryStore } from '@/stores/rollHistory'
@@ -310,6 +310,8 @@ async function fetchAndApply(gen: number, deadline: number) {
     // Otherwise closeRealtime() has already dropped them for the newer load or the mode switch.
     if (isCurrent(gen)) releaseRealtime()
   }
+  // After the held events, so a game joined meanwhile from another session counts as mine.
+  if (isCurrent(gen)) healStuckCharacters()
 }
 
 // Subscribe first, then fetch, under one deadline: a hanging realtime connection must not double the wait.

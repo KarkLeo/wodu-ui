@@ -100,10 +100,38 @@ export function forgetGame(gameId: string): void {
   const characters = useCharactersStore()
   useGamesStore().removeGame(gameId)
   characters.removeGameOthers(gameId, self)
+  // Before freeGame: it clears the raw game that tells which of mine the server still holds there.
+  healStuckCharacters(gameId)
   characters.freeGame(gameId, self)
   if (s.kind === 'game' && s.gameId === gameId) {
     useRollHistoryStore().clearAll()
     useChangeLogStore().clearAll()
+  }
+}
+
+// Ids with a heal in flight, so a load and a forgotten game do not send the same write twice.
+const healing = new Set<string>()
+
+/**
+ * Takes my characters out of games I am not a member of (`gameId` narrows it to one game). A
+ * membership deleted without freeing them first (another session, a direct request) leaves them
+ * linked there on the server: hidden from the table, and every roll for them refused, because the
+ * client sends `game: ''` for a game it does not know. Only their owner can free them.
+ */
+export function healStuckCharacters(gameId?: string): void {
+  const self = currentUser.value?.id
+  if (mode.value !== 'online' || !self) return
+  const characters = useCharactersStore()
+  const stuck = Object.entries(characters.meta)
+    .filter(([id, m]) => m.owner === self && m.game !== '' && (gameId === undefined || m.game === gameId)
+      && !memberRowOf(m.game, self) && !healing.has(id))
+    .map(([id]) => id)
+  for (const id of stuck) {
+    healing.add(id)
+    log.info('freeing a character left in a game I am not a member of', { id })
+    void moveCharacter(id, '')
+      .catch((err: unknown) => log.warn('could not free a stuck character', { id, err }))
+      .finally(() => healing.delete(id))
   }
 }
 

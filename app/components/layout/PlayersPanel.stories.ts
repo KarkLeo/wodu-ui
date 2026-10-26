@@ -277,9 +277,12 @@ export const LosingTheGameFreesMine: Story = {
   loaders: [atRoute('/')],
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
+    const update = spyOn(pb.collection('characters'), 'update')
     const { forgetGame } = await import('@/transport/games')
     forgetGame(crookhollow.id)
     await expect(useCharactersStore().metaOf(brann.id)?.game).toBe('')
+    // The server may still hold Brann in a game I am no longer in, which would refuse every roll for him.
+    await waitFor(() => expect(update).toHaveBeenCalledWith(brann.id, { game: '' }))
     await expect(await row(canvasElement, brann.name)).toBeVisible()
     // Other players' characters there are no longer readable and leave the store.
     await expect(useCharactersStore().getById(wren.id)).toBeUndefined()

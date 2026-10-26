@@ -145,3 +145,37 @@ export const LookupFails: Story = {
     await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }
+
+/** The session expired between the lookup and the join (403): not a bad invite, so the retry is offered. */
+export const JoinRefusedSessionExpired: Story = {
+  ...at('EMBR2345'),
+  tags: ['no-visual'],
+  beforeEach() {
+    seedRecords('games', [ember])
+    spyOn(pb.collection('game_members'), 'create').mockRejectedValueOnce(new ClientResponseError({ status: 403 }))
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('alert')).toHaveTextContent('Couldn’t join the game. Try again.')
+    await expect(canvas.queryByText('This invite is not valid')).toBeNull()
+    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+  },
+}
+
+/** Joined from another session meanwhile: the duplicate's 400 ends on "already in", not "not valid". */
+export const JoinedMeanwhileElsewhere: Story = {
+  ...at('EMBR2345'),
+  tags: ['no-visual'],
+  beforeEach() {
+    seedRecords('games', [ember])
+    spyOn(pb.collection('game_members'), 'create').mockRejectedValueOnce(new ClientResponseError({ status: 400 }))
+    spyOn(pb.collection('game_members'), 'getFullList').mockResolvedValueOnce([
+      { id: 'story-member-ember', game: ember.id, user: 'user-mock', expand: { user: { name: 'Anna' } } },
+    ] as never)
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText('You’re already in “Ember Road”')).toBeVisible()
+    await expect(canvas.queryByText('This invite is not valid')).toBeNull()
+  },
+}

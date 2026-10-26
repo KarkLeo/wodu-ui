@@ -39,12 +39,17 @@ function toggleMode(mode: Exclude<RollMode, 'normal'>) {
   pendingMode.value = pendingMode.value === mode ? 'normal' : mode
 }
 
-// Rolls go to the active character, and only one the user can edit (not a teammate's read-only sheet).
-const activeChar = computed(() => {
+// Rolls go to the active character, only one at the open table, and only one the user can edit (not a
+// teammate's read-only sheet).
+const scopedActive = computed(() => {
   const c = charStore.active
+  return c && charStore.inScope(c.id) ? c : undefined
+})
+const activeChar = computed(() => {
+  const c = scopedActive.value
   return c && charStore.canEditCharacter(c.id) ? c : undefined
 })
-const readOnlyActive = computed(() => (activeChar.value ? undefined : charStore.active))
+const readOnlyActive = computed(() => (activeChar.value ? undefined : scopedActive.value))
 
 const items = computed(() => unified.filtered(filter.value))
 

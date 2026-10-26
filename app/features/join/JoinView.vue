@@ -6,7 +6,7 @@ import { useGamesStore } from '@/stores/games'
 import { useModeSwitch } from '@/composables/useModeSwitch'
 import { currentUser } from '@/transport/auth'
 import { onlineDataReady } from '@/transport/bootstrap'
-import { findGameByCode, joinGame } from '@/transport/games'
+import { findGameByCode, joinGame, loadGame } from '@/transport/games'
 import { mode } from '@/transport/mode'
 import { normalizeInviteCode } from '@/utils/inviteCode'
 import type { Game } from '@/types/game'
@@ -32,10 +32,21 @@ function isMember(gameId: string): boolean {
   return !!me && games.membersOf(gameId).some(m => m.user === me)
 }
 
-// The server refuses a code that was reset between the lookup and the join with a 4xx.
-function isRefused(err: unknown): boolean {
+function statusOf(err: unknown): number | undefined {
   const status = (err as { status?: unknown } | null)?.status
-  return typeof status === 'number' && status >= 400 && status < 500
+  return typeof status === 'number' ? status : undefined
+}
+
+// A 400 is also what joining twice answers (another session may have joined meanwhile): only the
+// membership itself tells a reset code from that.
+async function joinedAfterAll(gameId: string): Promise<boolean> {
+  try {
+    await loadGame(gameId)
+  } catch (err) {
+    log.warn('membership re-check failed', { gameId, err })
+    return false
+  }
+  return isMember(gameId)
 }
 
 async function run() {
@@ -67,7 +78,14 @@ async function run() {
     await joinGame(found, code)
   } catch (err) {
     log.warn('join failed', { gameId: found.id, err })
-    state.value = isRefused(err) ? 'notFound' : 'failed'
+    const status = statusOf(err)
+    if (status === 400 && await joinedAfterAll(found.id)) {
+      state.value = 'member'
+      return
+    }
+    // A code reset between the lookup and the join answers 400 (404 for a game deleted meanwhile).
+    // 401/403 is an expired session, not a bad invite: it gets the retry.
+    state.value = status === 400 || status === 404 ? 'notFound' : 'failed'
     return
   }
   await router.replace({ name: 'game', params: { gameId: found.id } })

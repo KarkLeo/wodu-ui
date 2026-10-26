@@ -1,3 +1,4 @@
+import { watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { Character } from '@/types/character'
 import { isReadyToLevelUp } from '@/utils/derived'
@@ -13,7 +14,8 @@ import { currentUser } from '@/transport/auth'
 import { useToastsStore } from '@/stores/toasts'
 import { useGamesStore } from '@/stores/games'
 import { canEdit } from '@/utils/permissions'
-import { freeIfGameUnknown } from '@/utils/scope'
+import { charactersInScope, freeIfGameUnknown } from '@/utils/scope'
+import { scope } from '@/transport/scope'
 import type { CharacterMeta } from '@/types/game'
 import { t } from '@/locales'
 
@@ -52,6 +54,14 @@ export const useCharactersStore = defineStore('characters', {
       const out: Record<string, CharacterMeta> = {}
       for (const [id, m] of Object.entries(state.meta)) out[id] = freeIfGameUnknown(m, g => !!games.byId(g))!
       return out
+    },
+    /** Whether the character sits at the open table (offline has no tables: always). */
+    inScope(state): (id: string) => boolean {
+      return (id: string) => {
+        if (mode.value === 'offline') return true
+        const c = state.list.find(x => x.id === id)
+        return !!c && charactersInScope([c], this.metaView, scope.value, currentUser.value?.id ?? null).length > 0
+      }
     },
     canEditCharacter: (state) => (id: string): boolean => {
       if (mode.value === 'offline') return true
@@ -228,3 +238,10 @@ export const useCharactersStore = defineStore('characters', {
     },
   },
 })
+
+// Only PartyView keeps activeId in step with the open sheets, so a character left active on another
+// table would otherwise keep rolling, into this table's log, under its own game.
+watch(scope, () => {
+  const store = useCharactersStore()
+  if (store.activeId && !store.inScope(store.activeId)) store.setActive(null)
+}, { flush: 'sync' })
