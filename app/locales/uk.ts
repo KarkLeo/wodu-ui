@@ -765,7 +765,7 @@ export const messages: Messages = {
       signOut: 'Вийти',
       deleteAccount: 'Видалити акаунт',
       deleteTitle: 'Видалити акаунт?',
-      deleteBody: 'Ваш email, ім’я та персонажі буде стерто.',
+      deleteBody: 'Ваш email, ім’я та персонажі буде стерто. Ваші ігри залишаться, і їхні гравці зможуть стати майстром.',
       deleteConfirm: 'Видалити',
     },
     errors: {

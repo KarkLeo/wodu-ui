@@ -763,7 +763,7 @@ export const messages = {
       signOut: 'Sign out',
       deleteAccount: 'Delete account',
       deleteTitle: 'Delete your account?',
-      deleteBody: 'Your email, name and characters are erased.',
+      deleteBody: 'Your email, name and characters are erased. Games you run stay; their players can take over as master.',
       deleteConfirm: 'Delete',
     },
     errors: {
