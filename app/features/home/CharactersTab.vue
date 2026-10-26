@@ -36,10 +36,9 @@ function classLine(c: Character): string {
 }
 
 function whereLabel(c: Character): string {
-  const gameId = gameOf(c)
-  if (!gameId) return t('games.characters.free')
-  const game = games.byId(gameId)
-  return game ? t('games.characters.inGame', { game: game.name }) : t('games.characters.inUnknownGame')
+  // metaOf already counts a game this player no longer knows as none.
+  const game = games.byId(gameOf(c))
+  return game ? t('games.characters.inGame', { game: game.name }) : t('games.characters.free')
 }
 
 function open(c: Character) {

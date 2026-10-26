@@ -16,6 +16,7 @@ import { bootstrapStatus } from '@/transport/bootstrap'
 import { setScope } from '@/transport/scope'
 import { authStore, seedRecords, signInMock } from '../../.storybook/mocks/pb'
 import { storyRouter } from './router'
+import { MEMBERS } from './fixtures'
 
 interface StoreSeed {
   characters?: Character[]
@@ -59,6 +60,20 @@ export function withStores(seed: StoreSeed): Decorator {
       }
     },
     template: '<story />',
+  })
+}
+
+/**
+ * A game's table: the game, its members, owners and games per character, and the scope set to that game
+ * (as app.vue does from the route), so a draft created there lands in the game.
+ */
+export function withGameTable(game: Game, characters: Character[], meta: Record<string, CharacterMeta>, members = MEMBERS): Decorator {
+  return withStores({
+    characters,
+    games: [game],
+    members: members.filter(m => m.game === game.id),
+    meta,
+    scope: { kind: 'game', gameId: game.id },
   })
 }
 

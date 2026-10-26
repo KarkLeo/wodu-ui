@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { charactersInScope, eventInScope, eventFilter, scopeForRoute } from './scope'
+import { charactersInScope, eventInScope, eventFilter, freeIfGameUnknown, partyLocation, scopeForRoute, tableLocation } from './scope'
 import { makeCharacter } from '@/test/fixtures'
 import type { CharacterMeta, Scope } from '@/types/game'
 
@@ -74,5 +74,45 @@ describe('scopeForRoute', () => {
   it('offline mode stays home', () => {
     expect(scopeForRoute('game', 'G', false)).toEqual({ kind: 'home' })
     expect(scopeForRoute('party', undefined, false)).toEqual({ kind: 'home' })
+  })
+})
+
+describe('freeIfGameUnknown', () => {
+  const known = (id: string) => id === 'G'
+
+  it('keeps a known game and a free character as they are', () => {
+    const inG = { owner: 'me', game: 'G' }
+    const free = { owner: 'me', game: '' }
+    expect(freeIfGameUnknown(inG, known)).toBe(inG)
+    expect(freeIfGameUnknown(free, known)).toBe(free)
+    expect(freeIfGameUnknown(undefined, known)).toBeUndefined()
+  })
+
+  it('treats a game the player no longer knows as no game', () => {
+    expect(freeIfGameUnknown({ owner: 'me', game: 'H' }, known)).toEqual({ owner: 'me', game: '' })
+  })
+})
+
+describe('tableLocation', () => {
+  it('a game goes back to its table, anything else home', () => {
+    expect(tableLocation(game)).toEqual({ name: 'game', params: { gameId: 'G' } })
+    expect(tableLocation(solo)).toEqual({ name: 'character-list' })
+    expect(tableLocation(home)).toEqual({ name: 'character-list' })
+  })
+})
+
+describe('partyLocation', () => {
+  it('opens the sheets on the game\'s own party route', () => {
+    expect(partyLocation(game, ['a', 'b'])).toEqual({ name: 'game-party', params: { gameId: 'G', ids: 'a,b' } })
+  })
+
+  it('outside a game uses the party route', () => {
+    expect(partyLocation(solo, ['a'])).toEqual({ name: 'party', params: { ids: 'a' } })
+    expect(partyLocation(home, ['a', 'b'])).toEqual({ name: 'party', params: { ids: 'a,b' } })
+  })
+
+  it('with no sheet left goes back to the table', () => {
+    expect(partyLocation(game, [])).toEqual({ name: 'game', params: { gameId: 'G' } })
+    expect(partyLocation(solo, [])).toEqual({ name: 'character-list' })
   })
 })

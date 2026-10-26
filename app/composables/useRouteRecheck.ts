@@ -1,4 +1,4 @@
-import { computed, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -16,16 +16,23 @@ export function isGameMember(gameId: string): boolean {
 
 let quietExit: string | null = null
 
-/** Call before leaving or deleting a game on purpose, so the bounce home shows no toast. */
-export function exitGameQuietly(gameId: string): void {
+/**
+ * Leaves or deletes a game on purpose: the bounce home while `exit` runs shows no "no longer in that
+ * game" toast. The quiet ends once `exit` has settled, so a later removal still shows it.
+ */
+export async function exitGameQuietly<T>(gameId: string, exit: () => Promise<T>): Promise<T> {
   quietExit = gameId
+  try {
+    return await exit()
+  } finally {
+    // The re-check's redirect runs in the render flush that the store change scheduled; let it go first.
+    await nextTick()
+    if (quietExit === gameId) quietExit = null
+  }
 }
 
 function notifyLeftGame(gameId: string): void {
-  if (quietExit === gameId) {
-    quietExit = null
-    return
-  }
+  if (quietExit === gameId) return
   if (mode.value !== 'online') return
   useToastsStore().push(t('games.leftOrRemoved'), 'info')
 }

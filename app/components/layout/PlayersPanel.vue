@@ -7,10 +7,17 @@ import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useModeSwitch } from '@/composables/useModeSwitch'
 import { useAccount } from '@/composables/useAccount'
+import { useTable } from '@/composables/useTable'
+import { useGamesStore } from '@/stores/games'
+import { currentUser } from '@/transport/auth'
 import { mode, type AppMode } from '@/transport/mode'
+import { charactersInScope } from '@/utils/scope'
+import { isMaster } from '@/utils/permissions'
 import Button from '@/components/ui/Button.vue'
 import ModeSwitch from '@/components/ui/ModeSwitch.vue'
 import AccountMenu from './AccountMenu.vue'
+import GameMenu from './GameMenu.vue'
+import MasterlessNotice from './MasterlessNotice.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -26,10 +33,34 @@ const { createDraft } = useCharacterCreation()
 const { switchMode } = useModeSwitch()
 const { user, setLanguage } = useAccount()
 const layout = useGameLayout()
+const games = useGamesStore()
+const { tableScope, gameId, game, partyRoute } = useTable()
 
-const activeCharacters = computed(() =>
-  store.list.filter(c => c.status === 'active'),
-)
+const me = computed(() => currentUser.value?.id ?? null)
+
+// Online the panel lists the open table: a game's characters, or my free ones outside games.
+const activeCharacters = computed(() => {
+  const list = mode.value === 'online'
+    ? charactersInScope(store.list, store.metaView, tableScope.value, me.value)
+    : store.list
+  return list.filter(c => c.status === 'active')
+})
+
+const role = computed(() => {
+  if (!game.value || !game.value.master) return null
+  return isMaster(game.value, me.value) ? t('games.list.roleMaster') : t('games.list.rolePlayer')
+})
+
+function ownerLabel(c: Character): string {
+  const owner = store.metaOf(c.id)?.owner
+  if (owner === me.value) return t('games.table.you')
+  const name = gameId.value ? games.membersOf(gameId.value).find(m => m.user === owner)?.name : ''
+  return name || t('games.table.unknownOwner')
+}
+
+function subLine(c: Character): string {
+  return game.value ? t('games.table.ownerLine', { owner: ownerLabel(c), line: classLabel(c) }) : classLabel(c)
+}
 
 const openIds = computed(() => {
   const raw = route.params.ids ?? route.params.id ?? ''
@@ -76,23 +107,19 @@ function toggleCharacter(id: string) {
     if (store.activeId === id) {
       store.setActive(remaining[0] ?? null)
     }
-    if (remaining.length === 0) {
-      router.replace('/')
-    } else {
-      router.replace(`/party/${remaining.join(',')}`)
-    }
+    router.replace(partyRoute(remaining))
     return
   }
-  const next = [...openIds.value, id]
-  router.replace(`/party/${next.join(',')}`)
+  router.replace(partyRoute([...openIds.value, id]))
   store.setActive(id)
 }
 
+// Inside a game the draft is created in it (createDraft follows the scope) and the wizard stays there.
 async function startNew() {
   creation.reset()
   const draft = await createDraft()
   if (!draft) return
-  router.push('/character/new')
+  router.push(gameId.value ? { name: 'game-character-new', params: { gameId: gameId.value } } : { name: 'character-new' })
 }
 
 function onModeChange(next: AppMode) {
@@ -128,7 +155,15 @@ function onModeChange(next: AppMode) {
   <!-- ── EXPANDED VIEW ─────────────────────────── -->
   <div v-else class="players-panel">
     <div class="gl-panel-head">
-      <p class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
+      <div v-if="game" class="pr-game">
+        <span class="pr-game-eyebrow">
+          <span class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</span>
+          <span v-if="role" :class="['pr-role', { 'is-master': game.master === me }]">{{ role }}</span>
+        </span>
+        <span class="pr-game-title" :title="game.name">{{ game.name }}</span>
+      </div>
+      <p v-else class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
+      <div v-if="game" class="pr-game-menu"><GameMenu :game="game" /></div>
       <span v-if="mode === 'offline'" class="pr-offline-badge">
         <span class="pr-offline-dot" aria-hidden="true" />
         <span>{{ t('mode.badge') }}</span>
@@ -144,6 +179,8 @@ function onModeChange(next: AppMode) {
       </button>
     </div>
 
+    <MasterlessNotice v-if="game && !game.master" :game="game" />
+
     <div class="gl-panel-list">
       <div
         v-for="c in activeCharacters"
@@ -158,7 +195,7 @@ function onModeChange(next: AppMode) {
         <div class="pr-avatar">{{ initial(c.name) }}</div>
         <div class="pr-body">
           <span class="pr-name">{{ c.name }}</span>
-          <span class="pr-nick">{{ classLabel(c) }}</span>
+          <span class="pr-nick">{{ subLine(c) }}</span>
         </div>
         <div class="pr-status"><span class="pr-dot" /></div>
         <div class="pr-hp">
@@ -218,6 +255,43 @@ function onModeChange(next: AppMode) {
   margin: 0;
   color: var(--vtt-accent-deep);
 }
+
+.pr-game {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pr-game-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.pr-game-title {
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.2;
+  color: var(--vtt-accent-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pr-role {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border: 1px solid var(--vtt-border-strong);
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-secondary);
+}
+.pr-role.is-master { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+.pr-game-menu { margin-left: auto; display: inline-flex; }
 
 .pr-offline-badge {
   margin-left: auto;
@@ -518,5 +592,7 @@ function onModeChange(next: AppMode) {
 
 @media (max-width: 960px) {
   .btn-collapse { display: none; }
+  /* Below 961px the panel is the mobile overlay, whose close button sits over the head's right end. */
+  .gl-panel-head { padding-right: 48px; }
 }
 </style>

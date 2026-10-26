@@ -13,6 +13,7 @@ import { currentUser } from '@/transport/auth'
 import { useToastsStore } from '@/stores/toasts'
 import { useGamesStore } from '@/stores/games'
 import { canEdit } from '@/utils/permissions'
+import { freeIfGameUnknown } from '@/utils/scope'
 import type { CharacterMeta } from '@/types/game'
 import { t } from '@/locales'
 
@@ -40,7 +41,18 @@ export const useCharactersStore = defineStore('characters', {
     },
     getById: (state) => (id: string) => state.list.find(c => c.id === id),
     isReadyToLevelUp: () => (char: Character) => isReadyToLevelUp(char),
-    metaOf: (state) => (id: string): CharacterMeta | undefined => state.meta[id],
+    /** Owner and game as the UI should see them: a game this player no longer knows counts as none. */
+    metaOf: (state) => (id: string): CharacterMeta | undefined => {
+      const games = useGamesStore()
+      return freeIfGameUnknown(state.meta[id], g => !!games.byId(g))
+    },
+    /** `metaOf` for every character, for helpers that take the whole map. */
+    metaView(state): Record<string, CharacterMeta> {
+      const games = useGamesStore()
+      const out: Record<string, CharacterMeta> = {}
+      for (const [id, m] of Object.entries(state.meta)) out[id] = freeIfGameUnknown(m, g => !!games.byId(g))!
+      return out
+    },
     canEditCharacter: (state) => (id: string): boolean => {
       if (mode.value === 'offline') return true
       const meta = state.meta[id]
@@ -198,6 +210,12 @@ export const useCharactersStore = defineStore('characters', {
     },
     setMeta(id: string, meta: CharacterMeta) {
       if (this.list.some(c => c.id === id)) this.meta[id] = meta
+    },
+    // The server's unset of `game` may never arrive (a deleted game sends nothing), so losing a game frees them here.
+    freeGame(gameId: string, owner: string | null) {
+      for (const [id, m] of Object.entries(this.meta)) {
+        if (m.game === gameId && m.owner === owner) this.meta[id] = { ...m, game: '' }
+      }
     },
     // The server sends nothing for records a player can no longer read, so losing a game drops them here.
     removeGameOthers(gameId: string, me: string | null, owner?: string) {

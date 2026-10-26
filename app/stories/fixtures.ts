@@ -266,3 +266,16 @@ export const MEMBERS: GameMember[] = [
 
 /** The story user's own character in a game. */
 export const inGame = (game: Game): CharacterMeta => ({ owner: STORY_USER, game: game.id })
+
+/** Crookhollow's table as its master: Brann is mine, Wren is Kostya's, Mirel is Yana's. Sage stays free. */
+export const CROOKHOLLOW_META: Record<string, CharacterMeta> = {
+  [brann.id]: inGame(crookhollow),
+  [wren.id]: { owner: 'user-kostya', game: crookhollow.id },
+  [mirel.id]: { owner: 'user-yana', game: crookhollow.id },
+}
+
+/** Olden's table as a player: Oda is Seva's (the master), Wren is mine. Sage stays free. */
+export const OLDEN_META: Record<string, CharacterMeta> = {
+  [oda.id]: { owner: 'user-seva', game: olden.id },
+  [wren.id]: inGame(olden),
+}

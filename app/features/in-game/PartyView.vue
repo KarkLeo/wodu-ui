@@ -2,14 +2,19 @@
 import { computed, watch, ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
+import { useTable } from '@/composables/useTable'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import { t } from '@/locales'
 import InGameView from './InGameView.vue'
+import SheetActions from './SheetActions.vue'
 
 const route = useRoute()
 const router = useRouter()
 const store = useCharactersStore()
+const { gameId, partyRoute } = useTable()
 
+// In a game, a character that left it (taken out, its owner gone) drops out of the table at once,
+// before the route re-check rewrites the URL.
 const ids = computed(() => {
   const raw = (route.params.ids as string) ?? ''
   return raw
@@ -18,7 +23,8 @@ const ids = computed(() => {
     .filter(Boolean)
     .filter(id => {
       const c = store.getById(id)
-      return c && c.status !== 'draft'
+      if (!c || c.status === 'draft') return false
+      return gameId.value === null || store.metaOf(id)?.game === gameId.value
     })
 })
 
@@ -39,11 +45,7 @@ function closePanel(id: string) {
   if (store.activeId === id) {
     store.setActive(remaining[0] ?? null)
   }
-  if (remaining.length === 0) {
-    router.replace('/')
-  } else {
-    router.replace(`/party/${remaining.join(',')}`)
-  }
+  router.replace(partyRoute(remaining))
 }
 
 // ── Slider indicator (mobile): track the most visible card ──
@@ -95,14 +97,17 @@ function scrollToIndex(i: number) {
         :class="['sheet-column', { 'is-active': id === store.activeId }]"
         @mousedown="store.setActive(id)"
       >
-        <button
-          type="button"
-          class="sheet-close"
-          :aria-label="t('gameLayout.sheetColumn.close')"
-          @click.stop="closePanel(id)"
-        >
-          <IconClose :size="14" />
-        </button>
+        <div class="sheet-tools">
+          <SheetActions :character-id="id" />
+          <button
+            type="button"
+            class="sheet-close"
+            :aria-label="t('gameLayout.sheetColumn.close')"
+            @click.stop="closePanel(id)"
+          >
+            <IconClose :size="14" />
+          </button>
+        </div>
         <div class="sheet-column-body">
           <InGameView :id="id" />
         </div>
@@ -172,11 +177,18 @@ function scrollToIndex(i: number) {
     0 0 24px rgba(212, 168, 87, 0.1);
 }
 
-.sheet-close {
+.sheet-tools {
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+/* StatusHeader keeps its name line clear of the close button; the actions button needs room too. */
+.sheet-column:has(.sheet-tools .gm-trigger) :deep(.sh-id) { padding-right: 68px; }
+.sheet-column:has(.sheet-tools .gm-trigger) :deep(.status-header.is-compact .sh-id) { padding-right: 0; }
+.sheet-close {
   width: 26px;
   height: 26px;
   display: inline-flex;

@@ -1,3 +1,4 @@
+import type { RouteLocationRaw } from 'vue-router'
 import type { Character } from '@/types/character'
 import type { CharacterMeta, Scope } from '@/types/game'
 
@@ -35,4 +36,30 @@ export function scopeForRoute(name: string | undefined, gameId: string | undefin
   if (name && GAME_ROUTES.has(name) && gameId) return { kind: 'game', gameId }
   if (name === 'party') return { kind: 'solo' }
   return { kind: 'home' }
+}
+
+/**
+ * A game this player no longer knows (left, removed or deleted) counts as no game: the server's unset
+ * of `game` may never reach the client, e.g. for a deleted game.
+ */
+export function freeIfGameUnknown(
+  meta: CharacterMeta | undefined,
+  isKnownGame: (id: string) => boolean,
+): CharacterMeta | undefined {
+  if (!meta || meta.game === '' || isKnownGame(meta.game)) return meta
+  return { ...meta, game: '' }
+}
+
+/** The table with no sheet open: a game's own table, or home outside a game. */
+export function tableLocation(scope: Scope): RouteLocationRaw {
+  return scope.kind === 'game' ? { name: 'game', params: { gameId: scope.gameId } } : { name: 'character-list' }
+}
+
+/** Open sheets stay on their table: a game's party route inside a game, the party route outside. */
+export function partyLocation(scope: Scope, ids: string[]): RouteLocationRaw {
+  if (ids.length === 0) return tableLocation(scope)
+  const joined = ids.join(',')
+  return scope.kind === 'game'
+    ? { name: 'game-party', params: { gameId: scope.gameId, ids: joined } }
+    : { name: 'party', params: { ids: joined } }
 }

@@ -8,6 +8,7 @@ import { CLASSES } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
 import { createLogger } from '@/utils/logger'
 import { scope } from '@/transport/scope'
+import { useTable } from './useTable'
 
 const log = createLogger('creation')
 
@@ -35,6 +36,7 @@ function waitForActive(characters: ReturnType<typeof useCharactersStore>, id: st
 
 export function useCharacterCreation() {
   const router = useRouter()
+  const { tableRoute } = useTable()
   const characters = useCharactersStore()
   const creation = useCreationStore()
 
@@ -89,7 +91,7 @@ export function useCharacterCreation() {
         try { await characters.remove(creation.draftId) } catch (err) { log.error('back: remove failed', err) }
       }
       creation.reset()
-      router.push('/')
+      router.push(tableRoute())
     } else {
       creation.prevStep()
     }
@@ -111,7 +113,7 @@ export function useCharacterCreation() {
     const arrived = await waitForActive(characters, id)
     if (!arrived) {
       log.warn('finish: active status did not arrive within timeout')
-      router.push('/')
+      router.push(tableRoute())
       return
     }
     const game = characters.metaOf(id)?.game ?? ''

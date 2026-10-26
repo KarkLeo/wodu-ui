@@ -21,7 +21,7 @@ const install = usePwaInstall()
 const visible = computed(() => {
   if (mode.value !== 'online') return characters.list
   const me = currentUser.value?.id ?? null
-  return charactersInScope(characters.list, characters.meta, scope.value, me)
+  return charactersInScope(characters.list, characters.metaView, scope.value, me)
     .filter(c => c.status === 'active' || characters.metaOf(c.id)?.owner === me)
 })
 const activeChars = computed(() => visible.value.filter(c => c.status === 'active'))

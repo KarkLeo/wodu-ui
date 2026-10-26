@@ -91,12 +91,16 @@ async function findMemberRowId(gameId: string, userId: string): Promise<string> 
 
 /**
  * Forgets a game this player can no longer read: the game, its members, other players' characters in
- * it and, when it is the open table, its events. The server sends no delete for those records.
+ * it and, when it is the open table, its events. The server sends no delete for those records. My own
+ * characters there become free.
  */
 export function forgetGame(gameId: string): void {
   const s = scope.value
+  const self = currentUser.value?.id ?? null
+  const characters = useCharactersStore()
   useGamesStore().removeGame(gameId)
-  useCharactersStore().removeGameOthers(gameId, currentUser.value?.id ?? null)
+  characters.removeGameOthers(gameId, self)
+  characters.freeGame(gameId, self)
   if (s.kind === 'game' && s.gameId === gameId) {
     useRollHistoryStore().clearAll()
     useChangeLogStore().clearAll()
@@ -236,15 +240,10 @@ export async function resetInviteCode(gameId: string): Promise<string> {
 
 /** Master: deletes the game. Its characters become free and stay with their owners. */
 export async function deleteGame(gameId: string): Promise<void> {
-  const user = me()
+  me()
   const current = staysCurrent()
   await call(() => pb.collection('games').delete(gameId))
-  if (!current()) return
-  const characters = useCharactersStore()
-  for (const [id, m] of Object.entries(characters.meta)) {
-    if (m.game === gameId && m.owner === user) characters.setMeta(id, { owner: user, game: '' })
-  }
-  forgetGame(gameId)
+  if (current()) forgetGame(gameId)
 }
 
 async function rereadGame(gameId: string, current: () => boolean): Promise<Game | null> {

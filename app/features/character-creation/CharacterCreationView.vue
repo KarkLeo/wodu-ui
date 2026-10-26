@@ -2,6 +2,7 @@
 import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
+import { useTable } from '@/composables/useTable'
 import { useCreationStore } from '@/stores/creation'
 import { useCharactersStore } from '@/stores/characters'
 import { onlineDataReady } from '@/transport/bootstrap'
@@ -15,6 +16,7 @@ import { useIsMobile } from '@/composables/useIsMobile'
 const isMobile = useIsMobile()
 
 const router = useRouter()
+const { tableRoute } = useTable()
 const creation = useCreationStore()
 const characters = useCharactersStore()
 const {
@@ -73,7 +75,7 @@ async function onClose() {
     try { await characters.remove(creation.draftId) } catch { /* logged in store */ }
   }
   creation.reset()
-  router.push('/')
+  router.push(tableRoute())
 }
 
 function onNextOrFinish() {
@@ -89,7 +91,7 @@ watch(onlineDataReady, (ready) => {
   staleChecked = true
   if (draft.value) return
   creation.reset()
-  router.push('/')
+  router.push(tableRoute())
 }, { immediate: true })
 </script>
 
