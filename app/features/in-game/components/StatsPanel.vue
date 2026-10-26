@@ -5,6 +5,7 @@ import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { STAT_KEYS, MAX_STAT_BONUS } from '@/data/xpTable'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { effectiveStat, statModifierTotal, statModifierLines } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
 import StatChip from '@/components/ui/StatChip.vue'
@@ -19,6 +20,7 @@ type Dispatcher = (cmd: CharacterCommand) => void
 const props = defineProps<{ char: Character; dispatch: Dispatcher }>()
 
 const { rollStat } = useDiceRoller()
+const readonly = useSheetReadonly()
 
 function stateFor(value: number): 'zero' | 'positive' | 'high' {
   if (value <= 0) return 'zero'
@@ -144,24 +146,26 @@ function stopEdit() {
             <span class="pop-sub">{{ statShort(key) }}</span>
           </div>
 
-          <InfoPopoverClose as-child>
-            <button
-              type="button"
-              class="pop-hero"
-              :disabled="isRolling"
-              @click="handleRollStat(key)"
-            >
-              <IconDice />
-              <span>{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</span>
-            </button>
-          </InfoPopoverClose>
+          <template v-if="!readonly">
+            <InfoPopoverClose as-child>
+              <button
+                type="button"
+                class="pop-hero"
+                :disabled="isRolling"
+                @click="handleRollStat(key)"
+              >
+                <IconDice />
+                <span>{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</span>
+              </button>
+            </InfoPopoverClose>
 
-          <div class="pop-divider" />
+            <div class="pop-divider" />
+          </template>
 
           <div class="pop-section-head">
             <span class="pop-sub">{{ t('inGame.stats.modifiers.title') }}</span>
             <button
-              v-if="modList(key).length > 0"
+              v-if="!readonly && modList(key).length > 0"
               type="button"
               class="pop-link"
               @click="clearAll(key)"
@@ -184,6 +188,7 @@ function stopEdit() {
               </span>
               <span class="pop-effect-name">{{ m.label }}</span>
               <button
+                v-if="!readonly"
                 type="button"
                 class="pop-effect-remove"
                 :aria-label="t('inGame.stats.modifiers.removeAria', { label: m.label })"
@@ -194,51 +199,53 @@ function stopEdit() {
             </div>
           </div>
 
-          <form
-            class="pop-add"
-            @submit.prevent="submitAdd(key)"
-          >
-            <input
-              v-model="addBuf[key].label"
-              type="text"
-              maxlength="32"
-              :placeholder="t('inGame.stats.modifiers.addPlaceholder')"
-            />
-            <Stepper
-              v-model="addBuf[key].amount"
-              :min="-5"
-              :max="5"
-              size="sm"
-              :aria-label="t('inGame.stats.modifiers.addBtn')"
-            />
-            <button
-              type="submit"
-              class="pop-btn pop-btn-add"
-              :disabled="!addBuf[key].label.trim() || addBuf[key].amount === 0"
+          <template v-if="!readonly">
+            <form
+              class="pop-add"
+              @submit.prevent="submitAdd(key)"
             >
-              +
-            </button>
-          </form>
+              <input
+                v-model="addBuf[key].label"
+                type="text"
+                maxlength="32"
+                :placeholder="t('inGame.stats.modifiers.addPlaceholder')"
+              />
+              <Stepper
+                v-model="addBuf[key].amount"
+                :min="-5"
+                :max="5"
+                size="sm"
+                :aria-label="t('inGame.stats.modifiers.addBtn')"
+              />
+              <button
+                type="submit"
+                class="pop-btn pop-btn-add"
+                :disabled="!addBuf[key].label.trim() || addBuf[key].amount === 0"
+              >
+                +
+              </button>
+            </form>
 
-          <div class="pop-divider" />
+            <div class="pop-divider" />
 
-          <div v-if="editingKey === key" class="pop-edit">
-            <span class="pop-sub">{{ t('inGame.stats.popSub') }}</span>
-            <Stepper
-              v-model="editBuf"
-              :min="-3"
-              :max="MAX_STAT_BONUS"
-              :aria-label="t('inGame.stats.editAria', { stat: statShort(key) })"
-            />
-            <button type="button" class="pop-btn pop-btn-done" @click="stopEdit">
-              {{ t('common.save') }}
-            </button>
-          </div>
-          <div v-else class="pop-actions">
-            <button type="button" class="pop-btn" @click="startEdit(key)">
-              {{ t('inGame.stats.editBase') }}
-            </button>
-          </div>
+            <div v-if="editingKey === key" class="pop-edit">
+              <span class="pop-sub">{{ t('inGame.stats.popSub') }}</span>
+              <Stepper
+                v-model="editBuf"
+                :min="-3"
+                :max="MAX_STAT_BONUS"
+                :aria-label="t('inGame.stats.editAria', { stat: statShort(key) })"
+              />
+              <button type="button" class="pop-btn pop-btn-done" @click="stopEdit">
+                {{ t('common.save') }}
+              </button>
+            </div>
+            <div v-else class="pop-actions">
+              <button type="button" class="pop-btn" @click="startEdit(key)">
+                {{ t('inGame.stats.editBase') }}
+              </button>
+            </div>
+          </template>
         </template>
       </StatChip>
     </div>

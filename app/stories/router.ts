@@ -12,5 +12,9 @@ export const storyRouter = createRouter({
     { path: '/character/:id', name: 'in-game', component: Empty },
     { path: '/party/:ids', name: 'party', component: Empty },
     { path: '/character/:id/levelup', name: 'level-up', component: Empty },
+    { path: '/games/:gameId', name: 'game', component: Empty },
+    { path: '/games/:gameId/party/:ids', name: 'game-party', component: Empty },
+    { path: '/games/:gameId/new', name: 'game-character-new', component: Empty },
+    { path: '/join/:code', name: 'join', component: Empty },
   ],
 })

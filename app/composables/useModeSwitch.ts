@@ -1,4 +1,4 @@
-import { useRouter } from 'vue-router'
+import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { mode, modeSession, setMode, type AppMode } from '@/transport/mode'
 import { bootstrap, stopOnline } from '@/transport/bootstrap'
 import { restoreSession } from '@/transport/auth'
@@ -23,7 +23,8 @@ function stopOfflineSession(): void {
 export function useModeSwitch() {
   const router = useRouter()
 
-  async function switchMode(next: AppMode): Promise<void> {
+  // `to` keeps a deep link across the switch, e.g. an invite opened in offline mode.
+  async function switchMode(next: AppMode, to: RouteLocationRaw = '/'): Promise<void> {
     if (next === mode.value) return
     // Tear the current mode down before the stores are cleared: a live offline watcher would persist
     // the cleared lists, and a live online load could land in the other mode's stores.
@@ -34,7 +35,7 @@ export function useModeSwitch() {
     useCharactersStore().clearAll()
     useRollHistoryStore().clearAll()
     useChangeLogStore().clearAll()
-    await router.push('/')
+    await router.push(to)
     // A later switch may have run while the navigation was pending; it owns the stores now.
     if (modeSession() !== session) return
     if (next === 'offline') startOfflineSession()

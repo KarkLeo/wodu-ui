@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import LevelUpView from './LevelUpView.vue'
-import { build, equip, oda, wren } from '@/stories/fixtures'
-import { atRoute, withStores } from '@/stories/state'
+import GameLayout from '@/components/layout/GameLayout.vue'
+import PlayersPanel from '@/components/layout/PlayersPanel.vue'
+import { build, crookhollow, equip, inGame, oda, wren, CROOKHOLLOW_META } from '@/stories/fixtures'
+import { atRoute, DESKTOP_VIEWPORT, withGameTable, withStores } from '@/stories/state'
+import { storyRouter } from '@/stories/router'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 import { useCharactersStore } from '@/stores/characters'
 
@@ -125,5 +128,58 @@ export const Summary: Story = {
     await pick(canvasElement, /^Hardy/)
     await next(canvasElement)
     await expect(await screen(canvasElement).findByRole('button', { name: /Confirm/ })).toBeEnabled()
+  },
+}
+
+// ── In a game ───────────────────────────────────────────────────────────────
+
+const inCrookhollow = withGameTable(crookhollow, [oda, wren, tamsin], { ...CROOKHOLLOW_META, [tamsin.id]: inGame(crookhollow) })
+
+const atTheTable = {
+  render: () => ({
+    components: { GameLayout, LevelUpView, PlayersPanel },
+    template: `
+      <GameLayout>
+        <LevelUpView />
+        <template #left><PlayersPanel /></template>
+      </GameLayout>
+    `,
+  }),
+}
+
+/** A game character levels up at its game's table: the game's panel, and closing returns to its party route. */
+export const InGame: Story = {
+  ...atTheTable,
+  tags: ['no-visual'],
+  globals: DESKTOP_VIEWPORT,
+  decorators: [inCrookhollow],
+  loaders: [atRoute(`/character/${tamsin.id}/levelup`)],
+  play: async ({ canvasElement }) => {
+    const view = within(canvasElement)
+    await expect(await view.findByText(crookhollow.name, { selector: '.pr-game-title' })).toBeVisible()
+    await expect(view.getByRole('button', { name: new RegExp(wren.name) })).toHaveTextContent(/Kostya ·/)
+    await expect(view.queryByRole('button', { name: new RegExp(oda.name) })).toBeNull()
+    await userEvent.click(await screen(canvasElement).findByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/party/${tamsin.id}`))
+  },
+}
+
+/** On a phone the top bar is titled with the game's name. */
+export const InGamePhone: Story = {
+  ...atTheTable,
+  decorators: [inCrookhollow],
+  loaders: [atRoute(`/character/${tamsin.id}/levelup`)],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.gl-mob-center-title .t')).toHaveTextContent(crookhollow.name))
+  },
+}
+
+/** A free character's level-up closes back to the party route. */
+export const FreeCharacterClose: Story = {
+  tags: ['no-visual'],
+  loaders: [atRoute(`/character/${tamsin.id}/levelup`)],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(await screen(canvasElement).findByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/party/${tamsin.id}`))
   },
 }

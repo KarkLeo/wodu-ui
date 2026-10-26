@@ -4,6 +4,7 @@ import InventoryPanel from './InventoryPanel.vue'
 import { brann, mirel, sage, wren } from '@/stories/fixtures'
 import { withStores } from '@/stories/state'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
+import { asTeammate, expectNoEditControls, sheetFor } from '@/stories/readonly'
 
 const meta = {
   title: 'Panels/InventoryPanel',
@@ -72,5 +73,26 @@ export const CustomItemOpen: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Custom item' }))
     await expect(await body().findByRole('dialog')).toBeVisible()
+  },
+}
+
+/** A teammate's gear: items and their stats stay; no equip, use, edit, remove, catalog or custom item. */
+export const ReadOnly: Story = {
+  render: forCharacter(brann.id),
+  decorators: [sheetFor(brann.id), asTeammate([brann])],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText('Rope (20ft)')).toBeVisible()
+    await expectNoEditControls(canvasElement)
+  },
+}
+
+/** A teammate's quicksilver: no "Use" that would drink it or open the overdose roll. */
+export const ReadOnlyQuicksilver: Story = {
+  render: forCharacter(mirel.id),
+  decorators: [sheetFor(mirel.id), asTeammate([mirel])],
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findByText('Quicksilver (dose)')).toBeVisible()
+    await expectNoEditControls(canvasElement)
   },
 }

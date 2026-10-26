@@ -49,6 +49,7 @@ async function rollAll() {
     })),
     { characterId: d.id, characterName },
   )
+  if (records.length === 0) return
   const rolls = records.map((record, idx) => {
     const key = STAT_KEYS[idx]
     if (record.dice.length === 2) diceTraces.value[key] = [record.dice[0].value, record.dice[1].value]
@@ -72,6 +73,7 @@ async function rerollOne(key: StatKey) {
     characterId: d.id,
     characterName: d.name || undefined,
   })
+  if (!record) return
   applyStatResult(key, record.dice.map(dv => dv.value), record.diceTotal)
   markFresh(key)
 }

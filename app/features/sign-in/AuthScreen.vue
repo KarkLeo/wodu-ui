@@ -35,6 +35,8 @@ defineProps<{
         <p class="as-subtitle">{{ subtitle }}</p>
       </header>
 
+      <slot name="banner" />
+
       <section class="as-card">
         <h2 class="as-card-title">{{ cardTitle }}</h2>
         <slot />

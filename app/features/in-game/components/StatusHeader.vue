@@ -4,6 +4,9 @@ import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
+import { useSheetReadonly } from '@/composables/useSheetReadonly'
+import { useCharactersStore } from '@/stores/characters'
+import { useGamesStore } from '@/stores/games'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 import {
   totalArmor,
@@ -38,6 +41,15 @@ const props = withDefaults(
 const router = useRouter()
 const { id: charId, char, dispatch } = useActiveCharacter(() => props.id)
 const { rollDamage } = useDiceRoller()
+const readonly = useSheetReadonly()
+const characters = useCharactersStore()
+const games = useGamesStore()
+
+const ownerMarker = computed(() => {
+  const meta = characters.metaOf(charId.value)
+  const name = meta?.game ? games.membersOf(meta.game).find(m => m.user === meta.owner)?.name : ''
+  return name ? t('inGame.readonly.owner', { name }) : t('inGame.readonly.ownerUnknown')
+})
 
 const className = computed(() => {
   const c = char.value
@@ -174,6 +186,7 @@ async function handleRollDamage() {
           </span>
           {{ char.trueName }}
         </span>
+        <span v-if="readonly && !compact" class="sh-owner">{{ ownerMarker }}</span>
       </div>
     </div>
 
@@ -213,7 +226,7 @@ async function handleRollDamage() {
                 <span class="br-value">{{ line.value }}</span>
               </div>
             </div>
-            <div class="sh-pop-mod">
+            <div v-if="!readonly" class="sh-pop-mod">
               <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
               <Stepper
                 v-model="damageModModel"
@@ -229,7 +242,7 @@ async function handleRollDamage() {
                 @click="damageModModel = 0"
               >{{ t('inGame.statusHeader.modReset') }}</button>
             </div>
-            <InfoPopoverClose as-child>
+            <InfoPopoverClose v-if="!readonly" as-child>
               <button
                 type="button"
                 class="pop-hero-roll"
@@ -289,7 +302,7 @@ async function handleRollDamage() {
             </div>
             <div v-else class="sh-pop-empty">{{ t('inGame.statusHeader.trio.armorEmpty') }}</div>
             <div v-if="armorBreakdown.note" class="sh-pop-note">{{ tLabel(armorBreakdown.note) }}</div>
-            <div class="sh-pop-mod">
+            <div v-if="!readonly" class="sh-pop-mod">
               <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
               <Stepper
                 v-model="armorModModel"
@@ -313,7 +326,7 @@ async function handleRollDamage() {
           :value="char.coins"
           :size="compact ? 'sm' : 'base'"
           :popover-title="t('inGame.statusHeader.trio.coins')"
-          has-popover
+          :has-popover="!readonly"
         >
           <template #symbol><IconCoin /></template>
           <template #popover>
@@ -339,7 +352,7 @@ async function handleRollDamage() {
         :max="char.maxHp"
         :temp="char.tempHp ?? 0"
         :size="compact ? 'sm' : 'base'"
-        :show-controls="!compact"
+        :show-controls="!compact && !readonly"
         :character-id="charId"
         :character-name="char.name"
         @apply-damage="onApplyDamage"
@@ -355,6 +368,7 @@ async function handleRollDamage() {
         :hint="xpHint"
         :is-ready="ready"
         :is-cap="char.level >= 10"
+        :show-controls="!readonly"
         @update:current="onXpUpdate"
         @level-up="onLevelUp"
       />
@@ -420,6 +434,18 @@ async function handleRollDamage() {
 }
 .sh-truename-glyph { width: 10px; height: 10px; color: var(--vtt-accent-deep); }
 .sh-truename-glyph svg { width: 100%; height: 100%; display: block; }
+
+.sh-owner {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vtt-text-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .sh-trio {
   grid-area: trio;

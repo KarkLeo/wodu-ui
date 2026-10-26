@@ -39,7 +39,17 @@ function toggleMode(mode: Exclude<RollMode, 'normal'>) {
   pendingMode.value = pendingMode.value === mode ? 'normal' : mode
 }
 
-const activeChar = computed(() => charStore.active)
+// Rolls go to the active character, only one at the open table, and only one the user can edit (not a
+// teammate's read-only sheet).
+const scopedActive = computed(() => {
+  const c = charStore.active
+  return c && charStore.inScope(c.id) ? c : undefined
+})
+const activeChar = computed(() => {
+  const c = scopedActive.value
+  return c && charStore.canEditCharacter(c.id) ? c : undefined
+})
+const readOnlyActive = computed(() => (activeChar.value ? undefined : scopedActive.value))
 
 const items = computed(() => unified.filtered(filter.value))
 
@@ -400,6 +410,7 @@ function logDelta(e: ChangeEntry): string | undefined {
         </button>
       </div>
       <div v-if="notationError" class="drawer-input-hint is-error">{{ notationError }}</div>
+      <div v-else-if="readOnlyActive" class="drawer-input-hint">{{ t('diceDrawer.input.readOnly', { name: readOnlyActive.name }) }}</div>
       <div v-else-if="!activeChar" class="drawer-input-hint">{{ t('diceDrawer.input.hint') }}</div>
     </div>
   </aside>

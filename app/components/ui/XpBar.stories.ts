@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
+import { expectNoEditControls } from '@/stories/readonly'
 import XpBar from './XpBar.vue'
 
 const meta = {
@@ -42,8 +43,13 @@ export const LevelCap: Story = {
   args: { current: 47250, max: 47250, isCap: true, hint: 'max' },
 }
 
+/** What a read-only sheet shows: the value, nothing that changes XP or leads to level-up. */
 export const ReadOnly: Story = {
   args: { showControls: false },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('1840')).toBeVisible()
+    await expectNoEditControls(canvasElement)
+  },
 }
 
 export const Sizes: Story = {

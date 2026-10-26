@@ -1,8 +1,11 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import DiceDrawer from './DiceDrawer.vue'
-import { brann, PARTY, ROLLS, CHANGES } from '@/stories/fixtures'
+import { brann, crookhollow, GAMES, inGame, MEMBERS, oda, olden, PARTY, ROLLS, CHANGES, wren } from '@/stories/fixtures'
 import { asActive, DESKTOP_VIEWPORT, inLayout, withStores } from '@/stories/state'
+import { asTeammate } from '@/stories/readonly'
+import { useCharactersStore } from '@/stores/characters'
+import { setScope } from '@/transport/scope'
 
 // Same width GameLayout gives the right column; collapse and rail only exist above 960px.
 const desktopColumn: Decorator = (story) => ({
@@ -102,5 +105,51 @@ export const CollapseToRail: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByLabelText('Collapse', { selector: 'button' }))
     await expect(await canvas.findByLabelText('Log', { selector: 'button' })).toBeInTheDocument()
+  },
+}
+
+/** The active sheet is a teammate's (read-only): the drawer offers no roll for it and says why. */
+export const ReadOnlyActive: Story = {
+  decorators: [asActive(oda.id), asTeammate(PARTY)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(`You can’t roll for ${oda.name}.`)).toBeVisible()
+    await expect(canvas.getByRole('button', { name: '2d6' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Advantage' })).toBeDisabled()
+    await expect(canvas.getByPlaceholderText('2d6+1, d20, 4d6…')).toBeDisabled()
+  },
+}
+
+/**
+ * Brann, active at Crookhollow's table, must not follow the player to Olden's: going home and opening
+ * the other table leaves no active character, and none from another table is offered a roll.
+ */
+export const ActiveLeftOnAnotherTable: Story = {
+  tags: ['no-visual'],
+  decorators: [
+    asActive(brann.id),
+    withStores({
+      characters: [brann, wren],
+      games: GAMES,
+      members: MEMBERS,
+      meta: { [brann.id]: inGame(crookhollow), [wren.id]: inGame(olden) },
+      scope: { kind: 'game', gameId: crookhollow.id },
+    }),
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const store = useCharactersStore()
+    await expect(canvas.getByRole('button', { name: '2d6' })).toBeEnabled()
+
+    setScope({ kind: 'home' })
+    setScope({ kind: 'game', gameId: olden.id })
+    await expect(store.activeId).toBeNull()
+    await waitFor(() => expect(canvas.getByRole('button', { name: '2d6' })).toBeDisabled())
+    await expect(canvas.getByText('Open a character sheet to roll.')).toBeVisible()
+
+    // Even set active again by hand, a character from another table gets no roll here.
+    store.setActive(brann.id)
+    await waitFor(() => expect(canvas.getByRole('button', { name: '2d6' })).toBeDisabled())
+    await expect(canvas.queryByText(`You can’t roll for ${brann.name}.`)).toBeNull()
   },
 }

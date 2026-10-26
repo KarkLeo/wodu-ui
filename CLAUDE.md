@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Interactive character sheet for the tabletop RPG **World of Dungeons** (©1979 J.S. Harper with C. McDowell, One & Seven Tactical Design Institute, Seattle, WA). Mobile-first web app with three interface modes: character creation, in-game play (single character or shared party view), and level-up flow.
+Interactive character sheet for the tabletop RPG **World of Dungeons** (©1979 J.S. Harper with C. McDowell, One & Seven Tactical Design Institute, Seattle, WA). Mobile-first web app with three interface modes: character creation, in-game play (single character or shared party view), and level-up flow. Online, characters live in games: a master and players share one table, and teammates' sheets open read-only.
 
 ## Commands
 
@@ -30,7 +30,7 @@ Run a single test file: `npm run test -- app/utils/derived.test.ts`.
 - **Auto-imports are off** (`imports.autoImport: false`, `components.dirs: []`). Every file imports what it uses explicitly, components included
 - **Nuxt APIs** (`#app`, `#imports`, `#components`: `definePageMeta`, `defineNuxtRouteMiddleware`, `navigateTo`, `useRuntimeConfig`, `defineNuxtPlugin`, `NuxtPage`) are used only in `app/pages/`, `app/middleware/`, `app/plugins/` and `app/app.vue`. Components, composables and stores never import from them, so Storybook renders them without a Nuxt runtime; pass the value in as a prop or wrap it instead. They keep using `useRoute`/`useRouter` from `vue-router`
 - **Startup**: `app/plugins/02.bootstrap.client.ts` points PocketBase at `runtimeConfig.public.pbUrl` (from `VITE_PB_URL` at build time). In online mode it awaits `restoreSession()` (refreshes the saved sign-in) and then `bootstrap()` before the first navigation and render; `bootstrap()` does nothing while signed out, and `app.vue` shows the sign-in screen instead; `bootstrap()` subscribes to realtime and then fetches the data under one `BOOTSTRAP_TIMEOUT_MS` (6 s) deadline, so a hanging server delays the first render instead of blocking it. In offline mode it calls `startOfflineSession()` and sends nothing to PocketBase
-- **State / Persistence**: Pinia. Where the data lives depends on the app mode (see *App modes*): online data lives on the server, offline data in localStorage. localStorage keys: `pocketbase_auth` (the SDK's sign-in token), `wod.mode.v1`, `wod.offline.characters.v1`, `wod.offline.rolls.v1`, `wod.offline.changes.v1` (hand-rolled in `app/transport/offlineStorage.ts`), `wod.creation.v2` (`pinia-plugin-persistedstate`), `wod.locale.v1`. The old `wod.characters.v1`, `wod.rollHistory.v1` and `wod.creation.v1` keys are dead; nothing reads them
+- **State / Persistence**: Pinia. Where the data lives depends on the app mode (see *App modes*): online data lives on the server, offline data in localStorage. localStorage keys: `pocketbase_auth` (the SDK's sign-in token), `wod.mode.v1`, `wod.offline.characters.v1`, `wod.offline.rolls.v1`, `wod.offline.changes.v1` (hand-rolled in `app/transport/offlineStorage.ts`), `wod.creation.v2` (`pinia-plugin-persistedstate`), `wod.locale.v1`, `wod.home.tab.v1` (the Home tab). The old `wod.characters.v1`, `wod.rollHistory.v1` and `wod.creation.v1` keys are dead; nothing reads them
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box-threejs` wrapped in `app/services/DiceAnimationQueue.ts`
 - **Routing**: Nuxt file-based pages in `app/pages/` (vue-router underneath); guards are named route middleware in `app/middleware/` over pure functions in `app/utils/routeGuards.ts`
@@ -43,11 +43,15 @@ Route names are set with `definePageMeta({ name })` and used by `router.push({ n
 
 | Route | Name | Page file | View | Notes |
 |-------|------|-----------|------|-------|
-| `/` | `character-list` | `pages/index.vue` | `CharacterListView` | — |
-| `/character/new` | `character-new` | `pages/character/new.vue` | `CharacterCreationView` | 3-step wizard |
+| `/` | `character-list` | `pages/index.vue` | `HomeView` online (Games / Characters tabs), `CharacterListView` offline | tab remembered in `wod.home.tab.v1` |
+| `/character/new` | `character-new` | `pages/character/new.vue` | `CharacterCreationView` | 3-step wizard; online it creates a free character |
 | `/character/:id` | `in-game` | `pages/character/[id]/index.vue` | — | redirects to `/party/:id` |
-| `/party/:ids` | `party` | `pages/party/[ids].vue` | `PartyView` | comma-separated ids; renders `InGameView` per character; `party` middleware filters out draft/missing ids |
-| `/character/:id/levelup` | `level-up` | `pages/character/[id]/levelup.vue` | `LevelUpView` | `level-up` middleware redirects if not `active` |
+| `/party/:ids` | `party` | `pages/party/[ids].vue` | `PartyView` | comma-separated ids; renders `InGameView` per character; `party` middleware drops draft/missing ids and, online, ids that are not free; a character that is in a game redirects to `game-party` |
+| `/character/:id/levelup` | `level-up` | `pages/character/[id]/levelup.vue` | `LevelUpView` | `level-up` middleware redirects if not `active` or not editable by me; scoped to the character's game |
+| `/games/:gameId` | `game` | `pages/games/[gameId]/index.vue` | `CharacterListView` (game table, no sheet open) | `game` middleware: members only, else home |
+| `/games/:gameId/party/:ids` | `game-party` | `pages/games/[gameId]/party/[ids].vue` | `PartyView` | only that game's non-draft characters; teammates' sheets are read-only |
+| `/games/:gameId/new` | `game-character-new` | `pages/games/[gameId]/new.vue` | `CharacterCreationView` | creates the character in the game |
+| `/join/:code` | `join` | `pages/join/[code].vue` | `JoinView` | no middleware; works signed out (sign-in banner) |
 | anything else | `slug` | `pages/[...slug].vue` | — | renders nothing, so the layout stays (the old router had no catch-all) |
 
 ## Data Model
@@ -96,10 +100,12 @@ Item use-effects similarly: `GearTemplate.useEffect` (`'quicksilver'` etc.) driv
 
 Two modes, switched in the players panel footer (`ModeSwitch`, above the language buttons) and remembered under `wod.mode.v1`. Online and offline data are fully separate: nothing syncs, imports or exports between them.
 
-- **Online** (default): only for signed-in accounts (see *Accounts*). PocketBase is the store. Each account sees only its own characters (and their rolls and changes) until games arrive: creates send `owner` and events send `character` (`transport/rows.ts`). The initial load comes from `bootstrap()`, realtime carries only changes from the same account's other sessions and devices (other players arrive with games), and writes go to the server optimistically, rolling back on failure. No game data is kept on the device; only the creation draft pointer is.
+- **Online** (default): only for signed-in accounts (see *Accounts*). PocketBase is the store. Each account sees its own characters plus those of the games it is a member of: creates send `owner` and `game`, events send `character` and `game` (`transport/rows.ts`). The initial load comes from `bootstrap()`, realtime carries the account's other sessions and the other members of its games, and writes go to the server optimistically, rolling back on failure. No game data is kept on the device; only the creation draft pointer is.
 - **Offline**: characters, roll history and the change log live only on the device, under the `wod.offline.*` keys. Writes never roll back, and no request goes to PocketBase. The panel shows an offline badge and a hint that clearing site data deletes these characters.
 
-Switching goes through `useModeSwitch().switchMode()`: stop the current mode, clear the three stores, go to `/`, load the other mode. The creation draft pointer (`wod.creation.v2`) is kept per mode, so each mode resumes its own draft.
+Offline has no games, tabs, scope or read-only sheets: `/` is the plain list, game routes redirect home silently, `canEditCharacter` is always true, and `/join/<code>` shows a "needs online" card whose button runs `switchMode('online', { name: 'join', params: { code } })`.
+
+Switching goes through `useModeSwitch().switchMode(next, to = '/')`: stop the current mode, clear the three stores, go to `to`, load the other mode. The creation draft pointer (`wod.creation.v2`) is kept per mode, so each mode resumes its own draft.
 
 - `mode.ts` — `mode` ref, `setMode`, and `modeSession()`, a counter that lets an in-flight online write detect a mode switch and drop its result
 - `backend.ts` — the `Backend` interface the stores and the dice roller write through; `backend()` returns `pbBackend` or `localBackend` for the current mode
@@ -107,6 +113,8 @@ Switching goes through `useModeSwitch().switchMode()`: stop the current mode, cl
 - `connection.ts` — `connection` state (`ok` / `checking` / `down`). A network failure (failed write, realtime drop, the browser firing `offline`) starts a `GRACE_MS` (3 s) grace period that ends with one `/api/health` check: if the server answers, the state goes back to `ok` and no overlay is shown (a single failed write or a Wi-Fi/cellular handover never raises it); only if the check fails does it go `down`, and a backoff loop then probes `/api/health`, reloads and resubscribes when it answers. The browser's `online` event triggers a check at once (`probeNow()`). `problemOutcome()` tells a failed write how the problem ended, so `transport/writeFailure.ts` shows the `errors.*Failed` toast when the server was reachable after all (the change was rolled back) and leaves it to the overlay otherwise
 - `writeFailure.ts` — `reportWriteFailure(err, message, session)`, the toast policy for rolled-back writes described above
 - `offlineStorage.ts` — offline load, persistence watcher, toasts for unreadable data or a failed write; picks up changes another offline tab writes (`storage` event) instead of overwriting them
+- `scope.ts` — `scope` ref (`home` | `solo` | `game`) and `setScope`. `app.vue` sets it from the route (`useTable().tableScope`, from `utils/scope.ts` `scopeForRoute`): `game`, `game-party`, `game-character-new` → that game; online `party` → `solo`; `level-up` → its character's game; everything else and all of offline → `home`. All visible characters are loaded up front; only roll/change events matching `eventFilter(scope)` are fetched (home fetches none), and realtime events failing `eventInScope` are dropped; a scope change reloads the two event stores and re-reads the game's characters
+- `games.ts` — online-only game operations, each through `guard()` with the bootstrap timeout and a `staysCurrent()` check (same mode session and user): `findGameByCode` (list endpoint filtered by `invite_code`, works signed out), `createGame` (game, then own membership; the game is deleted if the membership fails; code collisions retry), `joinGame` (game into the store, membership with the code, then `loadGame`), `leaveGame` (free own characters there, delete membership, `forgetGame`), `removeMember` (free that member's characters, drop them locally, delete membership), `resetInviteCode`, `deleteGame`, `claimMaster` (update `master`, read back; `MasterTakenError` if someone else won), `moveCharacter(id, gameId)` (`''` takes it out), `assignCharacter(id, userId)`. `forgetGame` drops a game, its members and teammates' characters locally, because the server sends nothing for records that stop being readable. `healStuckCharacters(gameId?)` (after every load and in `forgetGame`) takes my characters out of a game I am not a member of (`moveCharacter(id, '')`): the server hides them and refuses their rolls until then
 - `pb.ts` (client and row types), `shapes.ts` (shape checks for stored data), `limits.ts` (`HISTORY_LIMIT`)
 
 ## Accounts (`app/transport/auth.ts`, `app/features/sign-in/`)
@@ -118,7 +126,7 @@ Online mode needs a signed-in, verified account; offline mode never asks for one
 - `session.ts` — `watchSession()` (started by the bootstrap plugin) is the one place that reacts to the sign-in state: signed in → `bootstrap()`, signed out → stop the online session and clear the three stores. It also catches sign-in/out in another tab, which the SDK syncs through the `storage` event. `bootstrap()` and every reload check `canLoadOnline(mode, signedIn)`, so a reconnect after sign-out loads nothing
 - `app.vue` renders `SignInView` (email → code, or the display-name step when `name` is empty) in place of `GameLayout` while `authGate` is not `'none'`; the URL is kept, so a deep link opens after sign-in
 - Language: on sign-in an empty profile language takes the device's; afterwards the profile wins, and the locale buttons write to it while signed in (`useAccount().setLanguage`)
-- `AccountMenu` (players-panel footer, online only): change name, sign out, delete account. Sign out and delete stop the online session and clear the three stores; offline data is untouched
+- `AccountMenu` (players-panel footer, online only): change name, sign out, delete account (games the account runs stay, masterless). Sign out and delete stop the online session and clear the three stores; offline data is untouched
 - Stories use the in-memory auth in `.storybook/mocks/pb.ts` (`signInMock()`, `WRONG_CODE`)
 
 **Server unavailable.** In online mode, while `connection === 'down'`, `app.vue` shows `ServerDownOverlay`: a Reka alert dialog over a blurred veil, with the app underneath made `inert`. It shows a reconnect counter, **Retry** and **Play offline** (switches mode at once); with no internet (`navigator.onLine` false) the text says so. It disappears on its own once the server answers and the data is reloaded. The route guards do not redirect away from a deep link while online data has not loaded; the party and level-up pages re-check once it has.
@@ -127,7 +135,8 @@ Online mode needs a signed-in, verified account; offline mode never asks for one
 
 The game-data stores (characters, roll history, change log) do not persist themselves; the app mode decides where their data comes from and goes. Only the creation store persists itself, through `pinia-plugin-persistedstate`.
 
-- `useCharactersStore` — State: `list`, `activeId`. Getters: `active`, `getById(id)`. Actions: `add`, `dispatch(id, cmd)`, `remove`, `setActive`. Auto-records change-log entries on `dispatch` for active characters.
+- `useCharactersStore` — State: `list`, `activeId`, `meta` (`Record<id, CharacterMeta>` = `{ owner, game }`, online only). Getters: `active`, `getById(id)`, `metaOf(id)` and `metaView` (both normalise a game unknown to the store to free, `game: ''`; raw `meta` holds the stored value and is for transport bookkeeping), `inScope(id)` (at the open table; offline always true), `canEditCharacter(id)` (offline always true). Actions: `add`, `dispatch(id, cmd)`, `remove`, `setActive`; a scope change clears an `activeId` that is not in the new scope, and the Dice drawer rolls only for an active character in scope. Auto-records change-log entries on `dispatch` for active characters. `dispatch` refuses a character I cannot edit (error toast `errors.readOnly`, no write); a write that fails with 404 on a teammate's character drops it locally with `errors.characterGone` instead of rolling back.
+- `useGamesStore` — `games`, `members` (with the user's display name from `expand: 'user'`). Getters `byId`, `membersOf(gameId)`, `active` (the game of the current scope). Filled by `bootstrap()`, realtime (`games`, `game_members`) and `transport/games.ts`
 - `useCreationStore` — wizard state per mode: `draftId`, `step` (1–3), persisted under `wod.creation.v2`
 - `useChangeLogStore` — recent gameplay changes (HP, XP, inventory) for the unified log
 - `useRollHistoryStore` — dice roll history (3D dice rolls + manual)
@@ -141,7 +150,10 @@ The game-data stores (characters, roll history, change log) do not persist thems
 - `useDiceRoller()` — single source of truth for 3D dice rolls; coordinates with `DiceBoxService`. Holds the only "is rolling" lock — components should not roll directly.
 - `useMercury(char, dispatch)` — quicksilver overdose UI flow (the gear use-effect)
 - `useUnifiedLog()` — merged feed of change log + roll history for the in-game log panel
-- `useModeSwitch()` — `switchMode(next)`; also exports `startOfflineSession()`, which the bootstrap plugin uses
+- `useModeSwitch()` — `switchMode(next, to = '/')`; also exports `startOfflineSession()`, which the bootstrap plugin uses
+- `useTable()` — `tableScope`, `gameId`, `game`, `tableRoute()`, `partyRoute(ids)`, derived from the route; use it instead of hardcoding `party` / `character-list`
+- `useRouteRecheck()` — page-level re-check of the route guards when online data arrives or membership/meta changes; a member removed (or a game deleted) while its table is open lands on home with the `games.leftOrRemoved` toast. A voluntary leave/delete runs inside `exitGameQuietly(gameId, fn)` to skip the toast
+- `useSheetReadonly()` — read-only flag provided by `InGameView` (`provideSheetReadonly`, `!canEditCharacter(id)`); each sheet panel reads it and hides edit controls and dice
 - `useAccount()` — `user`, `signedIn`, `requestCode`, `signIn` (code, then `bootstrap()`), `rename`, `setLanguage`, `signOut`, `deleteAccount`
 
 ## Features (`app/features/`)
@@ -149,20 +161,31 @@ The game-data stores (characters, roll history, change log) do not persist thems
 Feature-based folder structure:
 
 - `sign-in/` — `SignInView` + `steps/` (EmailStep, CodeStep, NameStep), `AuthScreen`, `AuthField`
-- `character-list/` — `CharacterListView`
+- `home/` — `HomeView` (Games / Characters `TabBar`), `GamesTab`, `CharactersTab`, `CreateGameSheet`, `JoinByCodeSheet`
+- `join/` — `JoinView` (checking, offline card, invite not valid, already a member, joining, failed)
+- `character-list/` — `CharacterListView` (offline list; online the game table, only my drafts)
 - `character-creation/` — `CharacterCreationView` + `steps/` (StepIdentity, StepTraining, StepGear)
 - `in-game/` — `PartyView`, `InGameView`, `components/` (StatusHeader, StatsPanel, SkillsPanel, AbilitiesPanel, InventoryPanel + `inventory/` subcomponents, MagicPanel + `magic/` subcomponents, NotesPanel)
 - `level-up/` — `LevelUpView` + `components/` (StepStat, StepHitDice, StepSkill, StepAbility, StepSummary)
 
 ## UI Primitives (`app/components/ui/`)
 
-Thin wrappers around Reka UI for project-specific styling: `Button`, `BottomSheet`, `ConfirmSheet`, `InfoPopover`, `Stepper`, `TabBar`, `HpBar`, `XpBar`, `StatChip`, `SkillChip`, `StatusChip`, `StatusChipTrio`, `AbilityCard`, `FormCheckbox`, `SegmentedFilter`, `ModeSwitch`, plus `icons/`.
+Thin wrappers around Reka UI for project-specific styling: `Button`, `BottomSheet`, `ConfirmSheet`, `InfoPopover`, `Stepper`, `TabBar`, `HpBar`, `XpBar`, `StatChip`, `SkillChip`, `StatusChip`, `StatusChipTrio`, `AbilityCard`, `FormCheckbox`, `SegmentedFilter`, `ModeSwitch`, plus `icons/`. Game UI in `components/layout/`: `GameMenu`, `InviteSheet`, `MembersSheet`, `BringCharacterSheet`, `GiveCharacterSheet`, `MasterlessNotice`.
 
 **`InfoPopover` rule:** `PopoverPortal` teleports content to `<body>`, bypassing Vue scoped CSS. Style `.info-content` in a non-scoped `<style>` block (currently lives in `app/assets/main.css`). Do not duplicate breakdown popovers — assemble breakdowns inline using `InfoPopover` + the `*BreakdownLines` helpers from `derived.ts`.
 
 The in-game `StatusHeader` shows HP / XP / armor / equipped weapon damage with `InfoPopover` breakdowns. Armor and damage are read-only in the header — armor type is set by equipping items in the Inventory panel.
 
 In-game tabs (`inGame.tabs.*`): **Main** (stats/skills/abilities) → **Inventory** → optionally **Magic** → **Notes**. There is no Combat tab.
+
+## Games and permissions
+
+Games exist online only; the server is the authority (see the workspace `CLAUDE.md`), the client mirrors its rules. `utils/permissions.ts` `canEdit(meta, me, game, members)`: the owner always edits; a master edits a player's character only while that owner is still a member of the game; everyone else reads. Nothing outside the stores decides this: `dispatch` and `useDiceRoller` (`roll`, `rollBatch`) both check `canEditCharacter` and refuse with `errors.readOnly` (no write, no animation, no history). The UI hides the controls through `useSheetReadonly()`, so the guards are the second line.
+
+- Invite code: 8 chars from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, shown `XXXX-XXXX`, link `<origin>/join/<code>`; input accepts lowercase, spaces and the dash (`utils/inviteCode.ts`).
+- Join: `/join/<code>` signed out → `app.vue` looks the code up (`findGameByCode`) and shows the game name as a banner on the sign-in screen; the URL survives sign-in. A reset or wrong code shows "invite not valid" with a way home, never a half-join.
+- Game table: players panel lists the game's characters (owner name per row), head with role pill and `GameMenu` (invite, members, bring one of mine, home, leave / delete). A masterless game shows `MasterlessNotice`; "Become master" races are decided by the server, the loser gets `games.claim.taken`.
+- Per sheet (`SheetActions`): "Take out of the game", and for the master "Give to a player", on my own characters only.
 
 ## Localization (`app/locales/`)
 

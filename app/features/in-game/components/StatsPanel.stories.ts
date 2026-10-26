@@ -4,6 +4,7 @@ import StatsPanel from './StatsPanel.vue'
 import { brann, wren } from '@/stories/fixtures'
 import { withStores } from '@/stories/state'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
+import { asTeammate, expectNoEditControls, sheetFor } from '@/stories/readonly'
 
 const meta = {
   title: 'Panels/StatsPanel',
@@ -38,5 +39,18 @@ export const ModifiersOpen: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(await within(canvasElement).findByRole('button', { name: /^DEX/ }))
     await expect(await within(document.body).findByText('Cat’s grace')).toBeInTheDocument()
+  },
+}
+
+/** A teammate's stats: the effects list stays, rolling, editing and adding or removing effects go. */
+export const ReadOnly: Story = {
+  render: forCharacter(wren.id),
+  decorators: [sheetFor(wren.id), asTeammate([brann, wren])],
+  play: async ({ canvasElement }) => {
+    await expectNoEditControls(canvasElement)
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: /^DEX/ }))
+    const dialog = await within(document.body).findByRole('dialog')
+    await expect(await within(dialog).findByText('Cat’s grace')).toBeVisible()
+    await expectNoEditControls(dialog)
   },
 }

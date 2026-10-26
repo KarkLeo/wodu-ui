@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { NuxtPage } from '#components'
+import { useRoute } from '#imports'
 import '@/assets/fonts'
 import DiceOverlay from '@/components/DiceOverlay.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
@@ -14,8 +15,12 @@ import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useModeSwitch } from '@/composables/useModeSwitch'
+import { useTable } from '@/composables/useTable'
 import { currentUser, signedIn } from '@/transport/auth'
 import { authGate } from '@/transport/authHelpers'
+import { setScope } from '@/transport/scope'
+import { findGameByCode } from '@/transport/games'
+import { normalizeInviteCode } from '@/utils/inviteCode'
 
 // RouterView reused the view when only params changed (e.g. /party/a → /party/a,b); NuxtPage's
 // default key includes the params and would remount it.
@@ -24,6 +29,33 @@ const pageKey = (route: RouteLocationNormalizedLoaded) => String(route.name)
 const { switchMode } = useModeSwitch()
 
 const gate = computed(() => authGate(mode.value, signedIn.value, currentUser.value?.name ?? ''))
+
+const route = useRoute()
+
+// The open table follows the route; online loading (events, the game's characters) follows the table.
+const { tableScope } = useTable()
+watch(tableScope, setScope, { immediate: true })
+
+// An invite link opened while signed out shows the game's name above the sign-in form.
+const inviteGameName = ref<string | undefined>()
+let inviteLookup = 0
+watch(
+  () => [gate.value, route.name, route.params.code] as const,
+  async ([g, name, rawCode]) => {
+    const lookup = ++inviteLookup
+    inviteGameName.value = undefined
+    if (g !== 'sign-in' || name !== 'join') return
+    const code = normalizeInviteCode(String(rawCode ?? ''))
+    if (!code) return
+    try {
+      const game = await findGameByCode(code)
+      if (lookup === inviteLookup) inviteGameName.value = game?.name
+    } catch {
+      // No banner: the join page reports the problem after sign-in.
+    }
+  },
+  { immediate: true },
+)
 
 const serverDown = computed(() => mode.value === 'online' && connection.value === 'down')
 // The loop resets the count when it starts and bumps it only when the first probe fires a second later.
@@ -71,6 +103,7 @@ onBeforeUnmount(() => {
   <SignInView
     v-if="gate !== 'none'"
     :gate="gate"
+    :invite-game-name="inviteGameName"
     :inert="serverDown"
     @play-offline="switchMode('offline')"
   />

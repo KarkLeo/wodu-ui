@@ -6,26 +6,50 @@ import { GameLayoutContextKey, type Side } from '@/components/layout/gameLayoutC
 import type { Character } from '@/types/character'
 import type { ChangeEntry } from '@/types/changeLog'
 import type { RollRecord } from '@/types/dice'
+import type { CharacterMeta, Game, GameMember, Scope } from '@/types/game'
 import { useCharactersStore } from '@/stores/characters'
+import { useGamesStore } from '@/stores/games'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
 import { useCreationStore } from '@/stores/creation'
 import { bootstrapStatus } from '@/transport/bootstrap'
+import { setScope } from '@/transport/scope'
+import { authStore, seedRecords, signInMock } from '../../.storybook/mocks/pb'
 import { storyRouter } from './router'
+import { MEMBERS } from './fixtures'
 
 interface StoreSeed {
   characters?: Character[]
   rolls?: RollRecord[]
   changes?: ChangeEntry[]
   creation?: { draftId: string; step: 1 | 2 | 3 }
+  games?: Game[]
+  members?: GameMember[]
+  /** Owner and game per character id; a character not listed is a free character of the signed-in user. */
+  meta?: Record<string, CharacterMeta>
+  scope?: Scope
 }
 
-/** Fills the stores before the story mounts, the same way bootstrap() would after loading from PocketBase. */
+/**
+ * Fills the stores before the story mounts, the same way bootstrap() would after loading from PocketBase.
+ * Signs the mock in unless the story already has, so the seeded characters are the player's own and editable.
+ */
 export function withStores(seed: StoreSeed): Decorator {
   return (story) => ({
     components: { story },
     setup() {
-      useCharactersStore().setAll(structuredClone(seed.characters ?? []))
+      if (!authStore.isValid) signInMock()
+      const me = String(authStore.record?.id ?? '')
+      const characters = structuredClone(seed.characters ?? [])
+      useCharactersStore().setAll(characters, characters.map(c => ({
+        id: c.id,
+        updated: '',
+        ...(seed.meta?.[c.id] ?? { owner: me, game: '' }),
+      })))
+      const games = structuredClone(seed.games ?? [])
+      useGamesStore().setAll(games, structuredClone(seed.members ?? []))
+      seedRecords('games', games.map(g => ({ id: g.id, name: g.name, master: g.master, invite_code: g.inviteCode })))
+      setScope(seed.scope ?? { kind: 'home' })
       useRollHistoryStore().setAll(structuredClone(seed.rolls ?? []))
       useChangeLogStore().setAll(structuredClone(seed.changes ?? []))
       bootstrapStatus.value = 'ready'
@@ -36,6 +60,20 @@ export function withStores(seed: StoreSeed): Decorator {
       }
     },
     template: '<story />',
+  })
+}
+
+/**
+ * A game's table: the game, its members, owners and games per character, and the scope set to that game
+ * (as app.vue does from the route), so a draft created there lands in the game.
+ */
+export function withGameTable(game: Game, characters: Character[], meta: Record<string, CharacterMeta>, members = MEMBERS): Decorator {
+  return withStores({
+    characters,
+    games: [game],
+    members: members.filter(m => m.game === game.id),
+    meta,
+    scope: { kind: 'game', gameId: game.id },
   })
 }
 
