@@ -6,6 +6,7 @@ import { useTable } from '@/composables/useTable'
 import { useCreationStore } from '@/stores/creation'
 import { useCharactersStore } from '@/stores/characters'
 import { onlineDataReady } from '@/transport/bootstrap'
+import { mode } from '@/transport/mode'
 import { t } from '@/locales'
 import { className as classNameOf } from '@/locales/content'
 import StepIdentity from './steps/StepIdentity.vue'
@@ -85,9 +86,12 @@ function onNextOrFinish() {
 
 // A persisted draftId can outlive its record (deleted elsewhere, or never saved before a reload).
 // Judge only once the data is loaded: during a server outage the store is empty but the pointer is fine.
+// Only in the mode this wizard opened in: the mode switches before the page unmounts when the address
+// changes area, and the other mode's (still empty) store would reset that mode's draft pointer.
+const openedIn = mode.value
 let staleChecked = false
 watch(onlineDataReady, (ready) => {
-  if (!ready || staleChecked) return
+  if (!ready || staleChecked || mode.value !== openedIn) return
   staleChecked = true
   if (draft.value) return
   creation.reset()

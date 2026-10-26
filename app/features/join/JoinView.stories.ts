@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { onUnmounted } from 'vue'
+import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { ClientResponseError } from 'pocketbase'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import JoinView from './JoinView.vue'
@@ -6,7 +7,11 @@ import { crookhollow, MEMBERS } from '@/stories/fixtures'
 import { atRoute, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useGamesStore } from '@/stores/games'
-import { pb, seedRecords } from '../../../.storybook/mocks/pb'
+import { bootstrapStatus } from '@/transport/bootstrap'
+import { mode } from '@/transport/mode'
+import { enterMode } from '@/transport/modeSwitch'
+import { OFFLINE_KEYS } from '@/transport/offlineStorage'
+import { authStore, clearPbRequests, pb, pbRequests, seedRecords } from '../../../.storybook/mocks/pb'
 
 // A game the story user is not in yet; its record exists on the "server" only.
 const ember = { id: 'story-game-ember', name: 'Ember Road', master: 'user-seva', invite_code: 'EMBR2345' }
@@ -136,5 +141,42 @@ export const JoinedMeanwhileElsewhere: Story = {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText('You’re already in “Ember Road”')).toBeVisible()
     await expect(canvas.queryByText('This invite is not valid')).toBeNull()
+  },
+}
+
+// Listed before withStores so that it runs after it: the online data has not arrived yet (a hanging server).
+// Leaves signed out, so switching back to online loads nothing.
+const dataNotReady: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    bootstrapStatus.value = 'loading'
+    onUnmounted(() => {
+      authStore.clear()
+      enterMode('online')
+      for (const key of Object.values(OFFLINE_KEYS)) localStorage.removeItem(key)
+    })
+  },
+  template: '<story />',
+})
+
+/**
+ * "Play offline" from the server-down overlay over an invite: the mode switches before this page unmounts,
+ * and offline data counts as loaded, but the invite is not looked up on the server.
+ */
+export const SwitchToOfflineLooksNothingUp: Story = {
+  ...at('EMBR2345'),
+  tags: ['no-visual'],
+  decorators: [dataNotReady],
+  beforeEach() {
+    seedRecords('games', [ember])
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('Checking the invite…')).toBeVisible()
+    clearPbRequests()
+    enterMode('offline')
+    await expect(mode.value).toBe('offline')
+    // Give the watchers a few ticks to react to the data now counting as loaded.
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(pbRequests()).not.toContain('games.getList')
   },
 }

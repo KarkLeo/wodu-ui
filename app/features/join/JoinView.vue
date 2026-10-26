@@ -6,6 +6,7 @@ import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
 import { onlineDataReady } from '@/transport/bootstrap'
 import { findGameByCode, joinGame, loadGame } from '@/transport/games'
+import { mode } from '@/transport/mode'
 import { normalizeInviteCode } from '@/utils/inviteCode'
 import type { Game } from '@/types/game'
 import { t } from '@/locales'
@@ -88,17 +89,18 @@ async function run() {
   await router.replace({ name: 'game', params: { gameId: found.id } })
 }
 
-// Membership is known only once the online data has loaded.
+// Membership is known only once the online data has loaded. Offline data counts as loaded too, and
+// the mode switches before this page unmounts on the way to /offline, so a switch must not start a lookup.
 let started = false
 watch(onlineDataReady, (ready) => {
-  if (!ready || started) return
+  if (!ready || started || mode.value !== 'online') return
   started = true
   void run()
 }, { immediate: true })
 
 // The view stays mounted when only the code in the URL changes.
 watch(() => props.code, () => {
-  if (onlineDataReady.value) void run()
+  if (onlineDataReady.value && mode.value === 'online') void run()
 })
 
 function openTable() {

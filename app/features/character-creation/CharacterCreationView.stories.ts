@@ -7,6 +7,10 @@ import { build, crookhollow, draftGear, draftIdentity, draftTraining, inGame, ME
 import { storyRouter } from '@/stories/router'
 import { atRoute, withStores } from '@/stories/state'
 import { bootstrapStatus } from '@/transport/bootstrap'
+import { mode } from '@/transport/mode'
+import { enterMode } from '@/transport/modeSwitch'
+import { OFFLINE_KEYS } from '@/transport/offlineStorage'
+import { authStore } from '../../../.storybook/mocks/pb'
 
 const meta = {
   title: 'Screens/CharacterCreation',
@@ -111,6 +115,39 @@ export const StaleDraftWhileServerDown: Story = {
     bootstrapStatus.value = 'ready'
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(useCreationStore().draftId).toBeNull()
+  },
+}
+
+// Listed before withStores so that it runs after it: the online data has not arrived, and this device has
+// no offline draft. Leaves signed out, so switching back to online loads nothing.
+const onlineLoadingNoOfflineDraft: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    bootstrapStatus.value = 'loading'
+    useCreationStore().perMode.offline = { draftId: null, step: 1 }
+    onUnmounted(() => {
+      authStore.clear()
+      enterMode('online')
+      for (const key of Object.values(OFFLINE_KEYS)) localStorage.removeItem(key)
+    })
+  },
+  template: '<story />',
+})
+
+/**
+ * The mode switches before this page unmounts when the address moves to /offline. The wizard opened online
+ * must not judge the offline draft pointer, reset it or navigate on its own.
+ */
+export const SwitchToOfflineLeavesWizardAlone: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  decorators: [onlineLoadingNoOfflineDraft, withStores({ characters: [], creation: { draftId: 'story-missing-draft', step: 2 } })],
+  play: async () => {
+    enterMode('offline')
+    await expect(mode.value).toBe('offline')
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(storyRouter.currentRoute.value.path).toBe('/character/new')
+    await expect(useCreationStore().perMode.online.draftId).toBe('story-missing-draft')
   },
 }
 
