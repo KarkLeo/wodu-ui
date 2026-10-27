@@ -750,6 +750,9 @@ export const messages = {
     email: 'Email',
     language: 'Language',
     version: 'Version',
+    app: 'App',
+    install: 'Install',
+    installed: 'Installed',
     signOut: 'Sign out',
     signOutTitle: 'Sign out of your account?',
     signOutBody: 'Offline-table characters stay on this device.',
@@ -772,6 +775,7 @@ export const messages = {
       hint: 'No password — we’ll email you a code.',
       submit: 'Get code',
       playOffline: 'Play offline, no account',
+      home: '← Home',
       offlineHint: 'Characters stay on this device only.',
     },
     code: {
@@ -818,7 +822,6 @@ export const messages = {
     update: 'Update',
     updating: 'Updating…',
     installCta: 'Install app',
-    installed: 'App installed',
   },
   content: {
     skills: {

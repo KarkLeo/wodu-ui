@@ -140,6 +140,19 @@ export const PlayOffline: Story = {
   },
 }
 
+/** A link back to the landing, which never asks for an account; the URL the sign-in screen kept is left. */
+export const BackToLanding: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  loaders: [atRoute('/games')],
+  play: async ({ canvasElement }) => {
+    const home = within(canvasElement).getByRole('link', { name: '← Home' })
+    await expect(home).toHaveAttribute('href', '/')
+    await userEvent.click(home)
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+  },
+}
+
 export const NetworkErrorOnGetCode: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {

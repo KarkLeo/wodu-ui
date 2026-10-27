@@ -54,7 +54,7 @@ function resume(c: Character) {
   void router.push(gameId ? { name: 'game-character-new', params: { gameId } } : { name: 'character-new' })
 }
 
-// Home has no game in scope, so the draft is a free character.
+// The cabinet has no game in scope, so the draft is a free character.
 async function createCharacter() {
   creation.reset()
   const draft = await createDraft()

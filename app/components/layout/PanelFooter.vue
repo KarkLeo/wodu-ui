@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import { useAccount } from '@/composables/useAccount'
@@ -13,6 +13,7 @@ import { t, currentLocale, LOCALES } from '@/locales'
 // The bottom of the players panel: the way out of the table, the build, and offline (which has no
 // profile) the language.
 const router = useRouter()
+const route = useRoute()
 const { setLanguage } = useAccount()
 const { tableScope } = useTable()
 
@@ -21,7 +22,7 @@ const offline = computed(() => mode.value === 'offline')
 const buildLine = computed(() => t('gameLayout.players.buildLine', { version: __APP_VERSION__, built: buildDate(currentLocale.value) }))
 
 function goHome() {
-  void router.push(panelHomeLocation(tableScope.value, offline.value))
+  void router.push(panelHomeLocation(tableScope.value, offline.value, String(route.name)))
 }
 </script>
 

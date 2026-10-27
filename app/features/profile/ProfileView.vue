@@ -77,9 +77,11 @@ async function confirmDelete() {
       </div>
 
       <div v-if="install.canInstall.value || install.installed.value" class="pf-row">
-        <span class="pf-key">{{ t('pwa.installCta') }}</span>
-        <span v-if="install.installed.value" class="pf-value">{{ t('pwa.installed') }}</span>
-        <Button v-else variant="ghost" size="sm" @click="install.promptInstall()">{{ t('pwa.installCta') }}</Button>
+        <span class="pf-key">{{ t('profile.app') }}</span>
+        <span v-if="install.installed.value" class="pf-value">{{ t('profile.installed') }}</span>
+        <Button v-else variant="ghost" size="sm" :aria-label="t('pwa.installCta')" @click="install.promptInstall()">
+          {{ t('profile.install') }}
+        </Button>
       </div>
 
       <div class="pf-row">

@@ -6,6 +6,7 @@ import ProfileView from './ProfileView.vue'
 import { atRoute, DESKTOP_VIEWPORT } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { currentLocale, t } from '@/locales'
+import { listenForInstallPrompt } from '@/pwa/useInstall'
 import { authStore, pb, signInMock } from '../../../.storybook/mocks/pb'
 
 // The page as app.vue shows it, under the cabinet header.
@@ -37,6 +38,18 @@ function offerInstall(outcome: 'accepted' | 'dismissed') {
     userChoice: Promise.resolve({ outcome }),
   })
   window.dispatchEvent(prompt)
+}
+
+/**
+ * The route open when the session ends. It must already be the landing: on /profile, app.vue would show
+ * the sign-in screen for a moment before the navigation.
+ */
+function pathWhenSignedOut() {
+  let path: string | null = null
+  const stop = authStore.onChange((token) => {
+    if (!token && path === null) path = storyRouter.currentRoute.value.path
+  })
+  return { path: () => path, stop }
 }
 
 /** Name, email, language, version, sign out and delete; no install row unless the browser offers it. */
@@ -103,6 +116,25 @@ export const Install: Story = {
   },
 }
 
+/** The browser offers installation once, early, long before the profile opens; the row still shows. */
+export const InstallOfferedBeforeOpen: Story = {
+  tags: ['no-visual'],
+  // Story loaders run after the meta's, before the view renders. The app's PWA plugin listens from startup.
+  loaders: [
+    async () => {
+      listenForInstallPrompt()
+      offerInstall('dismissed')
+      return {}
+    },
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('App')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Install app' }))
+    await waitFor(() => expect(canvas.queryByText('App')).toBeNull())
+  },
+}
+
 export const SignOutCancel: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
@@ -116,37 +148,49 @@ export const SignOutCancel: Story = {
   },
 }
 
-/** Signing out lands on the landing. */
+/** Signing out lands on the landing, and only then ends the session, so the sign-in screen never flashes. */
 export const SignOutConfirm: Story = {
   tags: ['no-visual'],
   parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Sign out' }))
-    const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Sign out of your account?' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Sign out' }))
-    await waitFor(() => expect(authStore.isValid).toBe(false))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    const signedOut = pathWhenSignedOut()
+    try {
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Sign out' }))
+      const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Sign out of your account?' })
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Sign out' }))
+      await waitFor(() => expect(authStore.isValid).toBe(false))
+      await expect(storyRouter.currentRoute.value.path).toBe('/')
+      await expect(signedOut.path()).toBe('/')
+    } finally {
+      signedOut.stop()
+    }
   },
 }
 
 export const DeleteAccount: Story = {
   parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
-    const remove = spyOn(pb.collection('users'), 'delete')
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Delete account' }))
-    const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Delete your account?' })
-    await expect(remove).not.toHaveBeenCalled()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
-    await expect(remove).toHaveBeenCalledWith('user-mock')
-    await waitFor(() => expect(authStore.isValid).toBe(false))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    const remove = spyOn(pb, 'send')
+    const signedOut = pathWhenSignedOut()
+    try {
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Delete account' }))
+      const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Delete your account?' })
+      await expect(remove).not.toHaveBeenCalled()
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+      await expect(remove).toHaveBeenCalledWith('/api/collections/users/records/user-mock', { method: 'DELETE' })
+      await waitFor(() => expect(authStore.isValid).toBe(false))
+      await expect(storyRouter.currentRoute.value.path).toBe('/')
+      await expect(signedOut.path()).toBe('/')
+    } finally {
+      signedOut.stop()
+    }
   },
 }
 
 export const DeleteCancel: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
-    const remove = spyOn(pb.collection('users'), 'delete')
+    const remove = spyOn(pb, 'send')
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Delete account' }))
     const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Delete your account?' })
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
@@ -159,7 +203,7 @@ export const DeleteCancel: Story = {
 export const DeleteFails: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
-    spyOn(pb.collection('users'), 'delete').mockRejectedValueOnce(new ClientResponseError({ status: 500 }))
+    spyOn(pb, 'send').mockRejectedValueOnce(new ClientResponseError({ status: 500 }))
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Delete account' }))
     const dialog = await screen(canvasElement).findByRole('dialog', { name: 'Delete your account?' })
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))

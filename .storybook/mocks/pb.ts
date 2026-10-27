@@ -157,6 +157,16 @@ export const pb = {
     return raw.replace(/\{:(\w+)\}/g, (_m, key: string) => JSON.stringify(params[key] ?? null))
   },
   authStore,
+  // The SDK's raw request: unlike collection(...).delete() it leaves the auth store alone. Only record
+  // deletes are answered (deleteOwnAccount).
+  ...recorded('pb', {
+    send: async (path: string, options: { method?: string } = {}) => {
+      const match = /^\/api\/collections\/([^/]+)\/records\/([^/]+)$/.exec(path)
+      if (!match || options.method !== 'DELETE') throw new MockResponseError(404)
+      recordsOf(decodeURIComponent(match[1]!)).delete(decodeURIComponent(match[2]!))
+      return null
+    },
+  }),
   health: recorded('health', { check: async () => ({ code: 200, message: 'ok', data: {} }) }),
   realtime: {
     onDisconnect: undefined as ((subs: string[]) => void) | undefined,

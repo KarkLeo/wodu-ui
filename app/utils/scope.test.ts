@@ -149,6 +149,10 @@ describe('panelHomeLocation', () => {
   it('the offline table goes to the landing', () => {
     expect(panelHomeLocation(home, true)).toEqual({ name: 'landing' })
   })
+
+  it('an invite page goes to the games', () => {
+    expect(panelHomeLocation(home, false, 'join')).toEqual({ name: 'games' })
+  })
 })
 
 describe('partyLocation', () => {

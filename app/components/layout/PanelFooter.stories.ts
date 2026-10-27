@@ -83,3 +83,14 @@ export const Offline: Story = {
     await expect(pbRequests()).toEqual([])
   },
 }
+
+/** On an invite page "Home" goes to the games, not the characters. */
+export const JoinPage: Story = {
+  tags: ['no-visual'],
+  loaders: [atRoute('/join/ABCD2345')],
+  parameters: { navigationNotice: false },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Home' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
+  },
+}

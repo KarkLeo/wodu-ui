@@ -74,10 +74,13 @@ export function tableLocation(scope: Scope, offline = false): RouteLocationRaw {
   return scope.kind === 'game' ? { name: 'game', params: { gameId: scope.gameId } } : { name: 'characters' }
 }
 
-/** The players panel's "Home": a game table to the games, the free-characters table to the characters, offline to the landing. */
-export function panelHomeLocation(scope: Scope, offline = false): RouteLocationRaw {
+/**
+ * The players panel's "Home": a game table and an invite page to the games, the free-characters table to
+ * the characters, offline to the landing.
+ */
+export function panelHomeLocation(scope: Scope, offline = false, routeName?: string): RouteLocationRaw {
   if (offline) return { name: 'landing' }
-  return scope.kind === 'game' ? { name: 'games' } : { name: 'characters' }
+  return scope.kind === 'game' || routeName === 'join' ? { name: 'games' } : { name: 'characters' }
 }
 
 /** Open sheets stay on their table: a game's party route inside a game, the party route outside, /offline offline. */

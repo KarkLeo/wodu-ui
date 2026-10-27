@@ -1,4 +1,4 @@
-import { onMounted, onBeforeUnmount, readonly, ref, computed } from 'vue'
+import { readonly, ref, computed } from 'vue'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -7,7 +7,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 const deferred = ref<BeforeInstallPromptEvent | null>(null)
 const installed = ref(false)
-let listenersAttached = 0
+let listening = false
 
 function handleBeforeInstallPrompt(e: Event) {
   e.preventDefault()
@@ -19,22 +19,20 @@ function handleAppInstalled() {
   deferred.value = null
 }
 
-export function usePwaInstall() {
-  onMounted(() => {
-    if (listenersAttached === 0) {
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-      window.addEventListener('appinstalled', handleAppInstalled)
-    }
-    listenersAttached++
-  })
+/**
+ * The browser fires `beforeinstallprompt` once per page load, early, so the listeners go on at startup
+ * (plugins/04.pwa-register.client.ts) and stay for the page's lifetime; a screen that offers installation
+ * may mount long after the event.
+ */
+export function listenForInstallPrompt(): void {
+  if (listening) return
+  listening = true
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  window.addEventListener('appinstalled', handleAppInstalled)
+}
 
-  onBeforeUnmount(() => {
-    listenersAttached = Math.max(0, listenersAttached - 1)
-    if (listenersAttached === 0) {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-      window.removeEventListener('appinstalled', handleAppInstalled)
-    }
-  })
+export function usePwaInstall() {
+  listenForInstallPrompt()
 
   async function promptInstall(): Promise<'accepted' | 'dismissed' | null> {
     const e = deferred.value

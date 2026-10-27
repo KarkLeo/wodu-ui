@@ -37,9 +37,14 @@ export function useAccount() {
     updateProfile({ language: next }).catch(err => log.warn('language not saved to profile', { err }))
   }
 
+  // Leave for the landing (never gated) first: ending the session on a cabinet page would show the
+  // sign-in screen there until the navigation lands.
   async function signOut(): Promise<void> {
-    clearSession()
-    await router.push('/')
+    try {
+      await router.push('/')
+    } finally {
+      clearSession()
+    }
   }
 
   async function deleteAccount(): Promise<void> {

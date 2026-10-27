@@ -752,6 +752,9 @@ export const messages: Messages = {
     email: 'Email',
     language: 'Язык',
     version: 'Версия',
+    app: 'Приложение',
+    install: 'Установить',
+    installed: 'Установлено',
     signOut: 'Выйти',
     signOutTitle: 'Выйти из аккаунта?',
     signOutBody: 'Персонажи офлайн-стола останутся на этом устройстве.',
@@ -774,6 +777,7 @@ export const messages: Messages = {
       hint: 'Пароль не нужен — пришлём код на почту.',
       submit: 'Получить код',
       playOffline: 'Играть офлайн, без аккаунта',
+      home: '← На главную',
       offlineHint: 'Персонажи останутся только на этом устройстве.',
     },
     code: {
@@ -820,7 +824,6 @@ export const messages: Messages = {
     update: 'Обновить',
     updating: 'Обновление…',
     installCta: 'Установить приложение',
-    installed: 'Приложение установлено',
   },
   content: {
     skills: {
