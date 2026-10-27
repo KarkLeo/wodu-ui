@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkMonster, checkItem, normalizeDamage } from './library'
+import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory } from './library'
 
 const ID = 'm-1234567890abcd'
 const goblin = { id: ID, name: ' Goblin ', hp: 6, armor: 1, damage: 'D6', special: '  ', notes: 'cowardly', extra: 1 }
@@ -128,5 +128,31 @@ describe('checkItem', () => {
       descriptor: { kind: 'tool' },
       price: 5,
     })
+  })
+})
+
+describe('libraryItemToInventory', () => {
+  it('copies a weapon and links it to the library item', () => {
+    const out = libraryItemToInventory({
+      id: 'i-1',
+      name: 'Rusty blade',
+      descriptor: { kind: 'weapon', melee: true },
+      damage: '1d6+1',
+      price: 5,
+    })
+    expect(out).toEqual({
+      name: 'Rusty blade',
+      descriptor: { kind: 'weapon', melee: true },
+      damage: '1d6+1',
+      price: 5,
+      libraryItemId: 'i-1',
+    })
+    expect('templateId' in out).toBe(false)
+    expect('quantity' in out).toBe(false)
+  })
+  it('defaults a consumable to quantity 1 and keeps an explicit one', () => {
+    const base = { id: 'i-2', name: 'Torch', descriptor: { kind: 'gear', consumable: true } } as const
+    expect(libraryItemToInventory(base).quantity).toBe(1)
+    expect(libraryItemToInventory({ ...base, quantity: 3 }).quantity).toBe(3)
   })
 })

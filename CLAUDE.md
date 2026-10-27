@@ -78,6 +78,7 @@ Central type: `Character` (`app/types/character.ts`).
 - `Stats` — six stats (`str/dex/con/int/wis/cha`), each stored as the **bonus** (not raw 2d6 roll)
 - `StatModifier { id, statKey, amount, label }` — temporary buff/debuff stack on a stat
 - `InventoryItem.descriptor: ItemDescriptor` — discriminated union: `weapon` (melee/ranged), `armor` (`class: 'none'|'light'|'full'`), `shield`, `gear`, `tool`, `occult`, `custom`. `equipped?: boolean` flags the active item.
+- Library (`app/types/library.ts`): `LibraryMonster` and `LibraryItem`, the master's per-game entries. `checkMonster` / `checkItem` in `app/domain/library.ts` are the one shape check (normalise or return problems); `libraryItemToInventory` turns an item into an `InventoryItem` for `RECEIVE_ITEM`. `InventoryItem.libraryItemId` links a handed-out item to its library entry, and consumables stack by it; `templateId` stays reserved for the built-in gear catalog, and the two never stack with each other.
 - `Magic` — optional, only when class/abilities grant a magic section (cleric, wizard, etc.)
 - `CharacterStatus` — `'draft'` (creation in progress) | `'active'` (fully created)
 - `hpHistory: { level, roll, source: 'dice'|'sturdy' }[]` — every HP roll, per level

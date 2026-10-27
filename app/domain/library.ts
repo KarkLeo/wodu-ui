@@ -1,4 +1,4 @@
-import type { ItemDescriptor } from '@/types/character'
+import type { InventoryItem, ItemDescriptor } from '@/types/character'
 import { LIBRARY_LIMITS, type LibraryItem, type LibraryMonster } from '@/types/library'
 import { isConsumable } from '@/domain/inventory'
 
@@ -163,4 +163,17 @@ export function checkItem(value: unknown): LibraryCheck<LibraryItem> {
   if (notes) out.notes = notes
   if (quantity !== undefined) out.quantity = quantity
   return { ok: true, value: out }
+}
+
+export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, 'id'> {
+  const out: Omit<InventoryItem, 'id'> = {
+    name: item.name,
+    descriptor: item.descriptor,
+    libraryItemId: item.id,
+  }
+  if (item.damage !== undefined) out.damage = item.damage
+  if (item.price !== undefined) out.price = item.price
+  if (item.notes !== undefined) out.notes = item.notes
+  if (isConsumable(item)) out.quantity = item.quantity ?? 1
+  return out
 }

@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { applyCommand } from './reducer'
+import { libraryItemToInventory } from './library'
+import { totalArmor } from '@/utils/derived'
 import type { LevelUpPatch } from './commands'
 import type { InventoryItem, Magic } from '@/types/character'
 import {
@@ -194,6 +196,50 @@ describe('applyCommand: RECEIVE_ITEM — stacking consumables', () => {
     })
     expect(character.inventory).toHaveLength(1)
     expect(character.inventory[0].quantity).toBe(4)
+  })
+})
+
+describe('applyCommand: RECEIVE_ITEM — library items', () => {
+  const torch = { id: 'lib-torch', name: 'Torch', descriptor: { kind: 'gear', consumable: true } } as const
+  const receive = (char: ReturnType<typeof makeCharacter>, item: ReturnType<typeof libraryItemToInventory>) =>
+    applyCommand(char, { type: 'RECEIVE_ITEM', item }).character
+
+  it('stacks the same consumable library item, keeping the first name', () => {
+    let char = makeCharacter()
+    char = receive(char, libraryItemToInventory({ ...torch, quantity: 2 }))
+    char = receive(char, libraryItemToInventory({ ...torch, name: 'Renamed torch', quantity: 1 }))
+    expect(char.inventory).toHaveLength(1)
+    expect(char.inventory[0].quantity).toBe(3)
+    expect(char.inventory[0].name).toBe('Torch')
+  })
+  it('does not stack a non-consumable library item', () => {
+    const sword = { id: 'lib-sword', name: 'Sword', descriptor: { kind: 'weapon', melee: true } } as const
+    let char = makeCharacter()
+    char = receive(char, libraryItemToInventory(sword))
+    char = receive(char, libraryItemToInventory(sword))
+    expect(char.inventory).toHaveLength(2)
+  })
+  it('never stacks a library consumable with a catalog one', () => {
+    let char = makeCharacter()
+    char = receive(char, {
+      templateId: 'rations',
+      name: 'Rations',
+      descriptor: { kind: 'gear', consumable: true },
+      quantity: 1,
+    })
+    char = receive(char, libraryItemToInventory({ ...torch, id: 'rations' }))
+    expect(char.inventory).toHaveLength(2)
+  })
+  it('a received light armor adds 1 armor once equipped', () => {
+    let char = makeCharacter()
+    char = receive(char, libraryItemToInventory({
+      id: 'lib-leather',
+      name: 'Leather',
+      descriptor: { kind: 'armor', class: 'light' },
+    }))
+    const before = totalArmor(char)
+    char = applyCommand(char, { type: 'EQUIP_ITEM', itemId: char.inventory[0].id }).character
+    expect(totalArmor(char)).toBe(before + 1)
   })
 })
 
