@@ -1,24 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
-import HomeView from './HomeView.vue'
-import { brann, crookhollow, draftIdentity, GAMES, inGame, MEMBERS, mirel, olden, sage, wren } from '@/stories/fixtures'
-import { atRoute, withStores } from '@/stories/state'
+import CabinetLayout from './CabinetLayout.vue'
+import GamesView from './GamesView.vue'
+import { brann, crookhollow, GAMES, inGame, MEMBERS, mirel, olden, sage, wren } from '@/stories/fixtures'
+import { atRoute, DESKTOP_VIEWPORT, withOnlineLoading, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { pb } from '../../../.storybook/mocks/pb'
 
-const TAB_KEY = 'wod.home.tab.v1'
-
+// The page as app.vue shows it: the cabinet header above, no table panels around.
 const meta = {
-  title: 'Screens/Home',
-  component: HomeView,
+  title: 'Screens/Cabinet/GamesPage',
+  component: GamesView,
   globals: { viewport: { value: 'phone', isRotated: false } },
   parameters: { layout: 'fullscreen' },
-  loaders: [atRoute('/')],
-  beforeEach() {
-    localStorage.removeItem(TAB_KEY)
-    return () => localStorage.removeItem(TAB_KEY)
-  },
-} satisfies Meta<typeof HomeView>
+  loaders: [atRoute('/games')],
+  render: () => ({
+    components: { CabinetLayout, GamesView },
+    template: '<CabinetLayout><GamesView /></CabinetLayout>',
+  }),
+} satisfies Meta<typeof GamesView>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>
 // Anna runs Crookhollow (Wren is hers there) and plays Brann in Olden's Tower; Mirel is Kostya's in Olden's
 // Tower; Sage is free.
 const table = withStores({
-  characters: [brann, wren, mirel, sage, draftIdentity],
+  characters: [brann, wren, mirel, sage],
   games: GAMES,
   members: MEMBERS,
   meta: {
@@ -39,11 +39,12 @@ const table = withStores({
 const screen = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body)
 const card = (canvasElement: HTMLElement, name: RegExp) => within(canvasElement).getByRole('button', { name })
 
-export const GamesTab: Story = {
+export const Games: Story = {
   decorators: [table],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('tab', { name: 'Games' })).toHaveAttribute('aria-selected', 'true')
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Games' })).toBeVisible()
+    await expect(canvas.getByRole('link', { name: 'Games' })).toHaveAttribute('aria-current', 'page')
     const master = card(canvasElement, /Shadows over Crookhollow/)
     await expect(master).toHaveTextContent('master')
     await expect(master).toHaveTextContent('Players: 2')
@@ -53,82 +54,27 @@ export const GamesTab: Story = {
     await expect(player).toHaveTextContent('Master: Seva')
     await expect(player).toHaveTextContent('Yours: Brann Ironhide')
     await expect(player).not.toHaveTextContent('Mirel')
+    // No table around the cabinet.
+    await expect(canvas.queryByRole('button', { name: 'New character' })).toBeNull()
   },
 }
 
-export const OpenGame: Story = {
-  tags: ['no-visual'],
+export const Desktop: Story = {
+  globals: DESKTOP_VIEWPORT,
   decorators: [table],
-  play: async ({ canvasElement }) => {
-    await userEvent.click(card(canvasElement, /Olden’s Tower/))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${olden.id}`))
-  },
 }
 
-export const CharactersTab: Story = {
-  decorators: [table],
+/** Opened from the landing, the account's data loads in the background. */
+export const Loading: Story = {
+  decorators: [withOnlineLoading, table],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('tab', { name: 'Characters' }))
-    await expect(card(canvasElement, /Brann Ironhide/)).toHaveTextContent('in “Olden’s Tower”')
-    await expect(card(canvasElement, /Wren Ashfoot/)).toHaveTextContent('in “Shadows over Crookhollow”')
-    await expect(card(canvasElement, /Sage/)).toHaveTextContent('free')
-    await expect(canvas.queryByText('Mirel Vane')).not.toBeInTheDocument()
-    await expect(card(canvasElement, /Unnamed/)).toHaveTextContent('Resume creation')
-    await expect(localStorage.getItem(TAB_KEY)).toBe('characters')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Loading…')
+    await expect(canvas.queryByText('No games yet')).toBeNull()
   },
 }
 
-export const OpenCharacterInGame: Story = {
-  tags: ['no-visual'],
-  decorators: [table],
-  beforeEach() {
-    localStorage.setItem(TAB_KEY, 'characters')
-  },
-  play: async ({ canvasElement }) => {
-    await userEvent.click(card(canvasElement, /Brann Ironhide/))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${olden.id}/party/${brann.id}`))
-  },
-}
-
-export const OpenFreeCharacter: Story = {
-  tags: ['no-visual'],
-  decorators: [table],
-  beforeEach() {
-    localStorage.setItem(TAB_KEY, 'characters')
-  },
-  play: async ({ canvasElement }) => {
-    await userEvent.click(card(canvasElement, /Sage/))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/party/${sage.id}`))
-  },
-}
-
-/** The tab is remembered per viewer. */
-export const RemembersTab: Story = {
-  decorators: [table],
-  beforeEach() {
-    localStorage.setItem(TAB_KEY, 'characters')
-  },
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('tab', { name: 'Characters' })).toHaveAttribute('aria-selected', 'true')
-  },
-}
-
-export const CreateFreeCharacter: Story = {
-  tags: ['no-visual'],
-  decorators: [withStores({ characters: [] })],
-  beforeEach() {
-    localStorage.setItem(TAB_KEY, 'characters')
-  },
-  play: async ({ canvasElement }) => {
-    const create = spyOn(pb.collection('characters'), 'create')
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Create character' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/character/new'))
-    await expect(create).toHaveBeenCalledWith(expect.objectContaining({ game: '' }))
-  },
-}
-
-export const EmptyGames: Story = {
+export const Empty: Story = {
   decorators: [withStores({ characters: [] })],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -138,21 +84,20 @@ export const EmptyGames: Story = {
   },
 }
 
-export const EmptyCharacters: Story = {
-  decorators: [withStores({ characters: [], games: GAMES, members: MEMBERS })],
-  beforeEach() {
-    localStorage.setItem(TAB_KEY, 'characters')
-  },
+export const OpenGame: Story = {
+  tags: ['no-visual'],
+  decorators: [table],
+  parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await expect(canvas.getByText('No characters yet')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Create character' })).toBeVisible()
+    await userEvent.click(card(canvasElement, /Olden’s Tower/))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${olden.id}`))
   },
 }
 
 export const CreateGameValidation: Story = {
   tags: ['no-visual'],
   decorators: [withStores({ characters: [] })],
+  parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
     const create = spyOn(pb.collection('games'), 'create')
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Create game' }))
@@ -177,6 +122,7 @@ export const CreateGameValidation: Story = {
 export const JoinByCodeNormalises: Story = {
   tags: ['no-visual'],
   decorators: [withStores({ characters: [] })],
+  parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Join by code' }))
     const dialog = within(await screen(canvasElement).findByRole('dialog', { name: 'Join by code' }))

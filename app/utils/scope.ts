@@ -60,16 +60,45 @@ export function freeIfGameUnknown(
   return { ...meta, game: '' }
 }
 
-/** The table with no sheet open: a game's own table, or home outside a game. */
-export function tableLocation(scope: Scope): RouteLocationRaw {
-  return scope.kind === 'game' ? { name: 'game', params: { gameId: scope.gameId } } : { name: 'character-list' }
+/** Where a guard sends someone it turns away: the games online, the offline table offline. */
+export function homeLocation(offline: boolean): RouteLocationRaw {
+  return offline ? { name: 'offline' } : { name: 'games' }
 }
 
-/** Open sheets stay on their table: a game's party route inside a game, the party route outside. */
-export function partyLocation(scope: Scope, ids: string[]): RouteLocationRaw {
-  if (ids.length === 0) return tableLocation(scope)
+/**
+ * The table with no sheet open: a game's own table, the offline table, or, outside games, the characters
+ * page that lists the free characters.
+ */
+export function tableLocation(scope: Scope, offline = false): RouteLocationRaw {
+  if (offline) return { name: 'offline' }
+  return scope.kind === 'game' ? { name: 'game', params: { gameId: scope.gameId } } : { name: 'characters' }
+}
+
+/**
+ * The players panel's "Home": a game table and an invite page to the games, the free-characters table to
+ * the characters, offline to the landing.
+ */
+export function panelHomeLocation(scope: Scope, offline = false, routeName?: string): RouteLocationRaw {
+  if (offline) return { name: 'landing' }
+  return scope.kind === 'game' || routeName === 'join' ? { name: 'games' } : { name: 'characters' }
+}
+
+/** Open sheets stay on their table: a game's party route inside a game, the party route outside, /offline offline. */
+export function partyLocation(scope: Scope, ids: string[], offline = false): RouteLocationRaw {
+  if (ids.length === 0) return tableLocation(scope, offline)
   const joined = ids.join(',')
+  if (offline) return { name: 'offline-party', params: { ids: joined } }
   return scope.kind === 'game'
     ? { name: 'game-party', params: { gameId: scope.gameId, ids: joined } }
     : { name: 'party', params: { ids: joined } }
+}
+
+/** The creation wizard of the table: in the game, outside games, or offline. */
+export function newCharacterLocation(scope: Scope, offline = false): RouteLocationRaw {
+  if (offline) return { name: 'offline-character-new' }
+  return scope.kind === 'game' ? { name: 'game-character-new', params: { gameId: scope.gameId } } : { name: 'character-new' }
+}
+
+export function levelUpLocation(id: string, offline = false): RouteLocationRaw {
+  return { name: offline ? 'offline-level-up' : 'level-up', params: { id } }
 }

@@ -64,10 +64,13 @@ export function gameRouteRedirect(name: string, gameId: string, ids: string | un
   return toParty ? { to: toParty } : undefined
 }
 
-/** The `party` route: online it is the table of free characters, and a character in a game opens that game's table. */
+/**
+ * The party routes: online `party` is the table of free characters, and a character in a game opens that
+ * game's table; offline `offline-party` keeps the device's own characters.
+ */
 export function partyRouteRedirect(ids: string | undefined, dataReady: boolean): RouteLocationRaw | undefined {
   const characters = useCharactersStore()
-  if (mode.value !== 'online') return partyGuard(ids, characters.getById, dataReady)
+  if (mode.value !== 'online') return partyGuard(ids, characters.getById, dataReady, () => true, true)
   return partyGameRedirect(ids, characters.getById, characters.metaOf, dataReady)
     ?? partyGuard(ids, characters.getById, dataReady, c => characters.metaOf(c.id)?.game === '')
 }
@@ -84,7 +87,7 @@ const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-s
  * Re-runs the route middleware's checks while the page is open: once online data arrives (the
  * middleware lets a deep link through while it has not), and whenever membership or a character's
  * game changes, e.g. the player is removed or the game is deleted while its table is open.
- * A switch to offline also makes the data "ready", but it navigates away itself.
+ * Offline data is always "ready", but offline mode starts only on the way to /offline, so the page is leaving anyway.
  */
 export function useRouteRecheck(): void {
   const route = useRoute()

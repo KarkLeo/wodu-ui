@@ -2,7 +2,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import type { Character } from '@/types/character'
 import type { CharacterMeta } from '@/types/game'
 import { createLogger } from '@/utils/logger'
-import { partyLocation } from '@/utils/scope'
+import { homeLocation, partyLocation } from '@/utils/scope'
 
 const log = createLogger('router')
 
@@ -18,12 +18,13 @@ function isOpenable(c: Character | undefined): c is Character {
 }
 
 // dataReady is false while the online load has failed: a deep link must not be thrown away
-// before the data it points at could be loaded.
+// before the data it points at could be loaded. `offline` keeps the redirects on the offline table.
 export function partyGuard(
   ids: string | undefined,
   getById: GetById,
   dataReady = true,
   allowed: (c: Character) => boolean = () => true,
+  offline = false,
 ): RouteLocationRaw | undefined {
   if (!dataReady) return undefined
   const list = splitIds(ids)
@@ -33,10 +34,10 @@ export function partyGuard(
   })
   if (valid.length === 0) {
     log.warn('guard:party → redirect', { ids: ids ?? '', reason: 'no valid characters' })
-    return { name: 'character-list' }
+    return homeLocation(offline)
   }
   if (valid.length !== list.length) {
-    return { name: 'party', params: { ids: valid.join(',') } }
+    return partyLocation({ kind: 'solo' }, valid, offline)
   }
 }
 
@@ -66,7 +67,7 @@ export function gameGuard(
   if (!dataReady) return undefined
   if (!gameId || !isMember(gameId)) {
     log.warn('guard:game → redirect', { gameId, reason: 'not a member' })
-    return { name: 'character-list' }
+    return homeLocation(false)
   }
 }
 
@@ -116,12 +117,13 @@ export function levelUpGuard(
   dataReady = true,
   canEdit: (id: string) => boolean = () => true,
   gameOf: (id: string) => string = () => '',
+  offline = false,
 ): RouteLocationRaw | undefined {
   if (!dataReady) return undefined
   const char = getById(id)
   if (!char || char.status !== 'active') {
     log.warn('guard:level-up → redirect', { id, reason: !char ? 'not found' : 'not active' })
-    return { name: 'character-list' }
+    return homeLocation(offline)
   }
   if (!canEdit(id)) {
     log.warn('guard:level-up → redirect', { id, reason: 'read-only' })

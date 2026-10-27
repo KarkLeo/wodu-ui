@@ -566,10 +566,6 @@ export const messages = {
   games: {
     leftOrRemoved: 'You’re no longer in that game.',
     loading: 'Loading…',
-    tabs: {
-      games: 'Games',
-      characters: 'Characters',
-    },
     list: {
       roleMaster: 'master',
       rolePlayer: 'player',
@@ -610,9 +606,6 @@ export const messages = {
     join: {
       checking: 'Checking the invite…',
       joining: 'Joining “{game}”…',
-      offlineTitle: 'This invite needs online mode',
-      offlineBody: 'Games live on the server. Switch to online mode and sign in to join.',
-      goOnline: 'Switch to online',
       memberTitle: 'You’re already in “{game}”',
       openTable: 'Open the table',
       failed: 'Couldn’t join the game. Try again.',
@@ -738,10 +731,40 @@ export const messages = {
     saveFailed: 'Could not save offline data on this device.',
   },
   mode: {
-    online: 'Online',
-    offline: 'Offline',
     badge: 'Offline',
     offlineHint: 'Offline characters live only on this device. Clearing site data deletes them.',
+  },
+  nav: {
+    cabinet: 'Cabinet',
+    games: 'Games',
+    characters: 'Characters',
+    offlineTable: 'Offline table',
+    profile: 'Profile',
+    home: 'Home',
+  },
+  profile: {
+    title: 'Profile',
+    name: 'Name',
+    changeName: 'Change name',
+    change: 'Change',
+    email: 'Email',
+    language: 'Language',
+    version: 'Version',
+    app: 'App',
+    install: 'Install',
+    installed: 'Installed',
+    signOut: 'Sign out',
+    signOutTitle: 'Sign out of your account?',
+    signOutBody: 'Offline-table characters stay on this device.',
+    signOutConfirm: 'Sign out',
+    deleteAccount: 'Delete account',
+    deleteTitle: 'Delete your account?',
+    deleteBody: 'Your email, name and characters are erased. Games you run stay; their players can take over as master.',
+    deleteConfirm: 'Delete',
+  },
+  landing: {
+    signIn: 'Sign in',
+    openCabinet: 'Open cabinet',
   },
   auth: {
     tagline: 'character sheet for the table',
@@ -752,6 +775,7 @@ export const messages = {
       hint: 'No password — we’ll email you a code.',
       submit: 'Get code',
       playOffline: 'Play offline, no account',
+      home: '← Home',
       offlineHint: 'Characters stay on this device only.',
     },
     code: {
@@ -776,14 +800,6 @@ export const messages = {
       later: 'Later',
       done: 'Done',
     },
-    menu: {
-      changeName: 'Change name',
-      signOut: 'Sign out',
-      deleteAccount: 'Delete account',
-      deleteTitle: 'Delete your account?',
-      deleteBody: 'Your email, name and characters are erased. Games you run stay; their players can take over as master.',
-      deleteConfirm: 'Delete',
-    },
     errors: {
       network: 'No connection to the server. Check the internet and try again.',
       expiredCode: 'The code has expired. Send a new one.',
@@ -806,7 +822,6 @@ export const messages = {
     update: 'Update',
     updating: 'Updating…',
     installCta: 'Install app',
-    installed: 'App installed',
   },
   content: {
     skills: {

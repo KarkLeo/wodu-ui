@@ -5,24 +5,21 @@ import type { Character } from '@/types/character'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
-import { useModeSwitch } from '@/composables/useModeSwitch'
-import { useAccount } from '@/composables/useAccount'
 import { useTable } from '@/composables/useTable'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
-import { mode, type AppMode } from '@/transport/mode'
+import { mode } from '@/transport/mode'
 import { charactersInScope } from '@/utils/scope'
 import { isMaster } from '@/utils/permissions'
 import Button from '@/components/ui/Button.vue'
-import ModeSwitch from '@/components/ui/ModeSwitch.vue'
-import AccountMenu from './AccountMenu.vue'
 import GameMenu from './GameMenu.vue'
+import PanelFooter from './PanelFooter.vue'
 import MasterlessNotice from './MasterlessNotice.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import { useGameLayout } from './gameLayoutContext'
-import { t, currentLocale, LOCALES, type Locale } from '@/locales'
+import { t } from '@/locales'
 import { className } from '@/locales/content'
 
 const route = useRoute()
@@ -30,11 +27,9 @@ const router = useRouter()
 const store = useCharactersStore()
 const creation = useCreationStore()
 const { createDraft } = useCharacterCreation()
-const { switchMode } = useModeSwitch()
-const { user, setLanguage } = useAccount()
 const layout = useGameLayout()
 const games = useGamesStore()
-const { tableScope, gameId, game, partyRoute } = useTable()
+const { tableScope, gameId, game, partyRoute, newCharacterRoute } = useTable()
 
 const me = computed(() => currentUser.value?.id ?? null)
 
@@ -69,19 +64,6 @@ const openIds = computed(() => {
 })
 
 const openIdsSet = computed(() => new Set(openIds.value))
-
-const localeOptions = LOCALES.map(l => ({ value: l, label: l.toUpperCase() }))
-
-const buildLine = computed(() => {
-  const built = new Date(__BUILD_TIMESTAMP__).toLocaleString(currentLocale.value, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  return t('gameLayout.players.buildLine', { version: __APP_VERSION__, built })
-})
 
 function initial(name: string): string {
   const trimmed = name.trim()
@@ -119,11 +101,7 @@ async function startNew() {
   creation.reset()
   const draft = await createDraft()
   if (!draft) return
-  router.push(gameId.value ? { name: 'game-character-new', params: { gameId: gameId.value } } : { name: 'character-new' })
-}
-
-function onModeChange(next: AppMode) {
-  void switchMode(next)
+  router.push(newCharacterRoute())
 }
 </script>
 
@@ -218,20 +196,7 @@ function onModeChange(next: AppMode) {
         :icon-left="IconPlus"
         @click="startNew"
       >{{ t('characterList.new') }}</Button>
-      <div class="build-id">{{ buildLine }}</div>
-      <AccountMenu v-if="mode === 'online' && user" :user="user" />
-      <ModeSwitch :model-value="mode" @update:model-value="onModeChange" />
-      <div class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
-        <button
-          v-for="opt in localeOptions"
-          :key="opt.value"
-          type="button"
-          class="pr-locale-btn"
-          :class="{ 'is-active': currentLocale === opt.value }"
-          :aria-pressed="currentLocale === opt.value"
-          @click="setLanguage(opt.value as Locale)"
-        >{{ opt.label }}</button>
-      </div>
+      <PanelFooter />
     </div>
   </div>
 </template>
@@ -487,31 +452,6 @@ function onModeChange(next: AppMode) {
   gap: 10px;
 }
 .panel-btn-full { width: 100%; justify-content: center; }
-
-.build-id {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--vtt-text-muted);
-  opacity: 0.7;
-  text-align: center;
-}
-
-.pr-locale { display: flex; gap: 2px; margin-top: 6px; }
-.pr-locale-btn {
-  padding: 2px 6px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--vtt-text-muted);
-  background: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.pr-locale-btn.is-active {
-  color: var(--vtt-text-primary);
-  background: var(--vtt-bg-elevated);
-}
 
 /* ── COLLAPSED VIEW · rail ─────────────────────────── */
 .players-rail {

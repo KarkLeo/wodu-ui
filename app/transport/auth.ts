@@ -104,11 +104,13 @@ export async function updateProfile(patch: { name?: string; language?: Locale })
   await bounded(users().update(user.id, patch))
 }
 
+/** Deletes the account and leaves the session to the caller, which ends it with clearSession(). */
 export async function deleteOwnAccount(): Promise<void> {
   const user = currentUser.value
   if (!user) return
-  await bounded(users().delete(user.id))
-  pb.authStore.clear()
+  // Not users().delete(): the SDK ends the session as soon as the server answers, while the profile is
+  // still open, so the sign-in screen would show before the caller has left for the landing.
+  await bounded(pb.send(`/api/collections/users/records/${encodeURIComponent(user.id)}`, { method: 'DELETE' }))
 }
 
 export function clearSession(): void {

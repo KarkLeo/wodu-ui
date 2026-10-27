@@ -8,7 +8,8 @@ const { setLanguage } = useAccount()
 defineProps<{
   title: string
   subtitle: string
-  cardTitle: string
+  /** Without it the card has no heading (the landing). */
+  cardTitle?: string
 }>()
 </script>
 
@@ -38,7 +39,7 @@ defineProps<{
       <slot name="banner" />
 
       <section class="as-card">
-        <h2 class="as-card-title">{{ cardTitle }}</h2>
+        <h2 v-if="cardTitle" class="as-card-title">{{ cardTitle }}</h2>
         <slot />
       </section>
 

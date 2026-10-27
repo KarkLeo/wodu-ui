@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import EmailStep from './steps/EmailStep.vue'
 import CodeStep from './steps/CodeStep.vue'
 import NameStep from './steps/NameStep.vue'
@@ -22,10 +23,13 @@ defineProps<{
   inviteGameName?: string
 }>()
 
-const emit = defineEmits<{ playOffline: [] }>()
-
 const log = createLogger('sign-in')
 const { user, requestCode, signIn, rename } = useAccount()
+const router = useRouter()
+
+function playOffline() {
+  void router.push({ name: 'offline' })
+}
 
 const step = ref<'email' | 'code'>('email')
 const email = ref('')
@@ -106,6 +110,6 @@ function saveName(name: string) {
     :busy="busy"
     :error="error"
     @submit="sendCode"
-    @play-offline="emit('playOffline')"
+    @play-offline="playOffline"
   />
 </template>

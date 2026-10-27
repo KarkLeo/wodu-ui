@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { charactersInScope, eventInScope, eventFilter, freeIfGameUnknown, partyLocation, scopeForRoute, tableLocation } from './scope'
+import {
+  charactersInScope,
+  eventInScope,
+  eventFilter,
+  freeIfGameUnknown,
+  homeLocation,
+  panelHomeLocation,
+  levelUpLocation,
+  newCharacterLocation,
+  partyLocation,
+  scopeForRoute,
+  tableLocation,
+} from './scope'
 import { makeCharacter } from '@/test/fixtures'
 import type { CharacterMeta, Scope } from '@/types/game'
 
@@ -65,7 +77,7 @@ describe('scopeForRoute', () => {
   })
 
   it('everything else is home', () => {
-    expect(scopeForRoute('character-list', undefined, true)).toEqual({ kind: 'home' })
+    expect(scopeForRoute('games', undefined, true)).toEqual({ kind: 'home' })
     expect(scopeForRoute('join', undefined, true)).toEqual({ kind: 'home' })
     expect(scopeForRoute(undefined, undefined, true)).toEqual({ kind: 'home' })
     expect(scopeForRoute('game', '', true)).toEqual({ kind: 'home' })
@@ -81,7 +93,7 @@ describe('scopeForRoute', () => {
   })
 
   it('a character game only matters on the level-up route', () => {
-    expect(scopeForRoute('character-list', undefined, true, 'G')).toEqual({ kind: 'home' })
+    expect(scopeForRoute('games', undefined, true, 'G')).toEqual({ kind: 'home' })
     expect(scopeForRoute('party', undefined, true, 'G')).toEqual({ kind: 'solo' })
   })
 
@@ -108,11 +120,38 @@ describe('freeIfGameUnknown', () => {
   })
 })
 
+describe('homeLocation', () => {
+  it('online goes to the games, offline to the offline table', () => {
+    expect(homeLocation(false)).toEqual({ name: 'games' })
+    expect(homeLocation(true)).toEqual({ name: 'offline' })
+  })
+})
+
 describe('tableLocation', () => {
-  it('a game goes back to its table, anything else home', () => {
+  it('a game goes back to its table, the free-characters table to the characters', () => {
     expect(tableLocation(game)).toEqual({ name: 'game', params: { gameId: 'G' } })
-    expect(tableLocation(solo)).toEqual({ name: 'character-list' })
-    expect(tableLocation(home)).toEqual({ name: 'character-list' })
+    expect(tableLocation(solo)).toEqual({ name: 'characters' })
+    expect(tableLocation(home)).toEqual({ name: 'characters' })
+  })
+
+  it('offline stays on the offline table', () => {
+    expect(tableLocation(home, true)).toEqual({ name: 'offline' })
+  })
+})
+
+describe('panelHomeLocation', () => {
+  it('a game table goes to the games, the free-characters table to the characters', () => {
+    expect(panelHomeLocation(game)).toEqual({ name: 'games' })
+    expect(panelHomeLocation(solo)).toEqual({ name: 'characters' })
+    expect(panelHomeLocation(home)).toEqual({ name: 'characters' })
+  })
+
+  it('the offline table goes to the landing', () => {
+    expect(panelHomeLocation(home, true)).toEqual({ name: 'landing' })
+  })
+
+  it('an invite page goes to the games', () => {
+    expect(panelHomeLocation(home, false, 'join')).toEqual({ name: 'games' })
   })
 })
 
@@ -128,6 +167,30 @@ describe('partyLocation', () => {
 
   it('with no sheet left goes back to the table', () => {
     expect(partyLocation(game, [])).toEqual({ name: 'game', params: { gameId: 'G' } })
-    expect(partyLocation(solo, [])).toEqual({ name: 'character-list' })
+    expect(partyLocation(solo, [])).toEqual({ name: 'characters' })
+  })
+
+  it('offline opens the sheets under /offline, and with none left returns to the offline table', () => {
+    expect(partyLocation(home, ['a', 'b'], true)).toEqual({ name: 'offline-party', params: { ids: 'a,b' } })
+    expect(partyLocation(home, [], true)).toEqual({ name: 'offline' })
+  })
+})
+
+describe('newCharacterLocation', () => {
+  it('a game creates in the game, outside games the free wizard', () => {
+    expect(newCharacterLocation(game)).toEqual({ name: 'game-character-new', params: { gameId: 'G' } })
+    expect(newCharacterLocation(solo)).toEqual({ name: 'character-new' })
+    expect(newCharacterLocation(home)).toEqual({ name: 'character-new' })
+  })
+
+  it('offline uses the offline wizard', () => {
+    expect(newCharacterLocation(home, true)).toEqual({ name: 'offline-character-new' })
+  })
+})
+
+describe('levelUpLocation', () => {
+  it('online and offline each have their own level-up route', () => {
+    expect(levelUpLocation('a')).toEqual({ name: 'level-up', params: { id: 'a' } })
+    expect(levelUpLocation('a', true)).toEqual({ name: 'offline-level-up', params: { id: 'a' } })
   })
 })

@@ -137,7 +137,7 @@ export const GoesHome: Story = {
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement)
     await userEvent.click(menu.getByRole('menuitem', { name: 'Home' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
   },
 }
 
@@ -167,7 +167,7 @@ export const LeaveConfirm: Story = {
     const dialog = await screen(canvasElement).findByRole('dialog', { name: `Leave “${olden.name}”?` })
     await expect(removeMembership).not.toHaveBeenCalled()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Leave' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(updateCharacter).toHaveBeenCalledWith(wren.id, { game: '' })
     await expect(removeMembership).toHaveBeenCalledWith(`${olden.id}-user-mock`)
     await expect(useCharactersStore().metaOf(wren.id)?.game).toBe('')
@@ -179,7 +179,7 @@ export const LeaveConfirm: Story = {
     games.upsertMember({ id: 'rejoined', game: olden.id, user: 'user-mock', name: 'Anna' })
     await storyRouter.push(`/games/${olden.id}`)
     games.removeGame(olden.id)
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(toastTexts()).toContain(leftToast)
   },
 }

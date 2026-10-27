@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import { useGamesStore } from '@/stores/games'
-import { useModeSwitch } from '@/composables/useModeSwitch'
 import { currentUser } from '@/transport/auth'
 import { onlineDataReady } from '@/transport/bootstrap'
 import { findGameByCode, joinGame, loadGame } from '@/transport/games'
@@ -15,12 +14,11 @@ import { createLogger } from '@/utils/logger'
 
 const props = defineProps<{ code: string }>()
 
-type JoinState = 'checking' | 'offline' | 'notFound' | 'member' | 'joining' | 'failed'
+type JoinState = 'checking' | 'notFound' | 'member' | 'joining' | 'failed'
 
 const log = createLogger('join')
 const router = useRouter()
 const games = useGamesStore()
-const { switchMode } = useModeSwitch()
 
 const state = ref<JoinState>('checking')
 const game = ref<Game | null>(null)
@@ -91,33 +89,26 @@ async function run() {
   await router.replace({ name: 'game', params: { gameId: found.id } })
 }
 
-// Membership is known only once the online data has loaded; offline mode never joins on its own.
+// Membership is known only once the online data has loaded. Offline data counts as loaded too, and
+// the mode switches before this page unmounts on the way to /offline, so a switch must not start a lookup.
 let started = false
-watch([mode, onlineDataReady], ([m, ready]) => {
-  if (m === 'offline') {
-    state.value = 'offline'
-    return
-  }
-  if (!ready || started) return
+watch(onlineDataReady, (ready) => {
+  if (!ready || started || mode.value !== 'online') return
   started = true
   void run()
 }, { immediate: true })
 
 // The view stays mounted when only the code in the URL changes.
 watch(() => props.code, () => {
-  if (mode.value === 'online' && onlineDataReady.value) void run()
+  if (onlineDataReady.value && mode.value === 'online') void run()
 })
-
-function goOnline() {
-  void switchMode('online', { name: 'join', params: { code: props.code } })
-}
 
 function openTable() {
   if (game.value) void router.push({ name: 'game', params: { gameId: game.value.id } })
 }
 
 function goHome() {
-  void router.push({ name: 'character-list' })
+  void router.push({ name: 'games' })
 }
 </script>
 
@@ -129,15 +120,6 @@ function goHome() {
         <p class="jv-status" role="status">
           {{ state === 'joining' ? t('games.join.joining', { game: gameName }) : t('games.join.checking') }}
         </p>
-      </template>
-
-      <template v-else-if="state === 'offline'">
-        <p class="eyebrow">{{ t('games.invite.eyebrow') }}</p>
-        <h2 class="jv-title">{{ t('games.join.offlineTitle') }}</h2>
-        <p class="jv-body">{{ t('games.join.offlineBody') }}</p>
-        <div class="jv-actions">
-          <Button variant="hero" size="lg" @click="goOnline">{{ t('games.join.goOnline') }}</Button>
-        </div>
       </template>
 
       <template v-else-if="state === 'notFound'">

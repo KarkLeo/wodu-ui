@@ -81,14 +81,22 @@ describe('resolveLanguage', () => {
 })
 
 describe('authGate', () => {
-  it('never gates offline mode', () => {
-    expect(authGate('offline', false, '')).toBe('none')
+  it('never gates the offline table', () => {
+    expect(authGate('/offline', false, '')).toBe('none')
+    expect(authGate('/offline/party/a', false, '')).toBe('none')
+    expect(authGate('/offline/new', true, '')).toBe('none')
   })
 
-  it('asks to sign in, then for a name, then lets through', () => {
-    expect(authGate('online', false, '')).toBe('sign-in')
-    expect(authGate('online', true, '')).toBe('name')
-    expect(authGate('online', true, 'Anna')).toBe('none')
+  it('never gates the landing', () => {
+    expect(authGate('/', false, '')).toBe('none')
+  })
+
+  it('on account routes asks to sign in, then for a name, then lets through', () => {
+    for (const path of ['/games', '/games/G/party/a', '/party/a', '/join/ABCD2345']) {
+      expect(authGate(path, false, '')).toBe('sign-in')
+      expect(authGate(path, true, '')).toBe('name')
+      expect(authGate(path, true, 'Anna')).toBe('none')
+    }
   })
 })
 

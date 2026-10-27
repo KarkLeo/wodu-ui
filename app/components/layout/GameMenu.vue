@@ -42,7 +42,7 @@ async function leave() {
   const ok = await run('leaveGame', t('games.leave.failed'), () => exitGameQuietly(gameId, () => leaveGame(gameId)))
   if (!ok) return
   leaveOpen.value = false
-  void router.replace({ name: 'character-list' })
+  void router.replace({ name: 'games' })
 }
 
 function openSettings() {
@@ -50,7 +50,7 @@ function openSettings() {
 }
 
 function goHome() {
-  void router.push({ name: 'character-list' })
+  void router.push({ name: 'games' })
 }
 </script>
 

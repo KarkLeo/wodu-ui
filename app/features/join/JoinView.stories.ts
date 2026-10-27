@@ -7,8 +7,11 @@ import { crookhollow, MEMBERS } from '@/stories/fixtures'
 import { atRoute, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useGamesStore } from '@/stores/games'
+import { bootstrapStatus } from '@/transport/bootstrap'
 import { mode } from '@/transport/mode'
-import { authStore, pb, seedRecords } from '../../../.storybook/mocks/pb'
+import { enterMode } from '@/transport/modeSwitch'
+import { OFFLINE_KEYS } from '@/transport/offlineStorage'
+import { authStore, clearPbRequests, pb, pbRequests, seedRecords } from '../../../.storybook/mocks/pb'
 
 // A game the story user is not in yet; its record exists on the "server" only.
 const ember = { id: 'story-game-ember', name: 'Ember Road', master: 'user-seva', invite_code: 'EMBR2345' }
@@ -25,19 +28,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const at = (code: string) => ({ args: { code }, loaders: [atRoute(`/join/${code}`)] })
-
-// Listed before withStores so that it runs after it. Sets the mode directly, so nothing is persisted.
-const offline: Decorator = (story) => ({
-  components: { story },
-  setup() {
-    const previous = mode.value
-    mode.value = 'offline'
-    onUnmounted(() => {
-      mode.value = previous
-    })
-  },
-  template: '<story />',
-})
 
 export const Joins: Story = {
   ...at('embr-2345'),
@@ -73,7 +63,7 @@ export const NotFoundGoesHome: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: 'Home' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
   },
 }
 
@@ -103,32 +93,6 @@ export const AlreadyMemberOpensTable: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: 'Open the table' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
-  },
-}
-
-/** Offline mode never joins on its own; the button switches to online and keeps the invite open. */
-export const Offline: Story = {
-  ...at('EMBR2345'),
-  decorators: [offline],
-  play: async ({ canvasElement }) => {
-    const getList = spyOn(pb.collection('games'), 'getList')
-    const canvas = within(canvasElement)
-    await expect(canvas.getByText('This invite needs online mode')).toBeVisible()
-    await expect(getList).not.toHaveBeenCalled()
-  },
-}
-
-export const OfflineSwitchesToOnline: Story = {
-  ...at('EMBR2345'),
-  tags: ['no-visual'],
-  decorators: [offline],
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    // Signed out, so the switch stops at the sign-in gate instead of loading the account.
-    authStore.clear()
-    await userEvent.click(canvas.getByRole('button', { name: 'Switch to online' }))
-    await waitFor(() => expect(mode.value).toBe('online'))
-    await expect(storyRouter.currentRoute.value.path).toBe('/join/EMBR2345')
   },
 }
 
@@ -177,5 +141,42 @@ export const JoinedMeanwhileElsewhere: Story = {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText('You’re already in “Ember Road”')).toBeVisible()
     await expect(canvas.queryByText('This invite is not valid')).toBeNull()
+  },
+}
+
+// Listed before withStores so that it runs after it: the online data has not arrived yet (a hanging server).
+// Leaves signed out, so switching back to online loads nothing.
+const dataNotReady: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    bootstrapStatus.value = 'loading'
+    onUnmounted(() => {
+      authStore.clear()
+      enterMode('online')
+      for (const key of Object.values(OFFLINE_KEYS)) localStorage.removeItem(key)
+    })
+  },
+  template: '<story />',
+})
+
+/**
+ * "Play offline" from the server-down overlay over an invite: the mode switches before this page unmounts,
+ * and offline data counts as loaded, but the invite is not looked up on the server.
+ */
+export const SwitchToOfflineLooksNothingUp: Story = {
+  ...at('EMBR2345'),
+  tags: ['no-visual'],
+  decorators: [dataNotReady],
+  beforeEach() {
+    seedRecords('games', [ember])
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('Checking the invite…')).toBeVisible()
+    clearPbRequests()
+    enterMode('offline')
+    await expect(mode.value).toBe('offline')
+    // Give the watchers a few ticks to react to the data now counting as loaded.
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(pbRequests()).not.toContain('games.getList')
   },
 }

@@ -6,7 +6,7 @@ import { withStores } from '@/stories/state'
 import { pb } from '../../../.storybook/mocks/pb'
 
 const meta = {
-  title: 'Screens/Home/CreateGameSheet',
+  title: 'Screens/Cabinet/CreateGameSheet',
   component: CreateGameSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   decorators: [withStores({ characters: [] })],

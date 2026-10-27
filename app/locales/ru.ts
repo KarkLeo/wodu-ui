@@ -568,10 +568,6 @@ export const messages: Messages = {
   games: {
     leftOrRemoved: 'Вы больше не в этой игре.',
     loading: 'Загрузка…',
-    tabs: {
-      games: 'Игры',
-      characters: 'Персонажи',
-    },
     list: {
       roleMaster: 'мастер',
       rolePlayer: 'игрок',
@@ -612,9 +608,6 @@ export const messages: Messages = {
     join: {
       checking: 'Проверяем приглашение…',
       joining: 'Вступаем в «{game}»…',
-      offlineTitle: 'Для приглашения нужен онлайн-режим',
-      offlineBody: 'Игры хранятся на сервере. Переключитесь в онлайн и войдите, чтобы вступить.',
-      goOnline: 'Перейти в онлайн',
       memberTitle: 'Вы уже в «{game}»',
       openTable: 'Открыть стол',
       failed: 'Не удалось вступить в игру. Попробуйте ещё раз.',
@@ -740,10 +733,40 @@ export const messages: Messages = {
     saveFailed: 'Не удалось сохранить офлайн-данные на этом устройстве.',
   },
   mode: {
-    online: 'Онлайн',
-    offline: 'Офлайн',
     badge: 'Офлайн',
     offlineHint: 'Офлайн-персонажи хранятся только на этом устройстве. Очистка данных сайта удалит их.',
+  },
+  nav: {
+    cabinet: 'Кабинет',
+    games: 'Игры',
+    characters: 'Персонажи',
+    offlineTable: 'Офлайн-стол',
+    profile: 'Профиль',
+    home: 'На главную',
+  },
+  profile: {
+    title: 'Профиль',
+    name: 'Имя',
+    changeName: 'Изменить имя',
+    change: 'Изменить',
+    email: 'Email',
+    language: 'Язык',
+    version: 'Версия',
+    app: 'Приложение',
+    install: 'Установить',
+    installed: 'Установлено',
+    signOut: 'Выйти',
+    signOutTitle: 'Выйти из аккаунта?',
+    signOutBody: 'Персонажи офлайн-стола останутся на этом устройстве.',
+    signOutConfirm: 'Выйти',
+    deleteAccount: 'Удалить аккаунт',
+    deleteTitle: 'Удалить аккаунт?',
+    deleteBody: 'Ваш email, имя и персонажи будут стёрты. Ваши игры останутся, и их игроки смогут стать мастером.',
+    deleteConfirm: 'Удалить',
+  },
+  landing: {
+    signIn: 'Войти',
+    openCabinet: 'Открыть кабинет',
   },
   auth: {
     tagline: 'лист персонажа для игры за столом',
@@ -754,6 +777,7 @@ export const messages: Messages = {
       hint: 'Пароль не нужен — пришлём код на почту.',
       submit: 'Получить код',
       playOffline: 'Играть офлайн, без аккаунта',
+      home: '← На главную',
       offlineHint: 'Персонажи останутся только на этом устройстве.',
     },
     code: {
@@ -778,14 +802,6 @@ export const messages: Messages = {
       later: 'Позже',
       done: 'Готово',
     },
-    menu: {
-      changeName: 'Изменить имя',
-      signOut: 'Выйти',
-      deleteAccount: 'Удалить аккаунт',
-      deleteTitle: 'Удалить аккаунт?',
-      deleteBody: 'Ваш email, имя и персонажи будут стёрты. Ваши игры останутся, и их игроки смогут стать мастером.',
-      deleteConfirm: 'Удалить',
-    },
     errors: {
       network: 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.',
       expiredCode: 'Срок действия кода истёк. Отправьте новый.',
@@ -808,7 +824,6 @@ export const messages: Messages = {
     update: 'Обновить',
     updating: 'Обновление…',
     installCta: 'Установить приложение',
-    installed: 'Приложение установлено',
   },
   content: {
     skills: {

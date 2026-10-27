@@ -8,9 +8,9 @@ import type { Game } from '@/types/game'
 import { GAME_NAME_MAX, gameNameError } from '@/utils/gameName'
 import { t } from '@/locales'
 import { createLogger } from '@/utils/logger'
-import './home.css'
+import './cabinet.css'
 
-const log = createLogger('home:create-game')
+const log = createLogger('cabinet:create-game')
 
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ created: [game: Game] }>()

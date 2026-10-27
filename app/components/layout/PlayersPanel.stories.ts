@@ -20,8 +20,8 @@ const desktopColumn: Decorator = (story) => ({
   template: '<div style="width: 280px; height: 100%; display: flex"><story /></div>',
 })
 
-// Sets the mode directly rather than through setMode(), so the story neither persists it nor leaks it
-// into the next story.
+// Sets the mode directly rather than through enterMode(), so no session starts or stops, and restores it
+// so it does not leak into the next story.
 const offlineMode: Decorator = (story) => ({
   components: { story },
   setup() {
@@ -53,10 +53,13 @@ export const OneOpen: Story = {
   loaders: [atRoute(`/party/${brann.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByRole('radio', { name: 'Online' })).toHaveAttribute('aria-checked', 'true')
+    // Variant A: the account, the mode switch and (online) the language left the panel; "Home" took their place.
+    await expect(await canvas.findByRole('button', { name: 'Home' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
+    await expect(canvas.queryByRole('group', { name: 'Language' })).toBeNull()
+    await expect(canvas.queryByRole('radio', { name: 'Online' })).toBeNull()
     await expect(canvas.queryByText('Offline characters', { exact: false })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Full state reset' })).toBeNull()
-    await expect(canvas.getByRole('button', { name: /anna@mail\.com/ })).toBeVisible()
   },
 }
 
@@ -65,12 +68,12 @@ export const TwoOpen: Story = {
 }
 
 export const NoneOpen: Story = {
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/games')],
 }
 
 export const NoCharacters: Story = {
   decorators: [withStores({ characters: [draftGear] })],
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/games')],
 }
 
 export const OpenAnother: Story = {
@@ -97,22 +100,25 @@ export const Rail: Story = {
 /** Offline mode: its own list, the badge in the header and the "only on this device" hint. */
 export const Offline: Story = {
   decorators: [offlineMode, withStores({ characters: [sage] })],
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/offline')],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByRole('radio', { name: 'Offline' })).toHaveAttribute('aria-checked', 'true')
-    await expect(canvas.getByText('Offline', { selector: '.pr-offline-badge *' })).toBeVisible()
+    await expect(await canvas.findByText('Offline', { selector: '.pr-offline-badge *' })).toBeVisible()
+    await expect(canvas.queryByRole('radio', { name: 'Offline' })).toBeNull()
     await expect(canvas.getByText(/live only on this device/)).toBeVisible()
     await expect(canvas.getByRole('button', { name: new RegExp(sage.name) })).toBeVisible()
     await expect(canvas.queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
     await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
+    // No profile offline, so the language stays at the bottom of the panel, under "Home".
+    await expect(canvas.getByRole('button', { name: 'Home' })).toBeVisible()
+    await expect(canvas.getByRole('group', { name: 'Language' })).toBeVisible()
   },
 }
 
 export const OfflineInLayout: Story = {
   globals: DESKTOP_VIEWPORT,
   decorators: [offlineMode, withStores({ characters: [sage] }), inLayout(), desktopColumn],
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/offline')],
 }
 
 // ── In a game ───────────────────────────────────────────────────────────────
@@ -213,7 +219,7 @@ export const UnknownGameCountsAsFree: Story = {
     characters: [brann, sage],
     meta: { [brann.id]: { owner: 'user-mock', game: 'story-game-gone' } },
   })],
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/games')],
   play: async ({ canvasElement }) => {
     await expect(await row(canvasElement, brann.name)).toBeVisible()
     await expect(await row(canvasElement, sage.name)).toBeVisible()
@@ -274,7 +280,7 @@ export const MasterlessClaimTaken: Story = {
 /** Review focus 1 / ruling: losing the game frees my characters there at once. */
 export const LosingTheGameFreesMine: Story = {
   decorators: [crookhollowTable],
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/games')],
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
     const update = spyOn(pb.collection('characters'), 'update')

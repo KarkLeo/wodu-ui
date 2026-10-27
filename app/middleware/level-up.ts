@@ -2,6 +2,7 @@ import { defineNuxtRouteMiddleware, navigateTo } from '#app'
 import { useCharactersStore } from '@/stores/characters'
 import { levelUpGuard } from '@/utils/routeGuards'
 import { onlineDataReady } from '@/transport/bootstrap'
+import { modeForPath } from '@/utils/routeMode'
 
 export default defineNuxtRouteMiddleware((to) => {
   const characters = useCharactersStore()
@@ -11,6 +12,7 @@ export default defineNuxtRouteMiddleware((to) => {
     onlineDataReady.value,
     characters.canEditCharacter,
     id => characters.metaOf(id)?.game ?? '',
+    modeForPath(to.path) === 'offline',
   )
   if (redirect) return navigateTo(redirect)
 })

@@ -24,7 +24,7 @@
 }
 .gm-trigger:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: 2px; }
 
-/* ── Dropdown menu (the AccountMenu look) ── */
+/* ── Dropdown menu ── */
 .gm-menu {
   z-index: 60;
   min-width: 220px;

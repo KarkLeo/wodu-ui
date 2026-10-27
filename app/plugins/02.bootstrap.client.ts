@@ -1,15 +1,19 @@
 import { defineNuxtPlugin, useRuntimeConfig } from '#app'
 import { pb } from '@/transport/pb'
-import { mode } from '@/transport/mode'
+import { setMode } from '@/transport/mode'
 import { bootstrap } from '@/transport/bootstrap'
 import { restoreSession } from '@/transport/auth'
 import { watchSession } from '@/transport/session'
-import { startOfflineSession } from '@/composables/useModeSwitch'
+import { startOfflineSession } from '@/transport/modeSwitch'
+import { initialMode } from '@/utils/routeMode'
 
 export default defineNuxtPlugin(async () => {
   pb.baseURL = useRuntimeConfig().public.pbUrl
+  // Before the first navigation, so its middleware finds the mode already matching the address.
+  const start = initialMode(window.location.pathname)
+  setMode(start)
   watchSession()
-  if (mode.value === 'offline') {
+  if (start === 'offline') {
     startOfflineSession()
     return
   }

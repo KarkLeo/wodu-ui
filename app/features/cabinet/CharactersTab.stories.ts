@@ -7,10 +7,10 @@ import { storyRouter } from '@/stories/router'
 import { useCreationStore } from '@/stores/creation'
 
 const meta = {
-  title: 'Screens/Home/CharactersTab',
+  title: 'Screens/Cabinet/CharactersTab',
   component: CharactersTab,
   globals: { viewport: { value: 'phone', isRotated: false } },
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/characters')],
 } satisfies Meta<typeof CharactersTab>
 
 export default meta

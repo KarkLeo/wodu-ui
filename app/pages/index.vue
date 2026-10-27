@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { definePageMeta } from '#imports'
-import CharacterListView from '@/features/character-list/CharacterListView.vue'
-import HomeView from '@/features/home/HomeView.vue'
-import { mode } from '@/transport/mode'
+import LandingView from '@/features/landing/LandingView.vue'
 
-definePageMeta({ name: 'character-list' })
+// `bare`: app.vue renders it without the table layout and without the sign-in gate.
+definePageMeta({ name: 'landing', shell: 'bare' })
 </script>
 
 <template>
-  <HomeView v-if="mode === 'online'" />
-  <CharacterListView v-else />
+  <LandingView />
 </template>

@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, fn, spyOn, userEvent, waitFor, within } from 'storybook/test'
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import { ClientResponseError } from 'pocketbase'
 import SignInView from './SignInView.vue'
+import { atRoute } from '@/stories/state'
+import { storyRouter } from '@/stories/router'
 import { authStore, pb, signInMock } from '../../../.storybook/mocks/pb'
 
 const meta = {
@@ -9,7 +11,7 @@ const meta = {
   component: SignInView,
   globals: { viewport: { value: 'phone', isRotated: false } },
   parameters: { layout: 'fullscreen' },
-  args: { gate: 'sign-in', onPlayOffline: fn() },
+  args: { gate: 'sign-in' },
   beforeEach() {
     authStore.clear()
   },
@@ -127,11 +129,27 @@ export const NameTyped: Story = {
   },
 }
 
+/** "Play offline" opens the offline table, which needs no account. */
 export const PlayOffline: Story = {
   tags: ['no-visual'],
-  play: async ({ args, canvasElement }) => {
+  parameters: { navigationNotice: false },
+  loaders: [atRoute('/games')],
+  play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Play offline, no account' }))
-    await expect(args.onPlayOffline).toHaveBeenCalledOnce()
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/offline'))
+  },
+}
+
+/** A link back to the landing, which never asks for an account; the URL the sign-in screen kept is left. */
+export const BackToLanding: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  loaders: [atRoute('/games')],
+  play: async ({ canvasElement }) => {
+    const home = within(canvasElement).getByRole('link', { name: '← Home' })
+    await expect(home).toHaveAttribute('href', '/')
+    await userEvent.click(home)
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
   },
 }
 

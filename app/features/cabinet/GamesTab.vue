@@ -10,7 +10,7 @@ import { currentUser } from '@/transport/auth'
 import { isMaster } from '@/utils/permissions'
 import type { Game } from '@/types/game'
 import { t } from '@/locales'
-import './home.css'
+import './cabinet.css'
 
 const router = useRouter()
 const games = useGamesStore()
@@ -52,7 +52,7 @@ function joinWith(code: string) {
 </script>
 
 <template>
-  <section class="hm-list" :aria-label="t('games.tabs.games')">
+  <section class="hm-list" :aria-label="t('nav.games')">
     <button
       v-for="card in cards"
       :key="card.game.id"

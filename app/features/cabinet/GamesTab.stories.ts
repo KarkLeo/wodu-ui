@@ -5,10 +5,10 @@ import { brann, crookhollow, GAMES, inGame, MEMBERS, olden } from '@/stories/fix
 import { atRoute, withStores } from '@/stories/state'
 
 const meta = {
-  title: 'Screens/Home/GamesTab',
+  title: 'Screens/Cabinet/GamesTab',
   component: GamesTab,
   globals: { viewport: { value: 'phone', isRotated: false } },
-  loaders: [atRoute('/')],
+  loaders: [atRoute('/games')],
 } satisfies Meta<typeof GamesTab>
 
 export default meta
