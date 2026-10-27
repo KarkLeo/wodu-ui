@@ -16,6 +16,7 @@ export interface LibraryItem {
   descriptor: ItemDescriptor
   damage?: string
   price?: number
+  // shown to the player once handed out (monster notes stay master-only)
   notes?: string
   quantity?: number
 }

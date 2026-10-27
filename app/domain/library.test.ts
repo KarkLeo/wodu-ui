@@ -25,11 +25,12 @@ describe('checkMonster', () => {
     })
   })
 
-  it.each([[0], [1000], [6.5], [NaN]])('refuses hp %s', (hp) => {
-    const r = checkMonster({ ...goblin, hp })
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.problems.map(p => p.field)).toContain('hp')
-  })
+  it.each([[0, 'outOfRange'], [1000, 'outOfRange'], [6.5, 'notInteger'], [NaN, 'notInteger']])(
+    'refuses hp %s',
+    (hp, key) => {
+      expect(checkMonster({ ...goblin, hp })).toEqual({ ok: false, problems: [{ field: 'hp', key }] })
+    },
+  )
 
   it('refuses a name over 80 chars', () => {
     const r = checkMonster({ ...goblin, name: 'x'.repeat(81) })
@@ -42,7 +43,7 @@ describe('checkMonster', () => {
 })
 
 describe('normalizeDamage', () => {
-  it.each([['d6', '1d6'], ['2D6-1', '2d6-1'], [' d6 + 1 ', '1d6+1'], ['1d6+0', '1d6'], ['d100', '1d100']])(
+  it.each([['d6', '1d6'], ['2D6-1', '2d6-1'], [' d6 + 1 ', '1d6+1'], ['1d6+0', '1d6'], ['d100', '1d100'], ['1d6+05', '1d6+5'], ['2d6-07', '2d6-7'], ['1d6+00', '1d6']])(
     '%s -> %s',
     (i, o) => {
       expect(normalizeDamage(i)).toBe(o)
@@ -111,6 +112,11 @@ describe('checkItem', () => {
     expect(oil.damage).toBe('1d6+1')
   })
 
+  it('treats whitespace-only damage as absent', () => {
+    const v = okValue({ ...base, descriptor: { kind: 'tool' }, damage: '  ' })
+    expect('damage' in v).toBe(false)
+  })
+
   it('refuses a negative or fractional price', () => {
     expect(checkItem({ ...base, descriptor: { kind: 'tool' }, price: -1 })).toEqual({
       ok: false,
@@ -149,6 +155,13 @@ describe('libraryItemToInventory', () => {
     })
     expect('templateId' in out).toBe(false)
     expect('quantity' in out).toBe(false)
+  })
+  it('copies the descriptor instead of sharing it', () => {
+    const src = { id: 'i-3', name: 'Sword', descriptor: { kind: 'weapon', melee: true } } as const
+    const descriptor = { ...src.descriptor }
+    const out = libraryItemToInventory({ ...src, descriptor })
+    ;(descriptor as { melee: boolean }).melee = false
+    expect(out.descriptor).toEqual({ kind: 'weapon', melee: true })
   })
   it('defaults a consumable to quantity 1 and keeps an explicit one', () => {
     const base = { id: 'i-2', name: 'Torch', descriptor: { kind: 'gear', consumable: true } } as const

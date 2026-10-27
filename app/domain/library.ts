@@ -25,7 +25,8 @@ export function normalizeDamage(input: string): string | null {
   if (!m) return null
   const count = m[1] ? Number(m[1]) : 1
   if (count < 1) return null
-  const mod = m[3] && Number(m[3]) !== 0 ? m[3] : ''
+  const k = m[3] ? Number(m[3]) : 0
+  const mod = k === 0 ? '' : k > 0 ? `+${k}` : `${k}`
   return `${count}d${m[2]}${mod}`
 }
 
@@ -142,7 +143,7 @@ export function checkItem(value: unknown): LibraryCheck<LibraryItem> {
   if (!descriptor) problems.push({ field: 'descriptor', key: 'badDescriptor' })
 
   let damage: string | undefined
-  if (value.damage !== undefined && value.damage !== null && value.damage !== '') {
+  if (value.damage !== undefined && value.damage !== null && !(typeof value.damage === 'string' && !value.damage.trim())) {
     damage = checkDamage(value.damage, problems)
   }
   let price: number | undefined
@@ -168,7 +169,7 @@ export function checkItem(value: unknown): LibraryCheck<LibraryItem> {
 export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, 'id'> {
   const out: Omit<InventoryItem, 'id'> = {
     name: item.name,
-    descriptor: item.descriptor,
+    descriptor: { ...item.descriptor },
     libraryItemId: item.id,
   }
   if (item.damage !== undefined) out.damage = item.damage
