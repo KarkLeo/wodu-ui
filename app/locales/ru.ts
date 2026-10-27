@@ -346,7 +346,7 @@ export const messages: Messages = {
     },
     skills: {
       title: 'Навыки',
-      hintCount: '{count} · тап для броска',
+      hintCount: '{count} · с навыком не промахнёшься',
       empty: 'Нет навыков',
       auto: 'От класса',
     },
