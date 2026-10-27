@@ -344,7 +344,7 @@ export const messages = {
     },
     skills: {
       title: 'Skills',
-      hintCount: '{count} · tap to roll',
+      hintCount: '{count} · with a skill you can’t miss',
       empty: 'No skills',
       auto: 'From class',
     },
