@@ -7,9 +7,15 @@ export function isConsumable(item: { descriptor: ItemDescriptor }): boolean {
   return false
 }
 
-function stackConsumable(char: Character, templateId: string | undefined, amount = 1): Character | null {
-  if (!templateId) return null
-  const existing = char.inventory.find(i => i.templateId === templateId && isConsumable(i))
+function stackConsumable(
+  char: Character,
+  key: { templateId?: string; libraryItemId?: string },
+  amount = 1,
+): Character | null {
+  const { templateId, libraryItemId } = key
+  const existing = char.inventory.find(i => isConsumable(i) && (
+    (templateId && i.templateId === templateId) || (!templateId && libraryItemId && i.libraryItemId === libraryItemId)
+  ))
   if (!existing) return null
   return {
     ...char,
@@ -24,7 +30,7 @@ export function buyItem(char: Character, templateId: string): Character {
   if (!tpl) return char
   const cost = tpl.price ?? 0
   if (isConsumable(tpl)) {
-    const stacked = stackConsumable(char, tpl.templateId)
+    const stacked = stackConsumable(char, { templateId: tpl.templateId })
     if (stacked) {
       return { ...stacked, coins: Math.max(0, char.coins - cost) }
     }
@@ -47,7 +53,7 @@ export function buyItem(char: Character, templateId: string): Character {
 export function receiveItem(char: Character, item: Omit<InventoryItem, 'id'>): Character {
   const fullItem: InventoryItem = { ...item, id: crypto.randomUUID() }
   if (isConsumable(fullItem)) {
-    const stacked = stackConsumable(char, item.templateId, item.quantity ?? 1)
+    const stacked = stackConsumable(char, item, item.quantity ?? 1)
     if (stacked) return stacked
   }
   return {

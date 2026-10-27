@@ -34,6 +34,7 @@ export type ItemDescriptor =
 export interface InventoryItem {
   id: string
   templateId?: string
+  libraryItemId?: string
   name: string
   descriptor: ItemDescriptor
   price?: number
