@@ -1,4 +1,5 @@
-// In-memory stand-in for app/transport/pb.ts: writes succeed, lists return nothing, realtime is silent.
+// In-memory stand-in for app/transport/pb.ts: writes succeed, lists return nothing (except a game's library),
+// realtime is silent.
 // Records written (or seeded with seedRecords) are kept per collection, so getOne after a create or an
 // update answers like the server would. Auth is in memory too: any code signs in except WRONG_CODE, and
 // nothing is remembered across reloads.
@@ -58,6 +59,12 @@ export function seedRecords(name: string, rows: MockRecord[]) {
   for (const row of rows) r.set(row.id, { ...row })
 }
 
+/** Replaces everything in a mock collection, so a story starts from its own rows whatever ran before it. */
+export function resetRecords(name: string, rows: MockRecord[] = []) {
+  recordsOf(name).clear()
+  seedRecords(name, rows)
+}
+
 // Every call that would reach the server, as 'collection.method' (or 'realtime.subscribe', 'health.check'),
 // so a story can prove a screen sends nothing, e.g. the offline table.
 const requests: string[] = []
@@ -89,6 +96,8 @@ class MockResponseError extends Error {
     super(`mock ${status}`)
   }
 }
+
+const LIBRARY = new Set(['monsters', 'items'])
 
 // One object per collection name, so stories can spy on its methods.
 const collections = new Map<string, ReturnType<typeof makeCollection>>()
@@ -125,7 +134,13 @@ function makeCollection(name: string) {
     getFirstListItem: async () => {
       throw new MockResponseError(404)
     },
-    getFullList: async () => [],
+    // Lists only the library collections, by the `game = "<id>"` filter they are loaded with.
+    getFullList: async (options: { filter?: string } = {}) => {
+      if (!LIBRARY.has(name)) return []
+      const game = /^game = (".*")$/.exec(options.filter ?? '')
+      const id = game ? JSON.parse(game[1]!) as string : null
+      return [...recordsOf(name).values()].filter(r => r.game === id).map(r => structuredClone(r))
+    },
     // Answers only the invite lookup (findGameByCode): records whose invite_code equals `query.code`.
     getList: async (_page?: number, _perPage?: number, options: { query?: Record<string, unknown> } = {}) => {
       const code = options.query?.code

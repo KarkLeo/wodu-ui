@@ -1,15 +1,15 @@
 import { ClientResponseError } from 'pocketbase'
 import { pb, type CharacterRow, type GameMemberRow, type GameRow } from '@/transport/pb'
 import { currentUser } from './auth'
-import { guard } from './backend'
-import { BOOTSTRAP_TIMEOUT_MS, withTimeout } from './connection'
-import { mode, modeSession } from './mode'
+import { mode } from './mode'
+import { call, requireOnlineUser as me, staysCurrent } from './onlineOps'
 import { scope } from './scope'
 import { isCharacterShape } from './shapes'
 import { useGamesStore } from '@/stores/games'
 import { useCharactersStore } from '@/stores/characters'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
+import { useLibraryStore } from '@/stores/library'
 import { gameNameError } from '@/utils/gameName'
 import { generateInviteCode } from '@/utils/inviteCode'
 import type { Game, GameMember } from '@/types/game'
@@ -33,24 +33,6 @@ export function toGame(row: GameRow): Game {
 
 export function toMember(row: GameMemberRow): GameMember {
   return { id: row.id, game: row.game, user: row.user, name: String(row.expand?.user?.name ?? '') }
-}
-
-// A hanging server must not leave a button spinning: a timeout counts as a network failure.
-function call<T>(op: () => Promise<T>): Promise<T> {
-  return guard(() => withTimeout(op(), BOOTSTRAP_TIMEOUT_MS))
-}
-
-function me(): string {
-  const id = currentUser.value?.id
-  if (mode.value !== 'online' || !id) throw new Error('games: needs a signed-in online session')
-  return id
-}
-
-// Work that finishes after a mode switch or a sign-out must not touch the stores of the next session.
-function staysCurrent(): () => boolean {
-  const session = modeSession()
-  const user = currentUser.value?.id ?? null
-  return () => modeSession() === session && (currentUser.value?.id ?? null) === user
 }
 
 // Invite codes are credentials, so they come from the crypto source rather than Math.random.
@@ -100,6 +82,7 @@ export function forgetGame(gameId: string): void {
   const self = currentUser.value?.id ?? null
   const characters = useCharactersStore()
   useGamesStore().removeGame(gameId)
+  useLibraryStore().clearGame(gameId)
   characters.removeGameOthers(gameId, self)
   // Before freeGame: it clears the raw game that tells which of mine the server still holds there.
   healStuckCharacters(gameId)
@@ -292,6 +275,8 @@ export async function transferMaster(gameId: string, userId: string): Promise<vo
   if (!current()) return
   const known = useGamesStore().byId(gameId)
   useGamesStore().upsertGame(known ? { ...known, master: userId } : toGame(row))
+  // The library belongs to the game's master, which I no longer am.
+  useLibraryStore().clearGame(gameId)
 }
 
 /** Master: deletes the game. Its characters become free and stay with their owners. */

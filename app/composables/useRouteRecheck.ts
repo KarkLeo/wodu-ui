@@ -6,7 +6,7 @@ import { useToastsStore } from '@/stores/toasts'
 import { currentUser } from '@/transport/auth'
 import { onlineDataReady } from '@/transport/bootstrap'
 import { mode } from '@/transport/mode'
-import { gameGuard, gamePartyGuard, gameSettingsGuard, partyGameRedirect, partyGuard } from '@/utils/routeGuards'
+import { gameGuard, gamePartyGuard, masterRouteGuard, partyGameRedirect, partyGuard } from '@/utils/routeGuards'
 import { isMaster } from '@/utils/permissions'
 import { t } from '@/locales'
 
@@ -42,20 +42,22 @@ function notifyLeftGame(gameId: string): void {
   useToastsStore().push(t('games.leftOrRemoved'), 'info')
 }
 
+const MASTER_ROUTES = new Set(['game-settings', 'game-monsters'])
+
 interface Redirect {
   to: RouteLocationRaw
   leftGame?: string
 }
 
 /**
- * The game routes: members only; a party keeps the game's own characters; the settings are the
- * master's, so a player (e.g. right after handing the role over) goes back to the table.
+ * The game routes: members only; a party keeps the game's own characters; the settings and the
+ * library are the master's, so a player (e.g. right after handing the role over) goes back to the table.
  */
 export function gameRouteRedirect(name: string, gameId: string, ids: string | undefined, dataReady: boolean): Redirect | undefined {
   const toHome = gameGuard(gameId, isGameMember, dataReady)
   if (toHome) return { to: toHome, leftGame: gameId }
-  if (name === 'game-settings') {
-    const toTable = gameSettingsGuard(gameId, isGameMember, isGameMaster, dataReady)
+  if (MASTER_ROUTES.has(name)) {
+    const toTable = masterRouteGuard(gameId, isGameMember, isGameMaster, dataReady)
     return toTable ? { to: toTable } : undefined
   }
   if (name !== 'game-party') return undefined
@@ -81,7 +83,7 @@ export function applyRedirect(redirect: Redirect): RouteLocationRaw {
   return redirect.to
 }
 
-const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings'])
+const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings', 'game-monsters'])
 
 /**
  * Re-runs the route middleware's checks while the page is open: once online data arrives (the

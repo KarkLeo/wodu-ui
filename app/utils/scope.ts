@@ -28,7 +28,7 @@ export function eventFilter(scope: Scope): string | null {
   return null
 }
 
-const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings'])
+const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings', 'game-monsters'])
 
 /**
  * The table a route opens. Offline mode has no games, so it always stays home. The level-up route

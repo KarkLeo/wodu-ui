@@ -49,6 +49,10 @@ function openSettings() {
   void router.push({ name: 'game-settings', params: { gameId: props.game.id } })
 }
 
+function openMonsters() {
+  void router.push({ name: 'game-monsters', params: { gameId: props.game.id } })
+}
+
 function goHome() {
   void router.push({ name: 'games' })
 }
@@ -63,7 +67,10 @@ function goHome() {
     <DropdownMenuPortal>
       <DropdownMenuContent class="gm-menu" side="bottom" align="end" :side-offset="6">
         <!-- The master manages the game on its settings screen; players see the invite and members read-only. -->
-        <DropdownMenuItem v-if="master" class="gm-item" @select="openSettings">{{ t('games.menu.settings') }}</DropdownMenuItem>
+        <template v-if="master">
+          <DropdownMenuItem class="gm-item" @select="openSettings">{{ t('games.menu.settings') }}</DropdownMenuItem>
+          <DropdownMenuItem class="gm-item" @select="openMonsters">{{ t('games.menu.monsters') }}</DropdownMenuItem>
+        </template>
         <template v-else>
           <DropdownMenuItem class="gm-item" @select="inviteOpen = true">{{ t('games.menu.invite') }}</DropdownMenuItem>
           <DropdownMenuItem class="gm-item" @select="membersOpen = true">{{ t('games.menu.members') }}</DropdownMenuItem>

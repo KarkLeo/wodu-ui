@@ -178,3 +178,16 @@ export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, '
   if (isConsumable(item)) out.quantity = item.quantity ?? 1
   return out
 }
+
+/**
+ * The monsters whose name, special or notes contain every word of `query` (case-insensitive), sorted
+ * by name. An empty query keeps them all.
+ */
+export function searchMonsters(monsters: readonly LibraryMonster[], query: string): LibraryMonster[] {
+  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean)
+  const found = monsters.filter(m => {
+    const text = [m.name, m.special ?? '', m.notes ?? ''].join('\n').toLocaleLowerCase()
+    return words.every(w => text.includes(w))
+  })
+  return found.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id))
+}

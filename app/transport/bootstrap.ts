@@ -19,6 +19,7 @@ import { scope } from './scope'
 import { forgetGame, healStuckCharacters, loadGame, toGame, toMember } from './games'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
+import { useLibraryStore } from '@/stores/library'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
 import { enqueueCoalesced as enqueueDice } from '@/services/DiceAnimationQueue'
@@ -423,6 +424,7 @@ export function stopOnline(): void {
   started = false
   closeRealtime()
   useGamesStore().clearAll()
+  useLibraryStore().clearAll()
   stopConnectionMonitor()
   playedLocally.clear()
   bootstrapStatus.value = 'loading'
