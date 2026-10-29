@@ -38,8 +38,8 @@ watch(connection, (now, was) => {
 
 const forThisGame = computed(() => !!masterOf.value && library.gameId === masterOf.value)
 // A reload keeps the list on screen; anything else (idle, another game, a first load) waits.
-const hasList = computed(() => forThisGame.value && (library.status === 'ready' || library.monsters.length > 0))
-const failed = computed(() => forThisGame.value && library.status === 'failed')
+const hasList = computed(() => forThisGame.value && (library.status.monsters === 'ready' || library.monsters.length > 0))
+const failed = computed(() => forThisGame.value && library.status.monsters === 'failed')
 const loading = computed(() => !hasList.value && !failed.value)
 
 const query = ref('')
