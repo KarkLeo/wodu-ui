@@ -9,7 +9,6 @@ import { useGamesStore } from '@/stores/games'
 import { useCharactersStore } from '@/stores/characters'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
-import { useLibraryStore } from '@/stores/library'
 import { gameNameError } from '@/utils/gameName'
 import { generateInviteCode } from '@/utils/inviteCode'
 import type { Game, GameMember } from '@/types/game'
@@ -82,7 +81,6 @@ export function forgetGame(gameId: string): void {
   const self = currentUser.value?.id ?? null
   const characters = useCharactersStore()
   useGamesStore().removeGame(gameId)
-  useLibraryStore().clearGame(gameId)
   characters.removeGameOthers(gameId, self)
   // Before freeGame: it clears the raw game that tells which of mine the server still holds there.
   healStuckCharacters(gameId)
@@ -275,8 +273,6 @@ export async function transferMaster(gameId: string, userId: string): Promise<vo
   if (!current()) return
   const known = useGamesStore().byId(gameId)
   useGamesStore().upsertGame(known ? { ...known, master: userId } : toGame(row))
-  // The library belongs to the game's master, which I no longer am.
-  useLibraryStore().clearGame(gameId)
 }
 
 /** Master: deletes the game. Its characters become free and stay with their owners. */

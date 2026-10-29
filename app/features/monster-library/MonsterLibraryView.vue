@@ -12,6 +12,7 @@ import { isGameMaster } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
 import { searchMonsters } from '@/domain/library'
 import { useLibraryStore } from '@/stores/library'
+import { connection } from '@/transport/connection'
 import { createMonster, deleteMonster, loadMonsters, updateMonster } from '@/transport/library'
 import type { LibraryMonster } from '@/types/library'
 import { t } from '@/locales'
@@ -30,12 +31,19 @@ watch(masterOf, (id) => {
   if (id) void loadMonsters(id)
 }, { immediate: true })
 
-const ready = computed(() => library.gameId === gameId.value && library.status === 'ready')
-const loading = computed(() => !masterOf.value || (library.gameId === gameId.value && library.status === 'loading' && library.monsters.length === 0))
-const failed = computed(() => library.gameId === gameId.value && library.status === 'failed')
+// Back from a server outage: the master's other device may have changed the library meanwhile.
+watch(connection, (now, was) => {
+  if (was === 'down' && now === 'ok' && masterOf.value) void loadMonsters(masterOf.value)
+})
+
+const forThisGame = computed(() => !!masterOf.value && library.gameId === masterOf.value)
+// A reload keeps the list on screen; anything else (idle, another game, a first load) waits.
+const hasList = computed(() => forThisGame.value && (library.status === 'ready' || library.monsters.length > 0))
+const failed = computed(() => forThisGame.value && library.status === 'failed')
+const loading = computed(() => !hasList.value && !failed.value)
 
 const query = ref('')
-const shown = computed(() => searchMonsters(library.gameId === gameId.value ? library.monsters : [], query.value))
+const shown = computed(() => searchMonsters(hasList.value ? library.monsters : [], query.value))
 const expandedId = ref<string | null>(null)
 
 // ── Add / edit / duplicate ──
@@ -83,12 +91,14 @@ const deleteOpen = computed({
 async function confirmDelete() {
   const target = deleting.value
   if (!target) return
-  const ok = await run('deleteMonster', t('library.monsters.remove.failed'), () => deleteMonster(target.id))
+  const id = gameId.value
+  if (!id) return
+  const ok = await run('deleteMonster', t('library.monsters.remove.failed'), () => deleteMonster(id, target.id))
   if (ok) deleting.value = null
 }
 
 function retry() {
-  if (gameId.value) void loadMonsters(gameId.value)
+  if (masterOf.value) void loadMonsters(masterOf.value)
 }
 
 function backToTable() {
@@ -108,12 +118,17 @@ function backToTable() {
 
     <div v-if="loading" class="ml-note" role="status">{{ t('library.monsters.loading') }}</div>
 
-    <div v-else-if="failed && library.monsters.length === 0" class="ml-note" role="alert">
+    <div v-else-if="!hasList" class="ml-note" role="alert">
       <p>{{ t('library.monsters.loadFailed') }}</p>
       <Button variant="ghost" size="sm" @click="retry">{{ t('library.monsters.retry') }}</Button>
     </div>
 
     <template v-else>
+      <div v-if="failed" class="ml-stale" role="alert">
+        <p>{{ t('library.monsters.loadFailed') }}</p>
+        <Button variant="ghost" size="sm" @click="retry">{{ t('library.monsters.retry') }}</Button>
+      </div>
+
       <div class="ml-toolbar">
         <label class="ml-search">
           <IconSearch class="ml-search-icon" aria-hidden="true" />
@@ -129,7 +144,7 @@ function backToTable() {
         <Button variant="primary" size="sm" :icon-left="IconPlus" @click="openSheet('add')">{{ t('library.monsters.add') }}</Button>
       </div>
 
-      <div v-if="ready && library.monsters.length === 0" class="ml-empty">
+      <div v-if="library.monsters.length === 0" class="ml-empty">
         <p class="ml-empty-title">{{ t('library.monsters.empty') }}</p>
         <p class="ml-empty-hint">{{ t('library.monsters.emptyHint') }}</p>
       </div>
@@ -232,6 +247,18 @@ function backToTable() {
   font-size: 16px;
 }
 .ml-search-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
+
+.ml-stale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--vtt-danger);
+  border-radius: var(--r-sm);
+  background: var(--vtt-danger-soft);
+}
+.ml-stale p { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 
 .ml-list { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 

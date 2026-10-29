@@ -2,7 +2,7 @@
 import { computed, reactive, ref, useId, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
-import { checkMonster, type LibraryProblem } from '@/domain/library'
+import { checkMonster, copyName, type LibraryProblem } from '@/domain/library'
 import { LIBRARY_LIMITS, type LibraryMonster } from '@/types/library'
 import { t } from '@/locales'
 
@@ -29,7 +29,7 @@ const fieldId = (f: Field) => `${uid}-${f}`
 
 function reset() {
   const s = props.mode === 'add' ? null : props.source
-  form.name = s ? (props.mode === 'duplicate' ? t('library.monsters.copyName', { name: s.name }) : s.name) : ''
+  form.name = s ? (props.mode === 'duplicate' ? copyName(s.name, name => t('library.monsters.copyName', { name })) : s.name) : ''
   form.hp = s ? String(s.hp) : ''
   form.armor = s ? String(s.armor) : '0'
   form.damage = s?.damage ?? ''

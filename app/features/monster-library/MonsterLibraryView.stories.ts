@@ -9,6 +9,7 @@ import { useRouteRecheck } from '@/composables/useRouteRecheck'
 import { useGamesStore } from '@/stores/games'
 import { useLibraryStore } from '@/stores/library'
 import { useToastsStore } from '@/stores/toasts'
+import { connection } from '@/transport/connection'
 import type { LibraryMonster } from '@/types/library'
 import { pb, resetRecords } from '../../../.storybook/mocks/pb'
 
@@ -270,6 +271,93 @@ export const DeleteFails: Story = {
   },
 }
 
+/** The entry was already deleted (another device): the server answers 404, I am still the master, so it counts as deleted. */
+export const DeleteAlreadyGone: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('monsters'), 'delete').mockRejectedValueOnce(new ClientResponseError({ status: 404 }))
+    await loaded(canvasElement)
+    await userEvent.click(head(canvasElement, 'Ogre'))
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Delete' }))
+    const confirm = await sheet(canvasElement, 'Delete “Ogre”?')
+    await userEvent.click(confirm.getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(names(canvasElement)).toEqual(['Cultist of the Drowned God', 'Goblin', 'Wolf']))
+    await expect(toastTexts()).not.toContain('Couldn’t delete the monster. Try again.')
+  },
+}
+
+/**
+ * The role moved away and realtime has not said so yet: the 404 is the server refusing a non-master.
+ * The game is re-read, the delete fails, and the new master in the store drops the library.
+ */
+export const DeleteAfterLosingMaster: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('monsters'), 'delete').mockRejectedValueOnce(new ClientResponseError({ status: 404 }))
+    spyOn(pb.collection('games'), 'getOne').mockResolvedValueOnce({
+      id: crookhollow.id, name: crookhollow.name, master: 'user-yana', invite_code: crookhollow.inviteCode, created: '',
+    } as never)
+    await loaded(canvasElement)
+    await userEvent.click(head(canvasElement, 'Ogre'))
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Delete' }))
+    const confirm = await sheet(canvasElement, 'Delete “Ogre”?')
+    await userEvent.click(confirm.getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(toastTexts()).toContain('Couldn’t delete the monster. Try again.'))
+    await expect(useGamesStore().byId(crookhollow.id)?.master).toBe('user-yana')
+    await expect(useLibraryStore().monsters).toEqual([])
+  },
+}
+
+/** The store is cleared while the screen is still mounted (e.g. leaving for the offline table): it waits, never "Nothing matches". */
+export const ClearedWhileOpen: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await loaded(canvasElement)
+    useLibraryStore().clearAll()
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Loading…'))
+    await expect(canvas.queryByText(/Nothing matches/)).toBeNull()
+  },
+}
+
+/** Back from a server outage, the library is read again: the master's other device may have changed it. */
+export const ReloadsAfterReconnect: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    await loaded(canvasElement)
+    resetRecords('monsters', monsterRows(crookhollow, MONSTERS.slice(1)))
+    try {
+      connection.value = 'down'
+      await Promise.resolve()
+      connection.value = 'ok'
+      await waitFor(() => expect(names(canvasElement)).toEqual(['Cultist of the Drowned God', 'Goblin', 'Wolf']))
+    } finally {
+      connection.value = 'ok'
+    }
+  },
+}
+
+/** A reload that fails keeps the list on screen, with a notice and a retry above it. */
+export const ReloadFails: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await loaded(canvasElement)
+    spyOn(pb.collection('monsters'), 'getFullList').mockRejectedValueOnce(new ClientResponseError({ status: 500 }))
+    try {
+      connection.value = 'down'
+      await Promise.resolve()
+      connection.value = 'ok'
+      await expect(await canvas.findByRole('alert')).toHaveTextContent('Couldn’t load the monsters.')
+    } finally {
+      connection.value = 'ok'
+    }
+    await expect(names(canvasElement)).toHaveLength(4)
+    await userEvent.click(canvas.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(canvas.queryByRole('alert')).toBeNull())
+    await expect(names(canvasElement)).toHaveLength(4)
+  },
+}
+
 /** Entries that fail the shape check (or whose id does not match the record) are not shown. */
 export const DropsBrokenEntries: Story = {
   tags: ['no-visual'],
@@ -347,6 +435,7 @@ export const LosesMasterWhileOpen: Story = {
   play: async ({ canvasElement }) => {
     await loaded(canvasElement)
     useGamesStore().upsertGame({ ...crookhollow, master: 'user-yana' })
+    await expect(useLibraryStore().monsters).toEqual([])
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
   },
 }
@@ -359,6 +448,7 @@ export const GameGoneWhileOpen: Story = {
   play: async ({ canvasElement }) => {
     await loaded(canvasElement)
     useGamesStore().removeGame(crookhollow.id)
+    await expect(useLibraryStore().monsters).toEqual([])
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
     await expect(toastTexts()).toContain('You’re no longer in that game.')
   },

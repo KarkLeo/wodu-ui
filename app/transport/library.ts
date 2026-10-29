@@ -1,7 +1,9 @@
 import { ClientResponseError } from 'pocketbase'
-import { pb, type MonsterRow } from '@/transport/pb'
+import { pb, type GameRow, type MonsterRow } from '@/transport/pb'
 import { call, requireOnlineUser, staysCurrent } from './onlineOps'
 import { checkMonster } from '@/domain/library'
+import { toGame } from './games'
+import { useGamesStore } from '@/stores/games'
 import { useLibraryStore } from '@/stores/library'
 import type { LibraryMonster } from '@/types/library'
 import { createLogger } from '@/utils/logger'
@@ -63,14 +65,23 @@ export async function updateMonster(gameId: string, monster: LibraryMonster): Pr
   if (current()) useLibraryStore().upsertMonster(gameId, data)
 }
 
-/** Master: deletes a monster. One that is already gone counts as deleted. */
-export async function deleteMonster(id: string): Promise<void> {
-  requireOnlineUser()
+/**
+ * Master: deletes a monster. The server answers 404 both for an entry that is already gone and for a
+ * player who is no longer the master, so a 404 re-reads the game: still the master, the entry counts as
+ * deleted; otherwise the game (with its new master) goes into the store and the delete fails.
+ */
+export async function deleteMonster(gameId: string, id: string): Promise<void> {
+  const me = requireOnlineUser()
   const current = staysCurrent()
   try {
     await call(() => pb.collection('monsters').delete(id))
   } catch (err) {
     if (!(err instanceof ClientResponseError && err.status === 404)) throw err
+    const game = toGame(await call(() => pb.collection('games').getOne<GameRow>(gameId)))
+    if (game.master !== me) {
+      if (current()) useGamesStore().upsertGame(game)
+      throw err
+    }
   }
   if (current()) useLibraryStore().removeMonster(id)
 }

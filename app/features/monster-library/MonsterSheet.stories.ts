@@ -96,6 +96,20 @@ export const Duplicate: Story = {
   },
 }
 
+/** A variant of a long name is cut short so it still fits the 80-character limit and saves at once. */
+export const DuplicateLongName: Story = {
+  tags: ['no-visual'],
+  args: { mode: 'duplicate', source: { ...goblin, name: `Goblin ${'x'.repeat(73)}` } },
+  play: async ({ canvasElement, args }) => {
+    const sheet = await dialog(canvasElement, 'New variant')
+    const name = (sheet.getByLabelText('Name') as HTMLInputElement).value
+    await expect(name).toHaveLength(80)
+    await expect(name).toMatch(/ \(copy\)$/)
+    await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
+    await expect(args.onSave).toHaveBeenCalledWith(expect.objectContaining({ name }))
+  },
+}
+
 /** While the write is on its way the button waits. */
 export const Saving: Story = {
   args: { mode: 'edit', source: goblin, saving: true },

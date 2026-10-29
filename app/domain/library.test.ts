@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory, searchMonsters } from './library'
+import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory, searchMonsters, copyName } from './library'
 import type { LibraryMonster } from '@/types/library'
 
 const ID = 'm-1234567890abcd'
@@ -196,5 +196,29 @@ describe('searchMonsters', () => {
   it('does not reorder the list it was given', () => {
     searchMonsters(all, '')
     expect(all.map(m => m.id)).toEqual(['m-3', 'm-2', 'm-1'])
+  })
+})
+
+describe('copyName', () => {
+  const wrap = (name: string) => `${name} (copy)`
+
+  it('wraps a name that fits', () => {
+    expect(copyName('Goblin', wrap)).toBe('Goblin (copy)')
+  })
+
+  it('cuts the original so the copy fits the limit exactly', () => {
+    const name = 'x'.repeat(78)
+    const copy = copyName(name, wrap)
+    expect(copy).toBe(`${'x'.repeat(73)} (copy)`)
+    expect(copy).toHaveLength(80)
+    expect(checkMonster({ ...goblin, name: copy }).ok).toBe(true)
+  })
+
+  it('drops a space left at the cut', () => {
+    expect(copyName('Old wolf', wrap, 11)).toBe('Old (copy)')
+  })
+
+  it('keeps at least one character of the original', () => {
+    expect(copyName('Goblin', wrap, 3)).toBe('G (copy)')
   })
 })
