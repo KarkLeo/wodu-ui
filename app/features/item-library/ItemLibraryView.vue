@@ -2,11 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
-import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconSearch from '@/components/ui/icons/IconSearch.vue'
 import GiveItemSheet from './GiveItemSheet.vue'
+import ItemKindTabs from './ItemKindTabs.vue'
 import ItemRow from './ItemRow.vue'
 import ItemSheet, { type ItemDraft, type ItemSheetMode } from './ItemSheet.vue'
 import { useGameAction } from '@/composables/useGameAction'
@@ -46,8 +46,6 @@ const loading = computed(() => !hasList.value && !failed.value)
 
 const query = ref('')
 const kind = ref<ItemKindFilter>('all')
-const KINDS: ItemKindFilter[] = ['all', 'weapon', 'armor', 'shield', 'tool', 'gear', 'occult', 'custom']
-const kindOptions = computed(() => KINDS.map(value => ({ value, label: t(`library.items.kinds.${value}`) })))
 const shown = computed(() => searchItems(hasList.value ? library.items : [], query.value, kind.value))
 const expandedId = ref<string | null>(null)
 
@@ -158,14 +156,7 @@ function backToTable() {
         <Button variant="primary" size="sm" :icon-left="IconPlus" @click="openSheet('add')">{{ t('library.items.add') }}</Button>
       </div>
 
-      <SegmentedFilter
-        v-if="library.items.length > 0"
-        v-model="kind"
-        :options="kindOptions"
-        variant="pill"
-        full-width
-        :aria-label="t('library.items.kindFilter')"
-      />
+      <ItemKindTabs v-if="library.items.length > 0" v-model="kind" />
 
       <div v-if="library.items.length === 0" class="il-empty">
         <p class="il-empty-title">{{ t('library.items.empty') }}</p>

@@ -2,14 +2,20 @@
 import IconBag from '@/components/ui/icons/IconBag.vue'
 import { t } from '@/locales'
 
+defineProps<{ catalog: boolean; fromLibrary: boolean }>()
 defineEmits<{
   (e: 'open-catalog'): void
+  (e: 'open-library'): void
 }>()
 </script>
 
 <template>
   <div class="inv-toolbar">
-    <button type="button" class="inv-toolbar-btn" @click="$emit('open-catalog')">
+    <button v-if="fromLibrary" type="button" class="inv-toolbar-btn" @click="$emit('open-library')">
+      <IconBag />
+      {{ t('inGame.inventory.fromLibrary') }}
+    </button>
+    <button v-if="catalog" type="button" class="inv-toolbar-btn" @click="$emit('open-catalog')">
       <IconBag />
       {{ t('inGame.inventory.openCatalog') }}
     </button>

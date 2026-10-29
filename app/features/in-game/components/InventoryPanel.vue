@@ -7,6 +7,10 @@ import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { findGearTemplate } from '@/data/gear'
+import { useCharactersStore } from '@/stores/characters'
+import { useGamesStore } from '@/stores/games'
+import { currentUser } from '@/transport/auth'
+import { itemSources } from '@/utils/permissions'
 import { t } from '@/locales'
 import { gearName } from '@/locales/content'
 
@@ -15,6 +19,7 @@ import InvSection from './inventory/InvSection.vue'
 import InvItem from './inventory/InvItem.vue'
 import InvToolbar from './inventory/InvToolbar.vue'
 import CatalogSheet from './inventory/CatalogSheet.vue'
+import LibraryPickSheet from './inventory/LibraryPickSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 
@@ -31,7 +36,20 @@ const {
   rollOverdose,
 } = useMercury(() => props.char, props.dispatch)
 
+const characters = useCharactersStore()
+const games = useGamesStore()
+
+const meta = computed(() => characters.metaOf(props.char.id))
+const gameId = computed(() => meta.value?.game ?? '')
+const sources = computed(() => itemSources(
+  props.char.status,
+  meta.value,
+  gameId.value ? games.byId(gameId.value) : undefined,
+  currentUser.value?.id ?? null,
+))
+
 const catalogOpen = ref(false)
+const libraryOpen = ref(false)
 
 const gmPendingId = ref<string | null>(null)
 const gmPending = computed(() => gmPendingId.value ? findGearTemplate(gmPendingId.value) ?? null : null)
@@ -144,17 +162,31 @@ function gmCancel() { gmPendingId.value = null }
     </InvSection>
 
     <template v-if="!readonly">
-      <InvToolbar @open-catalog="catalogOpen = true" />
+      <InvToolbar
+        v-if="sources.catalog || sources.fromLibrary"
+        :catalog="sources.catalog"
+        :from-library="sources.fromLibrary"
+        @open-catalog="catalogOpen = true"
+        @open-library="libraryOpen = true"
+      />
 
       <CatalogSheet
+        v-if="sources.catalog"
         v-model:open="catalogOpen"
         :coins="char.coins"
         @buy="onBuyTemplate"
         @request-gm="onRequestGm"
       />
 
+      <LibraryPickSheet
+        v-if="sources.fromLibrary"
+        v-model:open="libraryOpen"
+        :game-id="gameId"
+        :character-id="char.id"
+      />
+
       <ConfirmSheet
-        v-if="gmPending"
+        v-if="sources.catalog && gmPending"
         v-model:open="gmOpen"
         variant="gold"
         :title="t('inGame.inventory.gm.title')"
