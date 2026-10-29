@@ -81,6 +81,11 @@ export const GearBeforeHpRoll: Story = {
 
 export const Gear: Story = {
   decorators: [withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
+  play: async ({ canvasElement }) => {
+    const view = screen(canvasElement)
+    await expect(await view.findByRole('button', { name: 'Gear catalog' })).toBeVisible()
+    await expect(view.queryByText(/Custom item|Add your own/)).toBeNull()
+  },
 }
 
 /** The persisted draftId points at a draft that is gone: the wizard clears it and returns to the characters page. */

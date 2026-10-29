@@ -27,7 +27,6 @@ const meta = {
     item: sword,
     'onToggle-equip': fn(),
     onUse: fn(),
-    onEdit: fn(),
     onRemove: fn(),
   },
 } satisfies Meta<typeof InvItem>
@@ -48,7 +47,21 @@ export const Consumable: Story = {
 export const Custom: Story = {
   args: { item: locket },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('button', { name: 'Edit' })).toBeVisible()
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: 'Equip' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Edit' })).toBeNull()
+  },
+}
+
+/** An own item stored before players lost the ability to create them: still usable, no edit. */
+export const StoredOwnItem: Story = {
+  args: { item: { ...locket, id: 'story-own-draught', name: 'Own draught', descriptor: { kind: 'custom', consumable: true }, quantity: 2 } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Own draught')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Use' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Remove' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Edit' })).toBeNull()
   },
 }
 

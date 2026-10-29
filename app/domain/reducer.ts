@@ -55,24 +55,6 @@ export function applyCommand(char: Character, cmd: CharacterCommand): ApplyResul
       })
       break
     }
-    case 'ADD_CUSTOM_ITEM': {
-      next = inv.addCustomItem(char, cmd.name, cmd.price, cmd.notes, cmd.consumable, cmd.quantity)
-      changes.push({
-        payload: { kind: 'inventory-add', itemName: cmd.name, cost: cmd.price, source: 'custom' },
-        sourceCommand: cmd.type,
-      })
-      break
-    }
-    case 'EDIT_CUSTOM_ITEM': {
-      const item = findItem(char, cmd.itemId)
-      if (!item || item.descriptor.kind !== 'custom') break
-      next = inv.editCustomItem(char, cmd.itemId, cmd)
-      changes.push({
-        payload: { kind: 'inventory-edit', itemName: cmd.name },
-        sourceCommand: cmd.type,
-      })
-      break
-    }
     case 'REMOVE_ITEM': {
       const item = findItem(char, cmd.itemId)
       next = inv.removeItem(char, cmd.itemId)

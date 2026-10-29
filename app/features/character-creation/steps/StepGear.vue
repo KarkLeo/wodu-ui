@@ -10,7 +10,6 @@ import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
 import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
 import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
 import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.vue'
-import CustomItemSheet, { type CustomPayload } from '@/features/in-game/components/inventory/CustomItemSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import { t } from '@/locales'
@@ -21,8 +20,6 @@ const { roll } = useDiceRoller()
 const inv = useInventory(dispatch)
 
 const catalogOpen = ref(false)
-const customOpen = ref(false)
-const editingItem = ref<InventoryItem | null>(null)
 
 const gmPendingId = ref<string | null>(null)
 const gmPending = computed(() => gmPendingId.value ? findGearTemplate(gmPendingId.value) ?? null : null)
@@ -84,32 +81,6 @@ function gmApprove() {
 }
 function gmCancel() { gmPendingId.value = null }
 
-function onSaveCustom(payload: CustomPayload) {
-  if (editingItem.value) {
-    inv.editCustom(editingItem.value.id, {
-      name: payload.name,
-      price: payload.price,
-      notes: payload.notes,
-      consumable: payload.consumable,
-      quantity: payload.quantity,
-    })
-  } else {
-    inv.addCustom(payload.name, payload.price, payload.notes, payload.consumable || undefined, payload.quantity)
-  }
-  editingItem.value = null
-}
-function onRemoveCustom(itemId: string) {
-  inv.remove(itemId)
-  editingItem.value = null
-}
-function openAddCustom() {
-  editingItem.value = null
-  customOpen.value = true
-}
-function onEditCustom(item: InventoryItem) {
-  editingItem.value = item
-  customOpen.value = true
-}
 function onToggleEquip(item: InventoryItem) {
   if (item.equipped) inv.unequip(item.id)
   else inv.equip(item.id)
@@ -161,9 +132,6 @@ function onUse(item: InventoryItem) {
       <button type="button" class="cc-gear-btn" @click="catalogOpen = true">
         {{ t('characterCreation.gear.openCatalog') }}
       </button>
-      <button type="button" class="cc-gear-btn" @click="openAddCustom">
-        + {{ t('characterCreation.gear.addCustom') }}
-      </button>
     </div>
 
     <div v-if="draft.inventory.length" class="cc-gear-list">
@@ -173,7 +141,6 @@ function onUse(item: InventoryItem) {
         :item="item"
         @toggle-equip="onToggleEquip(item)"
         @use="onUse(item)"
-        @edit="onEditCustom(item)"
         @remove="removeItem(item.id)"
       />
     </div>
@@ -185,13 +152,6 @@ function onUse(item: InventoryItem) {
     :coins="draft.coins"
     @buy="onBuy"
     @request-gm="onRequestGm"
-  />
-
-  <CustomItemSheet
-    v-model:open="customOpen"
-    :editing="editingItem"
-    @save="onSaveCustom"
-    @remove="onRemoveCustom"
   />
 
   <ConfirmSheet

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import IconBag from '@/components/ui/icons/IconBag.vue'
-import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import { t } from '@/locales'
 
 defineEmits<{
   (e: 'open-catalog'): void
-  (e: 'open-custom'): void
 }>()
 </script>
 
@@ -14,10 +12,6 @@ defineEmits<{
     <button type="button" class="inv-toolbar-btn" @click="$emit('open-catalog')">
       <IconBag />
       {{ t('inGame.inventory.openCatalog') }}
-    </button>
-    <button type="button" class="inv-toolbar-btn" @click="$emit('open-custom')">
-      <IconPlus />
-      {{ t('inGame.inventory.addCustom') }}
     </button>
   </div>
 </template>

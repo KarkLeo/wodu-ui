@@ -19,8 +19,6 @@ export type CharacterCommand =
   // Inventory
   | { type: 'BUY_ITEM'; templateId: string }
   | { type: 'RECEIVE_ITEM'; item: Omit<InventoryItem, 'id'> }
-  | { type: 'ADD_CUSTOM_ITEM'; name: string; price?: number; notes?: string; consumable?: boolean; quantity?: number }
-  | { type: 'EDIT_CUSTOM_ITEM'; itemId: string; name: string; price?: number; notes?: string; consumable?: boolean; quantity?: number }
   | { type: 'REMOVE_ITEM'; itemId: string }
   | { type: 'USE_ITEM'; itemId: string }
   | { type: 'EQUIP_ITEM'; itemId: string }

@@ -15,7 +15,6 @@ import InvSection from './inventory/InvSection.vue'
 import InvItem from './inventory/InvItem.vue'
 import InvToolbar from './inventory/InvToolbar.vue'
 import CatalogSheet from './inventory/CatalogSheet.vue'
-import CustomItemSheet, { type CustomPayload } from './inventory/CustomItemSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 
@@ -33,8 +32,6 @@ const {
 } = useMercury(() => props.char, props.dispatch)
 
 const catalogOpen = ref(false)
-const customOpen = ref(false)
-const editingItem = ref<InventoryItem | null>(null)
 
 const gmPendingId = ref<string | null>(null)
 const gmPending = computed(() => gmPendingId.value ? findGearTemplate(gmPendingId.value) ?? null : null)
@@ -81,11 +78,6 @@ function onUse(item: InventoryItem) {
   inv.use(item.id)
 }
 
-function onEditCustom(item: InventoryItem) {
-  editingItem.value = item
-  customOpen.value = true
-}
-
 function onRemove(item: InventoryItem) {
   inv.remove(item.id)
 }
@@ -111,31 +103,6 @@ function gmApprove() {
   gmPendingId.value = null
 }
 function gmCancel() { gmPendingId.value = null }
-
-function onSaveCustom(payload: CustomPayload) {
-  if (editingItem.value) {
-    inv.editCustom(editingItem.value.id, {
-      name: payload.name,
-      price: payload.price,
-      notes: payload.notes,
-      consumable: payload.consumable,
-      quantity: payload.quantity,
-    })
-  } else {
-    inv.addCustom(payload.name, payload.price, payload.notes, payload.consumable || undefined, payload.quantity)
-  }
-  editingItem.value = null
-}
-
-function onRemoveCustom(itemId: string) {
-  inv.remove(itemId)
-  editingItem.value = null
-}
-
-function openAddCustom() {
-  editingItem.value = null
-  customOpen.value = true
-}
 </script>
 
 <template>
@@ -157,7 +124,6 @@ function openAddCustom() {
         :item="item"
         @toggle-equip="onToggleEquip(item)"
         @use="onUse(item)"
-        @edit="onEditCustom(item)"
         @remove="onRemove(item)"
       />
     </InvSection>
@@ -172,30 +138,19 @@ function openAddCustom() {
         :item="item"
         @toggle-equip="onToggleEquip(item)"
         @use="onUse(item)"
-        @edit="onEditCustom(item)"
         @remove="onRemove(item)"
       />
       <div v-if="!backpack.length" class="inv-empty">{{ t('inGame.inventory.empty') }}</div>
     </InvSection>
 
     <template v-if="!readonly">
-      <InvToolbar
-        @open-catalog="catalogOpen = true"
-        @open-custom="openAddCustom"
-      />
+      <InvToolbar @open-catalog="catalogOpen = true" />
 
       <CatalogSheet
         v-model:open="catalogOpen"
         :coins="char.coins"
         @buy="onBuyTemplate"
         @request-gm="onRequestGm"
-      />
-
-      <CustomItemSheet
-        v-model:open="customOpen"
-        :editing="editingItem"
-        @save="onSaveCustom"
-        @remove="onRemoveCustom"
       />
 
       <ConfirmSheet

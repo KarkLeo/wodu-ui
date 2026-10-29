@@ -30,6 +30,11 @@ const body = () => within(document.body)
 
 export const EquippedGear: Story = {
   render: forCharacter(brann.id),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('button', { name: 'Catalog' })).toBeVisible()
+    await expect(canvas.queryByText(/Custom item|Add your own/)).toBeNull()
+  },
 }
 
 export const Empty: Story = {
@@ -68,15 +73,7 @@ export const AskTheGm: Story = {
   },
 }
 
-export const CustomItemOpen: Story = {
-  render: forCharacter(brann.id),
-  play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Custom item' }))
-    await expect(await body().findByRole('dialog')).toBeVisible()
-  },
-}
-
-/** A teammate's gear: items and their stats stay; no equip, use, edit, remove, catalog or custom item. */
+/** A teammate's gear: items and their stats stay; no equip, use, remove or catalog. */
 export const ReadOnly: Story = {
   render: forCharacter(brann.id),
   decorators: [sheetFor(brann.id), asTeammate([brann])],
