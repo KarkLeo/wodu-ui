@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  variant: 'damage' | 'armor' | 'qty' | 'price'
+  variant: 'damage' | 'armor' | 'qty' | 'price' | 'hp'
 }>()
 </script>
 
@@ -37,6 +37,10 @@ defineProps<{
   color: var(--vtt-text-muted);
   border-color: var(--vtt-border-subtle);
   border-style: dashed;
+}
+.item-stat-chip.is-hp {
+  color: var(--vtt-danger-bright);
+  border-color: rgba(178, 59, 79, 0.35);
 }
 .item-stat-chip.is-price {
   color: var(--vtt-accent);

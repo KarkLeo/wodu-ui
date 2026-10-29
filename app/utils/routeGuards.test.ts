@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gameGuard, gamePartyGuard, gameSettingsGuard, levelUpGuard, partyGameRedirect, partyGuard } from './routeGuards'
+import { gameGuard, gamePartyGuard, masterRouteGuard, levelUpGuard, partyGameRedirect, partyGuard } from './routeGuards'
 import { makeCharacter } from '@/test/fixtures'
 import type { Character } from '@/types/character'
 import type { CharacterMeta } from '@/types/game'
@@ -81,30 +81,30 @@ describe('gameGuard', () => {
   })
 })
 
-describe('gameSettingsGuard', () => {
+describe('masterRouteGuard', () => {
   const isMember = (id: string) => id === 'G' || id === 'P'
   const isMaster = (id: string) => id === 'G'
 
   it('lets the master in', () => {
-    expect(gameSettingsGuard('G', isMember, isMaster)).toBeUndefined()
+    expect(masterRouteGuard('G', isMember, isMaster)).toBeUndefined()
   })
 
   it('sends a player to the game table', () => {
-    expect(gameSettingsGuard('P', isMember, isMaster)).toEqual({ name: 'game', params: { gameId: 'P' } })
+    expect(masterRouteGuard('P', isMember, isMaster)).toEqual({ name: 'game', params: { gameId: 'P' } })
   })
 
   it('sends a non-member home', () => {
-    expect(gameSettingsGuard('H', isMember, isMaster)).toEqual({ name: 'games' })
-    expect(gameSettingsGuard('', isMember, isMaster)).toEqual({ name: 'games' })
+    expect(masterRouteGuard('H', isMember, isMaster)).toEqual({ name: 'games' })
+    expect(masterRouteGuard('', isMember, isMaster)).toEqual({ name: 'games' })
   })
 
   it('sends everyone home offline, where nobody is a member', () => {
-    expect(gameSettingsGuard('G', () => false, () => false)).toEqual({ name: 'games' })
+    expect(masterRouteGuard('G', () => false, () => false)).toEqual({ name: 'games' })
   })
 
   it('does not redirect while online data is not loaded', () => {
-    expect(gameSettingsGuard('P', isMember, isMaster, false)).toBeUndefined()
-    expect(gameSettingsGuard('H', isMember, isMaster, false)).toBeUndefined()
+    expect(masterRouteGuard('P', isMember, isMaster, false)).toBeUndefined()
+    expect(masterRouteGuard('H', isMember, isMaster, false)).toBeUndefined()
   })
 })
 

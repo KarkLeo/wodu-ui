@@ -1,9 +1,16 @@
 import { defineStore } from 'pinia'
 import type { Game, GameMember } from '@/types/game'
 import { scope } from '@/transport/scope'
+import { useLibraryStore } from './library'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('store:games')
+
+// The library belongs to whoever is the game's master now: a new master, or no game at all, means the
+// cached list is no longer readable by this player (and a new master loads their own on open).
+function dropLibraryOnMasterChange(gameId: string, before: Game | undefined, after: Game | undefined) {
+  if (before && before.master !== after?.master) useLibraryStore().clearGame(gameId)
+}
 
 export const useGamesStore = defineStore('games', {
   state: () => ({
@@ -21,15 +28,19 @@ export const useGamesStore = defineStore('games', {
   actions: {
     setAll(games: Game[], members: GameMember[]) {
       log.debug('setAll', { games: games.length, members: members.length })
+      const libraryGame = useLibraryStore().gameId
+      if (libraryGame) dropLibraryOnMasterChange(libraryGame, this.byId(libraryGame), games.find(g => g.id === libraryGame))
       this.games = games
       this.members = members
     },
     upsertGame(game: Game) {
       const idx = this.games.findIndex(g => g.id === game.id)
+      dropLibraryOnMasterChange(game.id, this.games[idx], game)
       if (idx === -1) this.games.push(game)
       else this.games[idx] = game
     },
     removeGame(id: string) {
+      dropLibraryOnMasterChange(id, this.byId(id), undefined)
       this.games = this.games.filter(g => g.id !== id)
       this.members = this.members.filter(m => m.game !== id)
     },

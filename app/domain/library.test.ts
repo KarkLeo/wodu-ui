@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory } from './library'
+import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory, searchMonsters, copyName } from './library'
+import type { LibraryMonster } from '@/types/library'
 
 const ID = 'm-1234567890abcd'
 const goblin = { id: ID, name: ' Goblin ', hp: 6, armor: 1, damage: 'D6', special: '  ', notes: 'cowardly', extra: 1 }
@@ -167,5 +168,57 @@ describe('libraryItemToInventory', () => {
     const base = { id: 'i-2', name: 'Torch', descriptor: { kind: 'gear', consumable: true } } as const
     expect(libraryItemToInventory(base).quantity).toBe(1)
     expect(libraryItemToInventory({ ...base, quantity: 3 }).quantity).toBe(3)
+  })
+})
+
+describe('searchMonsters', () => {
+  const goblin: LibraryMonster = { id: 'm-1', name: 'Goblin', hp: 3, armor: 0, damage: '1d6', special: 'Cowardly, flees when hurt' }
+  const wolf: LibraryMonster = { id: 'm-2', name: 'wolf', hp: 6, armor: 0, damage: '1d6', notes: 'Hunts in packs near the mill' }
+  const ogre: LibraryMonster = { id: 'm-3', name: 'Ogre', hp: 18, armor: 1, damage: '1d10+1' }
+  const all = [ogre, wolf, goblin]
+
+  it('keeps everything for an empty or blank query, sorted by name regardless of case', () => {
+    expect(searchMonsters(all, '').map(m => m.id)).toEqual(['m-1', 'm-3', 'm-2'])
+    expect(searchMonsters(all, '   ').map(m => m.id)).toEqual(['m-1', 'm-3', 'm-2'])
+  })
+
+  it('matches the name, special and notes, ignoring case', () => {
+    expect(searchMonsters(all, 'OGR').map(m => m.id)).toEqual(['m-3'])
+    expect(searchMonsters(all, 'flees').map(m => m.id)).toEqual(['m-1'])
+    expect(searchMonsters(all, 'mill').map(m => m.id)).toEqual(['m-2'])
+  })
+
+  it('needs every word to match somewhere', () => {
+    expect(searchMonsters(all, 'wolf packs').map(m => m.id)).toEqual(['m-2'])
+    expect(searchMonsters(all, 'wolf cowardly')).toEqual([])
+  })
+
+  it('does not reorder the list it was given', () => {
+    searchMonsters(all, '')
+    expect(all.map(m => m.id)).toEqual(['m-3', 'm-2', 'm-1'])
+  })
+})
+
+describe('copyName', () => {
+  const wrap = (name: string) => `${name} (copy)`
+
+  it('wraps a name that fits', () => {
+    expect(copyName('Goblin', wrap)).toBe('Goblin (copy)')
+  })
+
+  it('cuts the original so the copy fits the limit exactly', () => {
+    const name = 'x'.repeat(78)
+    const copy = copyName(name, wrap)
+    expect(copy).toBe(`${'x'.repeat(73)} (copy)`)
+    expect(copy).toHaveLength(80)
+    expect(checkMonster({ ...goblin, name: copy }).ok).toBe(true)
+  })
+
+  it('drops a space left at the cut', () => {
+    expect(copyName('Old wolf', wrap, 11)).toBe('Old (copy)')
+  })
+
+  it('keeps at least one character of the original', () => {
+    expect(copyName('Goblin', wrap, 3)).toBe('G (copy)')
   })
 })

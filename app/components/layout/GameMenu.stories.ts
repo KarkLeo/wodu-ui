@@ -56,7 +56,7 @@ export const AsMaster: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement)
-    await expect(items(menu)).toEqual(['Game settings', 'Bring one of mine', 'Home'])
+    await expect(items(menu)).toEqual(['Game settings', 'Monster library', 'Bring one of mine', 'Home'])
   },
 }
 
@@ -81,6 +81,19 @@ export const OpensSettings: Story = {
     const menu = await openMenu(canvasElement)
     await userEvent.click(menu.getByRole('menuitem', { name: 'Game settings' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/settings`))
+  },
+}
+
+/** The master's monster library is a screen of its own too; players never see the item. */
+export const OpensMonsterLibrary: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement)
+    await userEvent.click(menu.getByRole('menuitem', { name: 'Monster library' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/monsters`))
   },
 }
 

@@ -178,3 +178,27 @@ export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, '
   if (isConsumable(item)) out.quantity = item.quantity ?? 1
   return out
 }
+
+/**
+ * The name of a copy (`wrap` adds the localised suffix, e.g. "Goblin (copy)"), with the original cut
+ * short so the result still fits the name limit.
+ */
+export function copyName(name: string, wrap: (name: string) => string, max: number = LIBRARY_LIMITS.name): string {
+  const full = wrap(name)
+  const over = full.length - max
+  if (over <= 0) return full
+  return wrap(name.slice(0, Math.max(1, name.length - over)).trimEnd())
+}
+
+/**
+ * The monsters whose name, special or notes contain every word of `query` (case-insensitive), sorted
+ * by name. An empty query keeps them all.
+ */
+export function searchMonsters(monsters: readonly LibraryMonster[], query: string): LibraryMonster[] {
+  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean)
+  const found = monsters.filter(m => {
+    const text = [m.name, m.special ?? '', m.notes ?? ''].join('\n').toLocaleLowerCase()
+    return words.every(w => text.includes(w))
+  })
+  return found.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id))
+}

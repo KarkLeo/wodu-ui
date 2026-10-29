@@ -71,8 +71,8 @@ export function gameGuard(
   }
 }
 
-/** Game settings: the master only. A player goes back to the game's table, anyone else home. */
-export function gameSettingsGuard(
+/** The master's screens (settings, monster library): a player goes back to the game's table, anyone else home. */
+export function masterRouteGuard(
   gameId: string,
   isMember: (id: string) => boolean,
   isMaster: (id: string) => boolean,
@@ -82,7 +82,7 @@ export function gameSettingsGuard(
   const toHome = gameGuard(gameId, isMember, dataReady)
   if (toHome) return toHome
   if (!isMaster(gameId)) {
-    log.warn('guard:game-settings → redirect', { gameId, reason: 'not the master' })
+    log.warn('guard:master-only → redirect', { gameId, reason: 'not the master' })
     return { name: 'game', params: { gameId } }
   }
 }

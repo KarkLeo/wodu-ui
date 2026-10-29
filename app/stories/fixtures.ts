@@ -4,6 +4,7 @@ import type { Character, StatKey } from '@/types/character'
 import type { ChangeEntry } from '@/types/changeLog'
 import type { RollRecord } from '@/types/dice'
 import type { CharacterMeta, Game, GameMember } from '@/types/game'
+import type { LibraryMonster } from '@/types/library'
 import { CLASSES } from '@/data/classes'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
@@ -279,3 +280,15 @@ export const OLDEN_META: Record<string, CharacterMeta> = {
   [oda.id]: { owner: 'user-seva', game: olden.id },
   [wren.id]: inGame(olden),
 }
+
+/** Crookhollow's monster library, as its master prepared it (unsorted on purpose: the screen sorts). */
+export const MONSTERS: LibraryMonster[] = [
+  { id: 'story-monster-ogre', name: 'Ogre', hp: 18, armor: 1, damage: '1d10+1', special: 'Hurls whoever it hits across the room.' },
+  { id: 'story-monster-goblin', name: 'Goblin', hp: 3, armor: 0, damage: '1d6', special: 'Cowardly: flees once half the pack is down.', notes: 'Three of them hide in the mill loft.' },
+  { id: 'story-monster-cultist', name: 'Cultist of the Drowned God', hp: 6, armor: 1, damage: '1d6', special: 'Casts Sleep once per fight.' },
+  { id: 'story-monster-wolf', name: 'Wolf', hp: 6, armor: 0, damage: '1d6', notes: 'Hunts in packs near the old road.' },
+]
+
+/** PocketBase rows of a game's monsters, for seedRecords('monsters', …). */
+export const monsterRows = (game: Game, monsters: LibraryMonster[] = MONSTERS) =>
+  monsters.map(m => ({ id: m.id, game: game.id, data: structuredClone(m) }))
