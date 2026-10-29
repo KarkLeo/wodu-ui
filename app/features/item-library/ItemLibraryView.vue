@@ -6,6 +6,7 @@ import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconSearch from '@/components/ui/icons/IconSearch.vue'
+import GiveItemSheet from './GiveItemSheet.vue'
 import ItemRow from './ItemRow.vue'
 import ItemSheet, { type ItemDraft, type ItemSheetMode } from './ItemSheet.vue'
 import { useGameAction } from '@/composables/useGameAction'
@@ -83,6 +84,15 @@ async function save(draft: ItemDraft) {
   } finally {
     saving.value = false
   }
+}
+
+// ── Give ──
+const giving = ref<LibraryItem | null>(null)
+const giveOpen = ref(false)
+
+function openGive(item: LibraryItem) {
+  giving.value = item
+  giveOpen.value = true
 }
 
 // ── Delete ──
@@ -173,6 +183,7 @@ function backToTable() {
           :item="i"
           :expanded="expandedId === i.id"
           @update:expanded="v => expandedId = v ? i.id : null"
+          @give="openGive(i)"
           @edit="openSheet('edit', i)"
           @duplicate="openSheet('duplicate', i)"
           @delete="deleting = i"
@@ -188,6 +199,8 @@ function backToTable() {
       :failed="saveFailed"
       @save="save"
     />
+
+    <GiveItemSheet v-if="gameId" v-model:open="giveOpen" :item="giving" :game-id="gameId" />
 
     <ConfirmSheet v-model:open="deleteOpen" variant="danger" :title="t('library.items.remove.title', { name: deleting?.name ?? '' })">
       <p>{{ t('library.items.remove.body') }}</p>

@@ -41,7 +41,7 @@ const bodyId = useId()
         <dd>{{ item.notes }}</dd>
       </dl>
       <div class="ir-actions">
-        <Button variant="primary" size="sm" @click="emit('give')">{{ t('library.items.give') }}</Button>
+        <Button variant="primary" size="sm" @click="emit('give')">{{ t('library.items.give.action') }}</Button>
         <Button variant="ghost" size="sm" :icon-left="IconEdit" @click="emit('edit')">{{ t('library.items.edit') }}</Button>
         <Button variant="ghost" size="sm" :icon-left="IconPlus" @click="emit('duplicate')">{{ t('library.items.duplicate') }}</Button>
         <Button variant="danger-ghost" size="sm" :icon-left="IconTrash" class="ir-delete" @click="emit('delete')">

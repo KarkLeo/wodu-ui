@@ -7,6 +7,7 @@ import { atRoute, DESKTOP_VIEWPORT, withGameTable } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
 import { useGamesStore } from '@/stores/games'
+import { useCharactersStore } from '@/stores/characters'
 import { useLibraryStore } from '@/stores/library'
 import { useToastsStore } from '@/stores/toasts'
 import { connection } from '@/transport/connection'
@@ -490,5 +491,48 @@ export const Russian: Story = {
   globals: { locale: 'ru' },
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByRole('list', { name: 'Библиотека предметов' })
+  },
+}
+
+// ── Giving ──
+const wrensItems = (name: string) => useCharactersStore().getById('story-wren')!.inventory.filter(i => i.name === name)
+
+async function give(canvasElement: HTMLElement, itemName: string, characterName: RegExp) {
+  await loaded(canvasElement)
+  const row = list(canvasElement).getAllByRole('listitem').find(li => li.querySelector('.ir-name')?.textContent?.trim() === itemName)!
+  if (row.querySelector('.ir-body') === null) await userEvent.click(head(canvasElement, itemName))
+  await userEvent.click(within(row).getByRole('button', { name: 'Give' }))
+  const dialog = await sheet(canvasElement, `Give “${itemName}”`)
+  await userEvent.click(dialog.getByRole('button', { name: characterName }))
+  await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+}
+
+/** The same consumable handed out twice lands in one stack of both quantities. */
+export const GiveConsumableTwice: Story = {
+  play: async ({ canvasElement }) => {
+    await give(canvasElement, 'Lantern oil', /Wren Ashfoot/)
+    await expect(wrensItems('Lantern oil')).toHaveLength(1)
+    await expect(wrensItems('Lantern oil')[0]!.quantity).toBe(3)
+    await give(canvasElement, 'Lantern oil', /Wren Ashfoot/)
+    await expect(wrensItems('Lantern oil')).toHaveLength(1)
+    await expect(wrensItems('Lantern oil')[0]!.quantity).toBe(6)
+  },
+}
+
+/** A weapon handed out twice is two items. */
+export const GiveWeaponTwice: Story = {
+  play: async ({ canvasElement }) => {
+    await give(canvasElement, 'Longsword', /Wren Ashfoot/)
+    await give(canvasElement, 'Longsword', /Wren Ashfoot/)
+    await expect(wrensItems('Longsword')).toHaveLength(2)
+  },
+}
+
+/** Handing an item out closes the sheet and says who got what. */
+export const GiveToast: Story = {
+  play: async ({ canvasElement }) => {
+    await give(canvasElement, 'Oak shield', /Wren Ashfoot/)
+    await waitFor(() => expect(toastTexts()).toContain('Wren Ashfoot got Oak shield.'))
+    await expect(body(canvasElement).queryByRole('dialog')).toBeNull()
   },
 }
