@@ -42,7 +42,7 @@ function notifyLeftGame(gameId: string): void {
   useToastsStore().push(t('games.leftOrRemoved'), 'info')
 }
 
-const MASTER_ROUTES = new Set(['game-settings', 'game-monsters'])
+const MASTER_ROUTES = new Set(['game-settings', 'game-monsters', 'game-items'])
 
 interface Redirect {
   to: RouteLocationRaw
@@ -83,7 +83,7 @@ export function applyRedirect(redirect: Redirect): RouteLocationRaw {
   return redirect.to
 }
 
-const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings', 'game-monsters'])
+const GAME_ROUTES = new Set(['game', 'game-party', 'game-character-new', 'game-settings', 'game-monsters', 'game-items'])
 
 /**
  * Re-runs the route middleware's checks while the page is open: once online data arrives (the

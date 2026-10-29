@@ -53,6 +53,10 @@ function openMonsters() {
   void router.push({ name: 'game-monsters', params: { gameId: props.game.id } })
 }
 
+function openItems() {
+  void router.push({ name: 'game-items', params: { gameId: props.game.id } })
+}
+
 function goHome() {
   void router.push({ name: 'games' })
 }
@@ -70,6 +74,7 @@ function goHome() {
         <template v-if="master">
           <DropdownMenuItem class="gm-item" @select="openSettings">{{ t('games.menu.settings') }}</DropdownMenuItem>
           <DropdownMenuItem class="gm-item" @select="openMonsters">{{ t('games.menu.monsters') }}</DropdownMenuItem>
+          <DropdownMenuItem class="gm-item" @select="openItems">{{ t('games.menu.items') }}</DropdownMenuItem>
         </template>
         <template v-else>
           <DropdownMenuItem class="gm-item" @select="inviteOpen = true">{{ t('games.menu.invite') }}</DropdownMenuItem>
