@@ -84,7 +84,7 @@ export const Gear: Story = {
   play: async ({ canvasElement }) => {
     const view = screen(canvasElement)
     await expect(await view.findByRole('button', { name: 'Gear catalog' })).toBeVisible()
-    await expect(view.queryByText(/Custom item|Add your own/)).toBeNull()
+    await expect(view.getAllByRole('button', { name: /catalog/i })).toHaveLength(1)
   },
 }
 

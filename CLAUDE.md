@@ -196,7 +196,7 @@ Feature-based folder structure:
 - `item-library/` — `ItemLibraryView` (the master's item library: kind tabs, search via `searchItems` in `domain/library.ts`, New item, give to a character; same loading / failed / reload behaviour as the monster library), `ItemRow` (accordion row), `ItemChips`, `ItemKindTabs`, `ItemSheet` (add / edit / duplicate form in a `BottomSheet`, errors from `checkItem`), `GiveItemSheet` (pick a character in the game and hand the item over)
 - `character-list/` — `CharacterListView` (the offline table at `/offline`; online the game table, only my drafts)
 - `character-creation/` — `CharacterCreationView` + `steps/` (StepIdentity, StepTraining, StepGear)
-- `in-game/` — `PartyView`, `InGameView`, `components/` (StatusHeader, StatsPanel, SkillsPanel, AbilitiesPanel, InventoryPanel + `inventory/` subcomponents, incl. `LibraryPickSheet` for the master's give-from-library; the custom-item sheet is gone, MagicPanel + `magic/` subcomponents, NotesPanel)
+- `in-game/` — `PartyView`, `InGameView`, `components/` (StatusHeader, StatsPanel, SkillsPanel, AbilitiesPanel, InventoryPanel + `inventory/` subcomponents, incl. `LibraryPickSheet` for the master's give-from-library, MagicPanel + `magic/` subcomponents, NotesPanel)
 - `level-up/` — `LevelUpView` + `components/` (StepStat, StepHitDice, StepSkill, StepAbility, StepSummary)
 
 ## UI Primitives (`app/components/ui/`)

@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import InventoryPanel from './InventoryPanel.vue'
-import { brann, CROOKHOLLOW_META, crookhollow, mirel, OLDEN_META, olden, sage, wren } from '@/stories/fixtures'
+import { brann, CROOKHOLLOW_META, crookhollow, itemRows, ITEMS, mirel, OLDEN_META, olden, sage, wren } from '@/stories/fixtures'
 import { withGameTable, withStores } from '@/stories/state'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
+import { useCharactersStore } from '@/stores/characters'
+import { useLibraryStore } from '@/stores/library'
+import { resetRecords } from '../../../../.storybook/mocks/pb'
 import { asTeammate, expectNoEditControls, sheetFor } from '@/stories/readonly'
 
 const meta = {
@@ -120,6 +123,34 @@ export const MasterOnPlayerSheet: Story = {
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByText('Shortbow')
     await expect(toolbar(canvasElement)).toEqual(['From library'])
+  },
+}
+
+/** From library on a player's sheet hands the item to that character (game and character ids reach the pick sheet). */
+export const MasterGivesFromSheet: Story = {
+  render: forCharacter(wren.id),
+  decorators: [
+    withGameTable(crookhollow, TABLE, CROOKHOLLOW_META),
+    sheetFor(wren.id),
+    (story) => ({
+      components: { story },
+      setup() {
+        resetRecords('items', itemRows(crookhollow, ITEMS))
+        useLibraryStore().clearAll()
+      },
+      template: '<story />',
+    }),
+  ],
+  play: async ({ canvasElement }) => {
+    await within(canvasElement).findByText('Shortbow')
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'From library' }))
+    const sheet = await body().findByRole('dialog', { name: 'From library' }).then(d => within(d))
+    await sheet.findByRole('list', { name: 'From library' })
+    const row = sheet.getAllByRole('listitem').find(li => li.querySelector('.lp-name')?.textContent?.trim() === 'Longsword')!
+    await userEvent.click(within(row).getByRole('button', { name: 'Give' }))
+    await waitFor(() => expect(row).toHaveTextContent('Given'))
+    const given = useCharactersStore().getById(wren.id)!.inventory.filter(i => i.name === 'Longsword')
+    await expect(given).toHaveLength(1)
   },
 }
 

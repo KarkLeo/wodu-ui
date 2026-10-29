@@ -153,7 +153,7 @@ function submit() {
         <div class="its-row">
           <label class="its-label" :for="fieldId('kind')">{{ t('library.items.form.kind') }}</label>
           <select :id="fieldId('kind')" v-model="form.kind" class="its-input">
-            <option v-for="k in KINDS" :key="k" :value="k">{{ t(`library.items.kinds.${k}`) }}</option>
+            <option v-for="k in KINDS" :key="k" :value="k">{{ t(`library.items.form.kinds.${k}`) }}</option>
           </select>
         </div>
         <div v-if="form.kind === 'weapon'" class="its-row">

@@ -37,7 +37,7 @@ const rows = computed(() => {
 
 async function pick(characterId: string) {
   const item = props.item
-  if (!item) return
+  if (!item || !open.value) return
   open.value = false
   await give(characterId, item)
 }

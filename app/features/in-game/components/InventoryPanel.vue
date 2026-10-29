@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Character, InventoryItem } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
@@ -50,6 +50,14 @@ const sources = computed(() => itemSources(
 
 const catalogOpen = ref(false)
 const libraryOpen = ref(false)
+watch(() => sources.value.catalog, (on) => { if (!on) catalogOpen.value = false })
+watch(() => sources.value.fromLibrary, (on) => { if (!on) libraryOpen.value = false })
+watch(readonly, (on) => {
+  if (on) {
+    catalogOpen.value = false
+    libraryOpen.value = false
+  }
+})
 
 const gmPendingId = ref<string | null>(null)
 const gmPending = computed(() => gmPendingId.value ? findGearTemplate(gmPendingId.value) ?? null : null)

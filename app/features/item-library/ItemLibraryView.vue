@@ -72,7 +72,13 @@ async function save(draft: ItemDraft) {
   saveFailed.value = false
   try {
     if (editing) await updateItem(id, item)
-    else await createItem(id, item)
+    else {
+      await createItem(id, item)
+      if (searchItems([item], query.value, kind.value).length === 0) {
+        query.value = ''
+        kind.value = 'all'
+      }
+    }
     sheetOpen.value = false
     expandedId.value = item.id
   } catch (err) {
