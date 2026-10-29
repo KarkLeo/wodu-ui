@@ -1,5 +1,5 @@
 import type { InventoryItem, ItemDescriptor } from '@/types/character'
-import { LIBRARY_LIMITS, type LibraryItem, type LibraryMonster } from '@/types/library'
+import { LIBRARY_LIMITS, type ItemKindFilter, type LibraryItem, type LibraryMonster } from '@/types/library'
 import { isConsumable } from '@/domain/inventory'
 
 export type LibraryProblemKey =
@@ -190,15 +190,31 @@ export function copyName(name: string, wrap: (name: string) => string, max: numb
   return wrap(name.slice(0, Math.max(1, name.length - over)).trimEnd())
 }
 
+function matchesWords(text: string, query: string): boolean {
+  const lower = text.toLocaleLowerCase()
+  return query.toLocaleLowerCase().split(/\s+/).filter(Boolean).every(w => lower.includes(w))
+}
+
+function byNameThenId(a: { name: string; id: string }, b: { name: string; id: string }): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id)
+}
+
 /**
  * The monsters whose name, special or notes contain every word of `query` (case-insensitive), sorted
  * by name. An empty query keeps them all.
  */
 export function searchMonsters(monsters: readonly LibraryMonster[], query: string): LibraryMonster[] {
-  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean)
-  const found = monsters.filter(m => {
-    const text = [m.name, m.special ?? '', m.notes ?? ''].join('\n').toLocaleLowerCase()
-    return words.every(w => text.includes(w))
-  })
-  return found.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id))
+  return monsters
+    .filter(m => matchesWords([m.name, m.special ?? '', m.notes ?? ''].join('\n'), query))
+    .sort(byNameThenId)
+}
+
+/**
+ * The items of the given kind (`custom` is "Other") whose name or notes contain every word of
+ * `query` (case-insensitive), sorted by name.
+ */
+export function searchItems(items: readonly LibraryItem[], query: string, kind: ItemKindFilter = 'all'): LibraryItem[] {
+  return items
+    .filter(i => (kind === 'all' || i.descriptor.kind === kind) && matchesWords([i.name, i.notes ?? ''].join('\n'), query))
+    .sort(byNameThenId)
 }

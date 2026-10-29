@@ -30,3 +30,5 @@ export const LIBRARY_LIMITS = {
   priceMax: 100000,
   quantityMax: 99,
 } as const
+
+export type ItemKindFilter = 'all' | ItemDescriptor['kind']
