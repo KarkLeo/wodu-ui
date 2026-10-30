@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import InvitePanel from '@/components/layout/InvitePanel.vue'
 import MembersList from '@/components/layout/MembersList.vue'
-import AuthField from '@/features/sign-in/AuthField.vue'
+import TextField from '@/components/ui/TextField.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { exitGameQuietly } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
@@ -95,12 +95,12 @@ function backToTable() {
       <!-- The field's own label says what it is; the section keeps a name for assistive tech. -->
       <section class="st-section" :aria-label="t('games.settings.name')">
         <form class="st-form" novalidate @submit.prevent="saveName">
-          <AuthField
-            id="game-settings-name"
+          <TextField
             v-model="name"
+            variant="underline"
             :label="t('games.create.label')"
             :placeholder="t('games.create.placeholder')"
-            autocomplete="off"
+            :spellcheck="false"
           />
           <p v-if="nameError === 'tooLong'" class="st-error" role="alert">
             {{ t('games.create.tooLong', { max: GAME_NAME_MAX }) }}

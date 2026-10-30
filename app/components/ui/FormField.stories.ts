@@ -32,3 +32,12 @@ export const WithError: Story = {
     await expect(input).toHaveAccessibleDescription('A name is required.')
   },
 }
+
+/** The hint and the error both describe the control, hint first. */
+export const WithHintAndError: Story = {
+  args: { hint: 'Shown to the other players.', error: 'A name is required.' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByLabelText('Name')
+    await expect(input).toHaveAccessibleDescription('Shown to the other players. A name is required.')
+  },
+}

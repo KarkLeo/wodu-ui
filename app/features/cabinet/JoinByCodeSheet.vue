@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
-import AuthField from '@/features/sign-in/AuthField.vue'
+import TextField from '@/components/ui/TextField.vue'
 import { normalizeInviteCode } from '@/utils/inviteCode'
 import { t } from '@/locales'
 import './cabinet.css'
@@ -37,13 +37,13 @@ function submit() {
 <template>
   <BottomSheet v-model:open="open" :title="t('games.joinByCode.title')" :max-width="420">
     <form class="hm-form" novalidate @submit.prevent="submit">
-      <AuthField
-        id="join-code"
+      <TextField
         v-model="input"
+        variant="underline"
         :label="t('games.joinByCode.label')"
         :placeholder="t('games.joinByCode.placeholder')"
         :hint="t('games.joinByCode.hint')"
-        autocomplete="off"
+        :spellcheck="false"
       />
       <p v-if="invalid" class="hm-error" role="alert">{{ t('games.joinByCode.invalid') }}</p>
       <Button type="submit" variant="hero" class="hm-submit" :disabled="!input.trim()">

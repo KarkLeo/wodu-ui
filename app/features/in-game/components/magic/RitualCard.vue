@@ -4,6 +4,8 @@ import type { Ritual } from '@/types/character'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import Button from '@/components/ui/Button.vue'
+import TextField from '@/components/ui/TextField.vue'
+import TextareaField from '@/components/ui/TextareaField.vue'
 import { t } from '@/locales'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 
@@ -89,23 +91,17 @@ function onBodyTap() {
     </template>
 
     <form v-else class="ritual-edit-form" @submit.prevent="save">
-      <div class="form-row">
-        <label class="form-label">{{ t('inGame.magic.rituals.name') }}</label>
-        <input
-          v-model="draft.name"
-          class="form-input"
-          :placeholder="t('inGame.magic.rituals.namePlaceholder')"
-        />
-      </div>
-      <div class="form-row">
-        <label class="form-label">{{ t('inGame.magic.rituals.description') }}</label>
-        <textarea
-          v-model="draft.description"
-          class="form-textarea"
-          rows="4"
-          :placeholder="t('inGame.magic.rituals.descriptionPlaceholder')"
-        />
-      </div>
+      <TextField
+        v-model="draft.name"
+        :label="t('inGame.magic.rituals.name')"
+        :placeholder="t('inGame.magic.rituals.namePlaceholder')"
+      />
+      <TextareaField
+        v-model="draft.description"
+        :rows="4"
+        :label="t('inGame.magic.rituals.description')"
+        :placeholder="t('inGame.magic.rituals.descriptionPlaceholder')"
+      />
       <div class="ritual-edit-foot">
         <Button type="button" variant="ghost" @click="cancel">{{ t('common.cancel') }}</Button>
         <Button type="submit" variant="primary">{{ t('common.save') }}</Button>
@@ -185,44 +181,6 @@ function onBodyTap() {
   gap: 10px;
   margin-top: 8px;
 }
-.form-row { display: flex; flex-direction: column; gap: 4px; }
-.form-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-.form-input,
-.form-textarea {
-  width: 100%;
-  padding: 8px 11px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  box-sizing: border-box;
-}
-.form-textarea {
-  font-family: var(--font-serif);
-  font-style: italic;
-  min-height: 96px;
-  resize: none;
-}
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
-}
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: var(--vtt-text-muted);
-  font-style: italic;
-}
-
 .ritual-edit-foot {
   display: flex;
   gap: 8px;

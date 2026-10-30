@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import AuthScreen from '../AuthScreen.vue'
-import AuthField from '../AuthField.vue'
+import TextField from '@/components/ui/TextField.vue'
 import Button from '@/components/ui/Button.vue'
 import { t } from '@/locales'
 
@@ -34,14 +34,15 @@ const emit = defineEmits<{
     </template>
 
     <form class="es-form" novalidate @submit.prevent="emit('submit')">
-      <AuthField
-        id="auth-email"
+      <TextField
         v-model="email"
+        variant="underline"
         type="email"
         :label="t('auth.email.label')"
         :placeholder="t('auth.email.placeholder')"
         :hint="t('auth.email.hint')"
         autocomplete="email"
+        :spellcheck="false"
       />
       <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
       <Button type="submit" variant="hero" size="lg" class="auth-wide" :disabled="busy">

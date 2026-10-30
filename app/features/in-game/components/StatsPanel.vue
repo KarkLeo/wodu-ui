@@ -10,6 +10,7 @@ import { effectiveStat, statModifierTotal, statModifierLines } from '@/utils/der
 import { createLogger } from '@/utils/logger'
 import StatChip from '@/components/ui/StatChip.vue'
 import Stepper from '@/components/ui/Stepper.vue'
+import TextField from '@/components/ui/TextField.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { t } from '@/locales'
 import { statLabel, statShort } from '@/locales/content'
@@ -204,10 +205,12 @@ function stopEdit() {
               class="pop-add"
               @submit.prevent="submitAdd(key)"
             >
-              <input
+              <TextField
                 v-model="addBuf[key].label"
-                type="text"
-                maxlength="32"
+                class="pop-add-label"
+                hide-label
+                :maxlength="32"
+                :label="t('inGame.stats.modifiers.addPlaceholder')"
                 :placeholder="t('inGame.stats.modifiers.addPlaceholder')"
               />
               <Stepper
@@ -309,26 +312,7 @@ function stopEdit() {
   gap: 6px;
   margin-top: 8px;
 }
-.info-popover .pop-add input[type="text"] {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 8px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  outline: none;
-  box-shadow: var(--shadow-inset);
-}
-.info-popover .pop-add input[type="text"]::placeholder {
-  color: var(--vtt-text-muted);
-  opacity: 0.7;
-}
-.info-popover .pop-add input[type="text"]:focus {
-  border-color: var(--vtt-accent-deep);
-}
+.info-popover .pop-add-label { flex: 1; }
 .info-popover .pop-btn-add {
   flex: 0 0 auto;
   width: 28px;

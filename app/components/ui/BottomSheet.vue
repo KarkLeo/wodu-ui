@@ -26,9 +26,12 @@ const open = defineModel<boolean>('open', { required: true })
           <slot name="header">
             <div v-if="title" class="bs-head">
               <DialogTitle class="bs-title">{{ title }}</DialogTitle>
-              <DialogClose class="bs-close" :aria-label="t('common.close')">
-                <IconClose />
-              </DialogClose>
+              <div class="bs-head-right">
+                <slot name="head-right" />
+                <DialogClose class="bs-close" :aria-label="t('common.close')">
+                  <IconClose />
+                </DialogClose>
+              </div>
             </div>
             <div v-else class="bs-head is-bare">
               <VisuallyHidden>
@@ -65,6 +68,11 @@ const open = defineModel<boolean>('open', { required: true })
   justify-content: flex-end;
   padding: 10px 12px 0;
   border-bottom: 0;
+}
+.bs-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .bs-title {
   font-family: var(--font-serif);

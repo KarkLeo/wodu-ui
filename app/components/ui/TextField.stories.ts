@@ -59,3 +59,93 @@ export const Typing: Story = {
     await expect(args['onUpdate:modelValue']).toHaveBeenLastCalledWith('Rope')
   },
 }
+
+/** The sign-in look: no box, a rule under a larger serif text, the hint under it describing the field. */
+export const Underline: Story = {
+  args: {
+    variant: 'underline',
+    type: 'email',
+    label: 'Email',
+    placeholder: 'you@example.com',
+    hint: 'No password — we’ll email you a code.',
+    autocomplete: 'email',
+    spellcheck: false,
+  },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByLabelText('Email')
+    await expect(input).toHaveAttribute('type', 'email')
+    await expect(input).toHaveAttribute('spellcheck', 'false')
+    await expect(input).toHaveAccessibleDescription('No password — we’ll email you a code.')
+  },
+}
+
+/** A muted note after the label; it is part of the field's name. `maxlength` caps the text. */
+export const OptionalNote: Story = {
+  args: {
+    variant: 'underline',
+    label: 'Player name',
+    optional: '— a nickname is fine',
+    placeholder: undefined,
+    maxlength: 5,
+  },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: /Player name/ })
+    await userEvent.type(input, 'Annabel')
+    await expect(input).toHaveValue('Annab')
+  },
+}
+
+/** The `hint` slot, for a hint with an icon. Both the hint and an error describe the field. */
+export const HintSlotAndError: Story = {
+  args: { variant: 'underline', label: 'True name', placeholder: 'Known only to you', error: 'Too long.' },
+  render: (args) => ({
+    components: { TextField },
+    setup() {
+      const value = ref(args.modelValue)
+      return { args, value }
+    },
+    template: `
+      <TextField v-bind="args" v-model="value">
+        <template #hint>
+          <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="6" cy="6" r="4"/></svg>
+          Spirits who learn it gain power over you.
+        </template>
+      </TextField>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByLabelText('True name')
+    await expect(input).toHaveAccessibleDescription('Spirits who learn it gain power over you. Too long.')
+  },
+}
+
+/** Where the surroundings already say what the field is, the label is kept for assistive tech only. */
+export const HiddenLabel: Story = {
+  args: { label: 'Source (potion, curse…)', placeholder: 'Source (potion, curse…)', hideLabel: true },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('textbox', { name: 'Source (potion, curse…)' })).toBeInTheDocument()
+  },
+}
+
+/** `list` points at a `<datalist>`; `blur` lets a debounced field commit when focus leaves. */
+export const SuggestionsAndBlur: Story = {
+  args: { label: 'Sphere', placeholder: 'Pick or type', list: 'story-spheres', onBlur: fn() },
+  render: (args) => ({
+    components: { TextField },
+    setup() {
+      const value = ref(args.modelValue)
+      return { args, value }
+    },
+    template: `
+      <TextField v-bind="args" v-model="value" />
+      <datalist id="story-spheres"><option value="Fire" /><option value="Water" /></datalist>
+    `,
+  }),
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByLabelText('Sphere')
+    await expect(input).toHaveAttribute('list', 'story-spheres')
+    await userEvent.click(input)
+    await userEvent.tab()
+    await expect(args.onBlur).toHaveBeenCalledTimes(1)
+  },
+}

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
-import AuthField from '@/features/sign-in/AuthField.vue'
+import TextField from '@/components/ui/TextField.vue'
 import { createGame } from '@/transport/games'
 import type { Game } from '@/types/game'
 import { GAME_NAME_MAX, gameNameError } from '@/utils/gameName'
@@ -55,13 +55,13 @@ async function submit() {
 <template>
   <BottomSheet v-model:open="open" :title="t('games.create.title')" :max-width="420">
     <form class="hm-form" novalidate @submit.prevent="submit">
-      <AuthField
-        id="create-game-name"
+      <TextField
         v-model="name"
+        variant="underline"
         :label="t('games.create.label')"
         :placeholder="t('games.create.placeholder')"
         :hint="t('games.create.hint')"
-        autocomplete="off"
+        :spellcheck="false"
       />
       <p v-if="error" class="hm-error" role="alert">{{ error }}</p>
       <Button type="submit" variant="hero" class="hm-submit" :disabled="busy || !trimmed || tooLong">

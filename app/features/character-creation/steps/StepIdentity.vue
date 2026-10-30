@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import TextField from '@/components/ui/TextField.vue'
 import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
@@ -111,39 +112,29 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 <template>
   <template v-if="draft">
   <section class="cc-section cc-section--names">
-    <div class="cc-field">
-      <label class="cc-field-label" for="cc-name-input">
-        {{ t('characterCreation.identity.nameLabel') }}
-      </label>
-      <input
-        id="cc-name-input"
-        class="cc-input"
-        type="text"
-        :placeholder="t('characterCreation.identity.namePlaceholder')"
-        :value="nameField.value.value"
-        @input="nameField.onInput(($event.target as HTMLInputElement).value)"
-        @blur="nameField.flush()"
-      />
-    </div>
-    <div class="cc-field">
-      <label class="cc-field-label" for="cc-truename-input">
-        {{ t('characterCreation.identity.trueNameLabel') }}
-        <span class="opt">{{ t('characterCreation.identity.trueNameOpt') }}</span>
-      </label>
-      <input
-        id="cc-truename-input"
-        class="cc-input is-truename"
-        type="text"
-        :placeholder="t('characterCreation.identity.trueNamePlaceholder')"
-        :value="trueNameField.value.value"
-        @input="trueNameField.onInput(($event.target as HTMLInputElement).value)"
-        @blur="trueNameField.flush()"
-      />
-      <span class="cc-field-hint">
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg>
+    <TextField
+      :model-value="nameField.value.value"
+      variant="underline"
+      :label="t('characterCreation.identity.nameLabel')"
+      :placeholder="t('characterCreation.identity.namePlaceholder')"
+      @update:model-value="nameField.onInput"
+      @blur="nameField.flush()"
+    />
+    <TextField
+      :model-value="trueNameField.value.value"
+      variant="underline"
+      class="cc-truename"
+      :label="t('characterCreation.identity.trueNameLabel')"
+      :optional="t('characterCreation.identity.trueNameOpt')"
+      :placeholder="t('characterCreation.identity.trueNamePlaceholder')"
+      @update:model-value="trueNameField.onInput"
+      @blur="trueNameField.flush()"
+    >
+      <template #hint>
+        <svg class="cc-hint-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg>
         {{ t('characterCreation.identity.trueNameHint') }}
-      </span>
-    </div>
+      </template>
+    </TextField>
   </section>
 
   <section class="cc-section">
@@ -217,13 +208,14 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         <span class="cc-class-tag">{{ classTagText(cls.id, cls.grantedSkillIds) }}</span>
       </button>
     </div>
-    <input
+    <TextField
       v-if="draft.classId === 'custom'"
-      class="cc-input"
-      type="text"
+      :model-value="customClassField.value.value"
+      variant="underline"
+      hide-label
+      :label="t('characterCreation.identity.classCustomNamePlaceholder')"
       :placeholder="t('characterCreation.identity.classCustomNamePlaceholder')"
-      :value="customClassField.value.value"
-      @input="customClassField.onInput(($event.target as HTMLInputElement).value)"
+      @update:model-value="customClassField.onInput"
       @blur="customClassField.flush()"
     />
   </section>
@@ -249,54 +241,9 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 .cc-section-action { margin-left: auto; }
 
 .cc-section--names { gap: var(--s-4); }
-.cc-field { display: flex; flex-direction: column; gap: 2px; }
-.cc-field-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.cc-field-label .opt {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 11px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--vtt-text-muted);
-}
-.cc-input {
-  font-family: var(--font-serif);
-  font-size: 18px;
-  padding: 8px 4px;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(140, 106, 58, 0.3);
-  color: var(--vtt-text-primary);
-  outline: none;
-  transition: border-color var(--t-fast) var(--ease);
-}
-.cc-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
-.cc-input:focus { border-bottom-color: var(--vtt-accent); }
-.cc-input.is-truename {
-  font-family: var(--font-serif);
-  font-style: italic;
-  color: var(--vtt-accent-soft);
-}
-.cc-field-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 11px;
-  color: var(--vtt-text-muted);
-  margin-top: 6px;
-}
-.cc-field-hint svg { width: 11px; height: 11px; color: var(--vtt-accent-deep); flex-shrink: 0; }
+/* The true name reads as a name of power: italic gold. */
+.cc-truename :deep(.form-field-control) { font-style: italic; color: var(--vtt-accent-soft); }
+.cc-hint-icon { width: 11px; height: 11px; color: var(--vtt-accent-deep); flex-shrink: 0; }
 
 .cc-btn-roll {
   display: inline-flex;
