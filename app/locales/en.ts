@@ -9,6 +9,9 @@ export const messages = {
     bottomSheet: {
       dialogTitle: 'Dialog',
     },
+    searchField: {
+      clear: 'Clear search',
+    },
     stepper: {
       decrease: 'Decrease',
       increase: 'Increase',

@@ -43,3 +43,17 @@ export const Typing: Story = {
     await expect(args['onUpdate:modelValue']).toHaveBeenLastCalledWith('oil')
   },
 }
+
+/** The field's own clear button empties it and keeps the focus in the field; it shows only while there is text. */
+export const Clearing: Story = {
+  args: { modelValue: 'sword' },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole('searchbox', { name: 'Search items' })
+    await userEvent.click(canvas.getByRole('button', { name: 'Clear search' }))
+    await expect(input).toHaveValue('')
+    await expect(input).toHaveFocus()
+    await expect(args['onUpdate:modelValue']).toHaveBeenLastCalledWith('')
+    await expect(canvas.queryByRole('button', { name: 'Clear search' })).toBeNull()
+  },
+}

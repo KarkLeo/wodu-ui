@@ -107,8 +107,17 @@ export const TextMeta: Story = {
   },
 }
 
-/** On a phone the chips drop under the title. */
+/** On a phone the chips drop under the title and the chevron sits beside them. */
 export const Phone: Story = {
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { expanded: true },
+  play: async ({ canvasElement }) => {
+    const box = (sel: string) => canvasElement.querySelector(sel)!.getBoundingClientRect()
+    const title = box('.accordion-title')
+    const chevron = box('.accordion-chevron')
+    const chips = box('.accordion-meta')
+    await expect(chips.top).toBeGreaterThanOrEqual(title.bottom)
+    await expect(chevron.top).toBeGreaterThanOrEqual(title.bottom)
+    await expect(chevron.top).toBeLessThan(chips.bottom)
+  },
 }

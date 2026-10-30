@@ -119,7 +119,10 @@ const bodyId = `${titleId}-body`
 
 @media (max-width: 419px) {
   .accordion-head { grid-template-columns: minmax(0, 1fr) auto; }
-  .accordion-chevron { grid-column: 2; }
-  .accordion-meta { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+  .accordion-chevron { grid-column: 2; grid-row: 1; }
+  .accordion-meta { grid-column: 1; grid-row: 2; justify-content: flex-start; }
+  /* With chips under the title the chevron sits beside them, next to the body it opens. */
+  .accordion-head:has(> .accordion-meta:not(:empty)):not(:has(> .accordion-meta > :only-child:empty)) .accordion-title { grid-column: 1 / -1; }
+  .accordion-head:has(> .accordion-meta:not(:empty)):not(:has(> .accordion-meta > :only-child:empty)) .accordion-chevron { grid-row: 2; }
 }
 </style>

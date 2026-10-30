@@ -11,6 +11,9 @@ export const messages: Messages = {
     bottomSheet: {
       dialogTitle: 'Діалог',
     },
+    searchField: {
+      clear: 'Очистити пошук',
+    },
     stepper: {
       decrease: 'Зменшити',
       increase: 'Збільшити',
