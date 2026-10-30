@@ -3,6 +3,10 @@ import { computed, reactive, ref, useId, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import FormCheckbox from '@/components/ui/FormCheckbox.vue'
+import FormError from '@/components/ui/FormError.vue'
+import SelectField from '@/components/ui/SelectField.vue'
+import TextareaField from '@/components/ui/TextareaField.vue'
+import TextField from '@/components/ui/TextField.vue'
 import { checkItem, copyName, type LibraryProblem } from '@/domain/library'
 import type { ItemDescriptor } from '@/types/character'
 import { LIBRARY_LIMITS, type LibraryItem } from '@/types/library'
@@ -41,7 +45,17 @@ const form = reactive({
 // Field errors wait for the first save attempt, then follow the typing.
 const tried = ref(false)
 const uid = useId()
-const fieldId = (f: string) => `${uid}-${f}`
+
+const kindOptions = computed(() => KINDS.map(k => ({ value: k, label: t(`library.items.form.kinds.${k}`) })))
+const reachOptions = computed(() => [
+  { value: true, label: t('library.items.melee') },
+  { value: false, label: t('library.items.ranged') },
+])
+const armorOptions = computed<Array<{ value: ArmorClass; label: string }>>(() => [
+  { value: 'none', label: t('library.items.form.armorNone') },
+  { value: 'light', label: t('library.items.form.armorLight') },
+  { value: 'full', label: t('library.items.form.armorFull') },
+])
 
 const canConsume = computed(() => form.kind === 'gear' || form.kind === 'occult' || form.kind === 'custom')
 
@@ -134,113 +148,65 @@ function submit() {
 <template>
   <BottomSheet v-model:open="open" :title="title" :max-width="480">
     <form :id="`${uid}-form`" class="its-form" novalidate @submit.prevent="submit">
-      <div class="its-row">
-        <label class="its-label" :for="fieldId('name')">{{ t('library.items.form.name') }}</label>
-        <input
-          :id="fieldId('name')"
-          v-model="form.name"
-          class="its-input"
-          type="text"
-          autocomplete="off"
-          :placeholder="t('library.items.form.namePlaceholder')"
-          :aria-invalid="!!errors.name"
-          :aria-describedby="errors.name ? `${fieldId('name')}-err` : undefined"
-        >
-        <p v-if="errors.name" :id="`${fieldId('name')}-err`" class="its-error">{{ errors.name }}</p>
-      </div>
+      <TextField
+        v-model="form.name"
+        :label="t('library.items.form.name')"
+        :placeholder="t('library.items.form.namePlaceholder')"
+        :error="errors.name"
+      />
 
       <div class="its-grid">
-        <div class="its-row">
-          <label class="its-label" :for="fieldId('kind')">{{ t('library.items.form.kind') }}</label>
-          <select :id="fieldId('kind')" v-model="form.kind" class="its-input">
-            <option v-for="k in KINDS" :key="k" :value="k">{{ t(`library.items.form.kinds.${k}`) }}</option>
-          </select>
-        </div>
-        <div v-if="form.kind === 'weapon'" class="its-row">
-          <label class="its-label" :for="fieldId('reach')">{{ t('library.items.form.reach') }}</label>
-          <select :id="fieldId('reach')" v-model="form.melee" class="its-input">
-            <option :value="true">{{ t('library.items.melee') }}</option>
-            <option :value="false">{{ t('library.items.ranged') }}</option>
-          </select>
-        </div>
-        <div v-else-if="form.kind === 'armor'" class="its-row">
-          <label class="its-label" :for="fieldId('armorClass')">{{ t('library.items.form.armorClass') }}</label>
-          <select :id="fieldId('armorClass')" v-model="form.armorClass" class="its-input">
-            <option value="none">{{ t('library.items.form.armorNone') }}</option>
-            <option value="light">{{ t('library.items.form.armorLight') }}</option>
-            <option value="full">{{ t('library.items.form.armorFull') }}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="its-grid">
-        <div class="its-row">
-          <label class="its-label" :for="fieldId('damage')">{{ t('library.items.form.damage') }}</label>
-          <input
-            :id="fieldId('damage')"
-            v-model="form.damage"
-            class="its-input its-num"
-            type="text"
-            autocomplete="off"
-            autocapitalize="off"
-            :placeholder="t('library.items.form.damagePlaceholder')"
-            :aria-invalid="!!errors.damage"
-            :aria-describedby="errors.damage ? `${fieldId('damage')}-err` : undefined"
-          >
-        </div>
-        <div class="its-row">
-          <label class="its-label" :for="fieldId('price')">{{ t('library.items.form.price') }}</label>
-          <input
-            :id="fieldId('price')"
-            v-model="form.price"
-            class="its-input its-num"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            :placeholder="t('library.items.form.pricePlaceholder')"
-            :aria-invalid="!!errors.price"
-            :aria-describedby="errors.price ? `${fieldId('price')}-err` : undefined"
-          >
-        </div>
-      </div>
-      <!-- Short fields share a row, so their messages go under it. -->
-      <p v-if="errors.damage" :id="`${fieldId('damage')}-err`" class="its-error">{{ t('library.items.form.damage') }}: {{ errors.damage }}</p>
-      <p v-if="errors.price" :id="`${fieldId('price')}-err`" class="its-error">{{ t('library.items.form.price') }}: {{ errors.price }}</p>
-
-      <div v-if="canConsume" class="its-grid its-consume">
-        <FormCheckbox v-model="form.consumable">{{ t('library.items.form.consumable') }}</FormCheckbox>
-        <div v-if="form.consumable" class="its-row">
-          <label class="its-label" :for="fieldId('quantity')">{{ t('library.items.form.quantity') }}</label>
-          <input
-            :id="fieldId('quantity')"
-            v-model="form.quantity"
-            class="its-input its-num"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="1"
-            :aria-invalid="!!errors.quantity"
-            :aria-describedby="errors.quantity ? `${fieldId('quantity')}-err` : undefined"
-          >
-        </div>
-      </div>
-      <p v-if="errors.quantity" :id="`${fieldId('quantity')}-err`" class="its-error">{{ t('library.items.form.quantity') }}: {{ errors.quantity }}</p>
-
-      <div class="its-row">
-        <label class="its-label" :for="fieldId('notes')">{{ t('library.items.form.notes') }}</label>
-        <textarea
-          :id="fieldId('notes')"
-          v-model="form.notes"
-          class="its-input its-textarea"
-          rows="3"
-          :placeholder="t('library.items.form.notesPlaceholder')"
-          :aria-invalid="!!errors.notes"
-          :aria-describedby="errors.notes ? `${fieldId('notes')}-err` : undefined"
+        <SelectField v-model="form.kind" :label="t('library.items.form.kind')" :options="kindOptions" />
+        <SelectField v-if="form.kind === 'weapon'" v-model="form.melee" :label="t('library.items.form.reach')" :options="reachOptions" />
+        <SelectField
+          v-else-if="form.kind === 'armor'"
+          v-model="form.armorClass"
+          :label="t('library.items.form.armorClass')"
+          :options="armorOptions"
         />
-        <p v-if="errors.notes" :id="`${fieldId('notes')}-err`" class="its-error">{{ errors.notes }}</p>
       </div>
 
-      <p v-if="failed" class="its-error" role="alert">{{ t('library.items.form.saveFailed') }}</p>
+      <!-- Short fields share a row, so each message names its field. -->
+      <div class="its-grid">
+        <TextField
+          v-model="form.damage"
+          mono
+          autocapitalize="off"
+          :label="t('library.items.form.damage')"
+          :placeholder="t('library.items.form.damagePlaceholder')"
+          :error="errors.damage && `${t('library.items.form.damage')}: ${errors.damage}`"
+        />
+        <TextField
+          v-model="form.price"
+          mono
+          inputmode="numeric"
+          :label="t('library.items.form.price')"
+          :placeholder="t('library.items.form.pricePlaceholder')"
+          :error="errors.price && `${t('library.items.form.price')}: ${errors.price}`"
+        />
+      </div>
+
+      <div v-if="canConsume" class="its-grid">
+        <FormCheckbox v-model="form.consumable" :class="{ 'its-beside': form.consumable }">{{ t('library.items.form.consumable') }}</FormCheckbox>
+        <TextField
+          v-if="form.consumable"
+          v-model="form.quantity"
+          mono
+          inputmode="numeric"
+          placeholder="1"
+          :label="t('library.items.form.quantity')"
+          :error="errors.quantity && `${t('library.items.form.quantity')}: ${errors.quantity}`"
+        />
+      </div>
+
+      <TextareaField
+        v-model="form.notes"
+        :label="t('library.items.form.notes')"
+        :placeholder="t('library.items.form.notesPlaceholder')"
+        :error="errors.notes"
+      />
+
+      <FormError v-if="failed" role="alert">{{ t('library.items.form.saveFailed') }}</FormError>
     </form>
 
     <template #footer>
@@ -254,35 +220,7 @@ function submit() {
 
 <style scoped>
 .its-form { display: flex; flex-direction: column; gap: 12px; }
-.its-row { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.its-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
-.its-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-.its-input {
-  width: 100%;
-  min-width: 0;
-  padding: 9px 12px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  /* 16px keeps iOS Safari from zooming into the field. */
-  font-size: 16px;
-  outline: none;
-}
-.its-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
-.its-input:focus {
-  border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
-}
-.its-input[aria-invalid='true'] { border-color: var(--vtt-danger); }
-.its-input.its-num { font-family: var(--font-mono); }
-.its-textarea { font-family: var(--font-serif); resize: vertical; min-height: 56px; }
-.its-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
+.its-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+/* Level with the bottom of the quantity input (label row, gap, input), also while an error shows under it. */
+.its-beside { margin-top: calc(var(--s-6) + var(--s-2)); }
 </style>

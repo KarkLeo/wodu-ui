@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
-import IconSearch from '@/components/ui/icons/IconSearch.vue'
+import SearchField from '@/components/ui/SearchField.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import ItemChips from '@/features/item-library/ItemChips.vue'
 import ItemKindTabs from '@/features/item-library/ItemKindTabs.vue'
 import { useGiveItem } from '@/composables/useGiveItem'
@@ -84,35 +85,29 @@ function toLibrary() {
 <template>
   <BottomSheet v-model:open="open" :title="t('inGame.inventory.fromLibrary')" :max-width="420">
     <div class="lp-stack">
-      <p v-if="loading" class="lp-note" role="status">{{ t('library.items.loading') }}</p>
+      <StateNote v-if="loading" compact role="status">{{ t('library.items.loading') }}</StateNote>
 
-      <div v-else-if="failed" class="lp-note" role="alert">
-        <p>{{ t('library.items.loadFailed') }}</p>
-        <Button variant="ghost" size="sm" @click="loadItems(gameId)">{{ t('library.items.retry') }}</Button>
-      </div>
+      <StateNote v-else-if="failed" compact role="alert">
+        {{ t('library.items.loadFailed') }}
+        <template #action>
+          <Button variant="ghost" size="sm" @click="loadItems(gameId)">{{ t('library.items.retry') }}</Button>
+        </template>
+      </StateNote>
 
-      <div v-else-if="library.items.length === 0" class="lp-note">
-        <p>{{ t('library.items.pick.empty') }}</p>
-        <Button variant="ghost" size="sm" @click="toLibrary">{{ t('library.items.pick.emptyLink') }}</Button>
-      </div>
+      <StateNote v-else-if="library.items.length === 0" compact>
+        {{ t('library.items.pick.empty') }}
+        <template #action>
+          <Button variant="ghost" size="sm" @click="toLibrary">{{ t('library.items.pick.emptyLink') }}</Button>
+        </template>
+      </StateNote>
 
       <template v-else>
-        <label class="lp-search">
-          <IconSearch class="lp-search-icon" aria-hidden="true" />
-          <input
-            v-model="query"
-            class="lp-search-input"
-            type="search"
-            autocomplete="off"
-            :aria-label="t('library.items.search')"
-            :placeholder="t('library.items.searchPlaceholder')"
-          >
-        </label>
+        <SearchField v-model="query" :label="t('library.items.search')" :placeholder="t('library.items.searchPlaceholder')" />
         <ItemKindTabs v-model="kind" />
 
-        <p v-if="shown.length === 0" class="lp-note" role="status">
+        <StateNote v-if="shown.length === 0" compact role="status">
           {{ query.trim() ? t('library.items.noMatches', { query: query.trim() }) : t('library.items.noMatchesKind') }}
-        </p>
+        </StateNote>
         <ul v-else class="lp-list" :aria-label="t('inGame.inventory.fromLibrary')">
           <li v-for="i in shown" :key="i.id" class="lp-row">
             <span class="lp-name">{{ i.name }}</span>
@@ -130,32 +125,6 @@ function toLibrary() {
 
 <style scoped>
 .lp-stack { display: flex; flex-direction: column; gap: var(--s-3); }
-
-.lp-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  transition: border-color var(--t-fast) var(--ease);
-}
-.lp-search:focus-within { border-color: var(--vtt-border-gold); }
-.lp-search-icon { width: 14px; height: 14px; flex-shrink: 0; color: var(--vtt-text-muted); }
-.lp-search-input {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 0;
-  background: transparent;
-  border: 0;
-  outline: none;
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  /* 16px keeps iOS Safari from zooming into the field. */
-  font-size: 16px;
-}
-.lp-search-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
 
 .lp-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .lp-row {
@@ -185,18 +154,4 @@ function toLibrary() {
   font-size: 13px;
   color: var(--vtt-success);
 }
-
-.lp-note {
-  margin: 12px auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-}
-.lp-note p { margin: 0; }
 </style>

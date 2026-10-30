@@ -50,14 +50,12 @@ type Story = StoryObj<typeof meta>
 
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body)
 const list = (canvasElement: HTMLElement) => within(within(canvasElement).getByRole('list', { name: 'Item library' }))
-const names = (canvasElement: HTMLElement) =>
-  list(canvasElement).getAllByRole('listitem').map(li => li.querySelector('.ir-name')?.textContent?.trim())
+// Each row is named by its title (aria-labelledby).
+const rowName = (li: HTMLElement) => li.ownerDocument.getElementById(li.getAttribute('aria-labelledby') ?? '')?.textContent?.trim()
+const names = (canvasElement: HTMLElement) => list(canvasElement).getAllByRole('listitem').map(rowName)
+const row = (canvasElement: HTMLElement, name: string) => list(canvasElement).getByRole('listitem', { name })
 // The row's toggle, found by the item's exact name (its accessible name also carries the stats).
-const head = (canvasElement: HTMLElement, name: string) => {
-  const row = list(canvasElement).getAllByRole('listitem').find(li => li.querySelector('.ir-name')?.textContent?.trim() === name)
-  if (!row) throw new Error(`no row for ${name}`)
-  return within(row).getAllByRole('button')[0]!
-}
+const head = (canvasElement: HTMLElement, name: string) => within(row(canvasElement, name)).getAllByRole('button')[0]!
 const sheet = (canvasElement: HTMLElement, name: string) => body(canvasElement).findByRole('dialog', { name }).then(d => within(d))
 const loaded = (canvasElement: HTMLElement) => within(canvasElement).findByRole('list', { name: 'Item library' })
 const ALL = ['Amulet of the Drowned God', 'Hunting crossbow', 'Lantern oil', 'Leather jerkin', 'Longsword', 'Oak shield', 'Smuggler map']
@@ -499,9 +497,8 @@ const wrensItems = (name: string) => useCharactersStore().getById('story-wren')!
 
 async function give(canvasElement: HTMLElement, itemName: string, characterName: RegExp) {
   await loaded(canvasElement)
-  const row = list(canvasElement).getAllByRole('listitem').find(li => li.querySelector('.ir-name')?.textContent?.trim() === itemName)!
-  if (row.querySelector('.ir-body') === null) await userEvent.click(head(canvasElement, itemName))
-  await userEvent.click(within(row).getByRole('button', { name: 'Give' }))
+  if (head(canvasElement, itemName).getAttribute('aria-expanded') !== 'true') await userEvent.click(head(canvasElement, itemName))
+  await userEvent.click(within(row(canvasElement, itemName)).getByRole('button', { name: 'Give' }))
   const dialog = await sheet(canvasElement, `Give “${itemName}”`)
   await userEvent.click(dialog.getByRole('button', { name: characterName }))
   await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
