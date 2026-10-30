@@ -6,6 +6,7 @@ import { crookhollow, CROOKHOLLOW_META, itemRows, ITEMS, PARTY, sage } from '@/s
 import { withGameTable } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
 import { useLibraryStore } from '@/stores/library'
+import { useToastsStore } from '@/stores/toasts'
 import { clearPbRequests, pb, pbRequests, resetRecords } from '../../../../../.storybook/mocks/pb'
 
 /** The game's items on the (mock) server; the store starts empty, as before the library screen was ever opened. */
@@ -97,7 +98,7 @@ export const Empty: Story = {
   },
 }
 
-/** Two gives in a row: both land, the sheet stays open and each row says Given. */
+/** Two gives in a row: both land, the sheet stays open and each row says Given, with no toast on top. */
 export const GiveTwoInARow: Story = {
   play: async ({ canvasElement, args }) => {
     const sheet = await dialog(canvasElement)
@@ -110,5 +111,8 @@ export const GiveTwoInARow: Story = {
     await expect(wren.inventory.filter(i => i.name === 'Longsword')).toHaveLength(1)
     await expect(wren.inventory.filter(i => i.name === 'Lantern oil')).toHaveLength(1)
     await expect(args['onUpdate:open']).not.toHaveBeenCalledWith(false)
+    const toastTexts = useToastsStore().items.map(t => t.text)
+    await expect(toastTexts).not.toContain('Wren Ashfoot got Longsword.')
+    await expect(toastTexts).not.toContain('Wren Ashfoot got Lantern oil.')
   },
 }

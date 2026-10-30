@@ -8,7 +8,6 @@ import ItemChips from '@/features/item-library/ItemChips.vue'
 import ItemKindTabs from '@/features/item-library/ItemKindTabs.vue'
 import { useGiveItem } from '@/composables/useGiveItem'
 import { searchItems } from '@/domain/library'
-import { useCharactersStore } from '@/stores/characters'
 import { useLibraryStore } from '@/stores/library'
 import { loadItems } from '@/transport/library'
 import type { ItemKindFilter, LibraryItem } from '@/types/library'
@@ -19,7 +18,6 @@ const open = defineModel<boolean>('open', { required: true })
 
 const router = useRouter()
 const library = useLibraryStore()
-const characters = useCharactersStore()
 const { give } = useGiveItem()
 
 const query = ref('')
@@ -60,14 +58,13 @@ function mark(set: typeof busyIds, id: string, on: boolean) {
 async function pick(item: LibraryItem) {
   if (busyIds.value.has(item.id)) return
   mark(busyIds, item.id, true)
-  const before = characters.getById(props.characterId)
+  let delivered = false
   try {
-    await give(props.characterId, item)
+    delivered = await give(props.characterId, item, { announce: false })
   } finally {
     mark(busyIds, item.id, false)
   }
-  // give() is silent on a refusal; a delivered item replaces the character object.
-  if (characters.getById(props.characterId) === before) return
+  if (!delivered) return
   mark(givenIds, item.id, true)
   clearTimeout(timers.get(item.id))
   timers.set(item.id, setTimeout(() => {
