@@ -62,50 +62,6 @@ export function receiveItem(char: Character, item: Omit<InventoryItem, 'id'>): C
   }
 }
 
-export function addCustomItem(
-  char: Character,
-  name: string,
-  price?: number,
-  notes?: string,
-  consumable?: boolean,
-  quantity?: number,
-): Character {
-  const item: InventoryItem = {
-    id: crypto.randomUUID(),
-    name,
-    descriptor: { kind: 'custom', consumable },
-    price,
-    notes,
-    quantity: consumable && quantity ? quantity : undefined,
-  }
-  return {
-    ...char,
-    inventory: [...char.inventory, item],
-    coins: price !== undefined ? Math.max(0, char.coins - price) : char.coins,
-  }
-}
-
-export function editCustomItem(
-  char: Character,
-  itemId: string,
-  fields: { name: string; price?: number; notes?: string; consumable?: boolean; quantity?: number },
-): Character {
-  return {
-    ...char,
-    inventory: char.inventory.map(i => {
-      if (i.id !== itemId || i.descriptor.kind !== 'custom') return i
-      return {
-        ...i,
-        name: fields.name,
-        price: fields.price,
-        notes: fields.notes,
-        quantity: fields.consumable && fields.quantity ? fields.quantity : undefined,
-        descriptor: { kind: 'custom', consumable: fields.consumable },
-      }
-    }),
-  }
-}
-
 export function removeItem(char: Character, itemId: string): Character {
   return {
     ...char,

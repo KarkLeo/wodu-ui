@@ -4,7 +4,7 @@ import type { Character, StatKey } from '@/types/character'
 import type { ChangeEntry } from '@/types/changeLog'
 import type { RollRecord } from '@/types/dice'
 import type { CharacterMeta, Game, GameMember } from '@/types/game'
-import type { LibraryMonster } from '@/types/library'
+import type { LibraryItem, LibraryMonster } from '@/types/library'
 import { CLASSES } from '@/data/classes'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
@@ -292,3 +292,17 @@ export const MONSTERS: LibraryMonster[] = [
 /** PocketBase rows of a game's monsters, for seedRecords('monsters', …). */
 export const monsterRows = (game: Game, monsters: LibraryMonster[] = MONSTERS) =>
   monsters.map(m => ({ id: m.id, game: game.id, data: structuredClone(m) }))
+
+export const ITEMS: LibraryItem[] = [
+  { id: 'story-item-lantern-oil', name: 'Lantern oil', descriptor: { kind: 'gear', consumable: true }, quantity: 3, price: 2 },
+  { id: 'story-item-crossbow', name: 'Hunting crossbow', descriptor: { kind: 'weapon', melee: false }, damage: '1d6', price: 30 },
+  { id: 'story-item-shield', name: 'Oak shield', descriptor: { kind: 'shield' }, price: 10 },
+  { id: 'story-item-sword', name: 'Longsword', descriptor: { kind: 'weapon', melee: true }, damage: '1d8', price: 40 },
+  { id: 'story-item-amulet', name: 'Amulet of the Drowned God', descriptor: { kind: 'occult' }, notes: 'Cold to the touch; whispers near water.' },
+  { id: 'story-item-leather', name: 'Leather jerkin', descriptor: { kind: 'armor', class: 'light' }, price: 20 },
+  { id: 'story-item-map', name: 'Smuggler map', descriptor: { kind: 'custom' }, notes: 'Marks three caves along the coast.' },
+]
+
+/** PocketBase rows of a game's items, for seedRecords('items', …). */
+export const itemRows = (game: Game, items: LibraryItem[] = ITEMS) =>
+  items.map(i => ({ id: i.id, game: game.id, data: structuredClone(i) }))

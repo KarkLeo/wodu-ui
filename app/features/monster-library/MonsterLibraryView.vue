@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import ScreenColumn from '@/components/layout/ScreenColumn.vue'
+import ScreenHeader from '@/components/layout/ScreenHeader.vue'
+import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
-import IconSearch from '@/components/ui/icons/IconSearch.vue'
+import SearchField from '@/components/ui/SearchField.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import MonsterRow from './MonsterRow.vue'
 import MonsterSheet, { type MonsterDraft, type MonsterSheetMode } from './MonsterSheet.vue'
 import { useGameAction } from '@/composables/useGameAction'
@@ -38,8 +43,8 @@ watch(connection, (now, was) => {
 
 const forThisGame = computed(() => !!masterOf.value && library.gameId === masterOf.value)
 // A reload keeps the list on screen; anything else (idle, another game, a first load) waits.
-const hasList = computed(() => forThisGame.value && (library.status === 'ready' || library.monsters.length > 0))
-const failed = computed(() => forThisGame.value && library.status === 'failed')
+const hasList = computed(() => forThisGame.value && (library.status.monsters === 'ready' || library.monsters.length > 0))
+const failed = computed(() => forThisGame.value && library.status.monsters === 'failed')
 const loading = computed(() => !hasList.value && !failed.value)
 
 const query = ref('')
@@ -107,51 +112,40 @@ function backToTable() {
 </script>
 
 <template>
-  <div class="content-wrap ml-screen">
-    <header class="ml-head">
-      <div class="ml-titles">
-        <h1 class="ml-title">{{ t('library.monsters.title') }}</h1>
-        <p v-if="game" class="ml-game">{{ game.name }}</p>
-      </div>
-      <Button variant="ghost" size="sm" @click="backToTable">{{ t('library.monsters.back') }}</Button>
-    </header>
+  <ScreenColumn>
+    <ScreenHeader :title="t('library.monsters.title')" :subtitle="game?.name">
+      <template #actions>
+        <Button variant="ghost" size="sm" @click="backToTable">{{ t('library.monsters.back') }}</Button>
+      </template>
+    </ScreenHeader>
 
-    <div v-if="loading" class="ml-note" role="status">{{ t('library.monsters.loading') }}</div>
+    <StateNote v-if="loading" role="status">{{ t('library.monsters.loading') }}</StateNote>
 
-    <div v-else-if="!hasList" class="ml-note" role="alert">
-      <p>{{ t('library.monsters.loadFailed') }}</p>
-      <Button variant="ghost" size="sm" @click="retry">{{ t('library.monsters.retry') }}</Button>
-    </div>
+    <StateNote v-else-if="!hasList" role="alert">
+      {{ t('library.monsters.loadFailed') }}
+      <template #action>
+        <Button variant="ghost" size="sm" @click="retry">{{ t('library.monsters.retry') }}</Button>
+      </template>
+    </StateNote>
 
     <template v-else>
-      <div v-if="failed" class="ml-stale" role="alert">
-        <p>{{ t('library.monsters.loadFailed') }}</p>
-        <Button variant="ghost" size="sm" @click="retry">{{ t('library.monsters.retry') }}</Button>
-      </div>
+      <AlertBanner v-if="failed">
+        {{ t('library.monsters.loadFailed') }}
+        <template #action>
+          <Button variant="ghost" size="sm" @click="retry">{{ t('library.monsters.retry') }}</Button>
+        </template>
+      </AlertBanner>
 
       <div class="ml-toolbar">
-        <label class="ml-search">
-          <IconSearch class="ml-search-icon" aria-hidden="true" />
-          <input
-            v-model="query"
-            class="ml-search-input"
-            type="search"
-            autocomplete="off"
-            :aria-label="t('library.monsters.search')"
-            :placeholder="t('library.monsters.searchPlaceholder')"
-          >
-        </label>
+        <SearchField v-model="query" class="ml-search" :label="t('library.monsters.search')" :placeholder="t('library.monsters.searchPlaceholder')" />
         <Button variant="primary" size="sm" :icon-left="IconPlus" @click="openSheet('add')">{{ t('library.monsters.add') }}</Button>
       </div>
 
-      <div v-if="library.monsters.length === 0" class="ml-empty">
-        <p class="ml-empty-title">{{ t('library.monsters.empty') }}</p>
-        <p class="ml-empty-hint">{{ t('library.monsters.emptyHint') }}</p>
-      </div>
+      <EmptyState v-if="library.monsters.length === 0" :title="t('library.monsters.empty')" :hint="t('library.monsters.emptyHint')" />
 
-      <p v-else-if="shown.length === 0" class="ml-note" role="status">
+      <StateNote v-else-if="shown.length === 0" role="status">
         {{ t('library.monsters.noMatches', { query: query.trim() }) }}
-      </p>
+      </StateNote>
 
       <ul v-else class="ml-list" :aria-label="t('library.monsters.title')">
         <MonsterRow
@@ -183,113 +177,11 @@ function backToTable() {
         <Button variant="ghost" @click="deleteOpen = false">{{ t('common.cancel') }}</Button>
       </template>
     </ConfirmSheet>
-  </div>
+  </ScreenColumn>
 </template>
 
 <style scoped>
-.ml-screen {
-  /* Same column as the game settings: centred, never under GameLayout's side panels. */
-  --ml-w: min(640px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-  width: var(--ml-w);
-  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--ml-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--ml-w));
-  padding: 16px 16px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.ml-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.ml-titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ml-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 22px;
-  line-height: 1.2;
-  color: var(--vtt-accent-soft);
-}
-.ml-game {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-  color: var(--vtt-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .ml-toolbar { display: flex; align-items: center; gap: 10px; }
-.ml-search {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  transition: border-color var(--t-fast) var(--ease);
-}
-.ml-search:focus-within { border-color: var(--vtt-border-gold); }
-.ml-search-icon { width: 14px; height: 14px; flex-shrink: 0; color: var(--vtt-text-muted); }
-.ml-search-input {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 0;
-  background: transparent;
-  border: 0;
-  outline: none;
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  /* 16px keeps iOS Safari from zooming into the field. */
-  font-size: 16px;
-}
-.ml-search-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
-
-.ml-stale {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--vtt-danger);
-  border-radius: var(--r-sm);
-  background: var(--vtt-danger-soft);
-}
-.ml-stale p { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
-
+.ml-search { flex: 1; }
 .ml-list { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-
-.ml-note {
-  margin: 32px auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-}
-.ml-note p { margin: 0; }
-
-.ml-empty {
-  padding: 24px 18px;
-  text-align: center;
-  border: 1px dashed var(--vtt-border-subtle);
-  border-radius: var(--r-md);
-}
-.ml-empty-title { margin: 0 0 6px; font-family: var(--font-serif); font-size: 16px; color: var(--vtt-accent-soft); }
-.ml-empty-hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--vtt-text-muted);
-}
 </style>

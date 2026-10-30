@@ -184,7 +184,7 @@ body {
   }
 }
 
-/* ── BottomSheet portal (shared by BottomSheet, CatalogSheet, CustomItemSheet) ── */
+/* ── BottomSheet portal (shared by BottomSheet, CatalogSheet) ── */
 .bs-overlay {
   position: fixed;
   inset: 0;

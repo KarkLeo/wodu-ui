@@ -58,51 +58,6 @@ describe('applyCommand: RECEIVE_ITEM', () => {
   })
 })
 
-describe('applyCommand: ADD_CUSTOM_ITEM', () => {
-  it('deducts the price and writes a change', () => {
-    const char = makeCharacter({ coins: 20 })
-    const { character, changes } = applyCommand(char, {
-      type: 'ADD_CUSTOM_ITEM',
-      name: 'Artifact',
-      price: 5,
-    })
-    expect(character.coins).toBe(15)
-    expect(character.inventory).toHaveLength(1)
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'custom', cost: 5 })
-  })
-  it('no price — payload without cost', () => {
-    const { changes } = applyCommand(makeCharacter(), {
-      type: 'ADD_CUSTOM_ITEM',
-      name: 'Gift',
-    })
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-add', source: 'custom', itemName: 'Gift' })
-    expect((changes[0].payload as { cost?: number }).cost).toBeUndefined()
-  })
-  it('price above the coin balance — coins clamp to 0', () => {
-    const char = makeCharacter({ coins: 5 })
-    const { character } = applyCommand(char, {
-      type: 'ADD_CUSTOM_ITEM',
-      name: 'Expensive',
-      price: 20,
-    })
-    expect(character.coins).toBe(0)
-  })
-})
-
-describe('applyCommand: EDIT_CUSTOM_ITEM', () => {
-  it('edits the name of a custom item', () => {
-    const item = makeCustom(false, { name: 'old' })
-    const char = makeCharacter({ inventory: [item] })
-    const { character, changes } = applyCommand(char, {
-      type: 'EDIT_CUSTOM_ITEM',
-      itemId: item.id,
-      name: 'new',
-    })
-    expect(character.inventory[0].name).toBe('new')
-    expect(changes[0].payload).toMatchObject({ kind: 'inventory-edit', itemName: 'new' })
-  })
-})
-
 describe('applyCommand: REMOVE_ITEM', () => {
   it('removes it and writes a change', () => {
     const item = makeWeapon()
@@ -240,80 +195,6 @@ describe('applyCommand: RECEIVE_ITEM — library items', () => {
     const before = totalArmor(char)
     char = applyCommand(char, { type: 'EQUIP_ITEM', itemId: char.inventory[0].id }).character
     expect(totalArmor(char)).toBe(before + 1)
-  })
-})
-
-describe('applyCommand: EDIT_CUSTOM_ITEM — guard', () => {
-  it('not custom — fields stay untouched and no change is written', () => {
-    const weapon = makeWeapon({ name: 'Sword' })
-    const char = makeCharacter({ inventory: [weapon] })
-    const { character, changes } = applyCommand(char, {
-      type: 'EDIT_CUSTOM_ITEM',
-      itemId: weapon.id,
-      name: 'Rename attempt',
-    })
-    expect(character.inventory[0].name).toBe('Sword')
-    // Nothing actually changed, so the journal must stay empty too.
-    expect(changes).toEqual([])
-  })
-  it('consumable:false wipes quantity on a custom item', () => {
-    const item = makeCustom(true, { name: 'Potion', quantity: 5 })
-    const char = makeCharacter({ inventory: [item] })
-    const { character } = applyCommand(char, {
-      type: 'EDIT_CUSTOM_ITEM',
-      itemId: item.id,
-      name: 'Potion',
-      consumable: false,
-      quantity: 5,
-    })
-    const edited = character.inventory[0]
-    expect(edited.quantity).toBeUndefined()
-    expect(edited.descriptor).toEqual({ kind: 'custom', consumable: false })
-  })
-  it('custom consumable — keeps the quantity from the command', () => {
-    const item = makeCustom(true, { name: 'Potion', quantity: 1 })
-    const char = makeCharacter({ inventory: [item] })
-    const { character } = applyCommand(char, {
-      type: 'EDIT_CUSTOM_ITEM',
-      itemId: item.id,
-      name: 'Potion+',
-      consumable: true,
-      quantity: 5,
-      price: 3,
-      notes: 'note',
-    })
-    const edited = character.inventory[0]
-    expect(edited.name).toBe('Potion+')
-    expect(edited.quantity).toBe(5)
-    expect(edited.price).toBe(3)
-    expect(edited.notes).toBe('note')
-  })
-})
-
-describe('applyCommand: EDIT_CUSTOM_ITEM — guards', () => {
-  it('unknown itemId — no changes and no change entry', () => {
-    const item = makeCustom(false, { name: 'Artifact' })
-    const char = makeCharacter({ inventory: [item] })
-    const { character, changes } = applyCommand(char, {
-      type: 'EDIT_CUSTOM_ITEM',
-      itemId: 'no-such',
-      name: 'New',
-    })
-    expect(character.inventory[0].name).toBe('Artifact')
-    expect(changes).toEqual([])
-  })
-})
-
-describe('applyCommand: ADD_CUSTOM_ITEM — consumable edge cases', () => {
-  it('consumable=true without quantity — quantity stays undefined', () => {
-    const { character } = applyCommand(makeCharacter(), {
-      type: 'ADD_CUSTOM_ITEM',
-      name: 'Potion',
-      consumable: true,
-    })
-    const item = character.inventory[0]
-    expect(item.quantity).toBeUndefined()
-    expect(item.descriptor).toEqual({ kind: 'custom', consumable: true })
   })
 })
 

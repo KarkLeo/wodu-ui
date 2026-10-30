@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import CatalogSheet from './CatalogSheet.vue'
-import CustomItemSheet from './CustomItemSheet.vue'
 
 let wrapper: VueWrapper | undefined
 
@@ -22,11 +21,5 @@ describe('inventory sheets', () => {
     wrapper = mount(CatalogSheet, { props: { open: true, coins: 30 }, attachTo: document.body })
     await flushPromises()
     expect(dialogName()).toBe('Gear catalog')
-  })
-
-  it('names the custom item dialog with its title', async () => {
-    wrapper = mount(CustomItemSheet, { props: { open: true, editing: null }, attachTo: document.body })
-    await flushPromises()
-    expect(dialogName()).toBe('Custom item')
   })
 })

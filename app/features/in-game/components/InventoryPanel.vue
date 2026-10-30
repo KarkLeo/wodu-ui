@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Character, InventoryItem } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from '@/composables/useInventory'
@@ -7,6 +7,10 @@ import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { findGearTemplate } from '@/data/gear'
+import { useCharactersStore } from '@/stores/characters'
+import { useGamesStore } from '@/stores/games'
+import { currentUser } from '@/transport/auth'
+import { itemSources } from '@/utils/permissions'
 import { t } from '@/locales'
 import { gearName } from '@/locales/content'
 
@@ -15,7 +19,7 @@ import InvSection from './inventory/InvSection.vue'
 import InvItem from './inventory/InvItem.vue'
 import InvToolbar from './inventory/InvToolbar.vue'
 import CatalogSheet from './inventory/CatalogSheet.vue'
-import CustomItemSheet, { type CustomPayload } from './inventory/CustomItemSheet.vue'
+import LibraryPickSheet from './inventory/LibraryPickSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 
@@ -32,9 +36,28 @@ const {
   rollOverdose,
 } = useMercury(() => props.char, props.dispatch)
 
+const characters = useCharactersStore()
+const games = useGamesStore()
+
+const meta = computed(() => characters.metaOf(props.char.id))
+const gameId = computed(() => meta.value?.game ?? '')
+const sources = computed(() => itemSources(
+  props.char.status,
+  meta.value,
+  gameId.value ? games.byId(gameId.value) : undefined,
+  currentUser.value?.id ?? null,
+))
+
 const catalogOpen = ref(false)
-const customOpen = ref(false)
-const editingItem = ref<InventoryItem | null>(null)
+const libraryOpen = ref(false)
+watch(() => sources.value.catalog, (on) => { if (!on) catalogOpen.value = false })
+watch(() => sources.value.fromLibrary, (on) => { if (!on) libraryOpen.value = false })
+watch(readonly, (on) => {
+  if (on) {
+    catalogOpen.value = false
+    libraryOpen.value = false
+  }
+})
 
 const gmPendingId = ref<string | null>(null)
 const gmPending = computed(() => gmPendingId.value ? findGearTemplate(gmPendingId.value) ?? null : null)
@@ -81,11 +104,6 @@ function onUse(item: InventoryItem) {
   inv.use(item.id)
 }
 
-function onEditCustom(item: InventoryItem) {
-  editingItem.value = item
-  customOpen.value = true
-}
-
 function onRemove(item: InventoryItem) {
   inv.remove(item.id)
 }
@@ -111,31 +129,6 @@ function gmApprove() {
   gmPendingId.value = null
 }
 function gmCancel() { gmPendingId.value = null }
-
-function onSaveCustom(payload: CustomPayload) {
-  if (editingItem.value) {
-    inv.editCustom(editingItem.value.id, {
-      name: payload.name,
-      price: payload.price,
-      notes: payload.notes,
-      consumable: payload.consumable,
-      quantity: payload.quantity,
-    })
-  } else {
-    inv.addCustom(payload.name, payload.price, payload.notes, payload.consumable || undefined, payload.quantity)
-  }
-  editingItem.value = null
-}
-
-function onRemoveCustom(itemId: string) {
-  inv.remove(itemId)
-  editingItem.value = null
-}
-
-function openAddCustom() {
-  editingItem.value = null
-  customOpen.value = true
-}
 </script>
 
 <template>
@@ -157,7 +150,6 @@ function openAddCustom() {
         :item="item"
         @toggle-equip="onToggleEquip(item)"
         @use="onUse(item)"
-        @edit="onEditCustom(item)"
         @remove="onRemove(item)"
       />
     </InvSection>
@@ -172,7 +164,6 @@ function openAddCustom() {
         :item="item"
         @toggle-equip="onToggleEquip(item)"
         @use="onUse(item)"
-        @edit="onEditCustom(item)"
         @remove="onRemove(item)"
       />
       <div v-if="!backpack.length" class="inv-empty">{{ t('inGame.inventory.empty') }}</div>
@@ -180,26 +171,30 @@ function openAddCustom() {
 
     <template v-if="!readonly">
       <InvToolbar
+        v-if="sources.catalog || sources.fromLibrary"
+        :catalog="sources.catalog"
+        :from-library="sources.fromLibrary"
         @open-catalog="catalogOpen = true"
-        @open-custom="openAddCustom"
+        @open-library="libraryOpen = true"
       />
 
       <CatalogSheet
+        v-if="sources.catalog"
         v-model:open="catalogOpen"
         :coins="char.coins"
         @buy="onBuyTemplate"
         @request-gm="onRequestGm"
       />
 
-      <CustomItemSheet
-        v-model:open="customOpen"
-        :editing="editingItem"
-        @save="onSaveCustom"
-        @remove="onRemoveCustom"
+      <LibraryPickSheet
+        v-if="sources.fromLibrary"
+        v-model:open="libraryOpen"
+        :game-id="gameId"
+        :character-id="char.id"
       />
 
       <ConfirmSheet
-        v-if="gmPending"
+        v-if="sources.catalog && gmPending"
         v-model:open="gmOpen"
         variant="gold"
         :title="t('inGame.inventory.gm.title')"

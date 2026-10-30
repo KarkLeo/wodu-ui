@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory, searchMonsters, copyName } from './library'
-import type { LibraryMonster } from '@/types/library'
+import { checkMonster, checkItem, normalizeDamage, libraryItemToInventory, searchMonsters, searchItems, copyName } from './library'
+import type { LibraryItem, LibraryMonster } from '@/types/library'
 
 const ID = 'm-1234567890abcd'
 const goblin = { id: ID, name: ' Goblin ', hp: 6, armor: 1, damage: 'D6', special: '  ', notes: 'cowardly', extra: 1 }
@@ -196,6 +196,39 @@ describe('searchMonsters', () => {
   it('does not reorder the list it was given', () => {
     searchMonsters(all, '')
     expect(all.map(m => m.id)).toEqual(['m-3', 'm-2', 'm-1'])
+  })
+})
+
+describe('searchItems', () => {
+  const sword: LibraryItem = { id: 'i-1', name: 'Sword', descriptor: { kind: 'weapon', melee: true }, notes: 'Keen edge' }
+  const rope: LibraryItem = { id: 'i-2', name: 'rope', descriptor: { kind: 'gear' }, notes: 'Thirty feet of hemp' }
+  const idol: LibraryItem = { id: 'i-3', name: 'Idol', descriptor: { kind: 'custom' } }
+  const twin: LibraryItem = { id: 'i-0', name: 'Idol', descriptor: { kind: 'occult' } }
+  const all = [sword, rope, idol, twin]
+
+  it('keeps everything for an empty query, sorted by name then id', () => {
+    expect(searchItems(all, '').map(i => i.id)).toEqual(['i-0', 'i-3', 'i-2', 'i-1'])
+  })
+
+  it('matches the name and notes, ignoring case', () => {
+    expect(searchItems(all, 'SWO').map(i => i.id)).toEqual(['i-1'])
+    expect(searchItems(all, 'hemp').map(i => i.id)).toEqual(['i-2'])
+  })
+
+  it('needs every word to match', () => {
+    expect(searchItems(all, 'rope thirty').map(i => i.id)).toEqual(['i-2'])
+    expect(searchItems(all, 'rope keen')).toEqual([])
+  })
+
+  it('filters by descriptor kind, custom being Other', () => {
+    expect(searchItems(all, '', 'weapon').map(i => i.id)).toEqual(['i-1'])
+    expect(searchItems(all, '', 'custom').map(i => i.id)).toEqual(['i-3'])
+    expect(searchItems(all, '', 'all')).toHaveLength(4)
+  })
+
+  it('combines the kind with the query and leaves the input alone', () => {
+    expect(searchItems(all, 'idol', 'occult').map(i => i.id)).toEqual(['i-0'])
+    expect(all.map(i => i.id)).toEqual(['i-1', 'i-2', 'i-3', 'i-0'])
   })
 })
 

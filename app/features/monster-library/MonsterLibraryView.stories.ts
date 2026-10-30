@@ -49,14 +49,12 @@ type Story = StoryObj<typeof meta>
 
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body)
 const list = (canvasElement: HTMLElement) => within(within(canvasElement).getByRole('list', { name: 'Monster library' }))
-const names = (canvasElement: HTMLElement) =>
-  list(canvasElement).getAllByRole('listitem').map(li => li.querySelector('.mr-name')?.textContent?.trim())
+// Each row is named by its title (aria-labelledby).
+const rowName = (li: HTMLElement) => li.ownerDocument.getElementById(li.getAttribute('aria-labelledby') ?? '')?.textContent?.trim()
+const names = (canvasElement: HTMLElement) => list(canvasElement).getAllByRole('listitem').map(rowName)
+const row = (canvasElement: HTMLElement, name: string) => list(canvasElement).getByRole('listitem', { name })
 // The row's toggle, found by the monster's exact name (its accessible name also carries the stats).
-const head = (canvasElement: HTMLElement, name: string) => {
-  const row = list(canvasElement).getAllByRole('listitem').find(li => li.querySelector('.mr-name')?.textContent?.trim() === name)
-  if (!row) throw new Error(`no row for ${name}`)
-  return within(row).getAllByRole('button')[0]!
-}
+const head = (canvasElement: HTMLElement, name: string) => within(row(canvasElement, name)).getAllByRole('button')[0]!
 const sheet = (canvasElement: HTMLElement, name: string) => body(canvasElement).findByRole('dialog', { name }).then(d => within(d))
 const loaded = (canvasElement: HTMLElement) => within(canvasElement).findByRole('list', { name: 'Monster library' })
 const toastTexts = () => useToastsStore().items.map(t => t.text)

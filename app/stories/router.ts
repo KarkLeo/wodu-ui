@@ -20,6 +20,7 @@ export const storyRouter = createRouter({
     { path: '/games/:gameId/new', name: 'game-character-new', component: Empty },
     { path: '/games/:gameId/settings', name: 'game-settings', component: Empty },
     { path: '/games/:gameId/monsters', name: 'game-monsters', component: Empty },
+    { path: '/games/:gameId/items', name: 'game-items', component: Empty },
     { path: '/join/:code', name: 'join', component: Empty },
     { path: '/offline', name: 'offline', component: Empty },
     { path: '/offline/party/:ids', name: 'offline-party', component: Empty },

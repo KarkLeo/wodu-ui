@@ -6,7 +6,6 @@ import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import ItemIcon from './ItemIcon.vue'
 import ItemStatChip from './ItemStatChip.vue'
 import IconCheck from '@/components/ui/icons/IconCheck.vue'
-import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import { t } from '@/locales'
 import { gearName, gearNotes } from '@/locales/content'
@@ -15,7 +14,6 @@ const props = defineProps<{ item: InventoryItem }>()
 const emit = defineEmits<{
   (e: 'toggle-equip'): void
   (e: 'use'): void
-  (e: 'edit'): void
   (e: 'remove'): void
 }>()
 
@@ -74,16 +72,6 @@ const armorChip = computed(() => {
         @click="emit('toggle-equip')"
       >
         <IconCheck />
-      </button>
-      <button
-        v-if="item.descriptor.kind === 'custom'"
-        type="button"
-        class="item-btn"
-        :title="t('inGame.inventory.edit')"
-        :aria-label="t('inGame.inventory.edit')"
-        @click="emit('edit')"
-      >
-        <IconEdit />
       </button>
       <button
         type="button"

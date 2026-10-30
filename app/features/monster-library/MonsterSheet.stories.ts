@@ -31,8 +31,8 @@ export const Add: Story = {
     await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
     await expect(args.onSave).not.toHaveBeenCalled()
     await expect(sheet.getByText('Give it a name.')).toBeVisible()
-    await expect(sheet.getByText('HP: A whole number from 1 to 999.')).toBeVisible()
-    await expect(sheet.getByText('Damage: A dice roll such as d6, 1d8+1 or 2d6.')).toBeVisible()
+    await expect(sheet.getByLabelText('HP')).toHaveAccessibleDescription('A whole number from 1 to 999.')
+    await expect(sheet.getByLabelText('Damage')).toHaveAccessibleDescription('A dice roll such as d6, 1d8+1 or 2d6.')
     await expect(sheet.getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true')
 
     await userEvent.type(sheet.getByLabelText('Name'), '  Bandit  ')
@@ -59,9 +59,9 @@ export const OutOfRange: Story = {
     await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
     await expect(args.onSave).not.toHaveBeenCalled()
     await expect(sheet.getByText('At most 80 characters.')).toBeVisible()
-    await expect(sheet.getByText('HP: A whole number from 1 to 999.')).toBeVisible()
-    await expect(sheet.getByText('Armor: A whole number from 0 to 9.')).toBeVisible()
-    await expect(sheet.getByText('Damage: A dice roll such as d6, 1d8+1 or 2d6.')).toBeVisible()
+    await expect(sheet.getByLabelText('HP')).toHaveAccessibleDescription('A whole number from 1 to 999.')
+    await expect(sheet.getByLabelText('Armor')).toHaveAccessibleDescription('A whole number from 0 to 9.')
+    await expect(sheet.getByLabelText('Damage')).toHaveAccessibleDescription('A dice roll such as d6, 1d8+1 or 2d6.')
     await expect(sheet.getByText('At most 2000 characters.')).toBeVisible()
   },
 }
