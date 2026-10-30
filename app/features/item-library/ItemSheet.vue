@@ -174,7 +174,7 @@ function submit() {
           autocapitalize="off"
           :label="t('library.items.form.damage')"
           :placeholder="t('library.items.form.damagePlaceholder')"
-          :error="errors.damage && `${t('library.items.form.damage')}: ${errors.damage}`"
+          :error="errors.damage"
         />
         <TextField
           v-model="form.price"
@@ -182,7 +182,7 @@ function submit() {
           inputmode="numeric"
           :label="t('library.items.form.price')"
           :placeholder="t('library.items.form.pricePlaceholder')"
-          :error="errors.price && `${t('library.items.form.price')}: ${errors.price}`"
+          :error="errors.price"
         />
       </div>
 
@@ -195,7 +195,7 @@ function submit() {
           inputmode="numeric"
           placeholder="1"
           :label="t('library.items.form.quantity')"
-          :error="errors.quantity && `${t('library.items.form.quantity')}: ${errors.quantity}`"
+          :error="errors.quantity"
         />
       </div>
 

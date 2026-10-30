@@ -119,14 +119,14 @@ function submit() {
           mono
           inputmode="numeric"
           :label="t('library.monsters.form.hp')"
-          :error="errors.hp && `${t('library.monsters.form.hp')}: ${errors.hp}`"
+          :error="errors.hp"
         />
         <TextField
           v-model="form.armor"
           mono
           inputmode="numeric"
           :label="t('library.monsters.form.armor')"
-          :error="errors.armor && `${t('library.monsters.form.armor')}: ${errors.armor}`"
+          :error="errors.armor"
         />
         <TextField
           v-model="form.damage"
@@ -134,7 +134,7 @@ function submit() {
           autocapitalize="off"
           :label="t('library.monsters.form.damage')"
           :placeholder="t('library.monsters.form.damagePlaceholder')"
-          :error="errors.damage && `${t('library.monsters.form.damage')}: ${errors.damage}`"
+          :error="errors.damage"
         />
       </div>
 

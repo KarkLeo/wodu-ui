@@ -134,8 +134,8 @@ export const OutOfRange: Story = {
     await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
     await expect(args.onSave).not.toHaveBeenCalled()
     await expect(sheet.getByText('At most 80 characters.')).toBeVisible()
-    await expect(sheet.getByText('Damage: A dice roll such as d6, 1d8+1 or 2d6.')).toBeVisible()
-    await expect(sheet.getByText('Price: A whole number from 0 to 100000.')).toBeVisible()
+    await expect(sheet.getByLabelText('Damage')).toHaveAccessibleDescription('A dice roll such as d6, 1d8+1 or 2d6.')
+    await expect(sheet.getByLabelText('Price')).toHaveAccessibleDescription('A whole number from 0 to 100000.')
     await expect(sheet.getByText('At most 2000 characters.')).toBeVisible()
   },
 }
@@ -150,7 +150,7 @@ export const QuantityOutOfRange: Story = {
     await userEvent.type(sheet.getByLabelText('Quantity'), '100')
     await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
     await expect(args.onSave).not.toHaveBeenCalled()
-    await expect(sheet.getByText('Quantity: A whole number from 1 to 99.')).toBeVisible()
+    await expect(sheet.getByLabelText('Quantity')).toHaveAccessibleDescription('A whole number from 1 to 99.')
   },
 }
 
