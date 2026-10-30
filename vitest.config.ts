@@ -57,6 +57,8 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
+            // Stories that print location.origin (invite links) need the same port on every run.
+            api: { port: 63315, strictPort: true },
             provider: playwright(),
             instances: [{ browser: 'chromium' }],
             expect: {
