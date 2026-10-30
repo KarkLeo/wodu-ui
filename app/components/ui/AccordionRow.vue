@@ -78,8 +78,9 @@ const bodyId = `${titleId}-body`
   white-space: nowrap;
 }
 .accordion-meta { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
-/* Meta that renders nothing visible (chips with nothing to show) takes no room. */
-.accordion-meta:not(:has(> :not(:empty))) { display: none; }
+/* A meta wrapper that renders nothing (chips with nothing to show) takes no room. */
+.accordion-meta:empty,
+.accordion-meta:has(> :only-child:empty) { display: none; }
 /* Without meta the chevron would slide next to the title. */
 .accordion-chevron {
   grid-column: 3;

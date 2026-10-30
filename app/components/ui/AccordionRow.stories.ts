@@ -77,3 +77,38 @@ export const Toggling: Story = {
     await expect(args['onUpdate:expanded']).toHaveBeenLastCalledWith(false)
   },
 }
+
+const single = (meta: string) => ({
+  components: { AccordionRow },
+  template: `
+    <ul style="margin: 0; padding: 0">
+      <AccordionRow>
+        <template #title>Lantern oil</template>
+        <template #meta>${meta}</template>
+      </AccordionRow>
+    </ul>
+  `,
+})
+const metaOf = (canvasElement: HTMLElement) => canvasElement.querySelector<HTMLElement>('.accordion-meta')!
+
+/** A meta wrapper that renders nothing takes no room. */
+export const EmptyMeta: Story = {
+  render: () => single('<span class="chips"></span>'),
+  play: async ({ canvasElement }) => {
+    await expect(metaOf(canvasElement)).not.toBeVisible()
+  },
+}
+
+/** Plain text in the meta slot still shows. */
+export const TextMeta: Story = {
+  render: () => single('3 left'),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('3 left')).toBeVisible()
+  },
+}
+
+/** On a phone the chips drop under the title. */
+export const Phone: Story = {
+  globals: { viewport: { value: 'phone', isRotated: false } },
+  args: { expanded: true },
+}

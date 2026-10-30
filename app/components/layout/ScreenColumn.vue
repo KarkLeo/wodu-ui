@@ -1,5 +1,5 @@
 <template>
-  <div class="content-wrap screen-column">
+  <div class="screen-column">
     <slot />
   </div>
 </template>
