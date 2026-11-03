@@ -46,10 +46,10 @@ function rgbToHex(rgb: number[]): string {
 
 // `color-mix(in srgb, X p%, transparent)` over a background is the same as mixing X into that background.
 function fillOver(declaration: string, bg: string): string {
-  const mix = declaration.match(/color-mix\(in srgb, var\(--vtt-([a-z-]+)\) (\d+)%, transparent\)/)
+  const mix = declaration.match(/color-mix\(in srgb, var\(--vtt-([a-z-]+)\) (\d+)%, (transparent|var\(--vtt-([a-z-]+)\))\)/)
   if (mix) {
     const p = Number(mix[2]) / 100
-    const [fg, under] = [hexToRgb(tokens[mix[1]]), hexToRgb(tokens[bg])]
+    const [fg, under] = [hexToRgb(tokens[mix[1]]), hexToRgb(tokens[mix[4] ?? bg])]
     return rgbToHex(fg.map((v, i) => v * p + under[i] * (1 - p)))
   }
   const plain = declaration.match(/^var\(--vtt-([a-z-]+)\)$/)

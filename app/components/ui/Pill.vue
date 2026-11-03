@@ -47,8 +47,12 @@ withDefaults(defineProps<{
   background: color-mix(in srgb, var(--vtt-accent-deep) 22%, transparent);
   color: var(--vtt-accent);
 }
-/* danger-bright on danger-soft is 4.36:1, under AA; the red stays in the fill. */
-.is-danger { background: var(--vtt-danger-soft); color: var(--vtt-text-primary); }
+/* danger-bright on plain danger-soft is 4.36:1, under AA; the darker mix clears it. */
+.is-danger {
+  background: var(--vtt-bg-base);
+  background: color-mix(in srgb, var(--vtt-danger-soft) 70%, var(--vtt-bg-base));
+  color: var(--vtt-danger-bright);
+}
 
 .pill-dot {
   flex-shrink: 0;
