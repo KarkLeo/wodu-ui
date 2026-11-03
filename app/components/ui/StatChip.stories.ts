@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 import { fn } from 'storybook/test'
 import StatChip from './StatChip.vue'
+import Button from './Button.vue'
 import IconButton from './IconButton.vue'
 import IconClose from './icons/IconClose.vue'
 import IconDice from './icons/IconDice.vue'
@@ -148,8 +149,8 @@ export const Editing: Story = {
 
 export const WithPopover: Story = {
   render: (args) => ({
-    components: { StatChip, IconButton, IconClose, IconDice },
-    setup: () => ({ args }),
+    components: { StatChip, Button, IconButton, IconClose },
+    setup: () => ({ args, IconDice }),
     template: `
       <StatChip v-bind="args">
         <template #popover>
@@ -157,10 +158,7 @@ export const WithPopover: Story = {
             <span class="pop-title">Strength · +2</span>
             <span class="pop-sub">STR</span>
           </div>
-          <button type="button" class="pop-hero">
-            <IconDice />
-            <span>Roll 2d6 +2</span>
-          </button>
+          <Button variant="hero" class="pop-hero" :icon-left="IconDice">Roll 2d6 +2</Button>
           <div class="pop-divider" />
           <div class="pop-section-head">
             <span class="pop-sub">Modifiers</span>

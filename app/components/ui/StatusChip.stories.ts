@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fn } from 'storybook/test'
 import StatusChip from './StatusChip.vue'
+import Button from './Button.vue'
 import IconWeapon from './icons/IconWeapon.vue'
 import IconShield from './icons/IconShield.vue'
 import IconCoin from './icons/IconCoin.vue'
@@ -115,8 +116,8 @@ export const Sizes: Story = {
 
 export const WithPopover: Story = {
   render: (args) => ({
-    components: { StatusChip, IconWeapon, IconDice },
-    setup: () => ({ args }),
+    components: { StatusChip, Button, IconWeapon },
+    setup: () => ({ args, IconDice }),
     template: `
       <StatusChip v-bind="args">
         <template #symbol><IconWeapon /></template>
@@ -145,10 +146,7 @@ export const WithPopover: Story = {
             <span class="bt-label">Total</span>
             <span class="bt-value">d8+2</span>
           </div>
-          <button type="button" class="pop-hero-roll">
-            <IconDice />
-            <span>Roll d8+2</span>
-          </button>
+          <Button variant="hero" class="pop-hero-roll" :icon-left="IconDice">Roll d8+2</Button>
         </template>
       </StatusChip>
     `,

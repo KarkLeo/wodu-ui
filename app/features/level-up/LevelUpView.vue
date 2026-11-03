@@ -412,10 +412,10 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #A6833E;
+  background: var(--vtt-hero-face);
   border: 1px solid #8C6A3A;
   border-radius: var(--r-pill);
-  color: #1a1205;
+  color: var(--vtt-hero-ink);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
@@ -426,8 +426,8 @@ onMounted(() => {
   filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
 }
 .cc-foot-hero:hover:not(:disabled) {
-  background: #BF9A4C;
-  border-color: #A6833E;
+  background: var(--vtt-hero-face-hover);
+  border-color: var(--vtt-hero-face);
   filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
 }
 .cc-foot-hero:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }

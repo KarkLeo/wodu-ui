@@ -12,7 +12,9 @@ import { createLogger } from '@/utils/logger'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
+import IconDiceOutline from '@/components/ui/icons/IconDiceOutline.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FormError from '@/components/ui/FormError.vue'
 import IconButton from '@/components/ui/IconButton.vue'
@@ -392,17 +394,12 @@ function logDelta(e: ChangeEntry): string | undefined {
           @keyup.enter="onSubmit"
           @input="onInput"
         />
-        <button
-          type="button"
-          class="btn-hero"
+        <Button
+          variant="hero"
+          :icon-left="IconDiceOutline"
           :disabled="!activeChar || isRolling || !notation.trim()"
           @click="onSubmit"
-        >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
-          </svg>
-          {{ t('diceDrawer.input.submit') }}
-        </button>
+        >{{ t('diceDrawer.input.submit') }}</Button>
       </div>
       <div v-if="notationError || readOnlyActive || !activeChar" class="drawer-input-note">
         <FormError v-if="notationError">{{ notationError }}</FormError>
@@ -780,29 +777,6 @@ function logDelta(e: ChangeEntry): string | undefined {
 .dice-input input::placeholder { color: var(--vtt-text-muted); }
 .dice-input input:focus { border-color: var(--vtt-border-gold); }
 .dice-input input:disabled { opacity: 0.55; }
-
-.btn-hero {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 20px;
-  background: #A6833E;
-  border: 1px solid #8C6A3A;
-  border-radius: var(--r-pill);
-  color: #1a1205;
-  font-family: var(--font-sans);
-  font-size: 13px; font-weight: 600;
-  letter-spacing: 0.02em; line-height: 1;
-  cursor: pointer;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
-  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
-  white-space: nowrap;
-}
-.btn-hero:hover:not(:disabled) {
-  background: #BF9A4C;
-  border-color: #A6833E;
-  filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
-}
-.btn-hero:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
-.btn-hero svg { width: 14px; height: 14px; }
 
 .drawer-input-note { margin-top: 6px; }
 

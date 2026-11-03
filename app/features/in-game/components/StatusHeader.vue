@@ -22,6 +22,7 @@ import { createLogger } from '@/utils/logger'
 import { levelUpLocation } from '@/utils/scope'
 import { mode } from '@/transport/mode'
 import { className as classNameOf, gearName } from '@/locales/content'
+import Button from '@/components/ui/Button.vue'
 import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
 import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
@@ -247,15 +248,13 @@ async function handleRollDamage() {
               >{{ t('inGame.statusHeader.modReset') }}</button>
             </div>
             <InfoPopoverClose v-if="!readonly" as-child>
-              <button
-                type="button"
+              <Button
+                variant="hero"
                 class="pop-hero-roll"
+                :icon-left="IconDice"
                 :disabled="isRolling"
                 @click="handleRollDamage"
-              >
-                <IconDice />
-                <span>{{ t('inGame.statusHeader.trio.damageRoll', { formula: dmgFormulaStr }) }}</span>
-              </button>
+              >{{ t('inGame.statusHeader.trio.damageRoll', { formula: dmgFormulaStr }) }}</Button>
             </InfoPopoverClose>
           </template>
         </StatusChip>
@@ -488,8 +487,6 @@ async function handleRollDamage() {
   line-height: 1.45;
   font-style: italic;
 }
-.info-popover .pop-hero-roll svg { width: 14px; height: 14px; }
-.info-popover .pop-hero-roll:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .info-popover .sh-pop-coin-edit {
   display: flex;

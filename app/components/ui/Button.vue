@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-type Variant = 'primary' | 'hero' | 'hero-danger' | 'ghost' | 'dashed' | 'danger-ghost'
+type Variant = 'primary' | 'hero' | 'hero-danger' | 'hero-success' | 'ghost' | 'dashed' | 'danger-ghost'
 type Size = 'sm' | 'base' | 'lg'
 
 const props = withDefaults(defineProps<{
@@ -102,21 +102,21 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-accent-soft);
 }
 .v-primary:hover:not(:disabled):not([aria-disabled='true']) {
-  background: #2e241a;
+  background: var(--vtt-primary-hover);
   border-color: var(--vtt-border-gold);
   color: var(--vtt-accent);
 }
 
 .v-hero {
-  background: #A6833E;
-  color: #1a1205;
-  border-color: #8C6A3A;
+  background: var(--vtt-hero-face);
+  color: var(--vtt-hero-ink);
+  border-color: var(--vtt-border-gold);
   font-weight: 600;
   filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
 }
 .v-hero:hover:not(:disabled):not([aria-disabled='true']) {
-  background: #BF9A4C;
-  border-color: #A6833E;
+  background: var(--vtt-hero-face-hover);
+  border-color: var(--vtt-hero-face);
   filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
 }
 
@@ -131,6 +131,16 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   background: var(--vtt-danger-bright);
   border-color: var(--vtt-danger-bright);
   filter: drop-shadow(0 0 14px rgba(178, 59, 79, 0.5));
+}
+
+.v-hero-success {
+  background: var(--vtt-success);
+  color: var(--vtt-text-inverse);
+  border-color: var(--vtt-success);
+  font-weight: 600;
+}
+.v-hero-success:hover:not(:disabled):not([aria-disabled='true']) {
+  filter: brightness(1.1);
 }
 
 .v-danger-ghost {

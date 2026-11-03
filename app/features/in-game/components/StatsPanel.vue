@@ -8,6 +8,7 @@ import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { effectiveStat, statModifierTotal, statModifierLines } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
+import Button from '@/components/ui/Button.vue'
 import StatChip from '@/components/ui/StatChip.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import Stepper from '@/components/ui/Stepper.vue'
@@ -152,15 +153,13 @@ function stopEdit() {
 
           <template v-if="!readonly">
             <InfoPopoverClose as-child>
-              <button
-                type="button"
+              <Button
+                variant="hero"
                 class="pop-hero"
+                :icon-left="IconDice"
                 :disabled="isRolling"
                 @click="handleRollStat(key)"
-              >
-                <IconDice />
-                <span>{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</span>
-              </button>
+              >{{ t('inGame.stats.rollBtn', { mod: modStr(eff(key)) }) }}</Button>
             </InfoPopoverClose>
 
             <div class="pop-divider" />
@@ -273,15 +272,6 @@ function stopEdit() {
 </style>
 
 <style>
-.info-popover .pop-hero {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.info-popover .pop-hero :deep(svg) { width: 14px; height: 14px; }
-.info-popover .pop-hero:disabled { opacity: 0.6; cursor: not-allowed; }
-
 .info-popover .pop-edit {
   display: flex;
   align-items: center;

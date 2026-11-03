@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 import { t } from '@/locales'
+import Button from './Button.vue'
 
 const inputLabelId = useId()
 
@@ -63,12 +64,11 @@ function onInput(e: Event) {
           {{ t('xpControls.notReady') }}
         </template>
       </div>
-      <button
-        type="button"
-        class="xp-pop-levelup-btn"
+      <Button
+        :variant="isReady ? 'hero' : 'ghost'"
         :disabled="!isReady"
         @click="isReady && emit('levelUp')"
-      >{{ t('xpControls.levelUpBtn') }}</button>
+      >{{ t('xpControls.levelUpBtn') }}</Button>
     </div>
   </div>
 </template>
@@ -195,43 +195,11 @@ function onInput(e: Event) {
   color: var(--vtt-accent);
   font-weight: 600;
 }
-.xp-pop-levelup-btn {
-  padding: 10px 20px;
-  background: #A6833E;
-  border: 1px solid #8C6A3A;
-  border-radius: var(--r-pill);
-  color: #1a1205;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  cursor: pointer;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
-  transition:
-    background var(--t-fast) var(--ease),
-    border-color var(--t-fast) var(--ease),
-    filter var(--t-fast) var(--ease);
-  white-space: nowrap;
-}
-.xp-pop-levelup-btn:hover {
-  background: #BF9A4C;
-  border-color: #A6833E;
-  filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
-}
 .xp-pop-levelup.is-locked {
   background: transparent;
   border-color: var(--vtt-border-subtle);
 }
 .xp-pop-levelup.is-locked .xp-pop-levelup-text {
   color: var(--vtt-text-muted);
-}
-.xp-pop-levelup.is-locked .xp-pop-levelup-btn {
-  background: transparent;
-  border-color: var(--vtt-border-subtle);
-  color: var(--vtt-text-muted);
-  cursor: not-allowed;
-  box-shadow: none;
-  filter: none;
 }
 </style>

@@ -337,25 +337,7 @@ onBeforeUnmount(stopListening)
 
 <style>
 /* Portal — global styles for the popover content */
-.info-popover .pop-hero {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  background: #A6833E;
-  color: #1a1205;
-  border: 1px solid #8C6A3A;
-  border-radius: var(--r-pill);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.28));
-}
-.info-popover .pop-hero:hover { background: #BF9A4C; }
+.info-popover .pop-hero { width: 100%; justify-content: center; }
 
 .info-popover .pop-divider {
   height: 1px;

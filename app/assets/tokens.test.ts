@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs'
+import { relative, resolve } from 'node:path'
 
-const css = readFileSync(resolve(__dirname, 'main.css'), 'utf8')
+const mainCss = resolve(__dirname, 'main.css')
+const css = readFileSync(mainCss, 'utf8')
 const tokens = Object.fromEntries(
   [...css.matchAll(/--vtt-([a-z-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)].map(([, name, hex]) => [name, hex]),
 )
@@ -33,4 +34,21 @@ describe('design tokens', () => {
       expect(contrast(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(4.5)
     },
   )
+})
+
+const BUTTON_FACE_TOKENS = ['hero-face', 'hero-face-hover', 'hero-ink', 'primary-hover']
+
+describe('button face tokens', () => {
+  const appDir = resolve(__dirname, '..')
+  const files = readdirSync(appDir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => resolve(entry.parentPath, entry.name))
+    .filter((file) => file !== mainCss)
+
+  it.each(BUTTON_FACE_TOKENS)('--vtt-%s is defined only in main.css', (name) => {
+    const hex = tokens[name]
+    expect(hex, `--vtt-${name} is defined`).toBeDefined()
+    const copies = files.filter((file) => readFileSync(file, 'utf8').toLowerCase().includes(hex.toLowerCase()))
+    expect(copies.map((file) => relative(appDir, file))).toEqual([])
+  })
 })

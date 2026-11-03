@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { t } from '@/locales'
 import { useDiceRoller } from '@/composables/useDiceRoller'
 import { useRovingSelection } from '@/composables/useRovingSelection'
+import Button from './Button.vue'
 
 const props = withDefaults(defineProps<{
   current: number
@@ -59,7 +60,8 @@ function onDice(notation: string) {
   amount.value = total
 }
 
-const submitClass = computed(() => `is-${tab.value}`)
+const SUBMIT_VARIANT = { damage: 'hero-danger', heal: 'hero-success', temp: 'hero' } as const
+const submitVariant = computed(() => SUBMIT_VARIANT[tab.value])
 const submitLabel = computed(() => {
   if (tab.value === 'damage') return t('hpControls.submitDamage')
   if (tab.value === 'heal') return t('hpControls.submitHeal')
@@ -157,12 +159,12 @@ const previewResult = computed(() => {
       </template>
     </div>
 
-    <button
-      type="button"
-      :class="['hp-pop-submit', submitClass]"
+    <Button
+      :variant="submitVariant"
+      class="hp-pop-submit"
       :disabled="tab !== 'temp' && amount <= 0"
       @click="submit"
-    >{{ submitLabel }}</button>
+    >{{ submitLabel }}</Button>
   </div>
 </template>
 
@@ -313,34 +315,5 @@ const previewResult = computed(() => {
   font-weight: 600;
 }
 
-.hp-pop-submit {
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: var(--r-pill);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  border: 1px solid;
-  line-height: 1;
-}
-.hp-pop-submit:disabled { opacity: 0.45; cursor: not-allowed; }
-.hp-pop-submit.is-damage {
-  background: var(--vtt-danger);
-  border-color: var(--vtt-danger);
-  color: var(--vtt-text-primary);
-}
-.hp-pop-submit.is-damage:hover:not(:disabled) { background: var(--vtt-danger-bright); }
-.hp-pop-submit.is-heal {
-  background: var(--vtt-success);
-  border-color: var(--vtt-success);
-  color: #0E0B08;
-}
-.hp-pop-submit.is-heal:hover:not(:disabled) { filter: brightness(1.1); }
-.hp-pop-submit.is-temp {
-  background: #A6833E;
-  border-color: #8C6A3A;
-  color: #1a1205;
-}
+.hp-pop-submit { width: 100%; justify-content: center; }
 </style>

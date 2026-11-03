@@ -128,9 +128,9 @@ function onUse(item: InventoryItem) {
     <CoinBar :coins="draft.coins" @update="inv.setCoins" />
 
     <div class="cc-gear-actions">
-      <button type="button" class="cc-gear-btn" @click="catalogOpen = true">
+      <Button variant="primary" class="cc-gear-btn" @click="catalogOpen = true">
         {{ t('characterCreation.gear.openCatalog') }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="draft.inventory.length" class="cc-gear-list">
@@ -224,25 +224,7 @@ function onUse(item: InventoryItem) {
 .cc-hp-formula-note { color: var(--vtt-accent-deep); }
 
 .cc-gear-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.cc-gear-btn {
-  flex: 1;
-  min-width: 140px;
-  padding: 10px 16px;
-  background: var(--vtt-bg-elevated);
-  border: 1px solid var(--vtt-border-strong);
-  border-radius: var(--r-pill);
-  color: var(--vtt-accent-soft);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-gear-btn:hover {
-  background: #2e241a;
-  border-color: var(--vtt-border-gold);
-  color: var(--vtt-accent);
-}
+.cc-gear-btn { flex: 1; min-width: 140px; justify-content: center; }
 
 .cc-gear-list { display: flex; flex-direction: column; gap: 8px; }
 </style>

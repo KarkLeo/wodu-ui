@@ -19,7 +19,7 @@ const meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'hero', 'hero-danger', 'ghost', 'dashed', 'danger-ghost'],
+      options: ['primary', 'hero', 'hero-danger', 'hero-success', 'ghost', 'dashed', 'danger-ghost'],
     },
     size: { control: 'inline-radio', options: ['sm', 'base', 'lg'] },
     type: { control: 'inline-radio', options: ['button', 'submit', 'reset'] },
@@ -50,6 +50,11 @@ export const HeroDanger: Story = {
   args: { variant: 'hero-danger', default: 'Reset session' },
 }
 
+/** The heal submit of the HP controls. */
+export const HeroSuccess: Story = {
+  args: { variant: 'hero-success', default: 'Heal' },
+}
+
 /** An add action that opens a picker or appends an empty entry: catalog, library, a new spirit or ritual. */
 export const Dashed: Story = {
   args: { variant: 'dashed', iconLeft: IconPlus, default: 'Add spirit' },
@@ -76,6 +81,7 @@ export const Variants: Story = {
         <Button v-bind="args" variant="primary">Primary</Button>
         <Button v-bind="args" variant="hero" :icon-left="IconDice">Roll</Button>
         <Button v-bind="args" variant="hero-danger">Overdose</Button>
+        <Button v-bind="args" variant="hero-success">Heal</Button>
         <Button v-bind="args" variant="ghost" :icon-left="IconHeart">Heal</Button>
         <Button v-bind="args" variant="danger-ghost" :icon-left="IconTrash">Delete</Button>
       </div>
