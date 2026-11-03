@@ -8,6 +8,8 @@ withDefaults(defineProps<{
   hint?: string
   hideLabel?: boolean
   variant?: 'box' | 'underline'
+  /** `sm` for tight rows: less padding and a smaller placeholder; the typed text stays 16px. */
+  size?: 'md' | 'sm'
   /** Monospace text, for dice formulas and numbers. */
   mono?: boolean
   type?: 'text' | 'email' | 'url' | 'tel'
@@ -23,6 +25,7 @@ withDefaults(defineProps<{
   type: 'text',
   autocomplete: 'off',
   variant: 'box',
+  size: 'md',
   spellcheck: undefined,
 })
 
@@ -43,7 +46,7 @@ const emit = defineEmits<{ blur: [event: FocusEvent] }>()
       <input
         :id="id"
         v-model="model"
-        :class="['form-field-control', { 'is-mono': mono, 'is-underline': variant === 'underline' }]"
+        :class="['form-field-control', { 'is-mono': mono, 'is-underline': variant === 'underline', 'is-sm': size === 'sm' }]"
         :type="type"
         :inputmode="inputmode"
         :maxlength="maxlength"

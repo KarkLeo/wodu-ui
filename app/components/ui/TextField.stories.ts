@@ -149,3 +149,13 @@ export const SuggestionsAndBlur: Story = {
     await expect(args.onBlur).toHaveBeenCalledTimes(1)
   },
 }
+
+/** Tight rows (a popover's add line): smaller box and placeholder, while typed text stays 16px so iOS does not zoom. */
+export const Compact: Story = {
+  args: { label: 'Source', hideLabel: true, size: 'sm', placeholder: 'Source (potion, curse…)' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Source' })
+    await expect(getComputedStyle(input).fontSize).toBe('16px')
+    await expect(input.getBoundingClientRect().height).toBeLessThan(36)
+  },
+}

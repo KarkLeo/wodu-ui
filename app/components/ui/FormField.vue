@@ -103,6 +103,8 @@ const describedBy = computed(() => {
 }
 :slotted(.form-field-control[aria-invalid='true']) { border-color: var(--vtt-danger); }
 :slotted(.form-field-control.is-mono) { font-family: var(--font-mono); }
+:slotted(.form-field-control.is-sm) { padding: 6px 10px; line-height: 1.25; }
+:slotted(.form-field-control.is-sm)::placeholder { font-size: 13px; }
 :slotted(textarea.form-field-control) { font-family: var(--font-serif); resize: vertical; min-height: 56px; }
 :slotted(.form-field-control.is-underline) {
   padding: 8px 4px;

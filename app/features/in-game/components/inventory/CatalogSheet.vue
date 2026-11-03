@@ -67,6 +67,7 @@ function onBuyClick(tpl: GearTemplate) {
     <div class="catalog-search">
       <SearchField
         v-model="search"
+        size="sm"
         :label="t('inGame.inventory.catalog.search')"
         :placeholder="t('inGame.inventory.catalog.search')"
       />

@@ -8,6 +8,8 @@ defineProps<{
   /** Accessible name of the input. */
   label: string
   placeholder?: string
+  /** `sm` for tight headers: less padding and a smaller placeholder; the typed text stays 16px. */
+  size?: 'md' | 'sm'
 }>()
 
 const model = defineModel<string>({ required: true })
@@ -20,7 +22,7 @@ function clear() {
 </script>
 
 <template>
-  <label class="search-field">
+  <label :class="['search-field', { 'is-sm': size === 'sm' }]">
     <IconSearch class="search-field-icon" aria-hidden="true" />
     <input
       ref="input"
@@ -70,6 +72,9 @@ function clear() {
   font-size: 16px;
 }
 .search-field-input::placeholder { color: var(--vtt-text-muted); font-style: italic; }
+.search-field.is-sm { padding: 0 10px; }
+.search-field.is-sm .search-field-input { padding: 5px 0; line-height: 1.25; }
+.search-field.is-sm .search-field-input::placeholder { font-size: 13px; }
 /* The browser's own clear button ignores the palette; the field draws its own. */
 .search-field-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .search-field-clear {

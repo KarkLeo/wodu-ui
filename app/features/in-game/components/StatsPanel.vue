@@ -208,6 +208,7 @@ function stopEdit() {
               <TextField
                 v-model="addBuf[key].label"
                 class="pop-add-label"
+                size="sm"
                 hide-label
                 :maxlength="32"
                 :label="t('inGame.stats.modifiers.addPlaceholder')"
