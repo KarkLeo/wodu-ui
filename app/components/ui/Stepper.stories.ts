@@ -62,6 +62,25 @@ export const Coins: Story = {
   args: { modelValue: 35, min: 0, step: 5, ariaLabel: 'Coins' },
 }
 
+/** A bare number with its buttons grouped after it, for a row where a framed field would be too heavy. */
+export const Plain: Story = {
+  render: (args) => ({
+    components: { Stepper },
+    setup: () => ({ args }),
+    template: `
+      <Stepper v-bind="args">
+        <template #suffix><span style="font-family: var(--font-mono); font-size: 10px; color: var(--vtt-text-muted)">s.</span></template>
+      </Stepper>
+    `,
+  }),
+  args: { modelValue: 50, min: 0, lazy: true, variant: 'plain', ariaLabel: 'Coins', decreaseLabel: 'Remove a coin', increaseLabel: 'Add a coin' },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Add a coin' }))
+    await expect(args['onUpdate:modelValue']).toHaveBeenLastCalledWith(51)
+  },
+}
+
 export const Sizes: Story = {
   render: (args) => ({
     components: { Stepper },

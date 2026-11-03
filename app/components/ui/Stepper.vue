@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import IconButton from './IconButton.vue'
+import IconMinus from './icons/IconMinus.vue'
+import IconPlus from './icons/IconPlus.vue'
 import { t } from '@/locales'
 
 const props = withDefaults(defineProps<{
@@ -22,10 +25,13 @@ const props = withDefaults(defineProps<{
   lazy?: boolean
   /** Only the number field, where the steps live elsewhere or there are none. */
   hideButtons?: boolean
+  /** `plain` is a bare number that takes a frame only while edited, with its buttons grouped after it. */
+  variant?: 'field' | 'plain'
 }>(), {
   step: 1,
   size: 'md',
   tone: 'neutral',
+  variant: 'field',
 })
 
 const model = defineModel<number>({ required: true })
@@ -81,41 +87,60 @@ function onKeydown(e: KeyboardEvent) {
 }
 // A popover or sheet closed from outside takes the field away, and a removed input need not fire blur.
 onBeforeUnmount(commit)
+
+const field = computed(() => ({
+  'aria-label': props.labelledby ? undefined : props.ariaLabel ?? t('ui.stepper.value'),
+  'aria-labelledby': props.labelledby,
+  type: 'number',
+  value: shown.value,
+  min: props.min,
+  max: props.max,
+  step: props.step,
+  onInput,
+  onBlur: commit,
+  onKeydown,
+}))
+// A number input does not size to its content; the plain look hugs the digits.
+const digits = computed(() => Math.max(String(shown.value).length, 1))
 </script>
 
 <template>
   <div
-    :class="['sc-stepper', `sz-${size}`, `tone-${tone}`]"
+    :class="['sc-stepper', `sz-${size}`, `tone-${tone}`, `v-${variant}`]"
+    :style="variant === 'plain' ? { '--stepper-digits': digits } : undefined"
     :role="hideButtons ? undefined : 'group'"
     :aria-label="hideButtons || labelledby ? undefined : ariaLabel"
     :aria-labelledby="hideButtons ? undefined : labelledby"
   >
-    <button
-      v-if="!hideButtons"
-      type="button"
-      :aria-label="decreaseLabel ?? t('ui.stepper.decrease')"
-      :disabled="!canDec"
-      @click="dec"
-    >−</button>
-    <input
-      :aria-label="labelledby ? undefined : ariaLabel ?? t('ui.stepper.value')"
-      :aria-labelledby="labelledby"
-      type="number"
-      :value="shown"
-      :min="min"
-      :max="max"
-      :step="step"
-      @input="onInput"
-      @blur="commit"
-      @keydown="onKeydown"
-    />
-    <button
-      v-if="!hideButtons"
-      type="button"
-      :aria-label="increaseLabel ?? t('ui.stepper.increase')"
-      :disabled="!canInc"
-      @click="inc"
-    >+</button>
+    <template v-if="variant === 'plain'">
+      <input v-bind="field" />
+      <slot name="suffix" />
+      <span class="sc-steps">
+        <IconButton variant="square" :label="decreaseLabel ?? t('ui.stepper.decrease')" :disabled="!canDec" @click="dec">
+          <IconMinus />
+        </IconButton>
+        <IconButton variant="square" :label="increaseLabel ?? t('ui.stepper.increase')" :disabled="!canInc" @click="inc">
+          <IconPlus />
+        </IconButton>
+      </span>
+    </template>
+    <template v-else>
+      <button
+        v-if="!hideButtons"
+        type="button"
+        :aria-label="decreaseLabel ?? t('ui.stepper.decrease')"
+        :disabled="!canDec"
+        @click="dec"
+      >−</button>
+      <input v-bind="field" />
+      <button
+        v-if="!hideButtons"
+        type="button"
+        :aria-label="increaseLabel ?? t('ui.stepper.increase')"
+        :disabled="!canInc"
+        @click="inc"
+      >+</button>
+    </template>
   </div>
 </template>
 
@@ -125,7 +150,7 @@ onBeforeUnmount(commit)
   align-items: center;
   gap: 6px;
 }
-.sc-stepper button {
+.v-field button {
   width: 22px;
   height: 22px;
   padding: 0;
@@ -141,11 +166,11 @@ onBeforeUnmount(commit)
   cursor: pointer;
   line-height: 1;
 }
-.sc-stepper button:hover:not(:disabled) {
+.v-field button:hover:not(:disabled) {
   border-color: var(--vtt-border-strong);
   color: var(--vtt-accent-soft);
 }
-.sc-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+.v-field button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* A caller sets --stepper-field-width where an amount needs more room than a stat bonus. */
 .sc-stepper input {
@@ -200,6 +225,25 @@ onBeforeUnmount(commit)
   border-bottom-color: var(--vtt-accent);
   box-shadow: 0 1px 0 0 var(--vtt-accent);
 }
+
+.v-plain { gap: 0; }
+.v-plain input {
+  width: calc(var(--stepper-digits) * 1ch + 10px);
+  /* An input keeps the serif's tall line box whatever its line-height; the buttons set the row's height. */
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  text-align: right;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.v-plain input:hover { border-color: var(--vtt-border-subtle); }
+.v-plain input:focus-visible {
+  background: var(--vtt-bg-sunken);
+  border-color: var(--vtt-border-gold);
+}
+.sc-steps { display: flex; gap: 4px; margin-left: 12px; }
 
 .tone-accent input { color: var(--vtt-accent); }
 .tone-danger input { color: var(--vtt-danger-bright); }

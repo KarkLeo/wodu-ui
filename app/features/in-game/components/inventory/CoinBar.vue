@@ -17,19 +17,19 @@ function update(value: number) {
   <div class="coin-bar">
     <div class="coin-bar-icon"><IconCoin /></div>
     <SectionLabel tone="neutral">{{ t('inGame.inventory.coinsLabel') }}</SectionLabel>
-    <div class="coin-bar-amount">
-      <Stepper
-        class="coin-bar-stepper"
-        :model-value="coins"
-        :min="0"
-        :aria-label="t('inGame.inventory.coinsLabel')"
-        :decrease-label="t('inGame.inventory.coinsMinus')"
-        :increase-label="t('inGame.inventory.coinsPlus')"
-        lazy
-        @update:model-value="update"
-      />
-      <span class="coin-bar-unit">{{ t('inGame.inventory.coinsUnit') }}</span>
-    </div>
+    <Stepper
+      class="coin-bar-amount"
+      variant="plain"
+      :model-value="coins"
+      :min="0"
+      :aria-label="t('inGame.inventory.coinsLabel')"
+      :decrease-label="t('inGame.inventory.coinsMinus')"
+      :increase-label="t('inGame.inventory.coinsPlus')"
+      lazy
+      @update:model-value="update"
+    >
+      <template #suffix><span class="coin-bar-unit">{{ t('inGame.inventory.coinsUnit') }}</span></template>
+    </Stepper>
   </div>
 </template>
 
@@ -53,13 +53,7 @@ function update(value: number) {
   flex-shrink: 0;
 }
 .coin-bar-icon :deep(svg) { width: 100%; height: 100%; }
-.coin-bar-amount {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
-.coin-bar-stepper { --stepper-field-width: 84px; }
+.coin-bar-amount { margin-left: auto; }
 .coin-bar-unit {
   font-family: var(--font-mono);
   font-size: 10px;
