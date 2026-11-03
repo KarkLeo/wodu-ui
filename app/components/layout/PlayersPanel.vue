@@ -19,6 +19,7 @@ import MasterlessNotice from './MasterlessNotice.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { useGameLayout } from './gameLayoutContext'
 import { t } from '@/locales'
 import { className } from '@/locales/content'
@@ -109,14 +110,9 @@ async function startNew() {
 <template>
   <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.leftCollapsed.value" class="players-rail">
-    <button
-      type="button"
-      class="btn-rail-toggle"
-      :aria-label="t('gameLayout.actions.togglePlayers')"
-      @click="layout.toggleCollapsed('left')"
-    >
+    <IconButton size="lg" :label="t('gameLayout.actions.togglePlayers')" @click="layout.toggleCollapsed('left')">
       <IconChevronRight :size="14" />
-    </button>
+    </IconButton>
     <span class="gl-rail-label">{{ t('gameLayout.players.railLabel', { count: activeCharacters.length }) }}</span>
     <div v-if="activeCharacters.length" class="gl-rail-avatars">
       <div
@@ -147,15 +143,14 @@ async function startNew() {
         <span class="pr-offline-dot" aria-hidden="true" />
         <span>{{ t('mode.badge') }}</span>
       </span>
-      <button
+      <IconButton
         v-if="layout"
-        type="button"
-        class="btn-collapse"
-        :aria-label="t('gameLayout.actions.collapsePanel')"
+        class="pr-collapse"
+        :label="t('gameLayout.actions.collapsePanel')"
         @click="layout.toggleCollapsed('left')"
       >
         <IconChevronLeft :size="14" />
-      </button>
+      </IconButton>
     </div>
 
     <MasterlessNotice v-if="game && !game.master" :game="game" />
@@ -283,25 +278,6 @@ async function startNew() {
   background: var(--vtt-accent);
 }
 
-.btn-collapse {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.btn-collapse:hover {
-  color: var(--vtt-accent-soft);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
 
 .gl-panel-list {
   flex: 1 1 auto;
@@ -450,25 +426,6 @@ async function startNew() {
   gap: var(--s-3);
 }
 
-.btn-rail-toggle {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.btn-rail-toggle:hover {
-  color: var(--vtt-accent);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
 
 .gl-rail-label {
   font-family: var(--font-mono);
@@ -517,7 +474,7 @@ async function startNew() {
 }
 
 @media (max-width: 960px) {
-  .btn-collapse { display: none; }
+  .pr-collapse { display: none; }
   /* Below 961px the panel is the mobile overlay, whose close button sits over the head's right end. */
   .gl-panel-head { padding-right: 48px; }
 }

@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import IconCoin from '@/components/ui/icons/IconCoin.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconMinus from '@/components/ui/icons/IconMinus.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
 
 const props = defineProps<{ coins: number }>()
@@ -50,12 +51,12 @@ function bump(delta: number) {
       {{ coins }}<span class="coin-bar-unit">{{ t('inGame.inventory.coinsUnit') }}</span>
     </span>
     <div class="coin-bar-actions">
-      <button class="item-btn" type="button" :aria-label="t('inGame.inventory.coinsMinus')" @click="bump(-1)">
+      <IconButton variant="square" :label="t('inGame.inventory.coinsMinus')" @click="bump(-1)">
         <IconMinus />
-      </button>
-      <button class="item-btn" type="button" :aria-label="t('inGame.inventory.coinsPlus')" @click="bump(1)">
+      </IconButton>
+      <IconButton variant="square" :label="t('inGame.inventory.coinsPlus')" @click="bump(1)">
         <IconPlus />
-      </button>
+      </IconButton>
     </div>
   </div>
 </template>
@@ -124,25 +125,5 @@ function bump(delta: number) {
 .coin-bar-actions {
   display: flex;
   gap: 4px;
-}
-.item-btn {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-  padding: 0;
-}
-.item-btn :deep(svg) { width: 14px; height: 14px; }
-.item-btn:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-  background: var(--vtt-bg-elevated);
 }
 </style>

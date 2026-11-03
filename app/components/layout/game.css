@@ -1,29 +1,5 @@
 /* Shared by the game table's menus and sheets. They are portalled to <body>, out of reach of scoped styles. */
 
-/* ── Round icon trigger (game menu, sheet actions) ── */
-.gm-trigger {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.gm-trigger:hover,
-.gm-trigger[data-state='open'] {
-  color: var(--vtt-accent-soft);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
-.gm-trigger:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: 2px; }
-
 /* ── Dropdown menu ── */
 .gm-menu {
   z-index: 60;

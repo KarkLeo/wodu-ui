@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 import { fn } from 'storybook/test'
 import StatChip from './StatChip.vue'
+import IconButton from './IconButton.vue'
+import IconClose from './icons/IconClose.vue'
 import IconDice from './icons/IconDice.vue'
 
 const meta = {
@@ -146,7 +148,7 @@ export const Editing: Story = {
 
 export const WithPopover: Story = {
   render: (args) => ({
-    components: { StatChip, IconDice },
+    components: { StatChip, IconButton, IconClose, IconDice },
     setup: () => ({ args }),
     template: `
       <StatChip v-bind="args">
@@ -169,7 +171,7 @@ export const WithPopover: Story = {
               Potion of giant strength
               <span class="pop-effect-meta">until the end of the scene</span>
             </span>
-            <button type="button" class="pop-effect-remove" aria-label="Remove Potion of giant strength">×</button>
+            <IconButton size="sm" variant="square" tone="danger" label="Remove Potion of giant strength"><IconClose :size="10" /></IconButton>
           </div>
         </template>
       </StatChip>

@@ -7,6 +7,7 @@ import ItemIcon from './ItemIcon.vue'
 import ItemStatChip from './ItemStatChip.vue'
 import IconCheck from '@/components/ui/icons/IconCheck.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
 import { gearName, gearNotes } from '@/locales/content'
 
@@ -57,31 +58,31 @@ const armorChip = computed(() => {
       <button
         v-if="consumable"
         type="button"
-        class="item-btn is-use"
+        class="inv-use"
         :title="t('inGame.inventory.use')"
         @click="emit('use')"
       >
         {{ t('inGame.inventory.useShort') }}
       </button>
-      <button
+      <IconButton
         v-else
-        type="button"
-        :class="['item-btn', { 'is-active': item.equipped }]"
+        variant="square"
+        :tone="item.equipped ? 'accent' : 'neutral'"
         :title="item.equipped ? t('inGame.inventory.unequip') : t('inGame.inventory.equip')"
-        :aria-label="item.equipped ? t('inGame.inventory.unequip') : t('inGame.inventory.equip')"
+        :label="item.equipped ? t('inGame.inventory.unequip') : t('inGame.inventory.equip')"
         @click="emit('toggle-equip')"
       >
-        <IconCheck />
-      </button>
-      <button
-        type="button"
-        class="item-btn is-danger"
+        <IconCheck :size="14" />
+      </IconButton>
+      <IconButton
+        variant="square"
+        tone="danger"
         :title="t('inGame.inventory.remove')"
-        :aria-label="t('inGame.inventory.remove')"
+        :label="t('inGame.inventory.remove')"
         @click="emit('remove')"
       >
         <IconTrash />
-      </button>
+      </IconButton>
     </div>
   </div>
 </template>
@@ -160,44 +161,20 @@ const armorChip = computed(() => {
   flex-shrink: 0;
 }
 
-.item-btn {
-  width: 28px;
-  height: 28px;
+.inv-use {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-  padding: 0;
-}
-.item-btn :deep(svg) { width: 14px; height: 14px; }
-.item-btn:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-  background: var(--vtt-bg-elevated);
-}
-.item-btn.is-active {
-  border-color: var(--vtt-border-gold);
-  color: var(--vtt-accent);
-  background: rgba(140, 106, 58, 0.1);
-}
-.item-btn.is-danger:hover {
-  border-color: var(--vtt-danger-bright);
-  color: var(--vtt-danger-bright);
-  background: rgba(178, 59, 79, 0.08);
-}
-.item-btn.is-use {
-  width: auto;
+  height: 28px;
   padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--vtt-accent-deep);
+  border-radius: var(--r-sm);
+  color: var(--vtt-accent-soft);
   font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.08em;
-  color: var(--vtt-accent-soft);
-  border-color: var(--vtt-accent-deep);
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
 }
-.item-btn.is-use:hover { background: rgba(140, 106, 58, 0.15); }
+.inv-use:hover { background: rgba(140, 106, 58, 0.15); }
 </style>

@@ -13,6 +13,8 @@ import StepIdentity from './steps/StepIdentity.vue'
 import StepTraining from './steps/StepTraining.vue'
 import StepGear from './steps/StepGear.vue'
 import { useIsMobile } from '@/composables/useIsMobile'
+import IconButton from '@/components/ui/IconButton.vue'
+import IconClose from '@/components/ui/icons/IconClose.vue'
 
 const isMobile = useIsMobile()
 
@@ -105,9 +107,9 @@ watch(onlineDataReady, (ready) => {
     <div class="cc-topbar">
       <div class="cc-title">{{ stepTitle }}</div>
       <div class="cc-topbar-hint">{{ footerHint }}</div>
-      <button class="cc-close" :aria-label="t('characterCreation.shell.close')" @click="onClose">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3 L11 11 M11 3 L3 11"/></svg>
-      </button>
+      <IconButton size="lg" class="cc-close" :label="t('characterCreation.shell.close')" @click="onClose">
+        <IconClose />
+      </IconButton>
     </div>
 
     <div class="cc-stepper">
@@ -237,23 +239,7 @@ watch(onlineDataReady, (ready) => {
   text-overflow: ellipsis;
   max-width: 100%;
 }
-.cc-close {
-  justify-self: end;
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
-}
-.cc-close:hover { border-color: var(--vtt-border-strong); color: var(--vtt-accent-soft); }
-.cc-close svg { width: 14px; height: 14px; }
+.cc-close { justify-self: end; }
 
 .cc-stepper {
   display: grid;

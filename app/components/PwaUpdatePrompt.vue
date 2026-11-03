@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { applyUpdate, updateReady } from '@/pwa/updateState'
 import { t } from '@/locales'
+import IconButton from '@/components/ui/IconButton.vue'
+import IconClose from '@/components/ui/icons/IconClose.vue'
 
 const updating = ref(false)
 
@@ -26,14 +28,9 @@ function dismiss() {
     >
       {{ updating ? t('pwa.updating') : t('pwa.update') }}
     </button>
-    <button
-      type="button"
-      class="pwa-prompt__dismiss"
-      :aria-label="t('common.close')"
-      @click="dismiss"
-    >
-      ×
-    </button>
+    <IconButton size="sm" :label="t('common.close')" @click="dismiss">
+      <IconClose :size="12" />
+    </IconButton>
   </div>
 </template>
 
@@ -78,22 +75,5 @@ function dismiss() {
 .pwa-prompt__action:disabled {
   opacity: 0.6;
   cursor: progress;
-}
-.pwa-prompt__dismiss {
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--vtt-text-muted);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-.pwa-prompt__dismiss:hover {
-  color: var(--vtt-text-primary);
 }
 </style>

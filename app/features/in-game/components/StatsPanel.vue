@@ -13,6 +13,8 @@ import StateNote from '@/components/ui/StateNote.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import TextField from '@/components/ui/TextField.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
+import IconClose from '@/components/ui/icons/IconClose.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
 import { statLabel, statShort } from '@/locales/content'
 
@@ -189,15 +191,16 @@ function stopEdit() {
                 {{ modStr(m.amount) }}
               </span>
               <span class="pop-effect-name">{{ m.label }}</span>
-              <button
+              <IconButton
                 v-if="!readonly"
-                type="button"
-                class="pop-effect-remove"
-                :aria-label="t('inGame.stats.modifiers.removeAria', { label: m.label })"
+                size="sm"
+                variant="square"
+                tone="danger"
+                :label="t('inGame.stats.modifiers.removeAria', { label: m.label })"
                 @click="removeMod(m.id)"
               >
-                ×
-              </button>
+                <IconClose :size="10" />
+              </IconButton>
             </div>
           </div>
 

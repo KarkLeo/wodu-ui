@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconClose from '@/components/ui/icons/IconClose.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
 import bgUrl from '@/assets/bg.jpeg'
 import { GameLayoutContextKey, type Side } from './gameLayoutContext'
@@ -76,14 +77,9 @@ const { game } = useTable()
 
     <!-- ── TOP BAR · MOBILE ──────────────────────────────── -->
     <div class="gl-mob-topbar">
-      <button
-        type="button"
-        class="btn-icon-sm"
-        :aria-label="t('gameLayout.actions.togglePlayers')"
-        @click="leftOpenMobile = true"
-      >
+      <IconButton size="lg" :label="t('gameLayout.actions.togglePlayers')" @click="leftOpenMobile = true">
         <IconMenu :size="16" />
-      </button>
+      </IconButton>
       <div v-if="game" class="gl-mob-center-title">
         <span class="t">{{ game.name }}</span>
         <span class="o">{{ dateStr }} · {{ timeStr }}</span>
@@ -92,14 +88,9 @@ const { game } = useTable()
         <span class="t"><b>{{ dateStr }}</b> · {{ timeStr }}</span>
         <span class="o">{{ t('gameLayout.topTitle') }}</span>
       </div>
-      <button
-        type="button"
-        class="btn-icon-sm"
-        :aria-label="t('gameLayout.actions.toggleDice')"
-        @click="rightOpenMobile = true"
-      >
+      <IconButton size="lg" :label="t('gameLayout.actions.toggleDice')" @click="rightOpenMobile = true">
         <IconDice :size="16" />
-      </button>
+      </IconButton>
     </div>
 
     <!-- ── LEFT PANEL · DESKTOP ──────────────────────────── -->
@@ -129,14 +120,9 @@ const { game } = useTable()
     <Transition name="mob-side">
       <aside v-if="leftOpenMobile" class="mob-side">
         <div class="mob-side-close">
-          <button
-            type="button"
-            class="btn-icon-sm"
-            :aria-label="t('gameLayout.actions.closePanel')"
-            @click="leftOpenMobile = false"
-          >
+          <IconButton :label="t('gameLayout.actions.closePanel')" @click="leftOpenMobile = false">
             <IconClose :size="14" />
-          </button>
+          </IconButton>
         </div>
         <div class="mob-side-body">
           <slot name="left" />
@@ -147,14 +133,9 @@ const { game } = useTable()
     <Transition name="mob-side-r">
       <aside v-if="rightOpenMobile" class="mob-side mob-side-r">
         <div class="mob-side-close">
-          <button
-            type="button"
-            class="btn-icon-sm"
-            :aria-label="t('gameLayout.actions.closePanel')"
-            @click="rightOpenMobile = false"
-          >
+          <IconButton :label="t('gameLayout.actions.closePanel')" @click="rightOpenMobile = false">
             <IconClose :size="14" />
-          </button>
+          </IconButton>
         </div>
         <div class="mob-side-body">
           <slot name="right" />
@@ -264,9 +245,6 @@ const { game } = useTable()
     rgba(0, 0, 0, 0) 100%);
   z-index: -1;
   pointer-events: none;
-}
-.gl-mob-topbar .btn-icon-sm {
-  width: 32px; height: 32px; border-radius: var(--r-pill);
 }
 .gl-mob-center-title {
   text-align: center;
@@ -407,23 +385,6 @@ const { game } = useTable()
 .mob-fade-enter-from,
 .mob-fade-leave-to {
   opacity: 0;
-}
-
-/* ── SHARED ICON BUTTON (for mob-topbar / close) ─────── */
-.btn-icon-sm {
-  width: 28px; height: 28px;
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
-}
-.btn-icon-sm:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────── */

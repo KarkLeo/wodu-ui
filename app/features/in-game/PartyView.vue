@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useTable } from '@/composables/useTable'
 import IconClose from '@/components/ui/icons/IconClose.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
 import InGameView from './InGameView.vue'
 import SheetActions from './SheetActions.vue'
@@ -99,14 +100,9 @@ function scrollToIndex(i: number) {
       >
         <div class="sheet-tools">
           <SheetActions :character-id="id" />
-          <button
-            type="button"
-            class="sheet-close"
-            :aria-label="t('gameLayout.sheetColumn.close')"
-            @click.stop="closePanel(id)"
-          >
+          <IconButton :label="t('gameLayout.sheetColumn.close')" @click.stop="closePanel(id)">
             <IconClose :size="14" />
-          </button>
+          </IconButton>
         </div>
         <div class="sheet-column-body">
           <InGameView :id="id" />
@@ -186,26 +182,8 @@ function scrollToIndex(i: number) {
   gap: 6px;
 }
 /* StatusHeader keeps its name line clear of the close button; the actions button needs room too. */
-.sheet-column:has(.sheet-tools .gm-trigger) :deep(.sh-id) { padding-right: 68px; }
-.sheet-column:has(.sheet-tools .gm-trigger) :deep(.status-header.is-compact .sh-id) { padding-right: 0; }
-.sheet-close {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  border-radius: var(--r-pill);
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.sheet-close:hover {
-  color: var(--vtt-accent-soft);
-  border-color: var(--vtt-border-strong);
-  background: rgba(7, 5, 10, 0.3);
-}
+.sheet-column:has(.sheet-tools [aria-haspopup='menu']) :deep(.sh-id) { padding-right: 68px; }
+.sheet-column:has(.sheet-tools [aria-haspopup='menu']) :deep(.status-header.is-compact .sh-id) { padding-right: 0; }
 
 .sheet-column-body {
   flex: 1 1 auto;
