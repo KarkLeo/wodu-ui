@@ -51,7 +51,7 @@ export const Phone: Story = {
     await expect(canvas.getByText('character sheet for the table')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Sign in' })).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Play offline, no account' })).toBeVisible()
-    await expect(canvas.getByRole('group', { name: 'Language' })).toBeVisible()
+    await expect(canvas.getByRole('radiogroup', { name: 'Language' })).toBeVisible()
   },
 }
 
@@ -83,9 +83,9 @@ export const SwitchesLanguage: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'RU' }))
+    await userEvent.click(canvas.getByRole('radio', { name: 'RU' }))
     await expect(currentLocale.value).toBe('ru')
-    await expect(canvas.getByRole('button', { name: 'RU' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(canvas.getByRole('radio', { name: 'RU' })).toBeChecked()
     await expect(canvas.getByRole('button', { name: 'Войти' })).toBeVisible()
     await expect(pbRequests()).toEqual([])
   },
@@ -109,7 +109,7 @@ export const SignedInLanguageSavesProfile: Story = {
   decorators: [coldStart, signedIn],
   play: async ({ canvasElement }) => {
     const update = spyOn(pb.collection('users'), 'update')
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'UK' }))
+    await userEvent.click(within(canvasElement).getByRole('radio', { name: 'UK' }))
     await expect(currentLocale.value).toBe('uk')
     await expect(update).toHaveBeenCalledWith('user-mock', { language: 'uk' })
     await expect(within(canvasElement).getByRole('button', { name: t('landing.openCabinet') })).toBeVisible()

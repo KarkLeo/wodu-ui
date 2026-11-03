@@ -2,13 +2,14 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
+import LocaleSwitch from '@/components/ui/LocaleSwitch.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import { useAccount } from '@/composables/useAccount'
 import { useTable } from '@/composables/useTable'
 import { mode } from '@/transport/mode'
 import { buildDate } from '@/utils/build'
 import { panelHomeLocation } from '@/utils/scope'
-import { t, currentLocale, LOCALES } from '@/locales'
+import { t, currentLocale } from '@/locales'
 
 // The bottom of the players panel: the way out of the table, the build, and offline (which has no
 // profile) the language.
@@ -31,17 +32,13 @@ function goHome() {
     {{ t('nav.home') }}
   </Button>
   <div class="build-id">{{ buildLine }}</div>
-  <div v-if="offline" class="pr-locale" role="group" :aria-label="t('gameLayout.players.language')">
-    <button
-      v-for="l in LOCALES"
-      :key="l"
-      type="button"
-      class="pr-locale-btn"
-      :class="{ 'is-active': currentLocale === l }"
-      :aria-pressed="currentLocale === l"
-      @click="setLanguage(l)"
-    >{{ l.toUpperCase() }}</button>
-  </div>
+  <LocaleSwitch
+    v-if="offline"
+    class="pr-locale"
+    :model-value="currentLocale"
+    :aria-label="t('gameLayout.players.language')"
+    @update:model-value="setLanguage"
+  />
 </template>
 
 <style scoped>
@@ -56,19 +53,5 @@ function goHome() {
   text-align: center;
 }
 
-.pr-locale { display: flex; gap: 2px; margin-top: 6px; }
-.pr-locale-btn {
-  padding: 2px 6px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--vtt-text-muted);
-  background: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.pr-locale-btn.is-active {
-  color: var(--vtt-text-primary);
-  background: var(--vtt-bg-elevated);
-}
+.pr-locale { margin-top: 6px; }
 </style>

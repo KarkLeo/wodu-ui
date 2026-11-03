@@ -56,7 +56,7 @@ export const OneOpen: Story = {
     // Variant A: the account, the mode switch and (online) the language left the panel; "Home" took their place.
     await expect(await canvas.findByRole('button', { name: 'Home' })).toBeVisible()
     await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
-    await expect(canvas.queryByRole('group', { name: 'Language' })).toBeNull()
+    await expect(canvas.queryByRole('radiogroup', { name: 'Language' })).toBeNull()
     await expect(canvas.queryByRole('radio', { name: 'Online' })).toBeNull()
     await expect(canvas.queryByText('Offline characters', { exact: false })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Full state reset' })).toBeNull()
@@ -81,7 +81,7 @@ export const OpenAnother: Story = {
   play: async ({ canvasElement }) => {
     const row = await within(canvasElement).findByRole('button', { name: new RegExp(mirel.name) })
     await userEvent.click(row)
-    await expect(row).toHaveClass('is-active')
+    await expect(row).toHaveClass('is-selected')
   },
 }
 
@@ -111,7 +111,7 @@ export const Offline: Story = {
     await expect(canvas.queryByRole('button', { name: /anna@mail\.com/ })).toBeNull()
     // No profile offline, so the language stays at the bottom of the panel, under "Home".
     await expect(canvas.getByRole('button', { name: 'Home' })).toBeVisible()
-    await expect(canvas.getByRole('group', { name: 'Language' })).toBeVisible()
+    await expect(canvas.getByRole('radiogroup', { name: 'Language' })).toBeVisible()
   },
 }
 
@@ -136,7 +136,7 @@ export const GameAsMaster: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText(crookhollow.name)).toBeVisible()
-    await expect(canvas.getByText('master', { selector: '.pr-role' })).toBeVisible()
+    await expect(canvas.getByText('master')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Game menu' })).toBeVisible()
     await expect(await row(canvasElement, brann.name)).toHaveTextContent(/you ·/)
     await expect(await row(canvasElement, wren.name)).toHaveTextContent(/Kostya ·/)
@@ -155,9 +155,9 @@ export const GameAsPlayer: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText(olden.name)).toBeVisible()
-    await expect(canvas.getByText('player', { selector: '.pr-role' })).toBeVisible()
+    await expect(canvas.getByText('player')).toBeVisible()
     await expect(await row(canvasElement, oda.name)).toHaveTextContent(/Seva ·/)
-    await expect(await row(canvasElement, oda.name)).toHaveClass('is-active')
+    await expect(await row(canvasElement, oda.name)).toHaveClass('is-selected')
     await expect(await row(canvasElement, wren.name)).toHaveTextContent(/you ·/)
     await expect(canvas.queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
   },
@@ -205,7 +205,7 @@ export const FreeTable: Story = {
   loaders: [atRoute(`/party/${sage.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await row(canvasElement, sage.name)).toHaveClass('is-active')
+    await expect(await row(canvasElement, sage.name)).toHaveClass('is-selected')
     await expect(canvas.queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Game menu' })).toBeNull()
     await userEvent.click(await row(canvasElement, oda.name))
@@ -237,7 +237,7 @@ export const Masterless: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText('This game has no master')).toBeVisible()
-    await expect(canvas.queryByText('player', { selector: '.pr-role' })).toBeNull()
+    await expect(canvas.queryByText('player')).toBeNull()
     await expect(canvas.getByRole('button', { name: 'Become master' })).toBeVisible()
   },
 }
@@ -255,7 +255,7 @@ export const MasterlessClaim: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Become master' }))
     await expect(update).toHaveBeenCalledWith(olden.id, { master: 'user-mock' })
     await waitFor(() => expect(within(canvasElement).queryByText('This game has no master')).toBeNull())
-    await expect(within(canvasElement).getByText('master', { selector: '.pr-role' })).toBeVisible()
+    await expect(within(canvasElement).getByText('master')).toBeVisible()
   },
 }
 
@@ -273,7 +273,7 @@ export const MasterlessClaimTaken: Story = {
     await waitFor(() => expect(useToastsStore().items.map(t => t.text)).toContain('Another player became the master first.'))
     await expect(useGamesStore().byId(olden.id)?.master).toBe('user-kostya')
     await waitFor(() => expect(within(canvasElement).queryByText('This game has no master')).toBeNull())
-    await expect(within(canvasElement).getByText('player', { selector: '.pr-role' })).toBeVisible()
+    await expect(within(canvasElement).getByText('player')).toBeVisible()
   },
 }
 

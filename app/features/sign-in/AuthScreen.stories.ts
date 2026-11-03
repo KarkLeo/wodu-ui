@@ -54,10 +54,10 @@ export const WithBackLink: Story = {
 export const LocaleButtons: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
-    const group = within(canvasElement).getByRole('group')
-    await userEvent.click(within(group).getByRole('button', { name: 'RU' }))
+    const group = within(canvasElement).getByRole('radiogroup')
+    await userEvent.click(within(group).getByRole('radio', { name: 'RU' }))
     await expect(currentLocale.value).toBe('ru')
-    await expect(within(group).getByRole('button', { name: 'RU' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(within(group).getByRole('radio', { name: 'RU' })).toBeChecked()
   },
 }
 
@@ -68,8 +68,8 @@ export const LocaleWritesProfileWhenSignedIn: Story = {
   },
   play: async ({ canvasElement }) => {
     const update = spyOn(pb.collection('users'), 'update')
-    const group = within(canvasElement).getByRole('group')
-    await userEvent.click(within(group).getByRole('button', { name: 'UK' }))
+    const group = within(canvasElement).getByRole('radiogroup')
+    await userEvent.click(within(group).getByRole('radio', { name: 'UK' }))
     await expect(update).toHaveBeenCalledWith('user-mock', { language: 'uk' })
   },
 }

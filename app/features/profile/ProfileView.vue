@@ -5,11 +5,12 @@ import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import FormError from '@/components/ui/FormError.vue'
 import KeyValueRow from '@/components/ui/KeyValueRow.vue'
+import LocaleSwitch from '@/components/ui/LocaleSwitch.vue'
 import RenameSheet from './RenameSheet.vue'
 import { useAccount } from '@/composables/useAccount'
 import { usePwaInstall } from '@/pwa/useInstall'
 import { buildDate } from '@/utils/build'
-import { t, currentLocale, LOCALES } from '@/locales'
+import { t, currentLocale } from '@/locales'
 import { accountErrorText } from './accountError'
 
 const { user, setLanguage, signOut, deleteAccount } = useAccount()
@@ -65,16 +66,12 @@ async function confirmDelete() {
 
       <KeyValueRow :label="t('profile.language')" label-id="pf-language">
         <template #action>
-          <div class="pf-seg" role="group" aria-labelledby="pf-language">
-            <button
-              v-for="l in LOCALES"
-              :key="l"
-              type="button"
-              :class="['pf-seg-btn', { 'is-active': currentLocale === l }]"
-              :aria-pressed="currentLocale === l"
-              @click="setLanguage(l)"
-            >{{ l.toUpperCase() }}</button>
-          </div>
+          <LocaleSwitch
+            variant="pill"
+            :model-value="currentLocale"
+            aria-labelledby="pf-language"
+            @update:model-value="setLanguage"
+          />
         </template>
       </KeyValueRow>
 
@@ -135,26 +132,6 @@ async function confirmDelete() {
   letter-spacing: 0.1em;
   color: var(--vtt-text-muted);
 }
-
-.pf-seg {
-  display: flex;
-  border: 1px solid var(--vtt-border-strong);
-  border-radius: var(--r-pill);
-  overflow: hidden;
-}
-.pf-seg-btn {
-  padding: 6px 12px;
-  background: none;
-  border: none;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.pf-seg-btn:hover { color: var(--vtt-text-secondary); }
-.pf-seg-btn:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: -2px; }
-.pf-seg-btn.is-active { background: var(--vtt-bg-elevated); color: var(--vtt-accent-soft); }
 
 .pf-actions {
   display: flex;

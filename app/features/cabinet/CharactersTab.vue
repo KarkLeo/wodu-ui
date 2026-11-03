@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Pill from '@/components/ui/Pill.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
@@ -68,35 +70,32 @@ async function createCharacter() {
 <template>
   <section v-if="drafts.length > 0" class="hm-list" :aria-label="t('characterList.drafts')">
     <SectionLabel tone="neutral" class="hm-label">{{ t('characterList.drafts') }}</SectionLabel>
-    <button
+    <ListRow
       v-for="c in drafts"
       :key="c.id"
-      type="button"
-      class="hm-card hm-card--draft"
+      as="button"
+      variant="dashed"
+      :title="c.name || t('characterList.draftUnnamed')"
+      :subtitle="`${t('characterList.resume')} →`"
+      subtitle-tone="accent"
       @click="resume(c)"
     >
-      <span class="hm-card__head">
-        <span class="hm-card__name">{{ c.name || t('characterList.draftUnnamed') }}</span>
-        <span class="hm-pill">{{ whereLabel(c) }}</span>
-      </span>
-      <span class="hm-card__meta hm-card__meta--accent">{{ t('characterList.resume') }} →</span>
-    </button>
+      <template #trailing><Pill>{{ whereLabel(c) }}</Pill></template>
+    </ListRow>
   </section>
 
   <section class="hm-list" :aria-label="t('nav.characters')">
-    <button
+    <ListRow
       v-for="c in active"
       :key="c.id"
-      type="button"
-      class="hm-card"
+      as="button"
+      variant="card"
+      :title="c.name"
+      :subtitle="classLine(c)"
       @click="open(c)"
     >
-      <span class="hm-card__head">
-        <span class="hm-card__name">{{ c.name }}</span>
-        <span :class="['hm-pill', { 'hm-pill--accent': !gameOf(c) }]">{{ whereLabel(c) }}</span>
-      </span>
-      <span class="hm-card__meta">{{ classLine(c) }}</span>
-    </button>
+      <template #trailing><Pill :tone="gameOf(c) ? 'neutral' : 'accent'">{{ whereLabel(c) }}</Pill></template>
+    </ListRow>
 
     <EmptyState
       v-if="active.length === 0 && drafts.length === 0"

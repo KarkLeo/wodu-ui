@@ -5,6 +5,8 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Avatar from '@/components/ui/Avatar.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -55,12 +57,9 @@ async function confirmGive() {
       <StateNote inline align="start" size="sm">{{ t('games.sheet.giveHint') }}</StateNote>
       <ul v-if="others.length" class="gs-list">
         <li v-for="m in others" :key="m.id">
-          <button type="button" class="gs-row" :disabled="busy" @click="pick(m)">
-            <span class="gs-avatar" aria-hidden="true">{{ m.name.trim().charAt(0).toUpperCase() || '?' }}</span>
-            <span class="gs-body">
-              <span class="gs-name">{{ displayName(m) }}</span>
-            </span>
-          </button>
+          <ListRow as="button" :title="displayName(m)" :disabled="busy" @click="pick(m)">
+            <template #leading><Avatar :name="m.name" aria-hidden="true" /></template>
+          </ListRow>
         </li>
       </ul>
       <EmptyState v-else :hint="t('games.sheet.giveEmpty')" />

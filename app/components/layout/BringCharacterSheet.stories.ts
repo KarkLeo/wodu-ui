@@ -25,8 +25,7 @@ const dialog = (canvasElement: HTMLElement) =>
 export const WithCharacters: Story = {
   play: async ({ canvasElement }) => {
     const sheet = await dialog(canvasElement)
-    const names = sheet.getAllByRole('button', { name: /./ })
-      .filter(b => b.classList.contains('gs-row'))
+    const names = within(sheet.getByRole('list')).getAllByRole('button')
       .map(b => b.textContent ?? '')
     await expect(names).toHaveLength(2)
     await expect(names.join()).toContain(oda.name)

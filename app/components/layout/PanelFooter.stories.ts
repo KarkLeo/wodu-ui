@@ -47,7 +47,7 @@ export const InGame: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByText(/^v\d+\.\d+\.\d+ · /)).toBeVisible()
-    await expect(canvas.queryByRole('group', { name: 'Language' })).toBeNull()
+    await expect(canvas.queryByRole('radiogroup', { name: 'Language' })).toBeNull()
     await userEvent.click(canvas.getByRole('button', { name: 'Home' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/games'))
   },
@@ -60,7 +60,7 @@ export const FreeTable: Story = {
   parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.queryByRole('group', { name: 'Language' })).toBeNull()
+    await expect(canvas.queryByRole('radiogroup', { name: 'Language' })).toBeNull()
     await userEvent.click(canvas.getByRole('button', { name: 'Home' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/characters'))
   },
@@ -73,11 +73,11 @@ export const Offline: Story = {
   parameters: { navigationNotice: false },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const ru = canvas.getByRole('button', { name: 'RU' })
+    const ru = canvas.getByRole('radio', { name: 'RU' })
     await userEvent.click(ru)
     await expect(currentLocale.value).toBe('ru')
-    await expect(ru).toHaveAttribute('aria-pressed', 'true')
-    await userEvent.click(canvas.getByRole('button', { name: 'EN' }))
+    await expect(ru).toBeChecked()
+    await userEvent.click(canvas.getByRole('radio', { name: 'EN' }))
     await userEvent.click(canvas.getByRole('button', { name: 'Home' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe('/'))
     await expect(pbRequests()).toEqual([])

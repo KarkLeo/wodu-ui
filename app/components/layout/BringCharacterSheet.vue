@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import StateNote from '@/components/ui/StateNote.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Avatar from '@/components/ui/Avatar.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { useCharactersStore } from '@/stores/characters'
 import { currentUser } from '@/transport/auth'
@@ -49,13 +51,9 @@ async function bring(c: Character) {
       <StateNote inline align="start" size="sm">{{ t('games.bring.hint') }}</StateNote>
       <ul v-if="free.length" class="gs-list">
         <li v-for="c in free" :key="c.id">
-          <button type="button" class="gs-row" :disabled="busy" @click="bring(c)">
-            <span class="gs-avatar" aria-hidden="true">{{ c.name.trim().charAt(0).toUpperCase() || '?' }}</span>
-            <span class="gs-body">
-              <span class="gs-name">{{ c.name }}</span>
-              <span class="gs-sub">{{ classLine(c) }}</span>
-            </span>
-          </button>
+          <ListRow as="button" :title="c.name" :subtitle="classLine(c)" :disabled="busy" @click="bring(c)">
+            <template #leading><Avatar :name="c.name" aria-hidden="true" /></template>
+          </ListRow>
         </li>
       </ul>
       <EmptyState v-else :hint="t('games.bring.empty')" />

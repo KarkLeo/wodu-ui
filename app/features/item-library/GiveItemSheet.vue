@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import StateNote from '@/components/ui/StateNote.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Avatar from '@/components/ui/Avatar.vue'
 import { useGiveItem } from '@/composables/useGiveItem'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -51,13 +53,9 @@ async function pick(characterId: string) {
       <StateNote inline align="start" size="sm">{{ t('library.items.give.hint') }}</StateNote>
       <ul v-if="rows.length" class="gs-list">
         <li v-for="r in rows" :key="r.id">
-          <button type="button" class="gs-row" @click="pick(r.id)">
-            <span class="gs-avatar" aria-hidden="true">{{ r.name.trim().charAt(0).toUpperCase() || '?' }}</span>
-            <span class="gs-body">
-              <span class="gs-name">{{ r.name }}</span>
-              <span v-if="r.owner" class="gs-sub">{{ r.owner }}</span>
-            </span>
-          </button>
+          <ListRow as="button" :title="r.name" :subtitle="r.owner || undefined" @click="pick(r.id)">
+            <template #leading><Avatar :name="r.name" aria-hidden="true" /></template>
+          </ListRow>
         </li>
       </ul>
       <EmptyState v-else :hint="t('library.items.give.nobody')" />

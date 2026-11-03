@@ -61,14 +61,14 @@ export const Rows: Story = {
     await expect(canvas.getByText('Anna')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Change name' })).toBeVisible()
     await expect(canvas.getByText('anna@mail.com')).toBeVisible()
-    const language = canvas.getByRole('group', { name: 'Language' })
-    await expect(within(language).getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
+    const language = canvas.getByRole('radiogroup', { name: 'Language' })
+    await expect(within(language).getByRole('radio', { name: 'EN' })).toBeChecked()
     await expect(canvas.getByText(/^v\d+\.\d+\.\d+ · /)).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Install app' })).toBeNull()
     await expect(canvas.getByRole('button', { name: 'Sign out' })).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Delete account' })).toBeVisible()
-    // The mode follows the address: there is no online/offline switch here either.
-    await expect(canvas.queryByRole('radio')).toBeNull()
+    // The mode follows the address: there is no online/offline switch here either; the only radios are the languages.
+    await expect(canvas.getAllByRole('radio').filter(r => !language.contains(r))).toEqual([])
   },
 }
 
@@ -97,8 +97,8 @@ export const LanguageSavesProfile: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
     const update = spyOn(pb.collection('users'), 'update')
-    const language = within(within(canvasElement).getByRole('group', { name: 'Language' }))
-    await userEvent.click(language.getByRole('button', { name: 'UK' }))
+    const language = within(within(canvasElement).getByRole('radiogroup', { name: 'Language' }))
+    await userEvent.click(language.getByRole('radio', { name: 'UK' }))
     await expect(currentLocale.value).toBe('uk')
     await expect(update).toHaveBeenCalledWith('user-mock', { language: 'uk' })
     await expect(within(canvasElement).getByRole('heading', { level: 1, name: t('profile.title') })).toBeVisible()
