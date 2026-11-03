@@ -112,14 +112,13 @@ function onClick() {
   opacity: 1;
 }
 
+/* Same weight as a class-granted chip: a picked skill and a granted one both belong to the character. */
 .skill-chip.is-selected {
-  background: var(--vtt-accent-deep);
-  border-color: var(--vtt-accent);
-  color: var(--vtt-bg-base);
+  border-color: var(--vtt-accent-deep);
+  color: var(--vtt-text-primary);
 }
-.skill-chip.is-selected:hover {
-  background: var(--vtt-accent);
-  color: var(--vtt-bg-base);
+.skill-chip.is-selected:hover:not(:disabled) {
+  border-color: var(--vtt-border-gold);
 }
 
 .skill-chip.is-locked {
@@ -155,8 +154,7 @@ function onClick() {
 .skill-chip.mode-pick-single .skill-pick-mark { border-radius: var(--r-pill); }
 
 .skill-chip.is-selected .skill-pick-mark {
-  border-color: var(--vtt-bg-base);
-  background: var(--vtt-bg-base);
+  border-color: var(--vtt-accent-deep);
 }
 .skill-chip.mode-pick-single.is-selected .skill-pick-mark::after {
   content: "";
