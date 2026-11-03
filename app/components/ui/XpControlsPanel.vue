@@ -2,6 +2,7 @@
 import { useId } from 'vue'
 import { t } from '@/locales'
 import Button from './Button.vue'
+import Stepper from './Stepper.vue'
 
 const inputLabelId = useId()
 
@@ -22,10 +23,6 @@ function setCurrent(v: number) {
   emit('update:current', Math.max(0, Math.floor(v)))
 }
 function step(delta: number) { setCurrent(props.current + delta) }
-function onInput(e: Event) {
-  const v = Number((e.target as HTMLInputElement).value)
-  if (!Number.isNaN(v)) setCurrent(v)
-}
 </script>
 
 <template>
@@ -36,21 +33,23 @@ function onInput(e: Event) {
     </div>
 
     <div class="xp-pop-steps">
-      <button type="button" class="xp-step-btn is-minus" @click="step(-100)">−100</button>
-      <button type="button" class="xp-step-btn is-minus" @click="step(-10)">−10</button>
-      <button type="button" class="xp-step-btn is-plus" @click="step(10)">+10</button>
-      <button type="button" class="xp-step-btn is-plus" @click="step(100)">+100</button>
+      <Button size="sm" class="xp-step-btn is-minus" @click="step(-100)">−100</Button>
+      <Button size="sm" class="xp-step-btn is-minus" @click="step(-10)">−10</Button>
+      <Button size="sm" class="xp-step-btn is-plus" @click="step(10)">+10</Button>
+      <Button size="sm" class="xp-step-btn is-plus" @click="step(100)">+100</Button>
     </div>
 
     <div class="xp-pop-manual">
       <span :id="inputLabelId" class="xp-pop-manual-label">{{ t('xpControls.inputLabel') }}</span>
-      <input
-        :aria-labelledby="inputLabelId"
-        type="number"
-        :value="current"
-        min="0"
-        :max="max"
-        @input="onInput"
+      <!-- No max: experience may go past the next level's threshold. -->
+      <Stepper
+        class="xp-pop-manual-field"
+        :model-value="current"
+        :min="0"
+        :labelledby="inputLabelId"
+        lazy
+        hide-buttons
+        @update:model-value="setCurrent"
       />
       <span class="xp-pop-manual-total">{{ t('xpControls.outOf', { max }) }}</span>
     </div>
@@ -104,26 +103,13 @@ function onInput(e: Event) {
 }
 .xp-step-btn {
   height: 34px;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
+  justify-content: center;
 }
-.xp-step-btn:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-  background: var(--vtt-bg-elevated);
-}
-.xp-step-btn.is-minus:hover {
+.xp-pop-steps .xp-step-btn.is-minus:hover:not(:disabled) {
   border-color: var(--vtt-danger);
   color: var(--vtt-danger-bright);
 }
-.xp-step-btn.is-plus:hover {
+.xp-pop-steps .xp-step-btn.is-plus:hover:not(:disabled) {
   border-color: var(--vtt-success);
   color: var(--vtt-success);
 }
@@ -145,29 +131,10 @@ function onInput(e: Event) {
   text-transform: uppercase;
   color: var(--vtt-text-muted);
 }
-.xp-pop-manual input {
-  width: 100%;
+.xp-pop-manual-field {
+  --stepper-field-width: 100%;
+  display: flex;
   min-width: 0;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
-  color: var(--vtt-accent-soft);
-  font-family: var(--font-serif);
-  font-size: 18px;
-  text-align: center;
-  padding: 6px 10px;
-  outline: none;
-  transition: border-color var(--t-fast) var(--ease);
-}
-.xp-pop-manual input:focus-visible { border-color: var(--vtt-accent); }
-.xp-pop-manual input::-webkit-outer-spin-button,
-.xp-pop-manual input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.xp-pop-manual input[type='number'] {
-  -moz-appearance: textfield;
-  appearance: textfield;
 }
 .xp-pop-manual-total {
   font-family: var(--font-mono);

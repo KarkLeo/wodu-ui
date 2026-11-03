@@ -2,8 +2,9 @@
 import { computed, ref, watch } from 'vue'
 import { t } from '@/locales'
 import { useDiceRoller } from '@/composables/useDiceRoller'
-import { useRovingSelection } from '@/composables/useRovingSelection'
 import Button from './Button.vue'
+import SegmentedFilter from './SegmentedFilter.vue'
+import Stepper from './Stepper.vue'
 
 const props = withDefaults(defineProps<{
   current: number
@@ -31,11 +32,11 @@ const tab = ref<Mode>('damage')
 const amount = ref<number>(0)
 
 const modes = computed(() => [
-  { value: 'damage' as Mode, label: t('hpControls.tabDamage'), class: 'tab-damage' },
-  { value: 'heal' as Mode, label: t('hpControls.tabHeal'), class: 'tab-heal' },
-  { value: 'temp' as Mode, label: t('hpControls.tabTemp'), class: '' },
+  { value: 'damage' as Mode, label: t('hpControls.tabDamage'), tone: 'danger' as const },
+  { value: 'heal' as Mode, label: t('hpControls.tabHeal'), tone: 'success' as const },
+  { value: 'temp' as Mode, label: t('hpControls.tabTemp') },
 ])
-const { tabIndexFor, onKeydown } = useRovingSelection(() => modes.value, tab)
+const AMOUNT_TONE = { damage: 'danger', heal: 'success', temp: 'accent' } as const
 
 watch(tab, () => { amount.value = 0 })
 
@@ -103,37 +104,27 @@ const previewResult = computed(() => {
       <span class="hp-pop-title">{{ t('hpControls.title') }}</span>
       <span class="hp-pop-sub">{{ current }} / {{ max }}</span>
     </div>
-    <div class="hp-pop-tabs" role="radiogroup" :aria-label="t('hpControls.modeAria')">
-      <button
-        v-for="mode in modes"
-        :key="mode.value"
-        type="button"
-        role="radio"
-        :aria-checked="tab === mode.value"
-        :tabindex="tabIndexFor(mode.value)"
-        :class="[mode.class, { active: tab === mode.value }]"
-        @click="tab = mode.value"
-        @keydown="onKeydown"
-      >{{ mode.label }}</button>
-    </div>
+    <SegmentedFilter
+      v-model="tab"
+      class="hp-pop-tabs"
+      :options="modes"
+      full-width
+      :aria-label="t('hpControls.modeAria')"
+    />
 
-    <div class="hp-amount">
-      <button type="button" :aria-label="t('ui.stepper.decrease')" @click="amount = Math.max(0, amount - 1)">−</button>
-      <input
-        type="number"
-        min="0"
-        :aria-label="t('hpControls.amountAria')"
-        :class="[tab === 'heal' ? 'is-heal' : tab === 'temp' ? 'is-temp' : '']"
-        :value="amount"
-        @input="(e) => { const v = Number((e.target as HTMLInputElement).value); amount = Number.isNaN(v) ? 0 : v }"
-      />
-      <button type="button" :aria-label="t('ui.stepper.increase')" @click="amount = amount + 1">+</button>
-    </div>
+    <Stepper
+      v-model="amount"
+      class="hp-amount"
+      size="lg"
+      :min="0"
+      :tone="AMOUNT_TONE[tab]"
+      :aria-label="t('hpControls.amountAria')"
+    />
 
     <div class="hp-dice-quick">
-      <button type="button" @click="onDice('d6')">d6</button>
-      <button type="button" @click="onDice('2d6')">2d6</button>
-      <button type="button" @click="onDice('d8')">d8</button>
+      <Button size="sm" @click="onDice('d6')">d6</Button>
+      <Button size="sm" @click="onDice('2d6')">2d6</Button>
+      <Button size="sm" @click="onDice('d8')">d8</Button>
     </div>
 
     <div class="hp-pop-preview">
@@ -188,83 +179,8 @@ const previewResult = computed(() => {
   text-transform: uppercase;
   color: var(--vtt-text-muted);
 }
-.hp-pop-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
-  padding: 3px;
-  box-shadow: var(--shadow-inset);
-  margin-bottom: 12px;
-}
-.hp-pop-tabs button {
-  padding: 7px 8px;
-  background: transparent;
-  border: 0;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: 2px;
-  line-height: 1;
-}
-.hp-pop-tabs button.active {
-  color: var(--vtt-accent-soft);
-  background: var(--vtt-bg-elevated);
-}
-.hp-pop-tabs button.active.tab-damage { color: var(--vtt-danger-bright); }
-.hp-pop-tabs button.active.tab-heal { color: var(--vtt-success); }
-
-.hp-amount {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
-  gap: 10px;
-  align-items: center;
-  padding: 8px 0 12px;
-}
-.hp-amount button {
-  width: 40px;
-  height: 40px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-sans);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-.hp-amount button:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-}
-.hp-amount input {
-  width: 100%;
-  min-width: 0;
-  padding: 10px 0;
-  text-align: center;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 36px;
-  color: var(--vtt-danger-bright);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--vtt-border-subtle);
-  outline: none;
-  -moz-appearance: textfield;
-}
-.hp-amount input:focus-visible {
-  border-bottom-color: var(--vtt-accent);
-  box-shadow: 0 1px 0 0 var(--vtt-accent);
-}
-.hp-amount input.is-heal { color: var(--vtt-success); }
-.hp-amount input.is-temp { color: var(--vtt-accent); }
-.hp-amount input::-webkit-outer-spin-button,
-.hp-amount input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+.hp-pop-tabs { margin-bottom: 12px; }
+.hp-amount { padding: 8px 0 12px; }
 
 .hp-dice-quick {
   display: flex;
@@ -272,21 +188,6 @@ const previewResult = computed(() => {
   flex-wrap: wrap;
   justify-content: center;
   margin: 2px 0 10px;
-}
-.hp-dice-quick button {
-  padding: 5px 10px;
-  background: transparent;
-  border: 1px dashed var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  cursor: pointer;
-}
-.hp-dice-quick button:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent);
-  border-style: solid;
 }
 
 .hp-pop-preview {

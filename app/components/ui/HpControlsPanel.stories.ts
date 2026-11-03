@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import HpControlsPanel from './HpControlsPanel.vue'
 
 const meta = {
@@ -49,4 +49,45 @@ export const WithTempHp: Story = {
 
 export const Critical: Story = {
   args: { current: 2 },
+}
+
+/** The amount is local: typing only changes the preview, and one press of the submit button applies it. */
+export const TypingAppliesNothing: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('radiogroup', { name: 'HP change type' })).toBeVisible()
+    const submit = canvas.getByRole('button', { name: 'Deal damage' })
+    await expect(submit).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Decrease' })).toBeDisabled()
+
+    const amount = canvas.getByRole('spinbutton', { name: 'Amount' })
+    await userEvent.clear(amount)
+    await userEvent.type(amount, '12')
+    await userEvent.tab()
+    await expect(args.onApplyDamage).not.toHaveBeenCalled()
+    await expect(canvasElement.querySelector('.hp-pop-preview')).toHaveTextContent('9 −12 = 0 / 12')
+
+    await userEvent.click(submit)
+    await expect(args.onApplyDamage).toHaveBeenCalledTimes(1)
+    await expect(args.onApplyDamage).toHaveBeenCalledWith(12)
+    await expect(args.onSubmitted).toHaveBeenCalledTimes(1)
+    await expect(amount).toHaveValue(0)
+  },
+}
+
+export const ModeSwitchResetsAmount: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Increase' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Increase' }))
+    const amount = canvas.getByRole('spinbutton', { name: 'Amount' })
+    await expect(amount).toHaveValue(2)
+
+    await userEvent.click(canvas.getByRole('radio', { name: 'Heal' }))
+    await expect(amount).toHaveValue(0)
+    await userEvent.click(canvas.getByRole('button', { name: '2d6' }))
+    await expect(Number((amount as HTMLInputElement).value)).toBeGreaterThanOrEqual(2)
+    await userEvent.click(canvas.getByRole('button', { name: 'Restore' }))
+    await expect(args.onHeal).toHaveBeenCalledTimes(1)
+  },
 }

@@ -2,8 +2,10 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import StatusHeader from './StatusHeader.vue'
 import { brann, wren, oda, PARTY } from '@/stories/fixtures'
-import { withStores } from '@/stories/state'
+import { DESKTOP_VIEWPORT, withStores } from '@/stories/state'
+import { useCharactersStore } from '@/stores/characters'
 import { asTeammate, expectNoEditControls, sheetFor, TEAMMATE_NAME } from '@/stories/readonly'
+import { clearPbRequests, pbRequests } from '../../../../.storybook/mocks/pb'
 
 const meta = {
   title: 'Panels/StatusHeader',
@@ -14,6 +16,10 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+/** Every dispatch overwrites the whole character on the server. */
+const characterWrites = () => pbRequests().filter(r => r === 'characters.update').length
+const brannNow = () => useCharactersStore().getById(brann.id)!
 
 export const Healthy: Story = {
   args: { id: brann.id },
@@ -70,5 +76,109 @@ export const ReadOnlyUnknownOwner: Story = {
   play: async ({ canvasElement }) => {
     await expect(await within(canvasElement).findByText('Someone else’s character')).toBeVisible()
     await expectNoEditControls(canvasElement)
+  },
+}
+
+/** The coin field on a phone (a bottom sheet): one write per edit, none per keystroke, none for a cancelled edit. */
+export const CoinsWriteOncePerEdit: Story = {
+  args: { id: brann.id },
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement)
+    const page = within(canvasElement.ownerDocument.body)
+    clearPbRequests()
+    await userEvent.click(canvas.getByRole('button', { name: /Coins/ }))
+
+    await step('Enter writes once', async () => {
+      const field = await page.findByRole('spinbutton', { name: 'Coins' })
+      await userEvent.clear(field)
+      await userEvent.type(field, '123')
+      await expect(characterWrites()).toBe(0)
+      await userEvent.keyboard('{Enter}')
+      await expect(characterWrites()).toBe(1)
+      await expect(brannNow().coins).toBe(123)
+    })
+
+    await step('Escape closes the sheet and writes nothing', async () => {
+      const field = page.getByRole('spinbutton', { name: 'Coins' })
+      await userEvent.clear(field)
+      await userEvent.type(field, '45')
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => expect(page.queryByRole('dialog')).toBeNull())
+      await expect(characterWrites()).toBe(1)
+      await expect(brannNow().coins).toBe(123)
+    })
+
+    await step('closing the sheet keeps what was typed, with one write', async () => {
+      await userEvent.click(canvas.getByRole('button', { name: /Coins/ }))
+      const field = await page.findByRole('spinbutton', { name: 'Coins' })
+      await userEvent.clear(field)
+      await userEvent.type(field, '77')
+      await userEvent.click(page.getByRole('button', { name: 'Close' }))
+      await waitFor(() => expect(page.queryByRole('dialog')).toBeNull())
+      await expect(characterWrites()).toBe(2)
+      await expect(brannNow().coins).toBe(77)
+    })
+  },
+}
+
+/** The same in the desktop popover, which a click outside closes. */
+export const CoinsWriteOnceInPopover: Story = {
+  args: { id: brann.id },
+  globals: DESKTOP_VIEWPORT,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const page = within(canvasElement.ownerDocument.body)
+    clearPbRequests()
+    await userEvent.click(canvas.getByRole('button', { name: /Coins/ }))
+    const field = await page.findByRole('spinbutton', { name: 'Coins' })
+    await userEvent.clear(field)
+    await userEvent.type(field, '55')
+    await expect(characterWrites()).toBe(0)
+    await userEvent.click(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(page.queryByRole('spinbutton', { name: 'Coins' })).toBeNull())
+    await expect(characterWrites()).toBe(1)
+    await expect(brannNow().coins).toBe(55)
+  },
+}
+
+/** A typed experience value becomes one GAIN_XP, for the whole difference. */
+export const XpWritesOncePerEdit: Story = {
+  args: { id: brann.id },
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    clearPbRequests()
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('.xp-bar-trigger')!)
+    const field = await page.findByRole('spinbutton', { name: 'Input' })
+    await userEvent.clear(field)
+    await userEvent.type(field, '1234')
+    await expect(characterWrites()).toBe(0)
+    // Enter, not Tab: with Storybook's frozen clock Vue drops a blur that Reka's layer has already seen in capture.
+    await userEvent.keyboard('{Enter}')
+    await expect(characterWrites()).toBe(1)
+    await expect(brannNow().xp).toBe(1234)
+
+    await userEvent.click(page.getByRole('button', { name: '+10' }))
+    await expect(characterWrites()).toBe(2)
+    await expect(brannNow().xp).toBe(1244)
+  },
+}
+
+/** Typing an HP amount writes nothing; the submit button writes once. */
+export const HpWritesOncePerApply: Story = {
+  args: { id: brann.id },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const page = within(canvasElement.ownerDocument.body)
+    const before = brannNow().currentHp
+    clearPbRequests()
+    await userEvent.click(canvas.getByRole('button', { name: /Edit HP/ }))
+    const field = await page.findByRole('spinbutton', { name: 'Amount' })
+    await userEvent.clear(field)
+    await userEvent.type(field, '2')
+    await userEvent.tab()
+    await expect(characterWrites()).toBe(0)
+    await userEvent.click(page.getByRole('button', { name: 'Deal damage' }))
+    await expect(characterWrites()).toBe(1)
+    await expect(brannNow().currentHp).toBe(before - 2)
   },
 }

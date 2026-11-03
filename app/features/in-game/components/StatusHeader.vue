@@ -341,6 +341,7 @@ async function handleRollDamage() {
               <Stepper
                 v-model="coinsModel"
                 :min="0"
+                lazy
                 :aria-label="t('inGame.statusHeader.trio.coins')"
               />
             </div>
@@ -493,9 +494,7 @@ async function handleRollDamage() {
   align-items: center;
   justify-content: center;
   padding: 6px 0 2px;
-}
-.info-popover .sh-pop-coin-edit .sc-stepper input {
-  width: 140px;
+  --stepper-field-width: 140px;
 }
 
 .info-popover .sh-pop-mod {

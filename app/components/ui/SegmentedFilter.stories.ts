@@ -82,6 +82,20 @@ export const Plain: Story = {
   args: { variant: 'plain', options: logOptions, modelValue: 'changes' },
 }
 
+/** `tone` colours an option's label while it is selected, as in the HP panel. */
+export const Toned: Story = {
+  args: {
+    modelValue: 'damage',
+    fullWidth: true,
+    options: [
+      { value: 'damage', label: 'Damage', tone: 'danger' },
+      { value: 'heal', label: 'Heal', tone: 'success' },
+      { value: 'temp', label: 'Temporary' },
+    ],
+  },
+  decorators: [() => ({ template: '<div style="width: 288px"><story /></div>' })],
+}
+
 export const Variants: Story = {
   render: (args) => ({
     components: { SegmentedFilter },
