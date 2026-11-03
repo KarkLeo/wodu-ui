@@ -31,7 +31,7 @@ const describedBy = computed(() => {
 <template>
   <div :class="['form-field', { 'is-underline': variant === 'underline' }]">
     <label :class="['form-field-label', { 'is-hidden': hideLabel }]" :for="id">
-      {{ label }}<span v-if="optional" class="form-field-optional">{{ optional }}</span>
+      {{ label }} <span v-if="optional" class="form-field-optional">{{ optional }}</span>
     </label>
     <slot :id="id" :invalid="!!error" :describedBy="describedBy" />
     <span v-if="hasHint" :id="hintId" class="form-field-hint"><slot name="hint">{{ hint }}</slot></span>
@@ -62,7 +62,6 @@ const describedBy = computed(() => {
   border: 0;
 }
 .form-field-optional {
-  margin-left: 8px;
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 11px;

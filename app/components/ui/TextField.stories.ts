@@ -89,7 +89,7 @@ export const OptionalNote: Story = {
     maxlength: 5,
   },
   play: async ({ canvasElement }) => {
-    const input = within(canvasElement).getByRole('textbox', { name: /Player name/ })
+    const input = within(canvasElement).getByRole('textbox', { name: 'Player name — a nickname is fine' })
     await userEvent.type(input, 'Annabel')
     await expect(input).toHaveValue('Annab')
   },

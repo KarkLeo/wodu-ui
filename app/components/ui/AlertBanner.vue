@@ -1,5 +1,7 @@
 <script setup lang="ts">
-withDefaults(defineProps<{
+import { computed } from 'vue'
+
+const props = withDefaults(defineProps<{
   /** `danger` a failure, `warning` a rule being bent, `accent` something to act on, `neutral` plain information. */
   tone?: 'danger' | 'warning' | 'accent' | 'neutral'
   /** Small mono label above the title. */
@@ -9,22 +11,24 @@ withDefaults(defineProps<{
   stacked?: boolean
   /** No frame: a warning line inside a card that already has one. */
   inline?: boolean
-  /** Announce it as an alert. Off for a standing notice that is part of the layout. */
+  /** Announce it as an alert. Defaults to on for `danger` and `warning`, off for `accent` and `neutral`. */
   announce?: boolean
   /** The element to render, e.g. `section` or `aside` with an `aria-label` for a landmark. */
   as?: 'div' | 'section' | 'aside'
 }>(), {
   tone: 'danger',
-  announce: true,
+  announce: undefined,
   as: 'div',
 })
+
+const announces = computed(() => props.announce ?? (props.tone === 'danger' || props.tone === 'warning'))
 </script>
 
 <template>
   <component
     :is="as"
     :class="['alert-banner', `is-${tone}`, { 'is-stacked': stacked, 'is-inline': inline }]"
-    :role="announce ? 'alert' : undefined"
+    :role="announces ? 'alert' : undefined"
   >
     <span v-if="$slots.icon" class="alert-banner-icon"><slot name="icon" /></span>
     <div class="alert-banner-body">
@@ -47,17 +51,22 @@ withDefaults(defineProps<{
   border-radius: var(--r-sm);
   background: var(--vtt-danger-soft);
 }
+/* Each tint is preceded by a plain token for browsers without color-mix() (iOS Safari before 16.2). */
 .alert-banner.is-warning {
+  border-color: var(--vtt-border-subtle);
   border-color: color-mix(in srgb, var(--vtt-warning) 35%, transparent);
   border-left: 2px solid var(--vtt-warning);
+  background: var(--vtt-bg-surface);
   background: color-mix(in srgb, var(--vtt-warning) 8%, transparent);
 }
 .alert-banner.is-accent {
   border-color: var(--vtt-border-gold);
+  background: var(--vtt-bg-surface);
   background: color-mix(in srgb, var(--vtt-accent) 6%, transparent);
 }
 .alert-banner.is-neutral {
   border-color: var(--vtt-border-strong);
+  background: var(--vtt-bg-surface);
   background: color-mix(in srgb, var(--vtt-bg-surface) 90%, transparent);
 }
 .alert-banner.is-stacked { flex-direction: column; align-items: flex-start; gap: 8px; }

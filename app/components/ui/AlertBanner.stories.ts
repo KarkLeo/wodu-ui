@@ -85,3 +85,22 @@ export const Inline: Story = {
     `,
   }),
 }
+
+/** Danger and warning announce themselves by default; accent and neutral are standing notices. */
+export const AnnounceByTone: Story = {
+  render: () => ({
+    components: { AlertBanner },
+    template: `
+      <div style="display: grid; gap: 8px">
+        <AlertBanner tone="danger">Couldn’t save.</AlertBanner>
+        <AlertBanner tone="warning">Multiple weapons equipped.</AlertBanner>
+        <AlertBanner tone="accent" title="This game has no master" />
+        <AlertBanner tone="neutral" eyebrow="You are invited to" title="The Olden Road" />
+      </div>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    const alerts = within(canvasElement).getAllByRole('alert')
+    await expect(alerts.map(a => a.textContent?.trim())).toEqual(['Couldn’t save.', 'Multiple weapons equipped.'])
+  },
+}

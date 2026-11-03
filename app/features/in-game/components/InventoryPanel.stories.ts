@@ -58,7 +58,7 @@ export const MultipleWeapons: Story = {
     const canvas = within(canvasElement)
     const bow = canvas.getByText('Shortbow').closest<HTMLElement>('.inv-item')!
     await userEvent.click(within(bow).getByRole('button', { name: 'Equip' }))
-    await expect(await canvas.findByText('Multiple weapons equipped.')).toBeVisible()
+    await expect(await canvas.findByRole('alert')).toHaveTextContent('Multiple weapons equipped.')
   },
 }
 

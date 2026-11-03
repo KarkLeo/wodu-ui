@@ -74,7 +74,7 @@ function onBuyClick(tpl: GearTemplate) {
       <SegmentedFilter v-model="activeCat" :options="segments" class="catalog-segments" />
     </div>
 
-    <EmptyState v-if="!filtered.length" :title="t('inGame.inventory.catalog.empty')" />
+    <EmptyState v-if="!filtered.length" :hint="t('inGame.inventory.catalog.empty')" />
     <div v-else>
       <div v-for="tpl in filtered" :key="tpl.templateId" class="cat-item">
         <ItemIcon
