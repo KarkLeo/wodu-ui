@@ -2,7 +2,8 @@
 import { useRovingSelection } from '@/composables/useRovingSelection'
 
 const props = withDefaults(defineProps<{
-  options: Array<{ value: T; label: string }>
+  /** `tone` colours an option's label while it is selected. */
+  options: Array<{ value: T; label: string; tone?: 'danger' | 'success' }>
   /** `plain` drops the frame, for a small switch in a corner or a footer. */
   variant?: 'block' | 'pill' | 'plain'
   fullWidth?: boolean
@@ -32,7 +33,7 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.options, model
       role="radio"
       :aria-checked="model === opt.value"
       :tabindex="tabIndexFor(opt.value)"
-      :class="['segmented-btn', { 'is-active': model === opt.value }]"
+      :class="['segmented-btn', opt.tone && `tone-${opt.tone}`, { 'is-active': model === opt.value }]"
       @click="model = opt.value"
       @keydown="onKeydown"
     >
@@ -99,4 +100,8 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.options, model
   border-radius: 0;
 }
 .segmented.is-plain .segmented-btn { padding: 2px 6px; }
+
+/* After the variants, so a tone holds in each of them. */
+.segmented .segmented-btn.is-active.tone-danger { color: var(--vtt-danger-bright); }
+.segmented .segmented-btn.is-active.tone-success { color: var(--vtt-success); }
 </style>

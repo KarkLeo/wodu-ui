@@ -45,7 +45,12 @@ export function useCharacterCreation() {
   const draft = computed(() => (creation.draftId ? characters.getById(creation.draftId) : undefined))
   const step = computed(() => creation.step)
 
+  // The mode switches before the page unmounts and draftId is per mode, so a field committing on its way out
+  // (a lazy Stepper, a debounced name) would otherwise write into the other mode's draft.
+  const openedIn = mode.value
+
   function dispatch(cmd: CharacterCommand) {
+    if (mode.value !== openedIn) return
     if (creation.draftId) {
       void characters.dispatch(creation.draftId, cmd)
     }

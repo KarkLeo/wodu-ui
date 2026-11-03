@@ -36,7 +36,7 @@ async function mountTrainingStep() {
   return characters
 }
 
-const hint = () => wrapper!.find('.cc-topbar-hint').text()
+const hint = () => wrapper!.find('.wz-hint').text()
 
 describe('CharacterCreationView step 2 hint', () => {
   it('asks for the missing abilities instead of claiming the step is done', async () => {

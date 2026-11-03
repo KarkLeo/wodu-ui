@@ -11,7 +11,9 @@ import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
 import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
 import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import Button from '@/components/ui/Button.vue'
+import IconReroll from '@/components/ui/icons/IconReroll.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
@@ -95,16 +97,15 @@ function onUse(item: InventoryItem) {
 
 <template>
   <template v-if="draft">
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader
       :title="t('characterCreation.gear.hpLabel')"
       :hint="t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' })"
     >
       <template #action>
-        <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollHp">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 6 C3 4 4.5 3 6 3 M9 6 C9 8 7.5 9 6 9 M9 6 L10.5 4.5 M9 6 L7.5 4.5"/></svg>
+        <Button variant="roll" :icon-left="IconReroll" :disabled="isRolling" @click="rollHp">
           {{ hpRolled ? t('characterCreation.shell.reroll') : t('characterCreation.shell.rollAll') }}
-        </button>
+        </Button>
       </template>
     </SectionHeader>
     <div class="cc-hp">
@@ -120,17 +121,17 @@ function onUse(item: InventoryItem) {
         <span v-else class="cc-hp-formula">{{ t('characterCreation.gear.hpEmpty') }}</span>
       </div>
     </div>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.gear.gearLabel')" :hint="t('characterCreation.gear.gearHint')" />
 
     <CoinBar :coins="draft.coins" @update="inv.setCoins" />
 
     <div class="cc-gear-actions">
-      <button type="button" class="cc-gear-btn" @click="catalogOpen = true">
+      <Button variant="primary" class="cc-gear-btn" @click="catalogOpen = true">
         {{ t('characterCreation.gear.openCatalog') }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="draft.inventory.length" class="cc-gear-list">
@@ -144,7 +145,7 @@ function onUse(item: InventoryItem) {
       />
     </div>
     <EmptyState v-else :hint="t('characterCreation.gear.boughtEmpty')" />
-  </section>
+  </WizardSection>
 
   <CatalogSheet
     v-model:open="catalogOpen"
@@ -171,32 +172,6 @@ function onUse(item: InventoryItem) {
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-
-.cc-btn-roll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: rgba(36, 28, 21, 0.55);
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  border-radius: var(--r-sm);
-  color: var(--vtt-accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-btn-roll:hover:not(:disabled) {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: var(--vtt-border-gold);
-}
-.cc-btn-roll:disabled { opacity: 0.5; cursor: not-allowed; }
-.cc-btn-roll svg { width: 12px; height: 12px; }
-
 .cc-hp {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -224,25 +199,7 @@ function onUse(item: InventoryItem) {
 .cc-hp-formula-note { color: var(--vtt-accent-deep); }
 
 .cc-gear-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.cc-gear-btn {
-  flex: 1;
-  min-width: 140px;
-  padding: 10px 16px;
-  background: var(--vtt-bg-elevated);
-  border: 1px solid var(--vtt-border-strong);
-  border-radius: var(--r-pill);
-  color: var(--vtt-accent-soft);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-gear-btn:hover {
-  background: #2e241a;
-  border-color: var(--vtt-border-gold);
-  color: var(--vtt-accent);
-}
+.cc-gear-btn { flex: 1; min-width: 140px; justify-content: center; }
 
 .cc-gear-list { display: flex; flex-direction: column; gap: 8px; }
 </style>

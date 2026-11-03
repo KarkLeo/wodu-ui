@@ -1,7 +1,7 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  /** `accent` marks what is yours or the leading one (the master, a free character, offline). */
-  tone?: 'neutral' | 'accent'
+  /** `accent` marks what is yours or the leading one (the master, a free character, offline); `danger` a cost or a risk. */
+  tone?: 'neutral' | 'accent' | 'danger'
   /** `md` 10px in rows and cards, `sm` 9px beside a caption. */
   size?: 'md' | 'sm'
   /** A small accent dot before the text, for a mode or a live state. */
@@ -27,8 +27,11 @@ withDefaults(defineProps<{
   gap: 6px;
   flex-shrink: 0;
   max-width: 100%;
-  border: 1px solid var(--vtt-border-strong);
+  /* Filled, not outlined: an outlined capsule reads as a button. */
+  border: 1px solid transparent;
   border-radius: var(--r-pill);
+  background: var(--vtt-bg-elevated);
+  background: color-mix(in srgb, var(--vtt-text-secondary) 12%, transparent);
   font-family: var(--font-mono);
   text-transform: uppercase;
   color: var(--vtt-text-secondary);
@@ -39,7 +42,17 @@ withDefaults(defineProps<{
 .sz-md { padding: 2px 8px; font-size: 10px; letter-spacing: 0.12em; }
 .sz-sm { padding: 1px 7px; font-size: 9px; letter-spacing: 0.14em; }
 
-.is-accent { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+.is-accent {
+  background: var(--vtt-bg-elevated);
+  background: color-mix(in srgb, var(--vtt-accent-deep) 22%, transparent);
+  color: var(--vtt-accent);
+}
+/* danger-bright on plain danger-soft is 4.36:1, under AA; the darker mix clears it. */
+.is-danger {
+  background: var(--vtt-bg-base);
+  background: color-mix(in srgb, var(--vtt-danger-soft) 70%, var(--vtt-bg-base));
+  color: var(--vtt-danger-bright);
+}
 
 .pill-dot {
   flex-shrink: 0;

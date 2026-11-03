@@ -1,56 +1,147 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import IconButton from './IconButton.vue'
+import IconMinus from './icons/IconMinus.vue'
+import IconPlus from './icons/IconPlus.vue'
 import { t } from '@/locales'
 
 const props = withDefaults(defineProps<{
   min?: number
   max?: number
   step?: number
-  size?: 'sm' | 'base'
+  /** `lg` is the full-width amount of a panel: round buttons and a large underlined number. */
+  size?: 'lg' | 'md' | 'sm'
+  /** Colour of the number. */
+  tone?: 'neutral' | 'accent' | 'danger' | 'success'
   ariaLabel?: string
+  /** Id of a visible label; takes the place of `ariaLabel`. */
+  labelledby?: string
+  decreaseLabel?: string
+  increaseLabel?: string
+  /**
+   * Typing edits a draft: the model changes once, on blur, Enter or when the field goes away. Escape, or
+   * leaving the field empty or unparsable, drops the draft. Use it whenever the model writes somewhere
+   * (a dispatch writes the whole character).
+   */
+  lazy?: boolean
+  /** Only the number field, where the steps live elsewhere or there are none. */
+  hideButtons?: boolean
+  /** `plain` is a bare number that takes a frame only while edited, with its buttons grouped after it. */
+  variant?: 'field' | 'plain'
 }>(), {
   step: 1,
-  size: 'base',
+  size: 'md',
+  tone: 'neutral',
+  variant: 'field',
 })
 
 const model = defineModel<number>({ required: true })
 
-const canDec = computed(() => props.min === undefined || model.value > props.min)
-const canInc = computed(() => props.max === undefined || model.value < props.max)
+// A lazy edit in progress. An outside change to the model does not overwrite what is being typed.
+const draft = ref<string | null>(null)
+const shown = computed(() => draft.value ?? model.value)
+// A number input reports '' both when emptied and for text it cannot parse.
+const current = computed(() => (draft.value?.trim() ? Number(draft.value) : model.value) || 0)
 
-function dec() {
-  if (!canDec.value) return
-  const next = model.value - props.step
-  model.value = props.min !== undefined ? Math.max(next, props.min) : next
-}
-function inc() {
-  if (!canInc.value) return
-  const next = model.value + props.step
-  model.value = props.max !== undefined ? Math.min(next, props.max) : next
-}
-function onInput(e: Event) {
-  const v = Number((e.target as HTMLInputElement).value)
-  if (Number.isNaN(v)) return
-  let next = v
+const canDec = computed(() => props.min === undefined || current.value > props.min)
+const canInc = computed(() => props.max === undefined || current.value < props.max)
+
+function clamp(value: number) {
+  let next = value
   if (props.min !== undefined) next = Math.max(next, props.min)
   if (props.max !== undefined) next = Math.min(next, props.max)
-  model.value = next
+  return next
 }
+function set(value: number) {
+  draft.value = null
+  const next = clamp(value)
+  if (next !== model.value) model.value = next
+}
+function dec() {
+  if (canDec.value) set(current.value - props.step)
+}
+function inc() {
+  if (canInc.value) set(current.value + props.step)
+}
+function onInput(e: Event) {
+  const text = (e.target as HTMLInputElement).value
+  if (props.lazy) {
+    draft.value = text
+    return
+  }
+  const v = Number(text)
+  if (!Number.isNaN(v)) model.value = clamp(v)
+}
+function commit() {
+  if (draft.value === null) return
+  if (draft.value.trim()) set(Number(draft.value))
+  else draft.value = null
+}
+function onKeydown(e: KeyboardEvent) {
+  if (!props.lazy) return
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    commit()
+  } else if (e.key === 'Escape') {
+    draft.value = null
+  }
+}
+// A popover or sheet closed from outside takes the field away, and a removed input need not fire blur.
+onBeforeUnmount(commit)
+
+const field = computed(() => ({
+  'aria-label': props.labelledby ? undefined : props.ariaLabel ?? t('ui.stepper.value'),
+  'aria-labelledby': props.labelledby,
+  type: 'number',
+  value: shown.value,
+  min: props.min,
+  max: props.max,
+  step: props.step,
+  onInput,
+  onBlur: commit,
+  onKeydown,
+}))
+// A number input does not size to its content; the plain look hugs the digits.
+const digits = computed(() => Math.max(String(shown.value).length, 1))
 </script>
 
 <template>
-  <div :class="['sc-stepper', `sz-${props.size}`]" role="group" :aria-label="ariaLabel">
-    <button type="button" :aria-label="t('ui.stepper.decrease')" :disabled="!canDec" @click="dec">−</button>
-    <input
-      :aria-label="ariaLabel ?? t('ui.stepper.value')"
-      type="number"
-      :value="model"
-      :min="min"
-      :max="max"
-      :step="step"
-      @input="onInput"
-    />
-    <button type="button" :aria-label="t('ui.stepper.increase')" :disabled="!canInc" @click="inc">+</button>
+  <div
+    :class="['sc-stepper', `sz-${size}`, `tone-${tone}`, `v-${variant}`]"
+    :style="variant === 'plain' ? { '--stepper-digits': digits } : undefined"
+    :role="hideButtons ? undefined : 'group'"
+    :aria-label="hideButtons || labelledby ? undefined : ariaLabel"
+    :aria-labelledby="hideButtons ? undefined : labelledby"
+  >
+    <template v-if="variant === 'plain'">
+      <input v-bind="field" />
+      <slot name="suffix" />
+      <span class="sc-steps">
+        <IconButton variant="square" :label="decreaseLabel ?? t('ui.stepper.decrease')" :disabled="!canDec" @click="dec">
+          <IconMinus />
+        </IconButton>
+        <IconButton variant="square" :label="increaseLabel ?? t('ui.stepper.increase')" :disabled="!canInc" @click="inc">
+          <IconPlus />
+        </IconButton>
+      </span>
+    </template>
+    <template v-else>
+      <button
+        v-if="!hideButtons"
+        type="button"
+        :aria-label="decreaseLabel ?? t('ui.stepper.decrease')"
+        :disabled="!canDec"
+        @click="dec"
+      >−</button>
+      <input v-bind="field" />
+      <button
+        v-if="!hideButtons"
+        type="button"
+        :aria-label="increaseLabel ?? t('ui.stepper.increase')"
+        :disabled="!canInc"
+        @click="inc"
+      >+</button>
+    </template>
   </div>
 </template>
 
@@ -60,7 +151,7 @@ function onInput(e: Event) {
   align-items: center;
   gap: 6px;
 }
-.sc-stepper button {
+.v-field button {
   width: 22px;
   height: 22px;
   padding: 0;
@@ -76,14 +167,16 @@ function onInput(e: Event) {
   cursor: pointer;
   line-height: 1;
 }
-.sc-stepper button:hover:not(:disabled) {
+.v-field button:hover:not(:disabled) {
   border-color: var(--vtt-border-strong);
   color: var(--vtt-accent-soft);
 }
-.sc-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+.v-field button:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* A caller sets --stepper-field-width where an amount needs more room than a stat bonus. */
 .sc-stepper input {
-  width: 42px;
+  width: var(--stepper-field-width, 42px);
+  min-width: 0;
   padding: 4px 0;
   text-align: center;
   font-family: var(--font-serif);
@@ -105,5 +198,55 @@ function onInput(e: Event) {
 .sc-stepper input:focus-visible { border-color: var(--vtt-accent); }
 
 .sz-sm button { width: 18px; height: 18px; font-size: 12px; }
-.sz-sm input { width: 36px; font-size: 16px; padding: 3px 0; }
+.sz-sm input { width: var(--stepper-field-width, 36px); font-size: 16px; padding: 3px 0; }
+
+.sz-lg {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 10px;
+  width: 100%;
+}
+.sz-lg button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  font-size: 18px;
+}
+.sz-lg input {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 36px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--vtt-border-subtle);
+  border-radius: 0;
+  box-shadow: none;
+}
+.sz-lg input:focus-visible {
+  border-bottom-color: var(--vtt-accent);
+  box-shadow: 0 1px 0 0 var(--vtt-accent);
+}
+
+.v-plain { gap: 0; }
+.v-plain input {
+  width: calc(var(--stepper-digits) * 1ch + 10px);
+  /* An input keeps the serif's tall line box whatever its line-height; the buttons set the row's height. */
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  text-align: right;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.v-plain input:hover { border-color: var(--vtt-border-subtle); }
+.v-plain input:focus-visible {
+  background: var(--vtt-bg-sunken);
+  border-color: var(--vtt-border-gold);
+}
+.sc-steps { display: flex; gap: 4px; margin-left: 12px; }
+
+.tone-accent input { color: var(--vtt-accent); }
+.tone-danger input { color: var(--vtt-danger-bright); }
+.tone-success input { color: var(--vtt-success); }
 </style>

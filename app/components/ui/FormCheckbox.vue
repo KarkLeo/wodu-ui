@@ -20,7 +20,7 @@ const model = defineModel<boolean>({ required: true })
       @change="model = ($event.target as HTMLInputElement).checked"
     />
     <span class="form-check-box">
-      <IconCheckBold />
+      <IconCheckBold :stroke-width="1.3" />
     </span>
     <span class="form-check-label"><slot /></span>
   </label>

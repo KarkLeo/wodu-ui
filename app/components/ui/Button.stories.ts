@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import Button from './Button.vue'
 import IconDice from './icons/IconDice.vue'
+import IconDiceFace from './icons/IconDiceFace.vue'
 import IconHeart from './icons/IconHeart.vue'
 import IconPlus from './icons/IconPlus.vue'
 import IconStar from './icons/IconStar.vue'
@@ -19,7 +20,7 @@ const meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'hero', 'hero-danger', 'ghost', 'dashed', 'danger-ghost'],
+      options: ['primary', 'hero', 'hero-danger', 'hero-success', 'ghost', 'dashed', 'danger-ghost', 'roll'],
     },
     size: { control: 'inline-radio', options: ['sm', 'base', 'lg'] },
     type: { control: 'inline-radio', options: ['button', 'submit', 'reset'] },
@@ -50,6 +51,11 @@ export const HeroDanger: Story = {
   args: { variant: 'hero-danger', default: 'Reset session' },
 }
 
+/** The heal submit of the HP controls. */
+export const HeroSuccess: Story = {
+  args: { variant: 'hero-success', default: 'Heal' },
+}
+
 /** An add action that opens a picker or appends an empty entry: catalog, library, a new spirit or ritual. */
 export const Dashed: Story = {
   args: { variant: 'dashed', iconLeft: IconPlus, default: 'Add spirit' },
@@ -57,6 +63,21 @@ export const Dashed: Story = {
 
 export const DangerGhost: Story = {
   args: { variant: 'danger-ghost', iconLeft: IconTrash, default: 'Delete' },
+}
+
+/** The small squared dice action beside a section title: roll the stats, the HP, the hit dice. */
+export const Roll: Story = {
+  args: { variant: 'roll', iconLeft: IconDiceFace, default: 'Roll all' },
+}
+
+export const RollDisabled: Story = {
+  args: { variant: 'roll', iconLeft: IconDiceFace, disabled: true, default: 'Roll all' },
+  play: async ({ args, canvasElement }) => {
+    const button = within(canvasElement).getByRole('button', { name: 'Roll all' })
+    await expect(button).toBeDisabled()
+    await userEvent.click(button, { pointerEventsCheck: 0 })
+    await expect(args.onClick).not.toHaveBeenCalled()
+  },
 }
 
 export const WithIconRight: Story = {
@@ -76,6 +97,7 @@ export const Variants: Story = {
         <Button v-bind="args" variant="primary">Primary</Button>
         <Button v-bind="args" variant="hero" :icon-left="IconDice">Roll</Button>
         <Button v-bind="args" variant="hero-danger">Overdose</Button>
+        <Button v-bind="args" variant="hero-success">Heal</Button>
         <Button v-bind="args" variant="ghost" :icon-left="IconHeart">Heal</Button>
         <Button v-bind="args" variant="danger-ghost" :icon-left="IconTrash">Delete</Button>
       </div>

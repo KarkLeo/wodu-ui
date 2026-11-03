@@ -2,8 +2,11 @@
 import { ref, computed } from 'vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { t } from '@/locales'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
+import Button from '@/components/ui/Button.vue'
+import IconDiceFace from '@/components/ui/icons/IconDiceFace.vue'
 
 const props = defineProps<{
   numDice: number
@@ -52,23 +55,15 @@ const captionPost = computed(() => {
 </script>
 
 <template>
-  <div class="cc-section">
+  <WizardSection>
     <SectionHeader
       :title="t('levelUp.steps.hitDice.label')"
       :hint="rolls.length ? hintPost : t('levelUp.steps.hitDice.hintPre', { n: numDice, k: targetLevel })"
     >
       <template #action>
-        <button type="button" class="btn-roll" :disabled="isRolling" @click="doRoll">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3">
-            <rect x="2" y="2" width="8" height="8" rx="1"/>
-            <circle cx="4.5" cy="4.5" r="0.6" fill="currentColor"/>
-            <circle cx="7.5" cy="4.5" r="0.6" fill="currentColor"/>
-            <circle cx="6" cy="6" r="0.6" fill="currentColor"/>
-            <circle cx="4.5" cy="7.5" r="0.6" fill="currentColor"/>
-            <circle cx="7.5" cy="7.5" r="0.6" fill="currentColor"/>
-          </svg>
+        <Button variant="roll" :icon-left="IconDiceFace" :disabled="isRolling" @click="doRoll">
           {{ rolls.length ? t('levelUp.steps.hitDice.reroll') : t('levelUp.steps.hitDice.roll') }}
-        </button>
+        </Button>
       </template>
     </SectionHeader>
 
@@ -103,35 +98,10 @@ const captionPost = computed(() => {
         <span class="lu-hp-result-formula" v-html="t('levelUp.steps.hitDice.resultFormula', { old: previousMaxHp }).replace(/(\d+)/, '<em>$1</em>')" />
       </div>
     </div>
-  </div>
+  </WizardSection>
 </template>
 
-<style scoped src="./stepShared.css"></style>
-
 <style scoped>
-.btn-roll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: rgba(36, 28, 21, 0.55);
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  border-radius: var(--r-sm);
-  color: var(--vtt-accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--t-fast) var(--ease);
-}
-.btn-roll:hover:not(:disabled) {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: var(--vtt-border-gold);
-}
-.btn-roll:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-roll svg { width: 12px; height: 12px; }
 .lu-dice-scene {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,8 @@
-import { onUnmounted } from 'vue'
+import { nextTick, onUnmounted, ref } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CharacterCreationView from './CharacterCreationView.vue'
+import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { build, crookhollow, draftGear, draftIdentity, draftTraining, inGame, MEMBERS } from '@/stories/fixtures'
 import { storyRouter } from '@/stories/router'
@@ -10,7 +11,7 @@ import { bootstrapStatus } from '@/transport/bootstrap'
 import { mode } from '@/transport/mode'
 import { enterMode } from '@/transport/modeSwitch'
 import { OFFLINE_KEYS } from '@/transport/offlineStorage'
-import { authStore } from '../../../.storybook/mocks/pb'
+import { authStore, clearPbRequests, pbRequests } from '../../../.storybook/mocks/pb'
 
 const meta = {
   title: 'Screens/CharacterCreation',
@@ -73,6 +74,78 @@ export const Training: Story = {
 
 export const TrainingWizard: Story = {
   decorators: [withStores({ characters: [draftWizard], creation: { draftId: draftWizard.id, step: 2 } })],
+}
+
+/** Wizard: Lore and Summon come with the class (checked, fixed); one more skill and one more ability fill the slots. */
+export const TrainingPickRules: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [draftWizard], creation: { draftId: draftWizard.id, step: 2 } })],
+  play: async ({ canvasElement }) => {
+    const view = screen(canvasElement)
+    const skills = within(await view.findByRole('group', { name: 'Skills' }))
+    const abilities = within(view.getByRole('group', { name: 'Abilities' }))
+
+    await expect(skills.getByRole('checkbox', { name: 'Lore' })).toBeChecked()
+    await expect(skills.getByRole('checkbox', { name: 'Lore' })).toBeDisabled()
+    await expect(abilities.getByRole('checkbox', { name: /^Summon/ })).toBeChecked()
+    await expect(abilities.getByRole('checkbox', { name: /^Summon/ })).toBeDisabled()
+    await expect(view.getByRole('button', { name: /Next/ })).toBeDisabled()
+
+    await userEvent.click(skills.getByRole('checkbox', { name: 'Athletics' }))
+    await expect(skills.getByRole('checkbox', { name: 'Athletics' })).toBeChecked()
+    await expect(skills.getByRole('checkbox', { name: 'Awareness' })).toBeDisabled()
+
+    abilities.getByRole('checkbox', { name: /^Cantrips/ }).focus()
+    await userEvent.keyboard(' ')
+    await expect(abilities.getByRole('checkbox', { name: /^Cantrips/ })).toBeChecked()
+    await expect(abilities.getByRole('checkbox', { name: /^Command/ })).toBeDisabled()
+    await expect(view.getByRole('button', { name: /Next/ })).toBeEnabled()
+
+    abilities.getByRole('checkbox', { name: /^Cantrips/ }).focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(abilities.getByRole('checkbox', { name: /^Cantrips/ })).not.toBeChecked()
+    await expect(abilities.getByRole('checkbox', { name: /^Command/ })).toBeEnabled()
+  },
+}
+
+/** One class at a time: picking another moves the selection. */
+export const IdentityClassPick: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [draftTraining], creation: { draftId: draftTraining.id, step: 1 } })],
+  play: async ({ canvasElement }) => {
+    const classes = within(await screen(canvasElement).findByRole('radiogroup', { name: 'Class' }))
+    await expect(classes.getByRole('radio', { name: /^Cleric/ })).toBeChecked()
+    await userEvent.click(classes.getByRole('radio', { name: /^Thief/ }))
+    await expect(classes.getByRole('radio', { name: /^Thief/ })).toBeChecked()
+    await expect(classes.getAllByRole('radio', { checked: true })).toHaveLength(1)
+  },
+}
+
+/** The class cards are one tab stop, on the picked class; the arrow keys move and pick. */
+export const IdentityClassKeyboard: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [draftTraining], creation: { draftId: draftTraining.id, step: 1 } })],
+  play: async ({ canvasElement }) => {
+    const classes = within(await screen(canvasElement).findByRole('radiogroup', { name: 'Class' }))
+    const radios = classes.getAllByRole('radio')
+    const tabStops = () => radios.filter(r => r.tabIndex === 0)
+    const cleric = classes.getByRole('radio', { name: /^Cleric/ })
+    await expect(tabStops()).toEqual([cleric])
+
+    cleric.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    const next = radios[radios.indexOf(cleric) + 1]
+    await expect(next).toHaveFocus()
+    await expect(next).toBeChecked()
+    await expect(tabStops()).toEqual([next])
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(cleric).toHaveFocus()
+    await expect(cleric).toBeChecked()
+    await expect(classes.getAllByRole('radio', { checked: true })).toHaveLength(1)
+
+    await userEvent.tab()
+    await expect(radios.includes(document.activeElement as HTMLElement)).toBe(false)
+  },
 }
 
 export const GearBeforeHpRoll: Story = {
@@ -153,6 +226,94 @@ export const SwitchToOfflineLeavesWizardAlone: Story = {
     await new Promise(resolve => setTimeout(resolve, 100))
     await expect(storyRouter.currentRoute.value.path).toBe('/character/new')
     await expect(useCreationStore().perMode.online.draftId).toBe('story-missing-draft')
+  },
+}
+
+// Takes the wizard away the way a route change does, without moving the focus out of its field first.
+const wizardShown = ref(true)
+const leaveWizard = async () => {
+  wizardShown.value = false
+  await nextTick()
+}
+const removableWizard: Story['render'] = () => ({
+  components: { CharacterCreationView },
+  setup() {
+    wizardShown.value = true
+    return { wizardShown }
+  },
+  template: '<CharacterCreationView v-if="wizardShown" />',
+})
+
+const typeCoins = async (canvasElement: HTMLElement, amount: string) => {
+  const field = await screen(canvasElement).findByRole('spinbutton', { name: 'Coins' })
+  await userEvent.clear(field)
+  await userEvent.type(field, amount)
+  return field
+}
+
+/** Closing or leaving the step takes the field away; what was typed still goes out, once. */
+export const CoinsCommitOnLeaving: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  render: removableWizard,
+  decorators: [withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
+  play: async ({ canvasElement }) => {
+    clearPbRequests()
+    await typeCoins(canvasElement, '25')
+    await leaveWizard()
+    await expect(useCharactersStore().getById(draftGear.id)!.coins).toBe(25)
+    await expect(pbRequests().filter(r => r === 'characters.update')).toHaveLength(1)
+  },
+}
+
+const offlineDraft = build('story-draft-offline', [{ type: 'SET_NAME', name: 'Offline draft' }])
+
+// Listed before withStores so that it runs after it: this device also holds a draft of the other mode.
+const withOfflineDraft: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    localStorage.setItem(OFFLINE_KEYS.characters, JSON.stringify([offlineDraft]))
+    useCreationStore().perMode.offline = { draftId: offlineDraft.id, step: 3 }
+    onUnmounted(() => {
+      authStore.clear()
+      enterMode('online')
+      useCreationStore().perMode.offline = { draftId: null, step: 1 }
+      for (const key of Object.values(OFFLINE_KEYS)) localStorage.removeItem(key)
+    })
+  },
+  template: '<story />',
+})
+
+/**
+ * Swiping back from the online wizard to /offline/new: the mode switches while this page is still mounted
+ * with coins typed and the field still focused. Whichever way the field goes away, the coins do not follow.
+ */
+export const TypedCoinsStayOutOfTheOtherModesDraft: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  render: removableWizard,
+  decorators: [withOfflineDraft, withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
+  play: async ({ canvasElement, step }) => {
+    const offlineCoins = () => useCharactersStore().getById(offlineDraft.id)!.coins
+    const before = offlineDraft.coins
+
+    const field = await typeCoins(canvasElement, '999')
+    enterMode('offline')
+    await nextTick()
+    await expect(offlineCoins()).toBe(before)
+
+    await step('a blur after the switch writes nothing', async () => {
+      field.focus()
+      field.blur()
+      await nextTick()
+      await expect(offlineCoins()).toBe(before)
+    })
+
+    await step('nor does the page going away', async () => {
+      await typeCoins(canvasElement, '888')
+      await leaveWizard()
+      await expect(offlineCoins()).toBe(before)
+    })
   },
 }
 

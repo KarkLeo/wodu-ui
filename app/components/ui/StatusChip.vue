@@ -223,24 +223,5 @@ const modClass = computed(() => {
   color: var(--vtt-accent);
 }
 
-.info-popover .pop-hero-roll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 12px;
-  padding: 10px 16px;
-  background: #A6833E;
-  color: #1a1205;
-  border: 1px solid #8C6A3A;
-  border-radius: var(--r-pill);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.28));
-}
-.info-popover .pop-hero-roll:hover { background: #BF9A4C; }
+.info-popover .pop-hero-roll { width: 100%; justify-content: center; margin-top: 12px; }
 </style>

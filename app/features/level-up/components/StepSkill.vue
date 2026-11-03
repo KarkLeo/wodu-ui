@@ -2,39 +2,36 @@
 import { computed } from 'vue'
 import type { Character, SkillId } from '@/types/character'
 import { SKILL_IDS } from '@/types/character'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SelectableRow from '@/components/ui/SelectableRow.vue'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 import { t } from '@/locales'
 import { skillName } from '@/locales/content'
 
-const props = defineProps<{ char: Character; currentSkillIds: readonly SkillId[]; selected: SkillId | null }>()
-const emit = defineEmits<{ 'update:selected': [id: SkillId] }>()
+const props = defineProps<{ char: Character; currentSkillIds: readonly SkillId[] }>()
+const selected = defineModel<SkillId | null>('selected', { required: true })
 
 const available = computed(() => SKILL_IDS.filter(id => !props.currentSkillIds.includes(id)))
+const { tabIndexFor, onKeydown } = useRovingSelection(() => available.value.map(value => ({ value })), selected)
 </script>
 
 <template>
-  <div class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('levelUp.steps.skill.label')" :hint="t('levelUp.steps.skill.hint')" />
-    <div v-if="available.length" class="cc-abil-list">
-      <button
+    <div v-if="available.length" role="radiogroup" :aria-label="t('levelUp.steps.skill.label')">
+      <SelectableRow
         v-for="id in available"
         :key="id"
-        type="button"
-        class="cc-abil"
-        :class="{ 'is-selected': selected === id }"
-        @click="emit('update:selected', id)"
-      >
-        <span class="cc-check" aria-hidden="true">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
-        </span>
-        <span class="cc-abil-body-text">
-          <span class="cc-abil-name">{{ skillName(id) }}</span>
-        </span>
-      </button>
+        type="radio"
+        :title="skillName(id)"
+        :selected="selected === id"
+        :tabindex="tabIndexFor(id)"
+        @keydown="onKeydown"
+        @toggle="selected = id"
+      />
     </div>
     <StateNote v-else size="sm">{{ t('levelUp.steps.skill.empty') }}</StateNote>
-  </div>
+  </WizardSection>
 </template>
-
-<style scoped src="./stepShared.css"></style>

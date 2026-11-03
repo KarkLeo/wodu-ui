@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import StatusChipTrio from './StatusChipTrio.vue'
 import StatusChip from './StatusChip.vue'
+import Button from './Button.vue'
 import IconWeapon from './icons/IconWeapon.vue'
 import IconShield from './icons/IconShield.vue'
 import IconCoin from './icons/IconCoin.vue'
@@ -90,8 +91,8 @@ export const NoWeapon: Story = {
 
 export const WithPopovers: Story = {
   render: (args) => ({
-    components: { StatusChipTrio, StatusChip, IconWeapon, IconShield, IconCoin, IconDice },
-    setup: () => ({ args }),
+    components: { StatusChipTrio, StatusChip, Button, IconWeapon, IconShield, IconCoin },
+    setup: () => ({ args, IconDice }),
     template: `
       <StatusChipTrio v-bind="args">
         <StatusChip kind="damage" label="Damage" value="d8+2" has-popover popover-title="Martial weapon">
@@ -111,10 +112,7 @@ export const WithPopovers: Story = {
                 <span class="br-value is-buff">+2</span>
               </div>
             </div>
-            <button type="button" class="pop-hero-roll">
-              <IconDice />
-              <span>Roll d8+2</span>
-            </button>
+            <Button variant="hero" class="pop-hero-roll" :icon-left="IconDice">Roll d8+2</Button>
           </template>
         </StatusChip>
         <StatusChip kind="armor" label="Armor" :value="3" has-popover popover-title="Armor">

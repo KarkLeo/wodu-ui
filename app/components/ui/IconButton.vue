@@ -1,6 +1,6 @@
 <script setup lang="ts">
 type Size = 'lg' | 'md' | 'sm'
-type Variant = 'round' | 'square'
+type Variant = 'round' | 'square' | 'bare'
 type Tone = 'neutral' | 'accent' | 'danger'
 
 const props = withDefaults(defineProps<{
@@ -77,6 +77,17 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-accent-soft);
 }
 .v-square:hover:not(:disabled) { background: var(--vtt-bg-elevated); }
+
+/* No frame at rest or on hover: a small action inside a tile, which is frame enough. */
+.v-bare {
+  border-color: transparent;
+  border-radius: var(--r-pill);
+  color: var(--vtt-text-muted);
+}
+.v-bare:hover:not(:disabled) {
+  border-color: transparent;
+  color: var(--vtt-accent);
+}
 
 /* Each tint is preceded by a plain token for browsers without color-mix() (iOS Safari before 16.2). */
 .icon-btn.t-accent,

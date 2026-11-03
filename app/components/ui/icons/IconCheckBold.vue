@@ -1,7 +1,7 @@
 <script setup lang="ts">
 withDefaults(defineProps<{ size?: number | string; strokeWidth?: number | string }>(), {
   size: 14,
-  strokeWidth: 1.3,
+  strokeWidth: 1.6,
 })
 </script>
 

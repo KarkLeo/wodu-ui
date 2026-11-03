@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import { ref, watch } from 'vue'
 import SegmentedFilter from './SegmentedFilter.vue'
 
@@ -80,6 +80,34 @@ export const Overflowing: Story = {
 /** No frame: the language switch on the sign-in screen and in the offline players panel. */
 export const Plain: Story = {
   args: { variant: 'plain', options: logOptions, modelValue: 'changes' },
+}
+
+/** `tone` colours an option's label while it is selected, as in the HP panel. */
+export const Toned: Story = {
+  args: {
+    modelValue: 'damage',
+    fullWidth: true,
+    options: [
+      { value: 'damage', label: 'Damage', tone: 'danger' },
+      { value: 'heal', label: 'Heal', tone: 'success' },
+      { value: 'temp', label: 'Temporary' },
+    ],
+  },
+  decorators: [() => ({ template: '<div style="width: 288px"><story /></div>' })],
+}
+
+/** The tone holds in the `pill` variant too. */
+export const TonedPill: Story = {
+  args: { ...Toned.args, variant: 'pill' },
+  decorators: [() => ({ template: '<div style="width: 288px"><story /></div>' })],
+  play: async ({ canvasElement }) => {
+    const damage = within(canvasElement).getByRole('radio', { name: 'Damage' })
+    const swatch = document.createElement('span')
+    swatch.style.color = 'var(--vtt-danger-bright)'
+    canvasElement.append(swatch)
+    await expect(getComputedStyle(damage).color).toBe(getComputedStyle(swatch).color)
+    swatch.remove()
+  },
 }
 
 export const Variants: Story = {

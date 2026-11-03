@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import TextField from '@/components/ui/TextField.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SelectableTile from '@/components/ui/SelectableTile.vue'
+import Button from '@/components/ui/Button.vue'
+import IconButton from '@/components/ui/IconButton.vue'
+import IconDiceFace from '@/components/ui/icons/IconDiceFace.vue'
+import IconReroll from '@/components/ui/icons/IconReroll.vue'
 import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
@@ -9,6 +15,7 @@ import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useDebouncedField } from '@/composables/useDebouncedField'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 import { t } from '@/locales'
 import { skillName, statShort, className } from '@/locales/content'
 
@@ -85,6 +92,15 @@ function selectClass(id: ClassId) {
   pickClass(id)
 }
 
+const pickedClass = computed<ClassId | undefined>({
+  get: () => draft.value?.classId,
+  set: (id) => { if (id) selectClass(id) },
+})
+const { tabIndexFor: classTabIndex, onKeydown: onClassKeydown } = useRovingSelection(
+  () => CLASS_LIST.map(cls => ({ value: cls.id })),
+  pickedClass,
+)
+
 function classTagText(classId: ClassId, grantedSkillIds: readonly SkillId[]): string {
   if (classId === 'custom') return t('characterCreation.identity.classTags.custom')
   const skill = grantedSkillIds[0] ? skillName(grantedSkillIds[0]) : ''
@@ -99,6 +115,15 @@ function rollTrace(key: StatKey): { a: number; b: number } | null {
 function rollTotal(key: StatKey): number {
   return draft.value?.statRolls[key] ?? 0
 }
+function statValue(key: StatKey): string {
+  if (!rollTotal(key)) return '—'
+  const bonus = draft.value?.stats[key] ?? 0
+  return bonus > 0 ? `+${bonus}` : '0'
+}
+function statTone(key: StatKey): 'neutral' | 'muted' | 'accent' {
+  if (!rollTotal(key)) return 'muted'
+  return rollTotal(key) === 12 ? 'accent' : 'neutral'
+}
 
 const CLASS_GLYPHS: Record<ClassId, string> = {
   fighter: 'M14 3 L19 8 L14 25 L9 8 Z M9 8 L19 8',
@@ -112,7 +137,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 
 <template>
   <template v-if="draft">
-  <section class="cc-section cc-section--names">
+  <WizardSection gap="lg">
     <TextField
       :model-value="nameField.value.value"
       variant="underline"
@@ -136,61 +161,61 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         {{ t('characterCreation.identity.trueNameHint') }}
       </template>
     </TextField>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.identity.attrsLabel')" :hint="t('characterCreation.identity.attrsHint')">
       <template #action>
-        <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollAll">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="2" width="8" height="8" rx="1"/><circle cx="4.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="6" cy="6" r="0.6" fill="currentColor"/><circle cx="4.5" cy="7.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="7.5" r="0.6" fill="currentColor"/></svg>
+        <Button variant="roll" :icon-left="IconDiceFace" :disabled="isRolling" @click="rollAll">
           {{ t('characterCreation.shell.rollAll') }}
-        </button>
+        </Button>
       </template>
     </SectionHeader>
     <div class="cc-attr-grid">
-      <div
+      <SelectableTile
         v-for="key in STAT_KEYS"
         :key="key"
-        :class="[
-          'cc-attr',
-          { 'cc-attr-empty': !draft.statRolls[key], 'is-max': draft.statRolls[key] === 12, 'is-fresh': freshKey === key },
-        ]"
+        static
+        size="sm"
+        :label="statShort(key)"
+        :value="statValue(key)"
+        :value-tone="statTone(key)"
+        :class="{ 'is-fresh': freshKey === key }"
       >
-        <span class="cc-attr-label">{{ statShort(key) }}</span>
-        <button
-          type="button"
-          class="cc-attr-roll"
-          :disabled="isRolling"
-          :title="t('characterCreation.identity.attrRollTitle')"
-          @click="rerollOne(key)"
-        >
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg>
-        </button>
-        <div class="cc-attr-value">
-          <span class="cc-attr-mod">
-            {{ draft.statRolls[key] ? (draft.stats[key] > 0 ? `+${draft.stats[key]}` : '0') : '—' }}
-          </span>
-          <span v-if="rollTrace(key)" class="cc-attr-roll-trace">
-            2d6: <em>{{ rollTrace(key)!.a }} + {{ rollTrace(key)!.b }}</em>
-          </span>
-          <span v-else-if="rollTotal(key)" class="cc-attr-roll-trace">
-            2d6: <em>{{ rollTotal(key) }}</em>
-          </span>
-          <span v-else class="cc-attr-roll-trace">{{ t('characterCreation.identity.attrEmpty') }}</span>
-        </div>
-      </div>
+        <template #action>
+          <IconButton
+            variant="bare"
+            size="sm"
+            :label="t('characterCreation.identity.attrRollTitle')"
+            :title="t('characterCreation.identity.attrRollTitle')"
+            :disabled="isRolling"
+            @click="rerollOne(key)"
+          >
+            <IconReroll :size="16" :stroke-width="1" />
+          </IconButton>
+        </template>
+        <span v-if="rollTrace(key)" class="cc-attr-roll-trace">
+          2d6: <em>{{ rollTrace(key)!.a }} + {{ rollTrace(key)!.b }}</em>
+        </span>
+        <span v-else-if="rollTotal(key)" class="cc-attr-roll-trace">
+          2d6: <em>{{ rollTotal(key) }}</em>
+        </span>
+        <span v-else class="cc-attr-roll-trace">{{ t('characterCreation.identity.attrEmpty') }}</span>
+      </SelectableTile>
     </div>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.identity.classLabel')" :hint="t('characterCreation.identity.classHint')" />
-    <div class="cc-class-grid">
-      <button
+    <div class="cc-class-grid" role="radiogroup" :aria-label="t('characterCreation.identity.classLabel')">
+      <SelectableTile
         v-for="cls in CLASS_LIST"
         :key="cls.id"
-        type="button"
-        :class="['cc-class', { 'is-selected': draft.classId === cls.id }]"
-        @click="selectClass(cls.id)"
+        class="cc-class"
+        :selected="draft.classId === cls.id"
+        :tabindex="classTabIndex(cls.id)"
+        @keydown="onClassKeydown"
+        @select="selectClass(cls.id)"
       >
         <span class="cc-class-glyph">
           <svg v-if="cls.id !== 'custom'" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -202,7 +227,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         </span>
         <span class="cc-class-name">{{ className(cls.id) }}</span>
         <span class="cc-class-tag">{{ classTagText(cls.id, cls.grantedSkillIds) }}</span>
-      </button>
+      </SelectableTile>
     </div>
     <TextField
       v-if="draft.classId === 'custom'"
@@ -214,105 +239,25 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
       @update:model-value="customClassField.onInput"
       @blur="customClassField.flush()"
     />
-  </section>
+  </WizardSection>
   </template>
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-
-.cc-section--names { gap: var(--s-4); }
 /* The true name reads as a name of power: italic gold. */
 .cc-truename :deep(.form-field-control) { font-style: italic; color: var(--vtt-accent-soft); }
 .cc-hint-icon { width: 11px; height: 11px; color: var(--vtt-accent-deep); flex-shrink: 0; }
 
-.cc-btn-roll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: rgba(36, 28, 21, 0.55);
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  border-radius: var(--r-sm);
-  color: var(--vtt-accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-btn-roll:hover:not(:disabled) {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: var(--vtt-border-gold);
-}
-.cc-btn-roll:disabled { opacity: 0.5; cursor: not-allowed; }
-.cc-btn-roll svg { width: 12px; height: 12px; }
-
-.cc-attr-grid {
+.cc-attr-grid,
+.cc-class-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--s-2);
 }
 @container (max-width: 479px) {
-  .cc-attr-grid { grid-template-columns: repeat(2, 1fr); }
+  .cc-attr-grid,
+  .cc-class-grid { grid-template-columns: repeat(2, 1fr); }
 }
-.cc-attr {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas:
-    "label label roll"
-    "value value value";
-  column-gap: 8px;
-  padding: 10px 12px 12px;
-  border-radius: var(--r-md);
-  background: rgba(36, 28, 21, 0.4);
-  transition: background var(--t-fast) var(--ease);
-}
-.cc-attr:hover { background: rgba(36, 28, 21, 0.65); }
-.cc-attr-label {
-  grid-area: label;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  line-height: 1;
-}
-.cc-attr-roll {
-  grid-area: roll;
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  padding: 0;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  border-radius: var(--r-pill);
-  transition: color var(--t-fast) var(--ease);
-}
-.cc-attr-roll:hover:not(:disabled) { color: var(--vtt-accent); }
-.cc-attr-roll:disabled { cursor: not-allowed; opacity: 0.4; }
-.cc-attr-roll svg { width: 14px; height: 14px; }
-.cc-attr-value {
-  grid-area: value;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 2px;
-}
-.cc-attr-mod {
-  font-family: var(--font-serif);
-  font-size: 32px;
-  font-weight: 500;
-  color: var(--vtt-accent-soft);
-  line-height: 1;
-}
-.cc-attr-empty .cc-attr-mod { color: var(--vtt-text-muted); }
 .cc-attr-roll-trace {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -323,53 +268,23 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   color: var(--vtt-text-secondary);
   font-style: normal;
 }
-.cc-attr.is-fresh { animation: cc-fresh 1400ms var(--ease); }
-.cc-attr.is-max .cc-attr-mod {
-  color: var(--vtt-accent);
-  text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
-}
+.is-fresh { animation: cc-fresh 1400ms var(--ease); }
 @keyframes cc-fresh {
   0%   { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.3); }
   100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cc-attr.is-fresh { animation: none; }
+  .is-fresh { animation: none; }
 }
 
-.cc-class-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--s-2);
-}
-@container (max-width: 479px) {
-  .cc-class-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.cc-class {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 14px 16px;
-  background: rgba(36, 28, 21, 0.4);
-  border: 1px solid transparent;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
-}
-.cc-class:hover { background: rgba(36, 28, 21, 0.7); }
-.cc-class.is-selected {
-  background: rgba(140, 106, 58, 0.18);
-  border-color: rgba(140, 106, 58, 0.55);
-}
+.cc-class { gap: 6px; }
 .cc-class-glyph {
   width: 28px;
   height: 28px;
   color: var(--vtt-accent-deep);
   margin-bottom: 2px;
 }
-.cc-class.is-selected .cc-class-glyph { color: var(--vtt-accent); }
+[aria-checked='true'] .cc-class-glyph { color: var(--vtt-accent); }
 .cc-class-glyph svg { width: 100%; height: 100%; }
 .cc-class-name {
   font-family: var(--font-serif);

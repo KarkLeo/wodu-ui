@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
-import { fn } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import SkillChip from './SkillChip.vue'
 import IconLock from './icons/IconLock.vue'
 import IconPlus from './icons/IconPlus.vue'
@@ -13,7 +13,7 @@ const meta = {
     onToggle: fn(),
   },
   argTypes: {
-    mode: { control: 'inline-radio', options: ['display', 'pick-multi', 'pick-single', 'add'] },
+    mode: { control: 'inline-radio', options: ['display', 'pick-multi', 'add'] },
     state: { control: 'inline-radio', options: ['default', 'auto', 'selected', 'locked'] },
     icon: { control: false },
   },
@@ -98,34 +98,6 @@ export const PickMulti: Story = {
   }),
 }
 
-export const PickSingle: Story = {
-  render: (args) => ({
-    components: { SkillChip },
-    setup() {
-      const skills = ['Heal', 'Lore', 'Survival']
-      const picked = ref('Lore')
-      function pick(skill: string) {
-        picked.value = skill
-        args.onToggle?.()
-      }
-      return { args, skills, picked, pick }
-    },
-    template: `
-      <div role="radiogroup" aria-label="Level-up skill" style="display: flex; flex-wrap: wrap; gap: 8px">
-        <SkillChip
-          v-for="skill in skills"
-          :key="skill"
-          v-bind="args"
-          :label="skill"
-          mode="pick-single"
-          :state="picked === skill ? 'selected' : 'default'"
-          @toggle="pick(skill)"
-        />
-      </div>
-    `,
-  }),
-}
-
 export const SkillsRow: Story = {
   render: (args) => ({
     components: { SkillChip },
@@ -139,4 +111,49 @@ export const SkillsRow: Story = {
       </div>
     `,
   }),
+}
+
+/** Creation: the class grants Awareness; one more pick fills the two slots, and the rest are then locked. */
+export const PickWithGranted: Story = {
+  render: (args) => ({
+    components: { SkillChip },
+    setup() {
+      const skills = ['Athletics', 'Awareness', 'Lore', 'Stealth']
+      const picked = ref<string[]>([])
+      const state = (skill: string) =>
+        skill === 'Awareness' ? 'auto' : picked.value.includes(skill) ? 'selected' : picked.value.length >= 1 ? 'locked' : 'default'
+      function toggle(skill: string) {
+        picked.value = picked.value.includes(skill) ? picked.value.filter((s) => s !== skill) : [...picked.value, skill]
+      }
+      return { args, skills, state, toggle, IconLock }
+    },
+    template: `
+      <div role="group" aria-label="Skills" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <SkillChip
+          v-for="skill in skills"
+          :key="skill"
+          v-bind="args"
+          :label="skill"
+          mode="pick-multi"
+          :state="state(skill)"
+          :icon="state(skill) === 'auto' ? IconLock : undefined"
+          @toggle="toggle(skill)"
+        />
+      </div>
+    `,
+  }),
+  play: async ({ args, canvasElement }) => {
+    const group = within(within(canvasElement).getByRole('group', { name: 'Skills' }))
+    const granted = group.getByRole('checkbox', { name: 'Awareness' })
+    await expect(granted).toBeChecked()
+    await expect(granted).toBeDisabled()
+    await userEvent.click(group.getByRole('checkbox', { name: 'Lore' }))
+    await expect(group.getByRole('checkbox', { name: 'Lore' })).toBeChecked()
+    await expect(group.getByRole('checkbox', { name: 'Stealth' })).toBeDisabled()
+    await expect(args.onToggle).toHaveBeenCalledTimes(1)
+    group.getByRole('checkbox', { name: 'Lore' }).focus()
+    await userEvent.keyboard(' ')
+    await expect(group.getByRole('checkbox', { name: 'Lore' })).not.toBeChecked()
+    await expect(group.getByRole('checkbox', { name: 'Stealth' })).toBeEnabled()
+  },
 }
