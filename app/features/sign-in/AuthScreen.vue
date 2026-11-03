@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import bgUrl from '@/assets/bg.jpeg'
+import ScreenHeader from '@/components/layout/ScreenHeader.vue'
 import { t, currentLocale, LOCALES } from '@/locales'
 import { useAccount } from '@/composables/useAccount'
 
@@ -31,10 +32,7 @@ defineProps<{
         </div>
       </div>
 
-      <header class="as-brand">
-        <h1 class="as-title">{{ title }}</h1>
-        <p class="as-subtitle">{{ subtitle }}</p>
-      </header>
+      <ScreenHeader variant="hero" class="as-brand" :title="title" :subtitle="subtitle" />
 
       <slot name="banner" />
 
@@ -91,22 +89,7 @@ defineProps<{
 }
 .as-locale-btn.is-active { color: var(--vtt-text-primary); background: var(--vtt-bg-elevated); }
 
-.as-brand { text-align: center; margin: var(--s-7) 0 var(--s-6); }
-.as-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 28px;
-  font-weight: 500;
-  color: var(--vtt-accent-soft);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-.as-subtitle {
-  margin: var(--s-1) 0 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  color: var(--vtt-text-muted);
-}
+.as-brand { margin: var(--s-7) 0 var(--s-6); }
 
 .as-card {
   display: flex;

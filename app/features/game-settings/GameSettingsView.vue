@@ -7,6 +7,8 @@ import FormError from '@/components/ui/FormError.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import InvitePanel from '@/components/layout/InvitePanel.vue'
 import MembersList from '@/components/layout/MembersList.vue'
+import ScreenColumn from '@/components/layout/ScreenColumn.vue'
+import ScreenHeader from '@/components/layout/ScreenHeader.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { exitGameQuietly } from '@/composables/useRouteRecheck'
@@ -82,14 +84,12 @@ function backToTable() {
 </script>
 
 <template>
-  <div class="content-wrap st-screen">
-    <header class="st-head">
-      <div class="st-titles">
-        <h1 class="st-title">{{ t('games.settings.title') }}</h1>
-        <p v-if="game" class="st-game">{{ game.name }}</p>
-      </div>
-      <Button variant="ghost" size="sm" @click="backToTable">{{ t('games.settings.back') }}</Button>
-    </header>
+  <ScreenColumn>
+    <ScreenHeader :title="t('games.settings.title')" :subtitle="game?.name">
+      <template #actions>
+        <Button variant="ghost" size="sm" @click="backToTable">{{ t('games.settings.back') }}</Button>
+      </template>
+    </ScreenHeader>
 
     <StateNote v-if="!game" role="status">{{ t('games.loading') }}</StateNote>
 
@@ -139,47 +139,10 @@ function backToTable() {
         </template>
       </ConfirmSheet>
     </template>
-  </div>
+  </ScreenColumn>
 </template>
 
 <style scoped>
-.st-screen {
-  /* Same column as CharacterListView: centred, never under GameLayout's side panels. */
-  --st-w: min(640px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-  width: var(--st-w);
-  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--st-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--st-w));
-  padding: 16px 16px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.st-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.st-titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.st-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 22px;
-  line-height: 1.2;
-  color: var(--vtt-accent-soft);
-}
-.st-game {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-  color: var(--vtt-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .st-section {
   display: flex;
   flex-direction: column;

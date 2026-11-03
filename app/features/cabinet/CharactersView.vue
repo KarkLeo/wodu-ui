@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CharactersTab from './CharactersTab.vue'
+import ScreenHeader from '@/components/layout/ScreenHeader.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { onlineDataReady } from '@/transport/bootstrap'
 import { t } from '@/locales'
@@ -7,7 +8,7 @@ import './cabinet.css'
 </script>
 
 <template>
-  <h1 class="eyebrow hm-heading">{{ t('nav.characters') }}</h1>
+  <ScreenHeader variant="eyebrow" :title="t('nav.characters')" />
   <StateNote v-if="!onlineDataReady" role="status">{{ t('games.loading') }}</StateNote>
   <CharactersTab v-else />
 </template>

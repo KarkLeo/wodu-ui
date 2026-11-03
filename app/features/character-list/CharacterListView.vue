@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
+import ScreenColumn from '@/components/layout/ScreenColumn.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
@@ -37,7 +38,7 @@ function resumeCreation(id: string) {
 </script>
 
 <template>
-  <div class="content-wrap cl-screen">
+  <ScreenColumn>
     <section v-if="draftChars.length > 0" class="cl-drafts">
       <div class="cl-drafts__label">{{ t('characterList.drafts') }}</div>
       <button
@@ -79,21 +80,10 @@ function resumeCreation(id: string) {
     >
       {{ t('pwa.installCta') }}
     </button>
-  </div>
+  </ScreenColumn>
 </template>
 
 <style scoped>
-.cl-screen {
-  /* Centred, but never under GameLayout's side panels: shrinks first, then shifts off-centre. */
-  --cl-w: min(640px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-  width: var(--cl-w);
-  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--cl-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--cl-w));
-  padding: 24px 16px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 .cl-drafts { display: flex; flex-direction: column; gap: 10px; }
 .cl-drafts__label {
   font-family: var(--font-mono);

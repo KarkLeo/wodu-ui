@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import ScreenHeader from '@/components/layout/ScreenHeader.vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import FormError from '@/components/ui/FormError.vue'
@@ -46,7 +47,7 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <h1 class="eyebrow pf-heading">{{ t('profile.title') }}</h1>
+  <ScreenHeader variant="eyebrow" :title="t('profile.title')" />
 
   <template v-if="user">
     <section class="pf-card">
@@ -118,8 +119,6 @@ async function confirmDelete() {
 </template>
 
 <style scoped>
-.pf-heading { margin: 0; padding-left: 4px; }
-
 .pf-card {
   display: flex;
   flex-direction: column;
