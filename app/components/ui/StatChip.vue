@@ -88,6 +88,7 @@ onBeforeUnmount(stopListening)
     <span class="sc-label">{{ label }}</span>
     <Stepper
       v-model="(model as number)"
+      lazy
       :aria-label="t('ui.statChip.editAria', { stat: label })"
     />
     <span v-if="mod !== undefined && mod !== 0" :class="['sc-mod', modClass]">

@@ -141,6 +141,42 @@ export const CoinsWriteOnceInPopover: Story = {
   },
 }
 
+/** The damage and armor effects: typing stays a draft, and each edit, step or reset writes once. */
+export const ModifiersWriteOncePerEdit: Story = {
+  args: { id: brann.id },
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement)
+    const page = within(canvasElement.ownerDocument.body)
+    clearPbRequests()
+
+    await step('the damage effect', async () => {
+      await userEvent.click(canvas.getByRole('button', { name: /Damage/ }))
+      const field = await page.findByRole('spinbutton', { name: 'Damage effect' })
+      await userEvent.clear(field)
+      await userEvent.type(field, '-3')
+      await expect(characterWrites()).toBe(0)
+      await userEvent.keyboard('{Enter}')
+      await expect(characterWrites()).toBe(1)
+      await expect(brannNow().damageMod).toBe(-3)
+      await userEvent.click(page.getByRole('button', { name: 'Close' }))
+      await waitFor(() => expect(page.queryByRole('dialog')).toBeNull())
+      await expect(characterWrites()).toBe(1)
+    })
+
+    await step('the armor effect, kept when the sheet closes', async () => {
+      await userEvent.click(canvas.getByRole('button', { name: /Armor/ }))
+      const field = await page.findByRole('spinbutton', { name: 'Armor effect' })
+      await userEvent.clear(field)
+      await userEvent.type(field, '4')
+      await expect(characterWrites()).toBe(1)
+      await userEvent.click(page.getByRole('button', { name: 'Close' }))
+      await waitFor(() => expect(page.queryByRole('dialog')).toBeNull())
+      await expect(characterWrites()).toBe(2)
+      await expect(brannNow().armorMod).toBe(4)
+    })
+  },
+}
+
 /** A typed experience value becomes one GAIN_XP, for the whole difference. */
 export const XpWritesOncePerEdit: Story = {
   args: { id: brann.id },

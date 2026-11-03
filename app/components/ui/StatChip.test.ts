@@ -37,6 +37,15 @@ describe('StatChip', () => {
       expect(w.emitted('toggleEdit')).toBeUndefined()
     })
 
+    it('keeps typing in a draft: one update, on Enter', async () => {
+      const w = mountChip({ editing: true })
+      await w.find('input').setValue('3')
+      expect(w.emitted('update:value')).toBeUndefined()
+      await w.find('input').trigger('keydown', { key: 'Enter' })
+      expect(w.emitted('update:value')).toEqual([[3]])
+      expect(w.emitted('toggleEdit')).toHaveLength(1)
+    })
+
     it('leaves edit mode on Enter', async () => {
       const w = mountChip({ editing: true })
       await w.find('.stat-chip').trigger('keydown', { key: 'Enter' })

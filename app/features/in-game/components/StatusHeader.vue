@@ -238,6 +238,7 @@ async function handleRollDamage() {
                 :min="-10"
                 :max="10"
                 size="sm"
+                lazy
                 :aria-label="t('inGame.statusHeader.damage.modAria')"
               />
               <button
@@ -312,6 +313,7 @@ async function handleRollDamage() {
                 :min="-10"
                 :max="10"
                 size="sm"
+                lazy
                 :aria-label="t('inGame.statusHeader.armor.modAria')"
               />
               <button

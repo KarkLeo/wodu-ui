@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, reactive } from 'vue'
 import InfoPopoverClose from '@/components/ui/InfoPopoverClose.vue'
 import type { Character, StatKey } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
@@ -52,18 +52,6 @@ function modList(key: StatKey) {
 }
 
 const editingKey = ref<StatKey | null>(null)
-
-const editBuf = computed({
-  get() {
-    const k = editingKey.value
-    return k ? props.char.stats[k] : 0
-  },
-  set(v: number) {
-    const k = editingKey.value
-    if (!k) return
-    setStat(k, v)
-  },
-})
 
 function setStat(key: StatKey, value: number) {
   const v = Math.max(-3, Math.min(MAX_STAT_BONUS, value))
@@ -238,10 +226,12 @@ function stopEdit() {
             <div v-if="editingKey === key" class="pop-edit">
               <span class="pop-sub">{{ t('inGame.stats.popSub') }}</span>
               <Stepper
-                v-model="editBuf"
+                :model-value="char.stats[key]"
                 :min="-3"
                 :max="MAX_STAT_BONUS"
+                lazy
                 :aria-label="t('inGame.stats.editAria', { stat: statShort(key) })"
+                @update:model-value="setStat(key, $event)"
               />
               <button type="button" class="pop-btn pop-btn-done" @click="stopEdit">
                 {{ t('common.save') }}
