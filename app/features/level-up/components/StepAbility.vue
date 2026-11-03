@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Character, AbilityId } from '@/types/character'
 import { ABILITY_IDS } from '@/types/character'
 import { getAbilityEffect } from '@/data/abilities'
+import StateNote from '@/components/ui/StateNote.vue'
 import { t } from '@/locales'
 import { abilityName, abilityDescription } from '@/locales/content'
 
@@ -47,7 +48,7 @@ function chipFor(id: AbilityId): { text: string; variant: 'magic' | 'danger' } |
         </span>
       </button>
     </div>
-    <div v-else class="lu-empty">{{ t('levelUp.steps.ability.empty') }}</div>
+    <StateNote v-else size="sm">{{ t('levelUp.steps.ability.empty') }}</StateNote>
   </div>
 </template>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
 import IconWarning from '@/components/ui/icons/IconWarning.vue'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
@@ -40,10 +41,10 @@ const title = computed(() =>
     <div class="qs-body">
       <div class="qs-title">{{ title }}</div>
       <div class="qs-subtitle">{{ subtitle }}</div>
-      <div v-if="overdose" class="qs-warning">
-        <IconWarning />
-        <span>{{ t('inGame.magic.quicksilver.nextIsRoll') }}</span>
-      </div>
+      <AlertBanner v-if="overdose" inline :announce="false" class="qs-warning">
+        <template #icon><IconWarning /></template>
+        {{ t('inGame.magic.quicksilver.nextIsRoll') }}
+      </AlertBanner>
     </div>
     <div v-if="!readonly" class="qs-actions">
       <Button
@@ -137,21 +138,7 @@ const title = computed(() =>
 }
 .qs-counter.is-overdose .qs-title { color: var(--vtt-danger-bright); }
 
-.qs-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--vtt-danger-bright);
-  margin-top: 4px;
-  font-family: var(--font-sans);
-}
-.qs-warning :deep(svg) {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
+.qs-warning { margin-top: 4px; }
 
 .qs-actions {
   display: flex;

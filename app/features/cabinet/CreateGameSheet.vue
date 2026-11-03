@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import FormError from '@/components/ui/FormError.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { createGame } from '@/transport/games'
 import type { Game } from '@/types/game'
@@ -63,7 +64,7 @@ async function submit() {
         :hint="t('games.create.hint')"
         :spellcheck="false"
       />
-      <p v-if="error" class="hm-error" role="alert">{{ error }}</p>
+      <FormError v-if="error" role="alert">{{ error }}</FormError>
       <Button type="submit" variant="hero" class="hm-submit" :disabled="busy || !trimmed || tooLong">
         {{ t('games.create.submit') }}
       </Button>

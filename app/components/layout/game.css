@@ -49,25 +49,6 @@
 
 /* ── Sheet content: rows in the players-panel look ── */
 .gs-stack { display: flex; flex-direction: column; gap: var(--s-3); }
-.gs-hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--vtt-text-muted);
-}
-.gs-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
-.gs-empty {
-  padding: 14px;
-  border: 1px dashed var(--vtt-border-strong);
-  border-radius: var(--r-md);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-}
 .gs-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .gs-row {
   width: 100%;

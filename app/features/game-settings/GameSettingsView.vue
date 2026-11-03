@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import FormError from '@/components/ui/FormError.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import InvitePanel from '@/components/layout/InvitePanel.vue'
 import MembersList from '@/components/layout/MembersList.vue'
 import TextField from '@/components/ui/TextField.vue'
@@ -89,7 +91,7 @@ function backToTable() {
       <Button variant="ghost" size="sm" @click="backToTable">{{ t('games.settings.back') }}</Button>
     </header>
 
-    <div v-if="!game" class="st-loading" role="status">{{ t('games.loading') }}</div>
+    <StateNote v-if="!game" role="status">{{ t('games.loading') }}</StateNote>
 
     <template v-else>
       <!-- The field's own label says what it is; the section keeps a name for assistive tech. -->
@@ -102,10 +104,10 @@ function backToTable() {
             :placeholder="t('games.create.placeholder')"
             :spellcheck="false"
           />
-          <p v-if="nameError === 'tooLong'" class="st-error" role="alert">
+          <FormError v-if="nameError === 'tooLong'" role="alert">
             {{ t('games.create.tooLong', { max: GAME_NAME_MAX }) }}
-          </p>
-          <p v-else-if="nameStatus === 'failed'" class="st-error" role="alert">{{ t('games.settings.renameFailed') }}</p>
+          </FormError>
+          <FormError v-else-if="nameStatus === 'failed'" role="alert">{{ t('games.settings.renameFailed') }}</FormError>
           <div class="st-form-foot">
             <p class="st-status" role="status">{{ nameStatus === 'saved' ? t('games.settings.saved') : '' }}</p>
             <Button type="submit" variant="primary" size="sm" :disabled="!canSave">{{ t('common.save') }}</Button>
@@ -125,7 +127,7 @@ function backToTable() {
 
       <section class="st-section is-danger" aria-labelledby="st-delete">
         <h2 id="st-delete" class="st-label">{{ t('games.menu.delete') }}</h2>
-        <p class="st-hint">{{ t('games.settings.deleteHint') }}</p>
+        <StateNote inline align="start" size="sm">{{ t('games.settings.deleteHint') }}</StateNote>
         <Button variant="danger-ghost" size="sm" class="st-delete" @click="deleteOpen = true">{{ t('games.menu.delete') }}</Button>
       </section>
 
@@ -178,16 +180,6 @@ function backToTable() {
   white-space: nowrap;
 }
 
-.st-loading {
-  margin: 48px auto;
-  padding: 24px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-}
-
 .st-section {
   display: flex;
   flex-direction: column;
@@ -208,18 +200,9 @@ function backToTable() {
   text-transform: uppercase;
   color: var(--vtt-text-muted);
 }
-.st-hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--vtt-text-muted);
-}
 
 .st-form { display: flex; flex-direction: column; gap: 10px; }
 .st-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.st-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 .st-status {
   margin: 0;
   min-height: 1.4em;

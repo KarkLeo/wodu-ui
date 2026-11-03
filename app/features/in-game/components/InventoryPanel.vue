@@ -14,14 +14,16 @@ import { itemSources } from '@/utils/permissions'
 import { t } from '@/locales'
 import { gearName } from '@/locales/content'
 
-import InvWarning from './inventory/InvWarning.vue'
 import InvSection from './inventory/InvSection.vue'
 import InvItem from './inventory/InvItem.vue'
 import InvToolbar from './inventory/InvToolbar.vue'
 import CatalogSheet from './inventory/CatalogSheet.vue'
 import LibraryPickSheet from './inventory/LibraryPickSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import IconWarning from '@/components/ui/icons/IconWarning.vue'
 
 type Dispatcher = (cmd: CharacterCommand) => void
 
@@ -133,10 +135,11 @@ function gmCancel() { gmPendingId.value = null }
 
 <template>
   <section class="inv-panel">
-    <InvWarning v-if="multipleWeaponsEquipped">
+    <AlertBanner v-if="multipleWeaponsEquipped" tone="warning">
+      <template #icon><IconWarning /></template>
       <b>{{ t('inGame.inventory.multipleWeapons.title') }}</b>
       {{ ' ' + t('inGame.inventory.multipleWeapons.body') }}
-    </InvWarning>
+    </AlertBanner>
 
     <InvSection
       v-if="equipped.length"
@@ -166,7 +169,7 @@ function gmCancel() { gmPendingId.value = null }
         @use="onUse(item)"
         @remove="onRemove(item)"
       />
-      <div v-if="!backpack.length" class="inv-empty">{{ t('inGame.inventory.empty') }}</div>
+      <EmptyState v-if="!backpack.length" :hint="t('inGame.inventory.empty')" />
     </InvSection>
 
     <template v-if="!readonly">
@@ -236,14 +239,5 @@ function gmCancel() { gmPendingId.value = null }
   flex-direction: column;
   gap: 12px;
   padding: 14px 16px;
-}
-.inv-empty {
-  padding: 22px 14px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-size: 13px;
-  font-style: italic;
-  border: 1px dashed var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
 }
 </style>

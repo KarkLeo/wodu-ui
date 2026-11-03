@@ -4,6 +4,7 @@ import type { Character, SkillId } from '@/types/character'
 import { SKILL_IDS } from '@/types/character'
 import { CLASSES } from '@/data/classes'
 import SkillChip from '@/components/ui/SkillChip.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import IconLock from '@/components/ui/icons/IconLock.vue'
 import { t } from '@/locales'
 import { skillName } from '@/locales/content'
@@ -43,7 +44,7 @@ const rows = computed<Row[]>(() =>
         :title="row.state === 'auto' ? t('inGame.skills.auto') : undefined"
       />
     </div>
-    <div v-else class="skills-empty">{{ t('inGame.skills.empty') }}</div>
+    <StateNote v-else inline align="start" size="sm">{{ t('inGame.skills.empty') }}</StateNote>
   </section>
 </template>
 
@@ -75,10 +76,5 @@ const rows = computed<Row[]>(() =>
   gap: var(--s-2);
   flex-wrap: wrap;
   align-items: center;
-}
-.skills-empty {
-  font-size: 13px;
-  color: var(--vtt-text-muted);
-  font-style: italic;
 }
 </style>

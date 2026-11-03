@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { usePwaInstall } from '@/pwa/useInstall'
 import { onlineDataReady } from '@/transport/bootstrap'
@@ -52,21 +54,22 @@ function resumeCreation(id: string) {
       </button>
     </section>
 
-    <div v-if="!onlineDataReady" class="cl-loading" role="status">
+    <StateNote v-if="!onlineDataReady" role="status">
       {{ t('characterList.loading') }}
-    </div>
+    </StateNote>
 
-    <div v-else-if="activeChars.length === 0 && draftChars.length === 0" class="cl-empty">
-      <div class="cl-empty__icon">
-        <IconDice />
-      </div>
-      <div class="cl-empty__title">{{ t('characterList.empty.title') }}</div>
-      <div class="cl-empty__hint">{{ t('characterList.empty.hint') }}</div>
-    </div>
+    <EmptyState
+      v-else-if="activeChars.length === 0 && draftChars.length === 0"
+      variant="plain"
+      :title="t('characterList.empty.title')"
+      :hint="t('characterList.empty.hint')"
+    >
+      <template #icon><IconDice /></template>
+    </EmptyState>
 
-    <div v-else-if="activeChars.length > 0" class="cl-hint">
+    <StateNote v-else-if="activeChars.length > 0">
       {{ t('characterList.pickFromSidebar') }}
-    </div>
+    </StateNote>
 
     <button
       v-if="install.canInstall.value"
@@ -147,53 +150,6 @@ function resumeCreation(id: string) {
   background: transparent;
 }
 .cl-card--draft:hover { opacity: 1; background: var(--vtt-bg-surface); }
-
-.cl-empty {
-  margin: 32px auto;
-  padding: 40px 20px;
-  text-align: center;
-  max-width: 360px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.cl-empty__icon {
-  width: 48px;
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-accent-deep);
-}
-.cl-empty__icon :deep(svg) { width: 22px; height: 22px; }
-.cl-empty__title {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  color: var(--vtt-accent-soft);
-}
-.cl-empty__hint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-
-.cl-loading,
-.cl-hint {
-  margin: 48px auto;
-  padding: 24px;
-  text-align: center;
-  max-width: 320px;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-  line-height: 1.55;
-}
 
 .cl-install {
   align-self: center;

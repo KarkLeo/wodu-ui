@@ -141,18 +141,4 @@ defineProps<{
 <!-- Shared by the step components that fill the slots. -->
 <style>
 .auth-wide { width: 100%; justify-content: center; }
-.auth-error {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: var(--vtt-danger-bright);
-}
-.auth-note {
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
 </style>

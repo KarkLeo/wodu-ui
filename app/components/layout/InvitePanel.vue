@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { currentUser } from '@/transport/auth'
 import { resetInviteCode } from '@/transport/games'
@@ -43,7 +44,7 @@ async function confirmReset() {
 
 <template>
   <div class="gs-stack">
-    <p class="gs-hint">{{ t('games.invite.hint') }}</p>
+    <StateNote inline align="start" size="sm">{{ t('games.invite.hint') }}</StateNote>
     <div class="gs-field">
       <span class="gs-label">{{ t('games.invite.code') }}</span>
       <code class="gs-value is-code" data-testid="invite-code">{{ code }}</code>

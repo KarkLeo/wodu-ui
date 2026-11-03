@@ -9,6 +9,7 @@ import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { effectiveStat, statModifierTotal, statModifierLines } from '@/utils/derived'
 import { createLogger } from '@/utils/logger'
 import StatChip from '@/components/ui/StatChip.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import TextField from '@/components/ui/TextField.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
@@ -175,9 +176,9 @@ function stopEdit() {
             </button>
           </div>
 
-          <div v-if="modList(key).length === 0" class="pop-empty">
+          <StateNote v-if="modList(key).length === 0" inline align="start" size="xs">
             {{ t('inGame.stats.modifiers.empty') }}
-          </div>
+          </StateNote>
           <div v-else class="pop-effects">
             <div
               v-for="m in modList(key)"

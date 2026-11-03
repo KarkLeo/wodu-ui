@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import { useGameAction } from '@/composables/useGameAction'
@@ -50,7 +52,7 @@ async function confirmGive() {
 <template>
   <BottomSheet v-model:open="open" :title="t('games.sheet.giveTitle', { name })" :max-width="420">
     <div class="gs-stack">
-      <p class="gs-hint">{{ t('games.sheet.giveHint') }}</p>
+      <StateNote inline align="start" size="sm">{{ t('games.sheet.giveHint') }}</StateNote>
       <ul v-if="others.length" class="gs-list">
         <li v-for="m in others" :key="m.id">
           <button type="button" class="gs-row" :disabled="busy" @click="pick(m)">
@@ -61,7 +63,7 @@ async function confirmGive() {
           </button>
         </li>
       </ul>
-      <div v-else class="gs-empty">{{ t('games.sheet.giveEmpty') }}</div>
+      <EmptyState v-else :hint="t('games.sheet.giveEmpty')" />
     </div>
   </BottomSheet>
 

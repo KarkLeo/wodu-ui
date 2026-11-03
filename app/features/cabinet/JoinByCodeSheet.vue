@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import FormError from '@/components/ui/FormError.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { normalizeInviteCode } from '@/utils/inviteCode'
 import { t } from '@/locales'
@@ -45,7 +46,7 @@ function submit() {
         :hint="t('games.joinByCode.hint')"
         :spellcheck="false"
       />
-      <p v-if="invalid" class="hm-error" role="alert">{{ t('games.joinByCode.invalid') }}</p>
+      <FormError v-if="invalid" role="alert">{{ t('games.joinByCode.invalid') }}</FormError>
       <Button type="submit" variant="hero" class="hm-submit" :disabled="!input.trim()">
         {{ t('games.joinByCode.submit') }}
       </Button>

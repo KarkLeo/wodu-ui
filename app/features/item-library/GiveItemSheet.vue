@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { useGiveItem } from '@/composables/useGiveItem'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -46,7 +48,7 @@ async function pick(characterId: string) {
 <template>
   <BottomSheet v-model:open="open" :title="t('library.items.give.title', { item: item?.name ?? '' })" :max-width="420">
     <div class="gs-stack">
-      <p class="gs-hint">{{ t('library.items.give.hint') }}</p>
+      <StateNote inline align="start" size="sm">{{ t('library.items.give.hint') }}</StateNote>
       <ul v-if="rows.length" class="gs-list">
         <li v-for="r in rows" :key="r.id">
           <button type="button" class="gs-row" @click="pick(r.id)">
@@ -58,7 +60,7 @@ async function pick(characterId: string) {
           </button>
         </li>
       </ul>
-      <div v-else class="gs-empty">{{ t('library.items.give.nobody') }}</div>
+      <EmptyState v-else :hint="t('library.items.give.nobody')" />
     </div>
   </BottomSheet>
 </template>

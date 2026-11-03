@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import FormError from '@/components/ui/FormError.vue'
 import RenameSheet from './RenameSheet.vue'
 import { useAccount } from '@/composables/useAccount'
 import { usePwaInstall } from '@/pwa/useInstall'
@@ -107,7 +108,7 @@ async function confirmDelete() {
 
     <ConfirmSheet v-model:open="deleteOpen" variant="danger" :title="t('profile.deleteTitle')">
       <p>{{ t('profile.deleteBody') }}</p>
-      <p v-if="deleteError" class="pf-error" role="alert">{{ deleteError }}</p>
+      <FormError v-if="deleteError" role="alert">{{ deleteError }}</FormError>
       <template #actions>
         <Button variant="hero-danger" :disabled="busy" @click="confirmDelete">{{ t('profile.deleteConfirm') }}</Button>
         <Button variant="ghost" @click="deleteOpen = false">{{ t('common.cancel') }}</Button>
@@ -193,6 +194,4 @@ async function confirmDelete() {
   margin-top: var(--s-2);
 }
 .pf-actions > * { width: 100%; justify-content: center; }
-
-.pf-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 </style>

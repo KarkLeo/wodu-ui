@@ -12,6 +12,7 @@ import { mode } from '@/transport/mode'
 import { charactersInScope } from '@/utils/scope'
 import { isMaster } from '@/utils/permissions'
 import Button from '@/components/ui/Button.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import GameMenu from './GameMenu.vue'
 import PanelFooter from './PanelFooter.vue'
 import MasterlessNotice from './MasterlessNotice.vue'
@@ -181,11 +182,13 @@ async function startNew() {
         </div>
       </div>
 
-      <div v-if="!activeCharacters.length" class="players-empty">
+      <StateNote v-if="!activeCharacters.length" compact size="sm">
         {{ t('gameLayout.players.empty') }}
-      </div>
+      </StateNote>
 
-      <p v-if="mode === 'offline'" class="players-offline-hint">{{ t('mode.offlineHint') }}</p>
+      <div v-if="mode === 'offline'" class="players-offline-hint">
+        <StateNote inline align="start" size="xs">{{ t('mode.offlineHint') }}</StateNote>
+      </div>
     </div>
 
     <div class="gl-panel-foot">
@@ -425,24 +428,7 @@ async function startNew() {
   border-radius: var(--r-pill);
 }
 
-.players-empty {
-  padding: 12px 10px;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  text-align: center;
-}
-
-.players-offline-hint {
-  margin: var(--s-1) 0 0;
-  padding: 0 10px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--vtt-text-muted);
-}
+.players-offline-hint { margin-top: var(--s-1); padding: 0 10px; }
 
 .gl-panel-foot {
   padding: var(--s-3) var(--s-4);

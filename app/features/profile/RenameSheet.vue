@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import FormError from '@/components/ui/FormError.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { useAccount } from '@/composables/useAccount'
 import { NAME_MAX } from '@/transport/authHelpers'
@@ -51,7 +52,7 @@ async function save() {
         autocomplete="nickname"
         :spellcheck="false"
       />
-      <p v-if="error" class="rs-error" role="alert">{{ error }}</p>
+      <FormError v-if="error" role="alert">{{ error }}</FormError>
       <Button type="submit" variant="hero" class="rs-save" :disabled="busy || !draft.trim()">
         {{ t('common.save') }}
       </Button>
@@ -61,6 +62,5 @@ async function save() {
 
 <style scoped>
 .rs-form { display: flex; flex-direction: column; gap: var(--s-4); }
-.rs-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 .rs-save { align-self: flex-end; }
 </style>

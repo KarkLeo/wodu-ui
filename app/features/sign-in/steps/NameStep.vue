@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import AuthScreen from '../AuthScreen.vue'
 import TextField from '@/components/ui/TextField.vue'
 import Button from '@/components/ui/Button.vue'
+import FormError from '@/components/ui/FormError.vue'
 import { NAME_MAX } from '@/transport/authHelpers'
 import { t } from '@/locales'
 
@@ -34,7 +35,7 @@ function done() {
         autocomplete="nickname"
         :spellcheck="false"
       />
-      <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
+      <FormError v-if="error" role="alert">{{ error }}</FormError>
       <div class="ns-actions">
         <Button variant="ghost" size="lg" class="auth-wide" :disabled="busy" @click="emit('save', suggested)">
           {{ t('auth.name.later') }}

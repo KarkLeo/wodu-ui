@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useGamesStore } from '@/stores/games'
@@ -96,10 +97,12 @@ async function createCharacter() {
       <span class="hm-card__meta">{{ classLine(c) }}</span>
     </button>
 
-    <div v-if="active.length === 0 && drafts.length === 0" class="hm-empty">
-      <div class="hm-empty__title">{{ t('games.characters.emptyTitle') }}</div>
-      <div class="hm-empty__hint">{{ t('games.characters.emptyHint') }}</div>
-    </div>
+    <EmptyState
+      v-if="active.length === 0 && drafts.length === 0"
+      variant="plain"
+      :title="t('games.characters.emptyTitle')"
+      :hint="t('games.characters.emptyHint')"
+    />
 
     <div class="hm-actions">
       <Button variant="hero" size="lg" @click="createCharacter">{{ t('games.characters.create') }}</Button>

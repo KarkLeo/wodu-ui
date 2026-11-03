@@ -4,6 +4,7 @@ import type { Character } from '@/types/character'
 import { ABILITY_IDS } from '@/types/character'
 import AbilityCard from '@/components/ui/AbilityCard.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { t } from '@/locales'
 import { abilityName, abilityDescription } from '@/locales/content'
 
@@ -38,7 +39,7 @@ const sheetOpen = ref(false)
         {{ abilityDescription(id) }}
       </AbilityCard>
     </div>
-    <div v-else class="abilities-empty">{{ t('inGame.abilities.empty') }}</div>
+    <StateNote v-else inline align="start" size="sm">{{ t('inGame.abilities.empty') }}</StateNote>
   </section>
 
   <BottomSheet v-model:open="sheetOpen" :title="t('inGame.abilities.allTitle')">
@@ -92,10 +93,5 @@ const sheetOpen = ref(false)
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-}
-.abilities-empty {
-  font-size: 13px;
-  color: var(--vtt-text-muted);
-  font-style: italic;
 }
 </style>

@@ -428,13 +428,6 @@ onBeforeUnmount(stopListening)
   border-color: var(--vtt-danger);
 }
 
-.info-popover .pop-empty {
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-  font-style: italic;
-  padding: 4px 0 2px;
-}
-
 .info-popover .pop-actions {
   display: flex;
   gap: 8px;

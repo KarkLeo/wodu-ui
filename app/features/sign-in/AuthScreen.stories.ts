@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, within } from 'storybook/test'
 import AuthScreen from './AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
+import FormError from '@/components/ui/FormError.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { currentLocale } from '@/locales'
 import { pb, signInMock } from '../../../.storybook/mocks/pb'
 
@@ -16,11 +18,11 @@ const meta = {
     cardTitle: 'Card title',
   },
   render: (args) => ({
-    components: { AuthScreen, Button },
+    components: { AuthScreen, Button, StateNote },
     setup: () => ({ args }),
     template: `
       <AuthScreen v-bind="args">
-        <p class="auth-note" style="text-align: left">Card content goes here.</p>
+        <StateNote inline align="start" size="xs">Card content goes here.</StateNote>
         <Button variant="hero" size="lg" class="auth-wide">Primary action</Button>
         <template #footer>
           <Button variant="ghost" size="lg" class="auth-wide">Secondary action</Button>
@@ -37,12 +39,12 @@ export const Default: Story = {}
 
 export const WithBackLink: Story = {
   render: (args) => ({
-    components: { AuthScreen },
+    components: { AuthScreen, FormError },
     setup: () => ({ args }),
     template: `
       <AuthScreen v-bind="args">
         <template #back><span class="eyebrow" style="margin: 0">← back</span></template>
-        <p class="auth-error">An error line inside the card.</p>
+        <FormError>An error line inside the card.</FormError>
       </AuthScreen>
     `,
   }),

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Character, SkillId } from '@/types/character'
 import { SKILL_IDS } from '@/types/character'
+import StateNote from '@/components/ui/StateNote.vue'
 import { t } from '@/locales'
 import { skillName } from '@/locales/content'
 
@@ -34,7 +35,7 @@ const available = computed(() => SKILL_IDS.filter(id => !props.currentSkillIds.i
         </span>
       </button>
     </div>
-    <div v-else class="lu-empty">{{ t('levelUp.steps.skill.empty') }}</div>
+    <StateNote v-else size="sm">{{ t('levelUp.steps.skill.empty') }}</StateNote>
   </div>
 </template>
 
