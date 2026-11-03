@@ -27,6 +27,7 @@ import IconPlus from './IconPlus.vue'
 import IconSearch from './IconSearch.vue'
 import IconShield from './IconShield.vue'
 import IconStar from './IconStar.vue'
+import IconStarBold from './IconStarBold.vue'
 import IconTool from './IconTool.vue'
 import IconTrash from './IconTrash.vue'
 import IconWarning from './IconWarning.vue'
@@ -61,6 +62,7 @@ const icons = {
   IconSearch,
   IconShield,
   IconStar,
+  IconStarBold,
   IconTool,
   IconTrash,
   IconWarning,

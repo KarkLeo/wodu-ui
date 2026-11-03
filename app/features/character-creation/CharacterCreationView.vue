@@ -12,11 +12,9 @@ import { className as classNameOf } from '@/locales/content'
 import StepIdentity from './steps/StepIdentity.vue'
 import StepTraining from './steps/StepTraining.vue'
 import StepGear from './steps/StepGear.vue'
-import { useIsMobile } from '@/composables/useIsMobile'
-import IconButton from '@/components/ui/IconButton.vue'
-import IconClose from '@/components/ui/icons/IconClose.vue'
-
-const isMobile = useIsMobile()
+import WizardShell from '@/components/layout/WizardShell.vue'
+import WizardStepper from '@/components/layout/WizardStepper.vue'
+import IconStarBold from '@/components/ui/icons/IconStarBold.vue'
 
 const router = useRouter()
 const { tableRoute } = useTable()
@@ -62,12 +60,6 @@ const footerHint = computed(() => {
   return t('characterCreation.footerHint.s3Ready')
 })
 
-const dotState = (n: number) => {
-  if (n < step.value) return 'is-done'
-  if (n === step.value) return 'is-active'
-  return ''
-}
-
 function onDotClick(n: number) {
   if (n >= step.value) return
   while (creation.step > n) creation.prevStep()
@@ -102,269 +94,22 @@ watch(onlineDataReady, (ready) => {
 </script>
 
 <template>
-  <Teleport to="body" :disabled="!isMobile">
-  <div v-if="draft" class="cc-shell">
-    <div class="cc-topbar">
-      <div class="cc-title">{{ stepTitle }}</div>
-      <div class="cc-topbar-hint">{{ footerHint }}</div>
-      <IconButton size="lg" class="cc-close" :label="t('characterCreation.shell.close')" @click="onClose">
-        <IconClose />
-      </IconButton>
-    </div>
-
-    <div class="cc-stepper">
-      <span class="cc-stepper-line" />
-      <div class="cc-stepper-dots">
-        <button
-          v-for="n in 3"
-          :key="n"
-          type="button"
-          :class="['cc-dot', dotState(n)]"
-          :disabled="n > step"
-          :aria-current="n === step ? 'step' : undefined"
-          @click="onDotClick(n)"
-        >
-          <svg v-if="n < step" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
-          <span v-else>{{ n }}</span>
-        </button>
-      </div>
-      <span class="cc-stepper-line" />
-    </div>
-
-    <div class="cc-content">
-      <component :is="currentStepComponent" />
-    </div>
-
-    <div class="cc-footer">
-      <button
-        type="button"
-        class="cc-foot-ghost"
-        @click="back"
-      >
-        ← {{ t('characterCreation.shell.back') }}
-      </button>
-      <div class="cc-footer-spacer" />
-      <button
-        type="button"
-        class="cc-foot-hero"
-        :disabled="!isStepValid"
-        @click="onNextOrFinish"
-      >
-        <template v-if="step === 3">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2 L9 6 L13 6.5 L10 9.5 L11 13 L7 11 L3 13 L4 9.5 L1 6.5 L5 6 Z"/></svg>
-          {{ t('characterCreation.shell.create') }}
-        </template>
-        <template v-else>{{ t('characterCreation.shell.next') }} →</template>
-      </button>
-    </div>
-  </div>
-  </Teleport>
+  <WizardShell
+    v-if="draft"
+    :title="stepTitle"
+    :hint="footerHint"
+    :close-label="t('characterCreation.shell.close')"
+    :back-label="t('characterCreation.shell.back')"
+    :next-label="step === 3 ? t('characterCreation.shell.create') : t('characterCreation.shell.next')"
+    :next-icon="step === 3 ? IconStarBold : undefined"
+    :next-disabled="!isStepValid"
+    @close="onClose"
+    @back="back"
+    @next="onNextOrFinish"
+  >
+    <template #stepper>
+      <WizardStepper :count="3" :current="step" navigable @select="onDotClick" />
+    </template>
+    <component :is="currentStepComponent" />
+  </WizardShell>
 </template>
-
-<style scoped>
-.cc-shell {
-  display: grid;
-  grid-template-rows: 52px auto minmax(0, 1fr) auto;
-  height: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  overflow: hidden;
-  background:
-    linear-gradient(to bottom, rgba(26, 21, 16, 0.62), rgba(14, 11, 8, 0.7)),
-    rgba(7, 5, 10, 0.35);
-  -webkit-backdrop-filter: blur(22px) saturate(1.1);
-  backdrop-filter: blur(22px) saturate(1.1);
-  position: relative;
-  color: var(--vtt-text-primary);
-  /* Between the side panels the wizard can be narrower than the viewport; steps size to the wizard. */
-  container-type: inline-size;
-}
-@media (max-width: 719px) {
-  .cc-shell {
-    position: fixed;
-    inset: 0;
-    height: 100dvh;
-    max-width: none;
-    margin: 0;
-    z-index: 50;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-@media (min-width: 720px) {
-  .cc-shell {
-    /* Centred, but never under GameLayout's side panels: shrinks first, then shifts off-centre. */
-    --cc-w: min(720px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-    width: var(--cc-w);
-    max-width: none;
-    height: calc(100% - 80px);
-    max-height: 880px;
-    margin: 40px auto 40px
-      clamp(var(--gl-inset-left, 0px), (100% - var(--cc-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--cc-w));
-    border-radius: var(--r-lg);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(140, 106, 58, 0.18);
-  }
-}
-
-.cc-topbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--s-3);
-  padding: 0 var(--s-4);
-}
-.cc-title {
-  justify-self: start;
-  font-family: var(--font-serif);
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--vtt-accent-soft);
-  line-height: 1;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.cc-topbar-hint {
-  justify-self: center;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.cc-close { justify-self: end; }
-
-.cc-stepper {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-3) var(--s-5);
-}
-.cc-stepper-line {
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(140, 106, 58, 0.4), transparent);
-}
-.cc-stepper-dots {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-}
-.cc-dot {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-pill);
-  background: rgba(36, 28, 21, 0.55);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--vtt-text-muted);
-  border: 1px solid rgba(140, 106, 58, 0.25);
-  position: relative;
-  padding: 0;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-dot:disabled { cursor: default; }
-.cc-dot.is-done {
-  color: var(--vtt-accent-soft);
-  background: rgba(140, 106, 58, 0.25);
-  border-color: rgba(140, 106, 58, 0.5);
-  cursor: pointer;
-}
-.cc-dot.is-done:hover {
-  background: rgba(140, 106, 58, 0.4);
-  border-color: var(--vtt-border-gold);
-}
-.cc-dot.is-active {
-  color: var(--vtt-bg-base);
-  background: linear-gradient(to bottom, var(--vtt-accent), var(--vtt-accent-deep));
-  border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 14px rgba(212, 168, 87, 0.35);
-}
-.cc-dot + .cc-dot::before {
-  content: "";
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 1px;
-  background: rgba(140, 106, 58, 0.35);
-}
-.cc-dot svg { width: 12px; height: 12px; }
-
-.cc-content {
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--s-4) var(--s-5) var(--s-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-5);
-}
-.cc-content::-webkit-scrollbar { width: 4px; }
-.cc-content::-webkit-scrollbar-thumb { background: rgba(140, 106, 58, 0.3); border-radius: var(--r-pill); }
-
-.cc-footer {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
-}
-.cc-footer-spacer { min-width: 0; }
-
-.cc-foot-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
-}
-.cc-foot-ghost:hover:not(:disabled) { color: var(--vtt-accent-soft); border-color: var(--vtt-border-strong); }
-.cc-foot-ghost:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.cc-foot-hero {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--vtt-hero-face);
-  border: 1px solid #8C6A3A;
-  border-radius: var(--r-pill);
-  color: var(--vtt-hero-ink);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  cursor: pointer;
-  white-space: nowrap;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
-  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
-}
-.cc-foot-hero:hover:not(:disabled) {
-  background: var(--vtt-hero-face-hover);
-  border-color: var(--vtt-hero-face);
-  filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
-}
-.cc-foot-hero:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
-.cc-foot-hero svg { width: 14px; height: 14px; }
-</style>
