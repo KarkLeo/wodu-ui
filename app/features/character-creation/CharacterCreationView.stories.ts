@@ -75,6 +75,51 @@ export const TrainingWizard: Story = {
   decorators: [withStores({ characters: [draftWizard], creation: { draftId: draftWizard.id, step: 2 } })],
 }
 
+/** Wizard: Lore and Summon come with the class (checked, fixed); one more skill and one more ability fill the slots. */
+export const TrainingPickRules: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [draftWizard], creation: { draftId: draftWizard.id, step: 2 } })],
+  play: async ({ canvasElement }) => {
+    const view = screen(canvasElement)
+    const skills = within(await view.findByRole('group', { name: 'Skills' }))
+    const abilities = within(view.getByRole('group', { name: 'Abilities' }))
+
+    await expect(skills.getByRole('checkbox', { name: 'Lore' })).toBeChecked()
+    await expect(skills.getByRole('checkbox', { name: 'Lore' })).toBeDisabled()
+    await expect(abilities.getByRole('checkbox', { name: /^Summon/ })).toBeChecked()
+    await expect(abilities.getByRole('checkbox', { name: /^Summon/ })).toBeDisabled()
+    await expect(view.getByRole('button', { name: /Next/ })).toBeDisabled()
+
+    await userEvent.click(skills.getByRole('checkbox', { name: 'Athletics' }))
+    await expect(skills.getByRole('checkbox', { name: 'Athletics' })).toBeChecked()
+    await expect(skills.getByRole('checkbox', { name: 'Awareness' })).toBeDisabled()
+
+    abilities.getByRole('checkbox', { name: /^Cantrips/ }).focus()
+    await userEvent.keyboard(' ')
+    await expect(abilities.getByRole('checkbox', { name: /^Cantrips/ })).toBeChecked()
+    await expect(abilities.getByRole('checkbox', { name: /^Command/ })).toBeDisabled()
+    await expect(view.getByRole('button', { name: /Next/ })).toBeEnabled()
+
+    abilities.getByRole('checkbox', { name: /^Cantrips/ }).focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(abilities.getByRole('checkbox', { name: /^Cantrips/ })).not.toBeChecked()
+    await expect(abilities.getByRole('checkbox', { name: /^Command/ })).toBeEnabled()
+  },
+}
+
+/** One class at a time: picking another moves the selection. */
+export const IdentityClassPick: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [draftTraining], creation: { draftId: draftTraining.id, step: 1 } })],
+  play: async ({ canvasElement }) => {
+    const classes = within(await screen(canvasElement).findByRole('radiogroup', { name: 'Class' }))
+    await expect(classes.getByRole('radio', { name: /^Cleric/ })).toBeChecked()
+    await userEvent.click(classes.getByRole('radio', { name: /^Thief/ }))
+    await expect(classes.getByRole('radio', { name: /^Thief/ })).toBeChecked()
+    await expect(classes.getAllByRole('radio', { checked: true })).toHaveLength(1)
+  },
+}
+
 export const GearBeforeHpRoll: Story = {
   decorators: [withStores({ characters: [draftHpUnrolled], creation: { draftId: draftHpUnrolled.id, step: 3 } })],
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
+import { computed, type Component } from 'vue'
 
 type Mode = 'display' | 'pick-multi' | 'pick-single' | 'add'
 type State = 'default' | 'auto' | 'selected' | 'locked'
@@ -15,6 +15,8 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{ (e: 'toggle'): void }>()
+
+const isPick = computed(() => props.mode === 'pick-multi' || props.mode === 'pick-single')
 
 function onClick() {
   if (props.state === 'locked' || props.state === 'auto') return
@@ -35,15 +37,13 @@ function onClick() {
         'is-locked': state === 'locked',
       },
     ]"
-    :disabled="mode === 'display' ? undefined : state === 'locked'"
+    :disabled="mode === 'display' ? undefined : state === 'locked' || (isPick && state === 'auto')"
     :role="mode === 'pick-multi' ? 'checkbox' : mode === 'pick-single' ? 'radio' : undefined"
-    :aria-checked="mode === 'pick-multi' || mode === 'pick-single' ? state === 'selected' : undefined"
+    :aria-checked="isPick ? state === 'selected' || state === 'auto' : undefined"
     @click="mode !== 'display' && onClick()"
   >
-    <span
-      v-if="mode === 'pick-multi' || mode === 'pick-single'"
-      class="skill-pick-mark"
-    />
+    <!-- A granted pick is checked and fixed: its lock icon takes the mark's place. -->
+    <span v-if="isPick && state !== 'auto'" class="skill-pick-mark" />
     <span v-if="icon" class="skill-chip-glyph"><component :is="icon" /></span>
     <span>{{ label }}</span>
   </component>

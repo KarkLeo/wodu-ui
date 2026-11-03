@@ -112,9 +112,8 @@ function formatMod(n: number) {
   </div>
 </template>
 
-<style scoped src="./stepShared.css"></style>
-
 <style scoped>
+.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
 .lu-summary { display: flex; flex-direction: column; }
 .lu-summary .lu-sum-row { padding: 12px 8px; }
 .lu-sum-value {

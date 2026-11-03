@@ -2,6 +2,7 @@
 import type { Character, StatKey, Stats } from '@/types/character'
 import { STAT_KEYS, MAX_STAT_BONUS } from '@/data/xpTable'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SelectableTile from '@/components/ui/SelectableTile.vue'
 import { t } from '@/locales'
 import { statShort } from '@/locales/content'
 
@@ -19,17 +20,17 @@ function formatMod(n: number) {
 <template>
   <div class="cc-section">
     <SectionHeader :title="t('levelUp.steps.stat.label')" :hint="t('levelUp.steps.stat.hint', { max: MAX_STAT_BONUS })" />
-    <div class="cc-attr-grid">
-      <button
+    <div class="cc-attr-grid" role="radiogroup" :aria-label="t('levelUp.steps.stat.label')">
+      <SelectableTile
         v-for="k in STAT_KEYS"
         :key="k"
-        type="button"
-        class="cc-attr"
-        :class="{ 'is-selected': selected === k }"
+        size="sm"
+        :label="statShort(k)"
+        :class="{ 'is-picked': selected === k, 'is-capped': !canBump(k) }"
+        :selected="selected === k"
         :disabled="!canBump(k)"
-        @click="canBump(k) && emit('update:selected', k)"
+        @select="emit('update:selected', k)"
       >
-        <span class="cc-attr-label">{{ statShort(k) }}</span>
         <span class="cc-attr-value">
           <span class="cc-attr-mod">{{ formatMod(currentStats[k]) }}</span>
           <span class="cc-attr-next">
@@ -37,43 +38,15 @@ function formatMod(n: number) {
             <template v-else>{{ t('levelUp.steps.stat.max') }}</template>
           </span>
         </span>
-      </button>
+      </SelectableTile>
     </div>
   </div>
 </template>
 
-<style scoped src="./stepShared.css"></style>
-
 <style scoped>
+.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
 .cc-attr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
-.cc-attr {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-areas: "label label" "value value";
-  column-gap: 8px;
-  padding: 10px 12px 12px;
-  border-radius: var(--r-md);
-  background: rgba(36, 28, 21, 0.4);
-  border: 1px solid transparent;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-attr:hover:not(:disabled) { background: rgba(36, 28, 21, 0.65); }
-.cc-attr:disabled { opacity: 0.4; cursor: not-allowed; }
-.cc-attr-label {
-  grid-area: label;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  line-height: 1;
-}
 .cc-attr-value {
-  grid-area: value;
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -93,13 +66,9 @@ function formatMod(n: number) {
   color: var(--vtt-text-muted);
 }
 .cc-attr-next em { color: var(--vtt-accent); font-style: normal; }
-.cc-attr.is-selected {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: rgba(140, 106, 58, 0.55);
-}
-.cc-attr.is-selected .cc-attr-mod {
+.is-picked .cc-attr-mod {
   color: var(--vtt-accent);
   text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
 }
-.cc-attr:disabled .cc-attr-next { color: var(--vtt-danger-bright); opacity: 0.7; }
+.is-capped .cc-attr-next { color: var(--vtt-danger-bright); opacity: 0.7; }
 </style>

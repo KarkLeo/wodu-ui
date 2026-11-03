@@ -12,6 +12,7 @@ import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
 import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import IconReroll from '@/components/ui/icons/IconReroll.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
@@ -101,10 +102,9 @@ function onUse(item: InventoryItem) {
       :hint="t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' })"
     >
       <template #action>
-        <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollHp">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 6 C3 4 4.5 3 6 3 M9 6 C9 8 7.5 9 6 9 M9 6 L10.5 4.5 M9 6 L7.5 4.5"/></svg>
+        <Button variant="roll" :icon-left="IconReroll" :disabled="isRolling" @click="rollHp">
           {{ hpRolled ? t('characterCreation.shell.reroll') : t('characterCreation.shell.rollAll') }}
-        </button>
+        </Button>
       </template>
     </SectionHeader>
     <div class="cc-hp">
@@ -172,30 +172,6 @@ function onUse(item: InventoryItem) {
 
 <style scoped>
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-
-.cc-btn-roll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: rgba(36, 28, 21, 0.55);
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  border-radius: var(--r-sm);
-  color: var(--vtt-accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-btn-roll:hover:not(:disabled) {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: var(--vtt-border-gold);
-}
-.cc-btn-roll:disabled { opacity: 0.5; cursor: not-allowed; }
-.cc-btn-roll svg { width: 12px; height: 12px; }
 
 .cc-hp {
   display: grid;

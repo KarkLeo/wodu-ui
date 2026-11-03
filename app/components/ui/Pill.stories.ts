@@ -7,7 +7,7 @@ const meta = {
   component: Pill,
   args: { tone: 'neutral', size: 'md', dot: false },
   argTypes: {
-    tone: { control: 'inline-radio', options: ['neutral', 'accent'] },
+    tone: { control: 'inline-radio', options: ['neutral', 'accent', 'danger'] },
     size: { control: 'inline-radio', options: ['md', 'sm'] },
   },
   render: (args) => ({
@@ -36,6 +36,16 @@ export const Accent: Story = {
     components: { Pill },
     setup: () => ({ args }),
     template: '<Pill v-bind="args">Master</Pill>',
+  }),
+}
+
+/** A cost or a risk: an ability that adds HP on its own. */
+export const Danger: Story = {
+  args: { tone: 'danger', size: 'sm' },
+  render: (args) => ({
+    components: { Pill },
+    setup: () => ({ args }),
+    template: '<Pill v-bind="args">+6 HP auto</Pill>',
   }),
 }
 

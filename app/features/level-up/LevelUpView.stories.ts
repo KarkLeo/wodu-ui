@@ -64,7 +64,7 @@ const screen = (canvasElement: HTMLElement) => within(canvasElement.ownerDocumen
 
 async function pick(canvasElement: HTMLElement, option: RegExp) {
   const view = screen(canvasElement)
-  await userEvent.click(await view.findByRole('button', { name: option }))
+  await userEvent.click(await view.findByRole('radio', { name: option }))
 }
 
 async function next(canvasElement: HTMLElement) {
@@ -92,6 +92,20 @@ export const StatBoostSelected: Story = {
   },
 }
 
+/** DEX is at the cap and cannot be picked; one stat at a time. */
+export const StatBoostOnePick: Story = {
+  tags: ['no-visual'],
+  loaders: [atRoute(`/character/${wren.id}/levelup`)],
+  play: async ({ canvasElement }) => {
+    const stats = within(await screen(canvasElement).findByRole('radiogroup', { name: '+1 boost' }))
+    await expect(stats.getByRole('radio', { name: /^DEX/ })).toBeDisabled()
+    await pick(canvasElement, /^STR/)
+    await pick(canvasElement, /^CHA/)
+    await expect(stats.getByRole('radio', { name: /^CHA/ })).toBeChecked()
+    await expect(stats.getAllByRole('radio', { checked: true })).toHaveLength(1)
+  },
+}
+
 /** Level 2 → 3: skill, then ability, then summary. */
 export const Skill: Story = {
   loaders: [atRoute(`/character/${tamsin.id}/levelup`)],
@@ -102,7 +116,7 @@ export const Ability: Story = {
   play: async ({ canvasElement }) => {
     await pick(canvasElement, /^Lore/)
     await next(canvasElement)
-    await expect(await screen(canvasElement).findByRole('button', { name: /^Hardy/ })).toBeInTheDocument()
+    await expect(await screen(canvasElement).findByRole('radio', { name: /^Hardy/ })).toBeInTheDocument()
   },
 }
 
@@ -115,7 +129,7 @@ export const LevelChangedElsewhere: Story = {
     const store = useCharactersStore()
     store.upsertLocal({ ...store.getById(tamsin.id)!, level: 5 })
     const view = screen(canvasElement)
-    await expect(await view.findByRole('button', { name: /^Lore/ })).toBeInTheDocument()
+    await expect(await view.findByRole('radio', { name: /^Lore/ })).toBeInTheDocument()
     await expect(await view.findByRole('button', { name: /Next/ })).toBeDisabled()
   },
 }

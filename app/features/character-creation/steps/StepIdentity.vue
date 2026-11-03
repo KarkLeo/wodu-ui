@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import TextField from '@/components/ui/TextField.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SelectableTile from '@/components/ui/SelectableTile.vue'
+import Button from '@/components/ui/Button.vue'
+import IconDiceFace from '@/components/ui/icons/IconDiceFace.vue'
 import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
@@ -141,32 +144,32 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   <section class="cc-section">
     <SectionHeader :title="t('characterCreation.identity.attrsLabel')" :hint="t('characterCreation.identity.attrsHint')">
       <template #action>
-        <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollAll">
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="2" width="8" height="8" rx="1"/><circle cx="4.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="6" cy="6" r="0.6" fill="currentColor"/><circle cx="4.5" cy="7.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="7.5" r="0.6" fill="currentColor"/></svg>
+        <Button variant="roll" :icon-left="IconDiceFace" :disabled="isRolling" @click="rollAll">
           {{ t('characterCreation.shell.rollAll') }}
-        </button>
+        </Button>
       </template>
     </SectionHeader>
     <div class="cc-attr-grid">
-      <div
+      <SelectableTile
         v-for="key in STAT_KEYS"
         :key="key"
-        :class="[
-          'cc-attr',
-          { 'cc-attr-empty': !draft.statRolls[key], 'is-max': draft.statRolls[key] === 12, 'is-fresh': freshKey === key },
-        ]"
+        static
+        size="sm"
+        :label="statShort(key)"
+        :class="{ 'cc-attr-empty': !draft.statRolls[key], 'is-max': draft.statRolls[key] === 12, 'is-fresh': freshKey === key }"
       >
-        <span class="cc-attr-label">{{ statShort(key) }}</span>
-        <button
-          type="button"
-          class="cc-attr-roll"
-          :disabled="isRolling"
-          :title="t('characterCreation.identity.attrRollTitle')"
-          @click="rerollOne(key)"
-        >
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg>
-        </button>
-        <div class="cc-attr-value">
+        <template #action>
+          <button
+            type="button"
+            class="cc-attr-roll"
+            :disabled="isRolling"
+            :title="t('characterCreation.identity.attrRollTitle')"
+            @click="rerollOne(key)"
+          >
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg>
+          </button>
+        </template>
+        <span class="cc-attr-value">
           <span class="cc-attr-mod">
             {{ draft.statRolls[key] ? (draft.stats[key] > 0 ? `+${draft.stats[key]}` : '0') : '—' }}
           </span>
@@ -177,20 +180,21 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
             2d6: <em>{{ rollTotal(key) }}</em>
           </span>
           <span v-else class="cc-attr-roll-trace">{{ t('characterCreation.identity.attrEmpty') }}</span>
-        </div>
-      </div>
+        </span>
+      </SelectableTile>
     </div>
   </section>
 
   <section class="cc-section">
     <SectionHeader :title="t('characterCreation.identity.classLabel')" :hint="t('characterCreation.identity.classHint')" />
-    <div class="cc-class-grid">
-      <button
+    <div class="cc-class-grid" role="radiogroup" :aria-label="t('characterCreation.identity.classLabel')">
+      <SelectableTile
         v-for="cls in CLASS_LIST"
         :key="cls.id"
-        type="button"
-        :class="['cc-class', { 'is-selected': draft.classId === cls.id }]"
-        @click="selectClass(cls.id)"
+        class="cc-class"
+        :class="{ 'is-picked': draft.classId === cls.id }"
+        :selected="draft.classId === cls.id"
+        @select="selectClass(cls.id)"
       >
         <span class="cc-class-glyph">
           <svg v-if="cls.id !== 'custom'" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -202,7 +206,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         </span>
         <span class="cc-class-name">{{ className(cls.id) }}</span>
         <span class="cc-class-tag">{{ classTagText(cls.id, cls.grantedSkillIds) }}</span>
-      </button>
+      </SelectableTile>
     </div>
     <TextField
       v-if="draft.classId === 'custom'"
@@ -226,62 +230,17 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 .cc-truename :deep(.form-field-control) { font-style: italic; color: var(--vtt-accent-soft); }
 .cc-hint-icon { width: 11px; height: 11px; color: var(--vtt-accent-deep); flex-shrink: 0; }
 
-.cc-btn-roll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: rgba(36, 28, 21, 0.55);
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  border-radius: var(--r-sm);
-  color: var(--vtt-accent);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-btn-roll:hover:not(:disabled) {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: var(--vtt-border-gold);
-}
-.cc-btn-roll:disabled { opacity: 0.5; cursor: not-allowed; }
-.cc-btn-roll svg { width: 12px; height: 12px; }
-
-.cc-attr-grid {
+.cc-attr-grid,
+.cc-class-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--s-2);
 }
 @container (max-width: 479px) {
-  .cc-attr-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.cc-attr {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas:
-    "label label roll"
-    "value value value";
-  column-gap: 8px;
-  padding: 10px 12px 12px;
-  border-radius: var(--r-md);
-  background: rgba(36, 28, 21, 0.4);
-  transition: background var(--t-fast) var(--ease);
-}
-.cc-attr:hover { background: rgba(36, 28, 21, 0.65); }
-.cc-attr-label {
-  grid-area: label;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  line-height: 1;
+  .cc-attr-grid,
+  .cc-class-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .cc-attr-roll {
-  grid-area: roll;
   width: 22px;
   height: 22px;
   display: inline-flex;
@@ -299,7 +258,6 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 .cc-attr-roll:disabled { cursor: not-allowed; opacity: 0.4; }
 .cc-attr-roll svg { width: 14px; height: 14px; }
 .cc-attr-value {
-  grid-area: value;
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -323,8 +281,8 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   color: var(--vtt-text-secondary);
   font-style: normal;
 }
-.cc-attr.is-fresh { animation: cc-fresh 1400ms var(--ease); }
-.cc-attr.is-max .cc-attr-mod {
+.is-fresh { animation: cc-fresh 1400ms var(--ease); }
+.is-max .cc-attr-mod {
   color: var(--vtt-accent);
   text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
 }
@@ -333,43 +291,17 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cc-attr.is-fresh { animation: none; }
+  .is-fresh { animation: none; }
 }
 
-.cc-class-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--s-2);
-}
-@container (max-width: 479px) {
-  .cc-class-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.cc-class {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 14px 16px;
-  background: rgba(36, 28, 21, 0.4);
-  border: 1px solid transparent;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
-}
-.cc-class:hover { background: rgba(36, 28, 21, 0.7); }
-.cc-class.is-selected {
-  background: rgba(140, 106, 58, 0.18);
-  border-color: rgba(140, 106, 58, 0.55);
-}
+.cc-class { gap: 6px; }
 .cc-class-glyph {
   width: 28px;
   height: 28px;
   color: var(--vtt-accent-deep);
   margin-bottom: 2px;
 }
-.cc-class.is-selected .cc-class-glyph { color: var(--vtt-accent); }
+.cc-class.is-picked .cc-class-glyph { color: var(--vtt-accent); }
 .cc-class-glyph svg { width: 100%; height: 100%; }
 .cc-class-name {
   font-family: var(--font-serif);

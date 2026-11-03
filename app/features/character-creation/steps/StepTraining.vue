@@ -9,6 +9,10 @@ import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
+import SelectableRow from '@/components/ui/SelectableRow.vue'
+import SkillChip from '@/components/ui/SkillChip.vue'
+import Pill from '@/components/ui/Pill.vue'
+import IconLock from '@/components/ui/icons/IconLock.vue'
 import { t } from '@/locales'
 import { skillName, abilityName, abilityDescription, cantripName } from '@/locales/content'
 
@@ -121,6 +125,20 @@ function skillIsLocked(id: SkillId): boolean {
   return autoSkills.value.includes(id)
 }
 
+function skillState(id: SkillId): 'auto' | 'selected' | 'locked' | 'default' {
+  if (skillIsLocked(id)) return 'auto'
+  if (draft.value?.skillIds.includes(id)) return 'selected'
+  return skillSlotsFull.value ? 'locked' : 'default'
+}
+
+function abilFlag(id: AbilityId): string | undefined {
+  const st = abilState(id)
+  if (st.auto) return t('characterCreation.training.abilFlagAuto')
+  if (!st.selected && st.disabled) return t('characterCreation.training.abilFlagNoSlots')
+  if (st.selected) return t('characterCreation.training.abilFlagSelected')
+  return undefined
+}
+
 function onSkillClick(id: SkillId) {
   if (skillIsLocked(id)) return
   if (!draft.value?.skillIds.includes(id) && skillSlotsFull.value) return
@@ -137,67 +155,37 @@ function onAbilityClick(id: AbilityId) {
   <template v-if="draft">
   <section class="cc-section">
     <SectionHeader :title="t('characterCreation.training.skillsLabel')" :hint="skillsHint">
-      <template #action><span class="cc-counter">{{ skillsCounterText }}</span></template>
+      <template #action><Pill tone="accent">{{ skillsCounterText }}</Pill></template>
     </SectionHeader>
-    <div class="cc-skill-grid">
-      <button
+    <div class="cc-skill-grid" role="group" :aria-label="t('characterCreation.training.skillsLabel')">
+      <SkillChip
         v-for="id in SKILL_IDS"
         :key="id"
-        type="button"
-        :class="[
-          'cc-skill',
-          {
-            'is-selected': draft.skillIds.includes(id) && !skillIsLocked(id),
-            'is-locked': skillIsLocked(id),
-          },
-        ]"
-        :disabled="skillIsLocked(id) || (!draft.skillIds.includes(id) && skillSlotsFull)"
-        @click="onSkillClick(id)"
-      >
-        <span v-if="skillIsLocked(id)" class="lock-glyph">
-          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="4.5" width="6" height="4" rx="0.5"/><path d="M3.5 4.5 L3.5 3 C3.5 1.8 4.2 1.2 5 1.2 C5.8 1.2 6.5 1.8 6.5 3 L6.5 4.5"/></svg>
-        </span>
-        {{ skillName(id) }}
-      </button>
+        mode="pick-multi"
+        :label="skillName(id)"
+        :state="skillState(id)"
+        :icon="skillIsLocked(id) ? IconLock : undefined"
+        @toggle="onSkillClick(id)"
+      />
     </div>
   </section>
 
   <section class="cc-section">
     <SectionHeader :title="t('characterCreation.training.abilitiesLabel')" :hint="abilitiesHint">
-      <template #action><span class="cc-counter">{{ abilitiesCounterText }}</span></template>
+      <template #action><Pill tone="accent">{{ abilitiesCounterText }}</Pill></template>
     </SectionHeader>
-    <div class="cc-abil-list">
-      <div
+    <div role="group" :aria-label="t('characterCreation.training.abilitiesLabel')">
+      <SelectableRow
         v-for="id in visibleAbilities"
         :key="id"
-        :class="[
-          'cc-abil',
-          {
-            'is-selected': abilState(id).selected && !abilState(id).auto,
-            'is-locked': abilState(id).auto,
-            'is-disabled': abilState(id).disabled,
-          },
-        ]"
-        role="checkbox"
-        :aria-checked="abilState(id).selected"
-        :tabindex="abilState(id).disabled || abilState(id).auto ? -1 : 0"
-        @click="onAbilityClick(id)"
-        @keydown.space.prevent="onAbilityClick(id)"
-      >
-        <span class="cc-check">
-          <svg v-if="abilState(id).selected" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5 L5 8.5 L9 4"/></svg>
-        </span>
-        <div class="cc-abil-body">
-          <span class="cc-abil-name">{{ abilityName(id) }}</span>
-          <span class="cc-abil-desc">{{ abilityDescription(id) }}</span>
-        </div>
-        <span v-if="abilState(id).auto" class="cc-abil-flag">{{ t('characterCreation.training.abilFlagAuto') }}</span>
-        <span
-          v-else-if="!abilState(id).selected && abilState(id).disabled"
-          class="cc-abil-flag"
-        >{{ t('characterCreation.training.abilFlagNoSlots') }}</span>
-        <span v-else-if="abilState(id).selected" class="cc-abil-flag">{{ t('characterCreation.training.abilFlagSelected') }}</span>
-      </div>
+        :title="abilityName(id)"
+        :description="abilityDescription(id)"
+        :selected="abilState(id).selected"
+        :locked="abilState(id).auto"
+        :disabled="abilState(id).disabled"
+        :flag="abilFlag(id)"
+        @toggle="onAbilityClick(id)"
+      />
     </div>
   </section>
 
@@ -245,106 +233,7 @@ function onAbilityClick(id: AbilityId) {
 
 <style scoped>
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-.cc-counter {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--vtt-accent-soft);
-  letter-spacing: 0.06em;
-}
-
-.cc-abil-list { display: flex; flex-direction: column; }
-.cc-abil {
-  display: grid;
-  grid-template-columns: 22px 1fr auto;
-  align-items: center;
-  column-gap: 14px;
-  padding: 12px 8px;
-  cursor: pointer;
-  transition: background var(--t-fast) var(--ease);
-  border-radius: var(--r-sm);
-}
-.cc-abil + .cc-abil { border-top: 1px solid rgba(140, 106, 58, 0.1); }
-.cc-abil:hover:not(.is-disabled):not(.is-locked) { background: rgba(228, 201, 160, 0.03); }
-.cc-abil.is-selected { background: rgba(140, 106, 58, 0.12); }
-.cc-abil.is-locked { opacity: 0.75; cursor: default; }
-.cc-abil.is-disabled { opacity: 0.35; cursor: not-allowed; }
-
-.cc-check {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--r-pill);
-  background: transparent;
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-check svg { width: 12px; height: 12px; }
-.cc-abil.is-selected .cc-check {
-  background: var(--vtt-accent);
-  border-color: var(--vtt-accent);
-  color: var(--vtt-bg-base);
-}
-.cc-abil.is-locked .cc-check {
-  background: rgba(140, 106, 58, 0.45);
-  border-color: rgba(140, 106, 58, 0.55);
-  color: var(--vtt-accent-soft);
-}
-.cc-abil-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.cc-abil-name {
-  font-family: var(--font-serif);
-  font-size: 16px;
-  color: var(--vtt-text-primary);
-  line-height: 1.2;
-}
-.cc-abil-desc {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-  line-height: 1.35;
-}
-.cc-abil-flag {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  flex-shrink: 0;
-}
-
 .cc-skill-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-.cc-skill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: rgba(36, 28, 21, 0.5);
-  border: 1px solid transparent;
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-serif);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.cc-skill:hover:not(:disabled):not(.is-locked) { background: rgba(36, 28, 21, 0.75); }
-.cc-skill:disabled { opacity: 0.35; cursor: not-allowed; }
-.cc-skill.is-selected {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: rgba(140, 106, 58, 0.55);
-  color: var(--vtt-accent-soft);
-}
-.cc-skill.is-locked {
-  background: rgba(140, 106, 58, 0.1);
-  color: var(--vtt-accent-deep);
-  cursor: default;
-  opacity: 1;
-}
-.cc-skill .lock-glyph { width: 10px; height: 10px; color: var(--vtt-accent-deep); }
-.cc-skill .lock-glyph svg { width: 100%; height: 100%; }
 
 .cc-magic-group { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
 .cc-magic-stack { display: flex; flex-direction: column; gap: 10px; }

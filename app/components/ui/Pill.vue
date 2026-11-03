@@ -1,7 +1,7 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  /** `accent` marks what is yours or the leading one (the master, a free character, offline). */
-  tone?: 'neutral' | 'accent'
+  /** `accent` marks what is yours or the leading one (the master, a free character, offline); `danger` a cost or a risk. */
+  tone?: 'neutral' | 'accent' | 'danger'
   /** `md` 10px in rows and cards, `sm` 9px beside a caption. */
   size?: 'md' | 'sm'
   /** A small accent dot before the text, for a mode or a live state. */
@@ -40,6 +40,7 @@ withDefaults(defineProps<{
 .sz-sm { padding: 1px 7px; font-size: 9px; letter-spacing: 0.14em; }
 
 .is-accent { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
+.is-danger { border-color: var(--vtt-danger); color: var(--vtt-danger-bright); }
 
 .pill-dot {
   flex-shrink: 0;
