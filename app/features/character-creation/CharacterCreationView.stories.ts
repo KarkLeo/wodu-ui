@@ -1,7 +1,8 @@
-import { onUnmounted } from 'vue'
+import { nextTick, onUnmounted, ref } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CharacterCreationView from './CharacterCreationView.vue'
+import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { build, crookhollow, draftGear, draftIdentity, draftTraining, inGame, MEMBERS } from '@/stories/fixtures'
 import { storyRouter } from '@/stories/router'
@@ -10,7 +11,7 @@ import { bootstrapStatus } from '@/transport/bootstrap'
 import { mode } from '@/transport/mode'
 import { enterMode } from '@/transport/modeSwitch'
 import { OFFLINE_KEYS } from '@/transport/offlineStorage'
-import { authStore } from '../../../.storybook/mocks/pb'
+import { authStore, clearPbRequests, pbRequests } from '../../../.storybook/mocks/pb'
 
 const meta = {
   title: 'Screens/CharacterCreation',
@@ -198,6 +199,94 @@ export const SwitchToOfflineLeavesWizardAlone: Story = {
     await new Promise(resolve => setTimeout(resolve, 100))
     await expect(storyRouter.currentRoute.value.path).toBe('/character/new')
     await expect(useCreationStore().perMode.online.draftId).toBe('story-missing-draft')
+  },
+}
+
+// Takes the wizard away the way a route change does, without moving the focus out of its field first.
+const wizardShown = ref(true)
+const leaveWizard = async () => {
+  wizardShown.value = false
+  await nextTick()
+}
+const removableWizard: Story['render'] = () => ({
+  components: { CharacterCreationView },
+  setup() {
+    wizardShown.value = true
+    return { wizardShown }
+  },
+  template: '<CharacterCreationView v-if="wizardShown" />',
+})
+
+const typeCoins = async (canvasElement: HTMLElement, amount: string) => {
+  const field = await screen(canvasElement).findByRole('spinbutton', { name: 'Coins' })
+  await userEvent.clear(field)
+  await userEvent.type(field, amount)
+  return field
+}
+
+/** Closing or leaving the step takes the field away; what was typed still goes out, once. */
+export const CoinsCommitOnLeaving: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  render: removableWizard,
+  decorators: [withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
+  play: async ({ canvasElement }) => {
+    clearPbRequests()
+    await typeCoins(canvasElement, '25')
+    await leaveWizard()
+    await expect(useCharactersStore().getById(draftGear.id)!.coins).toBe(25)
+    await expect(pbRequests().filter(r => r === 'characters.update')).toHaveLength(1)
+  },
+}
+
+const offlineDraft = build('story-draft-offline', [{ type: 'SET_NAME', name: 'Offline draft' }])
+
+// Listed before withStores so that it runs after it: this device also holds a draft of the other mode.
+const withOfflineDraft: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    localStorage.setItem(OFFLINE_KEYS.characters, JSON.stringify([offlineDraft]))
+    useCreationStore().perMode.offline = { draftId: offlineDraft.id, step: 3 }
+    onUnmounted(() => {
+      authStore.clear()
+      enterMode('online')
+      useCreationStore().perMode.offline = { draftId: null, step: 1 }
+      for (const key of Object.values(OFFLINE_KEYS)) localStorage.removeItem(key)
+    })
+  },
+  template: '<story />',
+})
+
+/**
+ * Swiping back from the online wizard to /offline/new: the mode switches while this page is still mounted
+ * with coins typed and the field still focused. Whichever way the field goes away, the coins do not follow.
+ */
+export const TypedCoinsStayOutOfTheOtherModesDraft: Story = {
+  tags: ['no-visual'],
+  parameters: { navigationNotice: false },
+  render: removableWizard,
+  decorators: [withOfflineDraft, withStores({ characters: [draftGear], creation: { draftId: draftGear.id, step: 3 } })],
+  play: async ({ canvasElement, step }) => {
+    const offlineCoins = () => useCharactersStore().getById(offlineDraft.id)!.coins
+    const before = offlineDraft.coins
+
+    const field = await typeCoins(canvasElement, '999')
+    enterMode('offline')
+    await nextTick()
+    await expect(offlineCoins()).toBe(before)
+
+    await step('a blur after the switch writes nothing', async () => {
+      field.focus()
+      field.blur()
+      await nextTick()
+      await expect(offlineCoins()).toBe(before)
+    })
+
+    await step('nor does the page going away', async () => {
+      await typeCoins(canvasElement, '888')
+      await leaveWizard()
+      await expect(offlineCoins()).toBe(before)
+    })
   },
 }
 

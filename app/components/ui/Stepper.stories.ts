@@ -221,6 +221,25 @@ export const Lazy: Story = {
       await expect(update).toHaveBeenLastCalledWith(7)
     })
 
+    await step('an emptied field commits nothing and shows the model again', async () => {
+      await userEvent.clear(field)
+      await userEvent.tab()
+      await expect(update).toHaveBeenCalledTimes(4)
+      await expect(field).toHaveValue(7)
+      await userEvent.clear(field)
+      await userEvent.keyboard('{Enter}')
+      await expect(update).toHaveBeenCalledTimes(4)
+      await expect(field).toHaveValue(7)
+    })
+
+    await step('so does text a number input cannot parse', async () => {
+      await userEvent.clear(field)
+      await userEvent.type(field, '1e')
+      await userEvent.tab()
+      await expect(update).toHaveBeenCalledTimes(4)
+      await expect(field).toHaveValue(7)
+    })
+
     await step('a value below min is clamped on commit', async () => {
       await userEvent.clear(field)
       await userEvent.type(field, '-5')

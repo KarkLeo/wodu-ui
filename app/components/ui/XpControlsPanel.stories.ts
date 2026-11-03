@@ -64,6 +64,11 @@ export const TypedValueUpdatesOnce: Story = {
     await userEvent.keyboard('{Escape}')
     await userEvent.tab()
     await expect(update).toHaveBeenCalledTimes(1)
+
+    await userEvent.clear(field)
+    await userEvent.tab()
+    await expect(update).toHaveBeenCalledTimes(1)
+    await expect(field).toHaveValue(1840)
   },
 }
 

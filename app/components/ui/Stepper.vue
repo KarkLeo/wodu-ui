@@ -19,8 +19,9 @@ const props = withDefaults(defineProps<{
   decreaseLabel?: string
   increaseLabel?: string
   /**
-   * Typing edits a draft: the model changes once, on blur, Enter or when the field goes away, and Escape
-   * drops the draft. Use it whenever the model writes somewhere (a dispatch writes the whole character).
+   * Typing edits a draft: the model changes once, on blur, Enter or when the field goes away. Escape, or
+   * leaving the field empty or unparsable, drops the draft. Use it whenever the model writes somewhere
+   * (a dispatch writes the whole character).
    */
   lazy?: boolean
   /** Only the number field, where the steps live elsewhere or there are none. */
@@ -39,7 +40,8 @@ const model = defineModel<number>({ required: true })
 // A lazy edit in progress. An outside change to the model does not overwrite what is being typed.
 const draft = ref<string | null>(null)
 const shown = computed(() => draft.value ?? model.value)
-const current = computed(() => Number(shown.value) || 0)
+// A number input reports '' both when emptied and for text it cannot parse.
+const current = computed(() => (draft.value?.trim() ? Number(draft.value) : model.value) || 0)
 
 const canDec = computed(() => props.min === undefined || current.value > props.min)
 const canInc = computed(() => props.max === undefined || current.value < props.max)
@@ -72,9 +74,8 @@ function onInput(e: Event) {
 }
 function commit() {
   if (draft.value === null) return
-  const v = Number(draft.value)
-  if (Number.isNaN(v)) draft.value = null
-  else set(v)
+  if (draft.value.trim()) set(Number(draft.value))
+  else draft.value = null
 }
 function onKeydown(e: KeyboardEvent) {
   if (!props.lazy) return

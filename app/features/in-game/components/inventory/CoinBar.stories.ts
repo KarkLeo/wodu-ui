@@ -92,5 +92,12 @@ export const OneUpdatePerEdit: Story = {
       await expect(args.onUpdate).toHaveBeenCalledTimes(4)
       await expect(args.onUpdate).toHaveBeenLastCalledWith(80)
     })
+
+    await step('an emptied field keeps the coins', async () => {
+      await userEvent.clear(field)
+      await userEvent.tab()
+      await expect(args.onUpdate).toHaveBeenCalledTimes(4)
+      await expect(field).toHaveValue(80)
+    })
   },
 }
