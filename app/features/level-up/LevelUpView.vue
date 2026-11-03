@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref, watch, type FunctionalComponent } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { useLevelUp } from '@/composables/useLevelUp'
@@ -15,8 +15,6 @@ import StepSummary from './components/StepSummary.vue'
 import WizardShell from '@/components/layout/WizardShell.vue'
 import WizardStepper from '@/components/layout/WizardStepper.vue'
 import IconCheckBold from '@/components/ui/icons/IconCheckBold.vue'
-
-const IconConfirm: FunctionalComponent = () => h(IconCheckBold, { strokeWidth: 1.6 })
 
 const router = useRouter()
 const { partyRoute, tableRoute } = useTable()
@@ -135,7 +133,7 @@ onMounted(() => {
     :close-label="t('levelUp.close')"
     :back-label="t('levelUp.back')"
     :next-label="lv.phase.value === 'confirm' ? t('levelUp.confirm') : t('levelUp.next')"
-    :next-icon="lv.phase.value === 'confirm' ? IconConfirm : undefined"
+    :next-icon="lv.phase.value === 'confirm' ? IconCheckBold : undefined"
     :next-disabled="!canAdvance"
     @close="onClose"
     @back="onBack"

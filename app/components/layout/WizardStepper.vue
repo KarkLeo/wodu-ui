@@ -36,6 +36,7 @@ function onSelect(n: number) {
           type="button"
           :class="['wz-dot', 'wz-dot--button', state(n)]"
           :disabled="n > current"
+          :aria-label="n < current ? String(n) : undefined"
           :aria-current="n === current ? 'step' : undefined"
           @click="onSelect(n)"
         >

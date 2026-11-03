@@ -28,6 +28,7 @@ export const Navigable: Story = {
   args: { count: 3, current: 2, navigable: true },
   play: async ({ args, canvasElement }) => {
     const [done, active, upcoming] = within(canvasElement).getAllByRole('button')
+    await expect(within(canvasElement).getByRole('button', { name: '1' })).toBe(done)
     await expect(active).toHaveAttribute('aria-current', 'step')
     await expect(active).toHaveTextContent('2')
     await expect(upcoming).toBeDisabled()
