@@ -15,6 +15,7 @@ import CantripChip from './magic/CantripChip.vue'
 import QuicksilverCounter from './magic/QuicksilverCounter.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
 type Dispatcher = (cmd: CharacterCommand) => void
@@ -94,16 +95,13 @@ function onDrink() {
     />
 
     <div v-if="hasSpirits" class="mg-section">
-      <div class="mg-section-head">
-        <span class="mg-section-title">
-          {{ t('inGame.magic.spirits.title') }}
-          <b>· {{ magic.spirits.length }}</b>
-        </span>
-        <button v-if="!readonly" class="mg-section-add" @click="addSpirit">
-          <IconPlus />
-          {{ t('inGame.magic.spirits.add') }}
-        </button>
-      </div>
+      <SectionHeader :title="t('inGame.magic.spirits.title')" :count="magic.spirits.length">
+        <template v-if="!readonly" #action>
+          <Button variant="dashed" size="sm" :icon-left="IconPlus" @click="addSpirit">
+            {{ t('inGame.magic.spirits.add') }}
+          </Button>
+        </template>
+      </SectionHeader>
       <div class="mg-list">
         <SpiritCard
           v-for="(sp, idx) in magic.spirits"
@@ -116,16 +114,13 @@ function onDrink() {
     </div>
 
     <div v-if="hasRituals" class="mg-section">
-      <div class="mg-section-head">
-        <span class="mg-section-title">
-          {{ t('inGame.magic.rituals.title') }}
-          <b>· {{ magic.rituals.length }}</b>
-        </span>
-        <button v-if="!readonly" class="mg-section-add" @click="addRitual">
-          <IconPlus />
-          {{ t('inGame.magic.rituals.add') }}
-        </button>
-      </div>
+      <SectionHeader :title="t('inGame.magic.rituals.title')" :count="magic.rituals.length">
+        <template v-if="!readonly" #action>
+          <Button variant="dashed" size="sm" :icon-left="IconPlus" @click="addRitual">
+            {{ t('inGame.magic.rituals.add') }}
+          </Button>
+        </template>
+      </SectionHeader>
       <div class="mg-list">
         <RitualCard
           v-for="(r, idx) in magic.rituals"
@@ -138,12 +133,7 @@ function onDrink() {
     </div>
 
     <div v-if="hasCantrips && magic.cantrips.length > 0" class="mg-section">
-      <div class="mg-section-head">
-        <span class="mg-section-title">
-          {{ t('inGame.magic.cantrips.title') }}
-          <b>· {{ magic.cantrips.length }}</b>
-        </span>
-      </div>
+      <SectionHeader :title="t('inGame.magic.cantrips.title')" :count="magic.cantrips.length" />
       <div class="mg-cantrips">
         <CantripChip v-for="c in magic.cantrips" :key="c" :name="cantripName(c)" />
       </div>
@@ -183,47 +173,6 @@ function onDrink() {
   flex-direction: column;
   gap: 10px;
 }
-.mg-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-.mg-section-title {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.mg-section-title :deep(b),
-.mg-section-title b {
-  color: var(--vtt-text-muted);
-  font-weight: normal;
-  margin-left: 6px;
-}
-.mg-section-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  background: transparent;
-  border: 1px dashed var(--vtt-border-strong);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.mg-section-add:hover {
-  border-color: var(--vtt-border-gold);
-  color: var(--vtt-accent-soft);
-  background: rgba(140, 106, 58, 0.05);
-}
-.mg-section-add :deep(svg) { width: 10px; height: 10px; }
-
 .mg-list {
   display: flex;
   flex-direction: column;

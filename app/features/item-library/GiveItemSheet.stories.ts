@@ -25,8 +25,11 @@ const dialog = (canvasElement: HTMLElement) =>
 export const GiveSheet: Story = {
   play: async ({ canvasElement }) => {
     const sheet = await dialog(canvasElement)
-    const rows = sheet.getAllByRole('button').filter(b => b.classList.contains('gs-row'))
-    await expect(rows.map(r => r.querySelector('.gs-name')?.textContent)).toEqual(['Brann Ironhide', 'Mirel Vane', 'Wren Ashfoot'])
+    const rows = within(sheet.getByRole('list')).getAllByRole('button')
+    await expect(rows).toHaveLength(3)
+    for (const [i, name] of ['Brann Ironhide', 'Mirel Vane', 'Wren Ashfoot'].entries()) {
+      await expect(within(rows[i]!).getByText(name)).toBeVisible()
+    }
     await expect(rows[0]).toHaveTextContent('yours')
     await expect(rows[1]).toHaveTextContent('Yana')
     await expect(rows[2]).toHaveTextContent('Kostya')
@@ -51,6 +54,6 @@ export const Nobody: Story = {
   play: async ({ canvasElement }) => {
     const sheet = await dialog(canvasElement)
     await expect(sheet.getByText('No characters at this table to give it to.')).toBeVisible()
-    await expect(sheet.queryAllByRole('button').filter(b => b.classList.contains('gs-row'))).toHaveLength(0)
+    await expect(sheet.queryByRole('list')).toBeNull()
   },
 }

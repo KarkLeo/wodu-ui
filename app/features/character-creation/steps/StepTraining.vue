@@ -7,6 +7,8 @@ import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import SpiritCard from '@/features/in-game/components/magic/SpiritCard.vue'
 import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { t } from '@/locales'
 import { skillName, abilityName, abilityDescription, cantripName } from '@/locales/content'
 
@@ -134,11 +136,9 @@ function onAbilityClick(id: AbilityId) {
 <template>
   <template v-if="draft">
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.training.skillsLabel') }}</span>
-      <span class="cc-section-hint">{{ skillsHint }}</span>
-      <span class="cc-section-action cc-counter">{{ skillsCounterText }}</span>
-    </div>
+    <SectionHeader :title="t('characterCreation.training.skillsLabel')" :hint="skillsHint">
+      <template #action><span class="cc-counter">{{ skillsCounterText }}</span></template>
+    </SectionHeader>
     <div class="cc-skill-grid">
       <button
         v-for="id in SKILL_IDS"
@@ -163,11 +163,9 @@ function onAbilityClick(id: AbilityId) {
   </section>
 
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.training.abilitiesLabel') }}</span>
-      <span class="cc-section-hint">{{ abilitiesHint }}</span>
-      <span class="cc-section-action cc-counter">{{ abilitiesCounterText }}</span>
-    </div>
+    <SectionHeader :title="t('characterCreation.training.abilitiesLabel')" :hint="abilitiesHint">
+      <template #action><span class="cc-counter">{{ abilitiesCounterText }}</span></template>
+    </SectionHeader>
     <div class="cc-abil-list">
       <div
         v-for="id in visibleAbilities"
@@ -204,15 +202,13 @@ function onAbilityClick(id: AbilityId) {
   </section>
 
   <section v-if="showMagic" class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.training.magicLabel') }}</span>
-      <span class="cc-section-hint">
-        {{ draft.classId === 'wizard' ? t('characterCreation.training.magicHintWizard') : t('characterCreation.training.magicHintOther') }}
-      </span>
-    </div>
+    <SectionHeader
+      :title="t('characterCreation.training.magicLabel')"
+      :hint="draft.classId === 'wizard' ? t('characterCreation.training.magicHintWizard') : t('characterCreation.training.magicHintOther')"
+    />
 
     <div class="cc-magic-group">
-      <span class="cc-magic-sub">{{ t('characterCreation.training.spiritsSection') }}</span>
+      <SectionLabel tone="neutral">{{ t('characterCreation.training.spiritsSection') }}</SectionLabel>
       <div class="cc-magic-stack">
         <SpiritCard
           v-for="(sp, idx) in (draft.magic?.spirits ?? [])"
@@ -225,7 +221,7 @@ function onAbilityClick(id: AbilityId) {
     </div>
 
     <div v-if="hasRitualAbility" class="cc-magic-group">
-      <span class="cc-magic-sub">{{ t('characterCreation.training.ritualsHint') }}</span>
+      <SectionLabel tone="neutral">{{ t('characterCreation.training.ritualsHint') }}</SectionLabel>
       <div class="cc-magic-stack">
         <RitualCard
           v-for="i in 2"
@@ -238,7 +234,7 @@ function onAbilityClick(id: AbilityId) {
     </div>
 
     <div v-if="cantrips.length" class="cc-magic-group">
-      <span class="cc-magic-sub">{{ t('characterCreation.training.cantripsSection') }}</span>
+      <SectionLabel tone="neutral">{{ t('characterCreation.training.cantripsSection') }}</SectionLabel>
       <div class="cc-cantrips-row">
         <CantripChip v-for="c in cantrips" :key="c" :name="cantripName(c)" />
       </div>
@@ -249,21 +245,6 @@ function onAbilityClick(id: AbilityId) {
 
 <style scoped>
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-.cc-section-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cc-section-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.cc-section-hint {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
-.cc-section-action { margin-left: auto; }
 .cc-counter {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -366,13 +347,6 @@ function onAbilityClick(id: AbilityId) {
 .cc-skill .lock-glyph svg { width: 100%; height: 100%; }
 
 .cc-magic-group { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
-.cc-magic-sub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
 .cc-magic-stack { display: flex; flex-direction: column; gap: 10px; }
 .cc-cantrips-row { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>

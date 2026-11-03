@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle, DialogDescription } from 'reka-ui'
+import IconButton from './IconButton.vue'
 import IconClose from './icons/IconClose.vue'
 import IconWarning from './icons/IconWarning.vue'
 import { t } from '@/locales'
@@ -21,8 +22,8 @@ const open = defineModel<boolean>('open', { required: true })
       <DialogContent class="bs-content-wrap">
         <div :class="['bottom-sheet', 'confirm-sheet', `v-${variant}`]">
           <div class="cs-head">
-            <DialogClose class="bs-close" :aria-label="t('common.close')">
-              <IconClose />
+            <DialogClose as-child>
+              <IconButton class="bs-close" :label="t('common.close')"><IconClose :size="12" /></IconButton>
             </DialogClose>
           </div>
           <div class="cs-icon">
@@ -56,24 +57,6 @@ const open = defineModel<boolean>('open', { required: true })
   justify-content: flex-end;
   margin-bottom: 4px;
 }
-.bs-close {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  padding: 0;
-}
-.bs-close:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-}
-.bs-close :deep(svg) { width: 12px; height: 12px; }
 
 .cs-icon {
   width: 44px;

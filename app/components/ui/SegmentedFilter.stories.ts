@@ -28,7 +28,7 @@ const meta = {
     'onUpdate:modelValue': fn(),
   },
   argTypes: {
-    variant: { control: 'inline-radio', options: ['block', 'pill'] },
+    variant: { control: 'inline-radio', options: ['block', 'pill', 'plain'] },
     modelValue: { control: 'text' },
   },
   render: (args) => ({
@@ -75,6 +75,11 @@ export const BlockFullWidth: Story = {
 
 export const Overflowing: Story = {
   decorators: [() => ({ template: '<div style="max-width: 240px"><story /></div>' })],
+}
+
+/** No frame: the language switch on the sign-in screen and in the offline players panel. */
+export const Plain: Story = {
+  args: { variant: 'plain', options: logOptions, modelValue: 'changes' },
 }
 
 export const Variants: Story = {

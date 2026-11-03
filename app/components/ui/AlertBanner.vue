@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import SectionLabel from './SectionLabel.vue'
 
 const props = withDefaults(defineProps<{
   /** `danger` a failure, `warning` a rule being bent, `accent` something to act on, `neutral` plain information. */
@@ -32,7 +33,7 @@ const announces = computed(() => props.announce ?? (props.tone === 'danger' || p
   >
     <span v-if="$slots.icon" class="alert-banner-icon"><slot name="icon" /></span>
     <div class="alert-banner-body">
-      <p v-if="eyebrow" class="alert-banner-eyebrow">{{ eyebrow }}</p>
+      <SectionLabel v-if="eyebrow" as="p">{{ eyebrow }}</SectionLabel>
       <p v-if="title" class="alert-banner-title">{{ title }}</p>
       <p v-if="$slots.default" class="alert-banner-text"><slot /></p>
     </div>
@@ -93,14 +94,6 @@ const announces = computed(() => props.announce ?? (props.tone === 'danger' || p
 
 .alert-banner-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .is-stacked .alert-banner-body { width: 100%; flex: none; }
-.alert-banner-eyebrow {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
 .alert-banner-title {
   margin: 0;
   font-family: var(--font-serif);

@@ -2,6 +2,9 @@
 import { computed, ref } from 'vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Avatar from '@/components/ui/Avatar.vue'
+import Pill from '@/components/ui/Pill.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { useGamesStore } from '@/stores/games'
 import { useToastsStore } from '@/stores/toasts'
@@ -46,10 +49,6 @@ function displayName(m: GameMember): string {
   return m.name || t('games.table.unknownOwner')
 }
 
-function initial(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || '?'
-}
-
 async function confirmRemove() {
   const member = target.value
   if (!member) return
@@ -70,30 +69,29 @@ async function confirmTransfer() {
 
 <template>
   <ul class="gs-list">
-    <li v-for="m in members" :key="m.id" class="gs-row">
-      <span class="gs-avatar" aria-hidden="true">{{ initial(m.name) }}</span>
-      <span class="gs-body">
-        <span class="gs-name">{{ displayName(m) }}</span>
-        <span class="gs-pills">
-          <span v-if="m.user === game.master" class="gs-pill is-master">{{ t('games.members.master') }}</span>
-          <span v-if="m.user === me" class="gs-pill">{{ t('games.members.you') }}</span>
+    <ListRow v-for="m in members" :key="m.id" as="li" :title="displayName(m)">
+      <template #leading><Avatar :name="m.name" aria-hidden="true" /></template>
+      <span class="ml-pills">
+        <Pill v-if="m.user === game.master" tone="accent">{{ t('games.members.master') }}</Pill>
+        <Pill v-if="m.user === me">{{ t('games.members.you') }}</Pill>
+      </span>
+      <template v-if="master && m.user !== me" #below>
+        <span class="ml-actions">
+          <Button
+            variant="ghost"
+            size="sm"
+            :aria-label="t('games.members.transferLabel', { name: displayName(m) })"
+            @click="askTransfer(m)"
+          >{{ t('games.members.transfer') }}</Button>
+          <Button
+            variant="danger-ghost"
+            size="sm"
+            :aria-label="t('games.members.removeLabel', { name: displayName(m) })"
+            @click="askRemove(m)"
+          >{{ t('games.members.remove') }}</Button>
         </span>
-      </span>
-      <span v-if="master && m.user !== me" class="gs-row-actions">
-        <Button
-          variant="ghost"
-          size="sm"
-          :aria-label="t('games.members.transferLabel', { name: displayName(m) })"
-          @click="askTransfer(m)"
-        >{{ t('games.members.transfer') }}</Button>
-        <Button
-          variant="danger-ghost"
-          size="sm"
-          :aria-label="t('games.members.removeLabel', { name: displayName(m) })"
-          @click="askRemove(m)"
-        >{{ t('games.members.remove') }}</Button>
-      </span>
-    </li>
+      </template>
+    </ListRow>
   </ul>
 
   <ConfirmSheet
@@ -120,3 +118,9 @@ async function confirmTransfer() {
     </template>
   </ConfirmSheet>
 </template>
+
+<style scoped>
+.ml-pills { display: inline-flex; gap: 6px; align-items: center; }
+/* Under the name, so a phone-wide row keeps the name readable next to two buttons. */
+.ml-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+</style>

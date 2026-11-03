@@ -3,7 +3,8 @@ import { useRovingSelection } from '@/composables/useRovingSelection'
 
 const props = withDefaults(defineProps<{
   options: Array<{ value: T; label: string }>
-  variant?: 'block' | 'pill'
+  /** `plain` drops the frame, for a small switch in a corner or a footer. */
+  variant?: 'block' | 'pill' | 'plain'
   fullWidth?: boolean
 }>(), {
   variant: 'block',
@@ -91,4 +92,11 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.options, model
   background: var(--vtt-bg-elevated);
   box-shadow: var(--shadow-1);
 }
+.segmented.is-plain {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+.segmented.is-plain .segmented-btn { padding: 2px 6px; }
 </style>

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import IconWarning from '@/components/ui/icons/IconWarning.vue'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { t } from '@/locales'
@@ -39,7 +40,7 @@ const title = computed(() =>
       <div class="qs-dice-limit">{{ t('inGame.magic.quicksilver.limitPrefix') }} <b>{{ limit }}</b></div>
     </div>
     <div class="qs-body">
-      <div class="qs-title">{{ title }}</div>
+      <SectionLabel as="div" class="qs-title">{{ title }}</SectionLabel>
       <div class="qs-subtitle">{{ subtitle }}</div>
       <AlertBanner v-if="overdose" inline :announce="false" class="qs-warning">
         <template #icon><IconWarning /></template>
@@ -121,14 +122,7 @@ const title = computed(() =>
 }
 
 .qs-body { min-width: 0; }
-.qs-title {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  margin-bottom: 3px;
-}
+.qs-body .qs-title { margin-bottom: 3px; }
 .qs-subtitle {
   font-family: var(--font-serif);
   font-size: 14px;

@@ -11,7 +11,11 @@ import { currentUser } from '@/transport/auth'
 import { mode } from '@/transport/mode'
 import { charactersInScope } from '@/utils/scope'
 import { isMaster } from '@/utils/permissions'
+import Avatar from '@/components/ui/Avatar.vue'
 import Button from '@/components/ui/Button.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Pill from '@/components/ui/Pill.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import GameMenu from './GameMenu.vue'
 import PanelFooter from './PanelFooter.vue'
@@ -19,6 +23,7 @@ import MasterlessNotice from './MasterlessNotice.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import { useGameLayout } from './gameLayoutContext'
 import { t } from '@/locales'
 import { className } from '@/locales/content'
@@ -66,12 +71,6 @@ const openIds = computed(() => {
 
 const openIdsSet = computed(() => new Set(openIds.value))
 
-function initial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return '?'
-  return trimmed.charAt(0).toUpperCase()
-}
-
 function classLabel(c: Character): string {
   const name = c.classId === 'custom'
     ? (c.customClassName ?? t('characterList.customClassFallback'))
@@ -109,25 +108,22 @@ async function startNew() {
 <template>
   <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.leftCollapsed.value" class="players-rail">
-    <button
-      type="button"
-      class="btn-rail-toggle"
-      :aria-label="t('gameLayout.actions.togglePlayers')"
-      @click="layout.toggleCollapsed('left')"
-    >
+    <IconButton size="lg" :label="t('gameLayout.actions.togglePlayers')" @click="layout.toggleCollapsed('left')">
       <IconChevronRight :size="14" />
-    </button>
+    </IconButton>
     <span class="gl-rail-label">{{ t('gameLayout.players.railLabel', { count: activeCharacters.length }) }}</span>
     <div v-if="activeCharacters.length" class="gl-rail-avatars">
-      <div
+      <Avatar
         v-for="c in activeCharacters"
         :key="c.id"
-        :class="['pr-avatar', { 'is-active': openIdsSet.has(c.id) }]"
+        as="div"
+        size="sm"
+        interactive
+        :name="c.name"
+        :selected="openIdsSet.has(c.id)"
         :title="c.name"
         @click="toggleCharacter(c.id)"
-      >
-        {{ initial(c.name) }}<span class="pr-dot" />
-      </div>
+      ><span class="pr-dot" /></Avatar>
     </div>
   </div>
 
@@ -136,51 +132,44 @@ async function startNew() {
     <div class="gl-panel-head">
       <div v-if="game" class="pr-game">
         <span class="pr-game-eyebrow">
-          <span class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</span>
-          <span v-if="role" :class="['pr-role', { 'is-master': game.master === me }]">{{ role }}</span>
+          <SectionLabel size="md">{{ t('gameLayout.players.eyebrow') }}</SectionLabel>
+          <Pill v-if="role" size="sm" :tone="game.master === me ? 'accent' : 'neutral'">{{ role }}</Pill>
         </span>
         <span class="pr-game-title" :title="game.name">{{ game.name }}</span>
       </div>
-      <p v-else class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
+      <SectionLabel v-else as="p" size="md">{{ t('gameLayout.players.eyebrow') }}</SectionLabel>
       <div v-if="game" class="pr-game-menu"><GameMenu :game="game" /></div>
-      <span v-if="mode === 'offline'" class="pr-offline-badge">
-        <span class="pr-offline-dot" aria-hidden="true" />
-        <span>{{ t('mode.badge') }}</span>
-      </span>
-      <button
+      <Pill v-if="mode === 'offline'" class="pr-offline-badge" tone="accent" dot>{{ t('mode.badge') }}</Pill>
+      <IconButton
         v-if="layout"
-        type="button"
-        class="btn-collapse"
-        :aria-label="t('gameLayout.actions.collapsePanel')"
+        class="pr-collapse"
+        :label="t('gameLayout.actions.collapsePanel')"
         @click="layout.toggleCollapsed('left')"
       >
         <IconChevronLeft :size="14" />
-      </button>
+      </IconButton>
     </div>
 
     <MasterlessNotice v-if="game && !game.master" :game="game" />
 
     <div class="gl-panel-list">
-      <div
+      <ListRow
         v-for="c in activeCharacters"
         :key="c.id"
-        :class="['player-row', { 'is-active': openIdsSet.has(c.id) }]"
-        role="button"
-        tabindex="0"
+        as="button"
+        class="player-row"
+        :subtitle="subLine(c)"
+        :selected="openIdsSet.has(c.id)"
+        :pressed="openIdsSet.has(c.id)"
         @click="toggleCharacter(c.id)"
-        @keydown.enter.prevent="toggleCharacter(c.id)"
-        @keydown.space.prevent="toggleCharacter(c.id)"
       >
-        <div class="pr-avatar">{{ initial(c.name) }}</div>
-        <div class="pr-body">
-          <span class="pr-name">{{ c.name }}</span>
-          <span class="pr-nick">{{ subLine(c) }}</span>
-        </div>
-        <div class="pr-status"><span class="pr-dot" /></div>
-        <div class="pr-hp">
-          <div class="pr-hp-fill" :style="{ width: hpPercent(c.currentHp, c.maxHp) + '%' }" />
-        </div>
-      </div>
+        <template #leading><Avatar :name="c.name" :selected="openIdsSet.has(c.id)" /></template>
+        <template #title><span class="pr-name">{{ c.name }}</span></template>
+        <template #trailing><span class="pr-dot" /></template>
+        <template #below>
+          <span class="pr-hp"><span class="pr-hp-fill" :style="{ width: hpPercent(c.currentHp, c.maxHp) + '%' }" /></span>
+        </template>
+      </ListRow>
 
       <StateNote v-if="!activeCharacters.length" compact size="sm">
         {{ t('gameLayout.players.empty') }}
@@ -219,10 +208,6 @@ async function startNew() {
   gap: var(--s-2);
   padding: var(--s-3) var(--s-4) var(--s-2);
 }
-.gl-panel-head .eyebrow {
-  margin: 0;
-  color: var(--vtt-accent-deep);
-}
 
 .pr-game {
   flex: 1 1 auto;
@@ -247,61 +232,9 @@ async function startNew() {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pr-role {
-  flex-shrink: 0;
-  padding: 1px 7px;
-  border: 1px solid var(--vtt-border-strong);
-  border-radius: var(--r-pill);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-secondary);
-}
-.pr-role.is-master { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
 .pr-game-menu { margin-left: auto; display: inline-flex; }
 
-.pr-offline-badge {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border: 1px solid var(--vtt-border-gold);
-  border-radius: var(--r-pill);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-soft);
-  white-space: nowrap;
-}
-.pr-offline-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--r-pill);
-  background: var(--vtt-accent);
-}
-
-.btn-collapse {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.btn-collapse:hover {
-  color: var(--vtt-accent-soft);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
+.pr-offline-badge { margin-left: auto; }
 
 .gl-panel-list {
   flex: 1 1 auto;
@@ -318,28 +251,15 @@ async function startNew() {
   border-radius: var(--r-pill);
 }
 
-.player-row {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 12px;
-  padding: 8px 10px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition: background var(--t-fast) var(--ease);
-  position: relative;
-}
 .player-row:hover {
-  background: rgba(228, 201, 160, 0.04);
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
   backdrop-filter: blur(14px) saturate(1.15);
 }
-.player-row.is-active {
-  background: rgba(212, 168, 87, 0.08);
+.player-row.is-selected {
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
   backdrop-filter: blur(18px) saturate(1.25);
 }
-.player-row.is-active::before {
+.player-row.is-selected::before {
   content: "";
   position: absolute;
   left: -12px;
@@ -352,60 +272,8 @@ async function startNew() {
   box-shadow: 0 0 8px rgba(212, 168, 87, 0.5);
 }
 
-.pr-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(58, 45, 33, 0.9) 0%, rgba(26, 21, 16, 0.9) 100%);
-  box-shadow: inset 0 0 0 1px rgba(228, 201, 160, 0.12);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-serif);
-  font-size: 17px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--vtt-accent-soft);
-  flex-shrink: 0;
-}
-.player-row.is-active .pr-avatar {
-  background: linear-gradient(135deg, rgba(140, 106, 58, 0.55) 0%, rgba(74, 58, 40, 0.75) 100%);
-  box-shadow: inset 0 0 0 1px rgba(228, 201, 160, 0.28);
-  color: var(--vtt-accent);
-}
+.pr-name { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
 
-.pr-body {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.pr-name {
-  font-family: var(--font-serif);
-  font-size: 15px;
-  color: var(--vtt-accent-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-.pr-nick {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--vtt-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pr-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
 .pr-dot {
   width: 7px;
   height: 7px;
@@ -415,14 +283,15 @@ async function startNew() {
 }
 
 .pr-hp {
+  display: block;
   height: 2px;
   margin-top: 5px;
   background: rgba(7, 5, 10, 0.6);
   border-radius: var(--r-pill);
   overflow: hidden;
-  grid-column: 2 / 4;
 }
 .pr-hp-fill {
+  display: block;
   height: 100%;
   background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
   border-radius: var(--r-pill);
@@ -450,25 +319,6 @@ async function startNew() {
   gap: var(--s-3);
 }
 
-.btn-rail-toggle {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.btn-rail-toggle:hover {
-  color: var(--vtt-accent);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
 
 .gl-rail-label {
   font-family: var(--font-mono);
@@ -489,25 +339,7 @@ async function startNew() {
   margin-top: auto;
   padding-bottom: var(--s-2);
 }
-.gl-rail-avatars .pr-avatar {
-  width: 30px;
-  height: 30px;
-  font-size: 12px;
-  position: relative;
-  cursor: pointer;
-  transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
-}
-.gl-rail-avatars .pr-avatar:hover {
-  box-shadow: inset 0 0 0 1px rgba(228, 201, 160, 0.2);
-}
-.gl-rail-avatars .pr-avatar.is-active {
-  background: linear-gradient(135deg, rgba(140, 106, 58, 0.55) 0%, rgba(74, 58, 40, 0.75) 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(228, 201, 160, 0.45),
-    0 0 10px rgba(212, 168, 87, 0.35);
-  color: var(--vtt-accent);
-}
-.gl-rail-avatars .pr-avatar .pr-dot {
+.gl-rail-avatars .pr-dot {
   position: absolute;
   right: -1px;
   bottom: -1px;
@@ -517,7 +349,7 @@ async function startNew() {
 }
 
 @media (max-width: 960px) {
-  .btn-collapse { display: none; }
+  .pr-collapse { display: none; }
   /* Below 961px the panel is the mobile overlay, whose close button sits over the head's right end. */
   .gl-panel-head { padding-right: 48px; }
 }

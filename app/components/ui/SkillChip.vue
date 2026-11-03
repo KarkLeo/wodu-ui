@@ -91,17 +91,25 @@ function onClick() {
   background: rgba(140, 106, 58, 0.05);
 }
 
-.skill-chip.is-auto {
-  cursor: default;
-}
-.skill-chip.is-auto .skill-chip-glyph { color: var(--vtt-accent-deep); }
-
 .skill-chip.mode-display { cursor: default; }
 .skill-chip.mode-display:hover:not(:disabled):not(.is-auto),
 .skill-chip.mode-display:hover {
   border-color: var(--vtt-border-subtle);
   background: transparent;
   color: var(--vtt-text-primary);
+}
+
+.skill-chip.is-auto,
+.skill-chip.is-auto:hover {
+  border-color: var(--vtt-accent-deep);
+  cursor: default;
+}
+/* The lock is drawn small inside its box; at 12px and 0.7 opacity it read as a speck. */
+.skill-chip.is-auto .skill-chip-glyph {
+  width: 14px;
+  height: 14px;
+  color: var(--vtt-accent-deep);
+  opacity: 1;
 }
 
 .skill-chip.is-selected {

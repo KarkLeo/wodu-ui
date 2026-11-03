@@ -9,6 +9,7 @@ import {
 } from 'reka-ui'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import GiveCharacterSheet from '@/components/layout/GiveCharacterSheet.vue'
 import { useGameAction } from '@/composables/useGameAction'
@@ -50,8 +51,8 @@ async function confirmTakeOut() {
 <template>
   <template v-if="canTakeOut || canGive">
     <DropdownMenuRoot :modal="false">
-      <DropdownMenuTrigger class="gm-trigger sa-trigger" :aria-label="t('games.sheet.actions', { name })">
-        <IconMenu :size="12" />
+      <DropdownMenuTrigger as-child>
+        <IconButton :label="t('games.sheet.actions', { name })"><IconMenu :size="12" /></IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="gm-menu" side="bottom" align="end" :side-offset="6">
@@ -77,7 +78,3 @@ async function confirmTakeOut() {
     />
   </template>
 </template>
-
-<style scoped>
-.sa-trigger { width: 26px; height: 26px; background: transparent; }
-</style>

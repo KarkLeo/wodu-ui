@@ -6,6 +6,8 @@ import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
 import ScreenColumn from '@/components/layout/ScreenColumn.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { usePwaInstall } from '@/pwa/useInstall'
@@ -40,19 +42,17 @@ function resumeCreation(id: string) {
 <template>
   <ScreenColumn>
     <section v-if="draftChars.length > 0" class="cl-drafts">
-      <div class="cl-drafts__label">{{ t('characterList.drafts') }}</div>
-      <button
+      <SectionLabel tone="neutral" class="cl-drafts__label">{{ t('characterList.drafts') }}</SectionLabel>
+      <ListRow
         v-for="char in draftChars"
         :key="char.id"
-        type="button"
-        class="cl-card cl-card--draft"
+        as="button"
+        variant="dashed"
+        :title="char.name || t('characterList.draftUnnamed')"
+        :subtitle="`${t('characterList.resume')} →`"
+        subtitle-tone="accent"
         @click="resumeCreation(char.id)"
-      >
-        <div class="cl-card__main">
-          <div class="cl-card__name">{{ char.name || t('characterList.draftUnnamed') }}</div>
-          <div class="cl-card__meta cl-card__meta--resume">{{ t('characterList.resume') }} →</div>
-        </div>
-      </button>
+      />
     </section>
 
     <StateNote v-if="!onlineDataReady" role="status">
@@ -85,61 +85,7 @@ function resumeCreation(id: string) {
 
 <style scoped>
 .cl-drafts { display: flex; flex-direction: column; gap: 10px; }
-.cl-drafts__label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  padding-left: 4px;
-}
-
-.cl-card {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 16px;
-  text-align: left;
-  background: var(--vtt-bg-surface);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-md);
-  color: inherit;
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: var(--shadow-1);
-  transition:
-    border-color var(--t-fast) var(--ease),
-    background var(--t-fast) var(--ease),
-    box-shadow var(--t-fast) var(--ease);
-}
-.cl-card:hover {
-  border-color: var(--vtt-border-strong);
-  background: var(--vtt-bg-elevated);
-}
-.cl-card__main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.cl-card__name {
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 19px;
-  color: var(--vtt-text-primary);
-  line-height: 1.15;
-}
-.cl-card__meta {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-.cl-card__meta--resume { color: var(--vtt-accent-soft); }
-
-.cl-card--draft {
-  opacity: 0.7;
-  border-style: dashed;
-  background: transparent;
-}
-.cl-card--draft:hover { opacity: 1; background: var(--vtt-bg-surface); }
+.cl-drafts__label { padding-left: 4px; }
 
 .cl-install {
   align-self: center;

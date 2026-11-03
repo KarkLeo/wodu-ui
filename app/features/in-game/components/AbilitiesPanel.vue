@@ -4,6 +4,7 @@ import type { Character } from '@/types/character'
 import { ABILITY_IDS } from '@/types/character'
 import AbilityCard from '@/components/ui/AbilityCard.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { t } from '@/locales'
 import { abilityName, abilityDescription } from '@/locales/content'
@@ -19,16 +20,17 @@ const sheetOpen = ref(false)
 
 <template>
   <section class="abilities-section">
-    <div class="abilities-section-head">
-      <span class="abilities-section-title">{{ t('inGame.abilities.title') }}</span>
-      <button
-        type="button"
-        class="abilities-section-link"
-        @click="sheetOpen = true"
-      >
-        {{ t('inGame.abilities.all') }}
-      </button>
-    </div>
+    <SectionHeader class="abilities-section-head" :title="t('inGame.abilities.title')">
+      <template #action>
+        <button
+          type="button"
+          class="abilities-section-link"
+          @click="sheetOpen = true"
+        >
+          {{ t('inGame.abilities.all') }}
+        </button>
+      </template>
+    </SectionHeader>
     <div v-if="items.length" class="abilities-list">
       <AbilityCard
         v-for="id in items"
@@ -59,19 +61,7 @@ const sheetOpen = ref(false)
 .abilities-section {
   padding: 14px 16px;
 }
-.abilities-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.abilities-section-title {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
+.abilities-section-head { margin-bottom: 12px; }
 .abilities-section-link {
   font-family: var(--font-mono);
   font-size: 10px;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import TextField from '@/components/ui/TextField.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
@@ -138,16 +139,14 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   </section>
 
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.identity.attrsLabel') }}</span>
-      <span class="cc-section-hint">{{ t('characterCreation.identity.attrsHint') }}</span>
-      <span class="cc-section-action">
+    <SectionHeader :title="t('characterCreation.identity.attrsLabel')" :hint="t('characterCreation.identity.attrsHint')">
+      <template #action>
         <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollAll">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="2" width="8" height="8" rx="1"/><circle cx="4.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="4.5" r="0.6" fill="currentColor"/><circle cx="6" cy="6" r="0.6" fill="currentColor"/><circle cx="4.5" cy="7.5" r="0.6" fill="currentColor"/><circle cx="7.5" cy="7.5" r="0.6" fill="currentColor"/></svg>
           {{ t('characterCreation.shell.rollAll') }}
         </button>
-      </span>
-    </div>
+      </template>
+    </SectionHeader>
     <div class="cc-attr-grid">
       <div
         v-for="key in STAT_KEYS"
@@ -184,10 +183,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   </section>
 
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.identity.classLabel') }}</span>
-      <span class="cc-section-hint">{{ t('characterCreation.identity.classHint') }}</span>
-    </div>
+    <SectionHeader :title="t('characterCreation.identity.classLabel')" :hint="t('characterCreation.identity.classHint')" />
     <div class="cc-class-grid">
       <button
         v-for="cls in CLASS_LIST"
@@ -224,21 +220,6 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 
 <style scoped>
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-.cc-section-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cc-section-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.cc-section-hint {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
-.cc-section-action { margin-left: auto; }
 
 .cc-section--names { gap: var(--s-4); }
 /* The true name reads as a name of power: italic gold. */

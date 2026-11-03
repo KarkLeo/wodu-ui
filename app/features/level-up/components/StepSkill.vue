@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Character, SkillId } from '@/types/character'
 import { SKILL_IDS } from '@/types/character'
 import StateNote from '@/components/ui/StateNote.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import { t } from '@/locales'
 import { skillName } from '@/locales/content'
 
@@ -14,10 +15,7 @@ const available = computed(() => SKILL_IDS.filter(id => !props.currentSkillIds.i
 
 <template>
   <div class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('levelUp.steps.skill.label') }}</span>
-      <span class="cc-section-hint">{{ t('levelUp.steps.skill.hint') }}</span>
-    </div>
+    <SectionHeader :title="t('levelUp.steps.skill.label')" :hint="t('levelUp.steps.skill.hint')" />
     <div v-if="available.length" class="cc-abil-list">
       <button
         v-for="id in available"

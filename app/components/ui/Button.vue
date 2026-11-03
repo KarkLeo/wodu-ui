@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-type Variant = 'primary' | 'hero' | 'hero-danger' | 'ghost' | 'danger-ghost' | 'icon'
+type Variant = 'primary' | 'hero' | 'hero-danger' | 'ghost' | 'dashed' | 'danger-ghost'
 type Size = 'sm' | 'base' | 'lg'
 
 const props = withDefaults(defineProps<{
@@ -85,6 +85,17 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-accent-soft);
 }
 
+.v-dashed {
+  color: var(--vtt-text-secondary);
+  border: 1px dashed var(--vtt-border-strong);
+}
+.v-dashed:hover:not(:disabled):not([aria-disabled='true']) {
+  border-color: var(--vtt-border-gold);
+  color: var(--vtt-accent-soft);
+  background: var(--vtt-bg-surface);
+  background: color-mix(in srgb, var(--vtt-border-gold) 5%, transparent);
+}
+
 .v-primary {
   background: var(--vtt-bg-elevated);
   border-color: var(--vtt-border-strong);
@@ -134,19 +145,4 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   border-color: var(--vtt-border-subtle);
   background: rgba(178, 59, 79, 0.06);
 }
-
-.v-icon {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  justify-content: center;
-  border-color: var(--vtt-border-subtle);
-  color: var(--vtt-text-secondary);
-  border-radius: var(--r-pill);
-}
-.v-icon:hover:not(:disabled):not([aria-disabled='true']) {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-}
-.v-icon .btn-icon { width: 12px; height: 12px; }
 </style>

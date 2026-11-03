@@ -11,6 +11,7 @@ import {
 } from 'reka-ui'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import InviteSheet from './InviteSheet.vue'
 import MembersSheet from './MembersSheet.vue'
@@ -64,8 +65,8 @@ function goHome() {
 
 <template>
   <DropdownMenuRoot :modal="false">
-    <DropdownMenuTrigger class="gm-trigger" :aria-label="t('games.table.menu')">
-      <IconMenu :size="14" />
+    <DropdownMenuTrigger as-child>
+      <IconButton :label="t('games.table.menu')"><IconMenu :size="14" /></IconButton>
     </DropdownMenuTrigger>
 
     <DropdownMenuPortal>

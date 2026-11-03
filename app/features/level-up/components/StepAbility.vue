@@ -4,6 +4,7 @@ import type { Character, AbilityId } from '@/types/character'
 import { ABILITY_IDS } from '@/types/character'
 import { getAbilityEffect } from '@/data/abilities'
 import StateNote from '@/components/ui/StateNote.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import { t } from '@/locales'
 import { abilityName, abilityDescription } from '@/locales/content'
 
@@ -23,10 +24,7 @@ function chipFor(id: AbilityId): { text: string; variant: 'magic' | 'danger' } |
 
 <template>
   <div class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('levelUp.steps.ability.label') }}</span>
-      <span class="cc-section-hint">{{ t('levelUp.steps.ability.hint') }}</span>
-    </div>
+    <SectionHeader :title="t('levelUp.steps.ability.label')" :hint="t('levelUp.steps.ability.hint')" />
     <div v-if="available.length" class="cc-abil-list">
       <button
         v-for="id in available"

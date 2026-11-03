@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle, VisuallyHidden } from 'reka-ui'
+import IconButton from './IconButton.vue'
 import IconClose from './icons/IconClose.vue'
 import { t } from '@/locales'
 
@@ -28,8 +29,8 @@ const open = defineModel<boolean>('open', { required: true })
               <DialogTitle class="bs-title">{{ title }}</DialogTitle>
               <div class="bs-head-right">
                 <slot name="head-right" />
-                <DialogClose class="bs-close" :aria-label="t('common.close')">
-                  <IconClose />
+                <DialogClose as-child>
+                  <IconButton class="bs-close" :label="t('common.close')"><IconClose :size="12" /></IconButton>
                 </DialogClose>
               </div>
             </div>
@@ -37,8 +38,8 @@ const open = defineModel<boolean>('open', { required: true })
               <VisuallyHidden>
                 <DialogTitle>{{ t('ui.bottomSheet.dialogTitle') }}</DialogTitle>
               </VisuallyHidden>
-              <DialogClose class="bs-close" :aria-label="t('common.close')">
-                <IconClose />
+              <DialogClose as-child>
+                <IconButton class="bs-close" :label="t('common.close')"><IconClose :size="12" /></IconButton>
               </DialogClose>
             </div>
           </slot>
@@ -79,24 +80,6 @@ const open = defineModel<boolean>('open', { required: true })
   font-size: 17px;
   color: var(--vtt-accent-soft);
 }
-.bs-close {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  padding: 0;
-}
-.bs-close:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-}
-.bs-close svg { width: 12px; height: 12px; }
 
 .bs-body {
   padding: 14px 18px 18px;

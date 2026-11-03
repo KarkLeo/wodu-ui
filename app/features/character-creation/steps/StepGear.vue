@@ -13,6 +13,8 @@ import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.v
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { t } from '@/locales'
 
 const { draft, dispatch, setHitDiceResult } = useCharacterCreation()
@@ -94,22 +96,21 @@ function onUse(item: InventoryItem) {
 <template>
   <template v-if="draft">
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.gear.hpLabel') }}</span>
-      <span class="cc-section-hint">
-        {{ t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' }) }}
-      </span>
-      <span class="cc-section-action">
+    <SectionHeader
+      :title="t('characterCreation.gear.hpLabel')"
+      :hint="t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' })"
+    >
+      <template #action>
         <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollHp">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 6 C3 4 4.5 3 6 3 M9 6 C9 8 7.5 9 6 9 M9 6 L10.5 4.5 M9 6 L7.5 4.5"/></svg>
           {{ hpRolled ? t('characterCreation.shell.reroll') : t('characterCreation.shell.rollAll') }}
         </button>
-      </span>
-    </div>
+      </template>
+    </SectionHeader>
     <div class="cc-hp">
       <span class="cc-hp-value">{{ draft.maxHp || '—' }}</span>
       <div class="cc-hp-body">
-        <span class="cc-hp-label">{{ t('characterCreation.gear.hpFormulaLabel') }}</span>
+        <SectionLabel>{{ t('characterCreation.gear.hpFormulaLabel') }}</SectionLabel>
         <span v-if="hpFormulaLines" class="cc-hp-formula">
           {{ numDice }}d6 → <em>{{ hpFormulaLines.top }}</em>
           <span v-if="hpFormulaLines.sturdy">
@@ -122,10 +123,7 @@ function onUse(item: InventoryItem) {
   </section>
 
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.gear.gearLabel') }}</span>
-      <span class="cc-section-hint">{{ t('characterCreation.gear.gearHint') }}</span>
-    </div>
+    <SectionHeader :title="t('characterCreation.gear.gearLabel')" :hint="t('characterCreation.gear.gearHint')" />
 
     <CoinBar :coins="draft.coins" @update="inv.setCoins" />
 
@@ -174,21 +172,6 @@ function onUse(item: InventoryItem) {
 
 <style scoped>
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-.cc-section-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cc-section-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.cc-section-hint {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
-.cc-section-action { margin-left: auto; }
 
 .cc-btn-roll {
   display: inline-flex;
@@ -231,13 +214,6 @@ function onUse(item: InventoryItem) {
   line-height: 1;
 }
 .cc-hp-body { display: flex; flex-direction: column; gap: 4px; }
-.cc-hp-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
 .cc-hp-formula {
   font-family: var(--font-serif);
   font-style: italic;
@@ -246,55 +222,6 @@ function onUse(item: InventoryItem) {
 }
 .cc-hp-formula em { color: var(--vtt-text-secondary); font-style: normal; }
 .cc-hp-formula-note { color: var(--vtt-accent-deep); }
-
-.cc-summary {
-  display: grid;
-  grid-template-columns: 22px 1fr auto;
-  align-items: center;
-  column-gap: 14px;
-  padding: 12px 14px;
-  background: rgba(140, 106, 58, 0.08);
-  border: 1px solid rgba(140, 106, 58, 0.3);
-  border-radius: var(--r-sm);
-}
-.cc-check {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--r-pill);
-  background: transparent;
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-}
-.cc-check svg { width: 12px; height: 12px; }
-.cc-check.cc-check-locked {
-  background: rgba(140, 106, 58, 0.45);
-  border-color: rgba(140, 106, 58, 0.55);
-  color: var(--vtt-accent-soft);
-}
-.cc-summary-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.cc-summary-name {
-  font-family: var(--font-serif);
-  font-size: 16px;
-  color: var(--vtt-text-primary);
-  line-height: 1.2;
-}
-.cc-summary-desc {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-  line-height: 1.35;
-}
-.cc-summary-flag {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
 
 .cc-gear-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .cc-gear-btn {

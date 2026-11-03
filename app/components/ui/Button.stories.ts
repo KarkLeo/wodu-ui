@@ -19,7 +19,7 @@ const meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'hero', 'hero-danger', 'ghost', 'danger-ghost', 'icon'],
+      options: ['primary', 'hero', 'hero-danger', 'ghost', 'dashed', 'danger-ghost'],
     },
     size: { control: 'inline-radio', options: ['sm', 'base', 'lg'] },
     type: { control: 'inline-radio', options: ['button', 'submit', 'reset'] },
@@ -50,12 +50,13 @@ export const HeroDanger: Story = {
   args: { variant: 'hero-danger', default: 'Reset session' },
 }
 
-export const DangerGhost: Story = {
-  args: { variant: 'danger-ghost', iconLeft: IconTrash, default: 'Delete' },
+/** An add action that opens a picker or appends an empty entry: catalog, library, a new spirit or ritual. */
+export const Dashed: Story = {
+  args: { variant: 'dashed', iconLeft: IconPlus, default: 'Add spirit' },
 }
 
-export const IconOnly: Story = {
-  args: { variant: 'icon', iconLeft: IconPlus, ariaLabel: 'Add' },
+export const DangerGhost: Story = {
+  args: { variant: 'danger-ghost', iconLeft: IconTrash, default: 'Delete' },
 }
 
 export const WithIconRight: Story = {
@@ -69,7 +70,7 @@ export const Disabled: Story = {
 export const Variants: Story = {
   render: (args) => ({
     components: { Button },
-    setup: () => ({ args, IconDice, IconHeart, IconPlus, IconTrash }),
+    setup: () => ({ args, IconDice, IconHeart, IconTrash }),
     template: `
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
         <Button v-bind="args" variant="primary">Primary</Button>
@@ -77,7 +78,6 @@ export const Variants: Story = {
         <Button v-bind="args" variant="hero-danger">Overdose</Button>
         <Button v-bind="args" variant="ghost" :icon-left="IconHeart">Heal</Button>
         <Button v-bind="args" variant="danger-ghost" :icon-left="IconTrash">Delete</Button>
-        <Button v-bind="args" variant="icon" :icon-left="IconPlus" aria-label="Add" />
       </div>
     `,
   }),

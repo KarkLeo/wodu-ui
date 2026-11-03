@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Character, StatKey, Stats } from '@/types/character'
 import { STAT_KEYS, MAX_STAT_BONUS } from '@/data/xpTable'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import { t } from '@/locales'
 import { statShort } from '@/locales/content'
 
@@ -17,10 +18,7 @@ function formatMod(n: number) {
 
 <template>
   <div class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('levelUp.steps.stat.label') }}</span>
-      <span class="cc-section-hint">{{ t('levelUp.steps.stat.hint', { max: MAX_STAT_BONUS }) }}</span>
-    </div>
+    <SectionHeader :title="t('levelUp.steps.stat.label')" :hint="t('levelUp.steps.stat.hint', { max: MAX_STAT_BONUS })" />
     <div class="cc-attr-grid">
       <button
         v-for="k in STAT_KEYS"

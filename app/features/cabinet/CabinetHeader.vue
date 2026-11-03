@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import Avatar from '@/components/ui/Avatar.vue'
 import { currentUser } from '@/transport/auth'
 import { t } from '@/locales'
 
 // RouterLink marks the page that is open with aria-current="page"; the styles key off that.
-const initial = computed(() => {
+const avatarName = computed(() => {
   const user = currentUser.value
-  return (user?.name.trim().charAt(0) || user?.email.charAt(0) || '?').toUpperCase()
+  return user?.name.trim() || user?.email || ''
 })
 </script>
 
@@ -26,9 +27,14 @@ const initial = computed(() => {
         {{ t('nav.offlineTable') }}<span class="ch-offline-mark" aria-hidden="true">↗</span>
       </RouterLink>
 
-      <RouterLink :to="{ name: 'profile' }" class="ch-avatar" :aria-label="t('nav.profile')">
-        {{ initial }}
-      </RouterLink>
+      <Avatar
+        :as="RouterLink"
+        :to="{ name: 'profile' }"
+        size="md"
+        class="ch-avatar"
+        :name="avatarName"
+        :aria-label="t('nav.profile')"
+      />
     </div>
   </header>
 </template>
@@ -119,29 +125,7 @@ const initial = computed(() => {
 
 .ch-avatar {
   grid-area: avatar;
-  width: 34px;
-  height: 34px;
   margin-bottom: var(--s-2);
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(58, 45, 33, 0.9) 0%, rgba(26, 21, 16, 0.9) 100%);
-  box-shadow: inset 0 0 0 1px rgba(228, 201, 160, 0.12);
-  font-family: var(--font-serif);
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--vtt-accent-soft);
-  text-decoration: none;
-  transition: box-shadow var(--t-fast) var(--ease);
-}
-.ch-avatar:hover { box-shadow: inset 0 0 0 1px rgba(228, 201, 160, 0.28); }
-.ch-avatar:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: 2px; }
-.ch-avatar[aria-current='page'] {
-  background: linear-gradient(135deg, rgba(140, 106, 58, 0.55) 0%, rgba(74, 58, 40, 0.75) 100%);
-  box-shadow: inset 0 0 0 1px rgba(228, 201, 160, 0.45), 0 0 10px rgba(212, 168, 87, 0.35);
-  color: var(--vtt-accent);
 }
 
 /* Phone: the brand and the avatar on top, the links in a second row. */

@@ -409,25 +409,6 @@ onBeforeUnmount(stopListening)
   margin-top: 1px;
   display: block;
 }
-.info-popover .pop-effect-remove {
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
-  color: var(--vtt-text-muted);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-}
-.info-popover .pop-effect-remove:hover {
-  color: var(--vtt-danger-bright);
-  border-color: var(--vtt-danger);
-}
-
 .info-popover .pop-actions {
   display: flex;
   gap: 8px;

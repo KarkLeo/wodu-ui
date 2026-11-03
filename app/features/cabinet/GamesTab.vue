@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ListRow from '@/components/ui/ListRow.vue'
+import Pill from '@/components/ui/Pill.vue'
 import CreateGameSheet from './CreateGameSheet.vue'
 import JoinByCodeSheet from './JoinByCodeSheet.vue'
 import { useGamesStore } from '@/stores/games'
@@ -43,6 +45,12 @@ const cards = computed(() => games.games.map((game) => {
   }
 }))
 
+function metaLine(card: { game: Game; master: boolean; players: number; masterName: string }): string {
+  const players = t('games.list.players', { count: card.players })
+  if (card.master) return players
+  return `${players} · ${card.game.master ? t('games.list.master', { name: card.masterName }) : t('games.list.noMaster')}`
+}
+
 function openGame(game: Game) {
   void router.push({ name: 'game', params: { gameId: game.id } })
 }
@@ -54,29 +62,22 @@ function joinWith(code: string) {
 
 <template>
   <section class="hm-list" :aria-label="t('nav.games')">
-    <button
+    <ListRow
       v-for="card in cards"
       :key="card.game.id"
-      type="button"
-      class="hm-card"
+      as="button"
+      variant="card"
+      :title="card.game.name"
+      :subtitle="metaLine(card)"
+      :note="card.master ? undefined : card.mine.length ? t('games.list.yourCharacters', { names: card.mine.join(', ') }) : t('games.list.noCharacter')"
       @click="openGame(card.game)"
     >
-      <span class="hm-card__head">
-        <span class="hm-card__name">{{ card.game.name }}</span>
-        <span :class="['hm-pill', { 'hm-pill--accent': card.master }]">
+      <template #trailing>
+        <Pill :tone="card.master ? 'accent' : 'neutral'">
           {{ card.master ? t('games.list.roleMaster') : t('games.list.rolePlayer') }}
-        </span>
-      </span>
-      <span class="hm-card__meta">
-        {{ t('games.list.players', { count: card.players }) }}
-        <template v-if="!card.master">
-          · {{ card.game.master ? t('games.list.master', { name: card.masterName }) : t('games.list.noMaster') }}
-        </template>
-      </span>
-      <span v-if="!card.master" class="hm-card__note">
-        {{ card.mine.length ? t('games.list.yourCharacters', { names: card.mine.join(', ') }) : t('games.list.noCharacter') }}
-      </span>
-    </button>
+        </Pill>
+      </template>
+    </ListRow>
 
     <EmptyState
       v-if="cards.length === 0"

@@ -15,6 +15,8 @@ import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FormError from '@/components/ui/FormError.vue'
+import IconButton from '@/components/ui/IconButton.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { useGameLayout } from '@/components/layout/gameLayoutContext'
@@ -218,14 +220,9 @@ function logDelta(e: ChangeEntry): string | undefined {
 <template>
   <!-- ── COLLAPSED VIEW · rail 56px ───────────────── -->
   <div v-if="layout?.rightCollapsed.value" class="dice-rail">
-    <button
-      type="button"
-      class="btn-rail-toggle"
-      :aria-label="t('diceDrawer.title')"
-      @click="layout.toggleCollapsed('right')"
-    >
+    <IconButton size="lg" :label="t('diceDrawer.title')" @click="layout.toggleCollapsed('right')">
       <IconChevronLeft :size="14" />
-    </button>
+    </IconButton>
     <span class="gl-rail-label">{{ t('diceDrawer.title') }}</span>
     <div v-if="railHistory.length" class="dice-rail-history">
       <span
@@ -249,27 +246,25 @@ function logDelta(e: ChangeEntry): string | undefined {
   <!-- ── EXPANDED VIEW ─────────────────────────── -->
   <aside v-else class="dice-drawer">
     <div class="drawer-header">
-      <button
+      <IconButton
         v-if="layout"
-        type="button"
-        class="btn-collapse"
+        class="drawer-collapse"
         :title="t('diceDrawer.actions.collapse')"
-        :aria-label="t('diceDrawer.actions.collapse')"
+        :label="t('diceDrawer.actions.collapse')"
         @click="layout.toggleCollapsed('right')"
       >
         <IconChevronRight :size="14" />
-      </button>
-      <span class="drawer-title">{{ t('diceDrawer.title') }}</span>
-      <button
-        type="button"
-        class="btn-collapse"
+      </IconButton>
+      <SectionLabel size="md" class="drawer-title">{{ t('diceDrawer.title') }}</SectionLabel>
+      <IconButton
+        class="drawer-clear"
         :title="t('diceDrawer.actions.clear')"
-        :aria-label="t('diceDrawer.actions.clear')"
+        :label="t('diceDrawer.actions.clear')"
         :disabled="!unified.hasAny.value"
         @click="unified.clearAll()"
       >
         <IconTrash :size="14" />
-      </button>
+      </IconButton>
     </div>
 
     <div class="drawer-filter">
@@ -434,39 +429,8 @@ function logDelta(e: ChangeEntry): string | undefined {
   gap: 10px;
   padding: var(--s-3) var(--s-4) var(--s-2);
 }
-.drawer-title {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  margin: 0;
-}
+.drawer-title { flex: 1; }
 
-.btn-collapse {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.btn-collapse:hover:not(:disabled) {
-  color: var(--vtt-accent-soft);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
-.btn-collapse:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
 
 .drawer-filter {
   padding: 0 var(--s-4) var(--s-3);
@@ -551,7 +515,6 @@ function logDelta(e: ChangeEntry): string | undefined {
 .dice-row-formula .f-expr { color: var(--vtt-text-primary); font-weight: 500; }
 .dice-row-formula .f-rolls { color: var(--vtt-text-muted); font-style: italic; margin: 0 4px; }
 .dice-row-formula .f-rolls em { color: var(--vtt-text-secondary); font-style: normal; }
-.dice-row-formula .f-mod { color: var(--vtt-text-muted); }
 .dice-row-formula .f-alt {
   color: var(--vtt-text-muted);
   font-style: italic;
@@ -854,25 +817,6 @@ function logDelta(e: ChangeEntry): string | undefined {
   gap: var(--s-3);
 }
 
-.btn-rail-toggle {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(228, 201, 160, 0.04);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: 50%;
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.btn-rail-toggle:hover {
-  color: var(--vtt-accent);
-  border-color: var(--vtt-border-strong);
-  background: rgba(228, 201, 160, 0.08);
-}
 
 .gl-rail-label {
   font-family: var(--font-mono);
@@ -955,11 +899,11 @@ function logDelta(e: ChangeEntry): string | undefined {
 }
 
 @media (max-width: 960px) {
-  .drawer-header > .btn-collapse:first-child { display: none; }
+  .drawer-collapse { display: none; }
   .drawer-header {
     padding-top: 8px;
     padding-right: 52px;
   }
-  .drawer-header > .btn-collapse:last-child { order: -1; }
+  .drawer-clear { order: -1; }
 }
 </style>

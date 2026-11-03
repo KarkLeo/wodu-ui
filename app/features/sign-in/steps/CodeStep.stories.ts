@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import CodeStep from './CodeStep.vue'
 import { STORY_NOW } from '@/stories/fixtures'
 
@@ -25,7 +25,12 @@ type Story = StoryObj<typeof meta>
 const codeInput = (canvasElement: HTMLElement) =>
   within(canvasElement).getByLabelText('Code from the email')
 
-export const Default: Story = {}
+/** The code field takes the focus on open, so the first cell shows as current. */
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(codeInput(canvasElement)).toHaveFocus())
+  },
+}
 
 export const TypeEight: Story = {
   tags: ['no-visual'],

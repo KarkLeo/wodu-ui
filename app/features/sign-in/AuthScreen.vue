@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import bgUrl from '@/assets/bg.jpeg'
 import ScreenHeader from '@/components/layout/ScreenHeader.vue'
-import { t, currentLocale, LOCALES } from '@/locales'
+import LocaleSwitch from '@/components/ui/LocaleSwitch.vue'
+import { t, currentLocale } from '@/locales'
 import { useAccount } from '@/composables/useAccount'
 
 const { setLanguage } = useAccount()
@@ -19,17 +20,12 @@ defineProps<{
     <div class="as-column">
       <div class="as-top">
         <slot name="back" />
-        <div class="as-locale" role="group" :aria-label="t('gameLayout.players.language')">
-          <button
-            v-for="l in LOCALES"
-            :key="l"
-            type="button"
-            class="as-locale-btn"
-            :class="{ 'is-active': currentLocale === l }"
-            :aria-pressed="currentLocale === l"
-            @click="setLanguage(l)"
-          >{{ l.toUpperCase() }}</button>
-        </div>
+        <LocaleSwitch
+          class="as-locale"
+          :model-value="currentLocale"
+          :aria-label="t('gameLayout.players.language')"
+          @update:model-value="setLanguage"
+        />
       </div>
 
       <ScreenHeader variant="hero" class="as-brand" :title="title" :subtitle="subtitle" />
@@ -76,18 +72,7 @@ defineProps<{
   gap: var(--s-2);
   min-height: 24px;
 }
-.as-locale { display: flex; gap: 2px; margin-left: auto; }
-.as-locale-btn {
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
-  line-height: 1.4;
-}
-.as-locale-btn.is-active { color: var(--vtt-text-primary); background: var(--vtt-bg-elevated); }
+.as-locale { margin-left: auto; }
 
 .as-brand { margin: var(--s-7) 0 var(--s-6); }
 

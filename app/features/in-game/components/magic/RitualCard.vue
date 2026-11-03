@@ -4,6 +4,7 @@ import type { Ritual } from '@/types/character'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import Button from '@/components/ui/Button.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import TextField from '@/components/ui/TextField.vue'
 import TextareaField from '@/components/ui/TextareaField.vue'
 import { t } from '@/locales'
@@ -59,23 +60,24 @@ function onBodyTap() {
         <template v-else>{{ ritual.name || t('inGame.magic.rituals.empty') }}</template>
       </div>
       <div v-if="!readonly" class="ritual-actions">
-        <button
+        <IconButton
           v-if="!editing && !isEmpty"
-          class="btn-icon-sm"
+          variant="square"
           :title="t('inGame.magic.rituals.edit')"
-          :aria-label="t('inGame.magic.rituals.edit')"
+          :label="t('inGame.magic.rituals.edit')"
           @click.stop="openEdit"
         >
           <IconEdit />
-        </button>
-        <button
-          class="btn-icon-sm is-danger"
+        </IconButton>
+        <IconButton
+          variant="square"
+          tone="danger"
           :title="t('inGame.magic.rituals.remove')"
-          :aria-label="t('inGame.magic.rituals.remove')"
+          :label="t('inGame.magic.rituals.remove')"
           @click.stop="emit('remove')"
         >
           <IconTrash />
-        </button>
+        </IconButton>
       </div>
     </div>
 
@@ -186,31 +188,5 @@ function onBodyTap() {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 4px;
-}
-
-.btn-icon-sm {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-xs);
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
-  padding: 0;
-  flex-shrink: 0;
-}
-.btn-icon-sm :deep(svg) { width: 14px; height: 14px; }
-.btn-icon-sm:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-}
-.btn-icon-sm.is-danger:hover {
-  border-color: var(--vtt-danger-bright);
-  color: var(--vtt-danger-bright);
-  background: rgba(178, 59, 79, 0.08);
 }
 </style>

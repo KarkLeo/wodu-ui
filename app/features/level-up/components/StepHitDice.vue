@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { t } from '@/locales'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 
 const props = defineProps<{
   numDice: number
@@ -51,13 +53,11 @@ const captionPost = computed(() => {
 
 <template>
   <div class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('levelUp.steps.hitDice.label') }}</span>
-      <span class="cc-section-hint">
-        <template v-if="rolls.length">{{ hintPost }}</template>
-        <template v-else>{{ t('levelUp.steps.hitDice.hintPre', { n: numDice, k: targetLevel }) }}</template>
-      </span>
-      <span class="cc-section-action">
+    <SectionHeader
+      :title="t('levelUp.steps.hitDice.label')"
+      :hint="rolls.length ? hintPost : t('levelUp.steps.hitDice.hintPre', { n: numDice, k: targetLevel })"
+    >
+      <template #action>
         <button type="button" class="btn-roll" :disabled="isRolling" @click="doRoll">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3">
             <rect x="2" y="2" width="8" height="8" rx="1"/>
@@ -69,8 +69,8 @@ const captionPost = computed(() => {
           </svg>
           {{ rolls.length ? t('levelUp.steps.hitDice.reroll') : t('levelUp.steps.hitDice.roll') }}
         </button>
-      </span>
-    </div>
+      </template>
+    </SectionHeader>
 
     <div class="lu-dice-scene">
       <div class="lu-dice-row">
@@ -99,7 +99,7 @@ const captionPost = computed(() => {
     <div v-if="rolls.length" class="lu-hp-result">
       <span class="lu-hp-result-value">{{ newMaxHp }}</span>
       <div class="lu-hp-result-body">
-        <span class="lu-hp-result-label">{{ t('levelUp.steps.hitDice.resultLabel') }}</span>
+        <SectionLabel>{{ t('levelUp.steps.hitDice.resultLabel') }}</SectionLabel>
         <span class="lu-hp-result-formula" v-html="t('levelUp.steps.hitDice.resultFormula', { old: previousMaxHp }).replace(/(\d+)/, '<em>$1</em>')" />
       </div>
     </div>
@@ -220,13 +220,6 @@ const captionPost = computed(() => {
   line-height: 1;
 }
 .lu-hp-result-body { display: flex; flex-direction: column; gap: 4px; }
-.lu-hp-result-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
 .lu-hp-result-formula {
   font-family: var(--font-serif);
   font-style: italic;
