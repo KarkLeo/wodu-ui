@@ -15,16 +15,19 @@ export function useRovingSelection<T>(items: () => RovingItem<T>[], model: Ref<T
     return items().filter((i) => !i.disabled).map((i) => i.value)
   }
 
+  // With nothing selected, or a selection that is disabled, the first enabled item stands in for it.
+  function currentIn(values: T[]): T {
+    return values.includes(model.value) ? model.value : values[0]
+  }
+
   function tabIndexFor(value: T): 0 | -1 {
-    const values = enabled()
-    const current = values.includes(model.value) ? model.value : values[0]
-    return value === current ? 0 : -1
+    return value === currentIn(enabled()) ? 0 : -1
   }
 
   function onKeydown(e: KeyboardEvent) {
     const values = enabled()
     if (!values.length) return
-    const i = values.indexOf(model.value)
+    const i = values.indexOf(currentIn(values))
     let next: T | undefined
     if (NEXT_KEYS.includes(e.key)) next = values[(i + 1) % values.length]
     else if (PREV_KEYS.includes(e.key)) next = values[(i - 1 + values.length) % values.length]

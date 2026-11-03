@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import SelectableRow from './SelectableRow.vue'
 import Pill from './Pill.vue'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 
 const CLERIC = [
   { id: 'turn', name: 'Turn Undead', description: 'Undead flee from your holy symbol.', granted: true },
@@ -33,6 +34,7 @@ const meta = {
         component: 'A pick row of the creation and level-up wizards: round check, title, italic description, a mono flag or a trailing chip. '
           + '`checkbox` for a pick of several, `radio` for a pick of one; `locked` is granted (checked, fixed), `disabled` cannot be picked now. '
           + 'Put the rows in a `role="group"` / `role="radiogroup"` element named after the section. '
+          + 'Radios in a group get one tab stop and arrow keys: pass `tabindex` and `@keydown` from `useRovingSelection`. '
           + 'Design prototypes: `character-creation.html`, `level-up.html`.',
       },
     },
@@ -127,13 +129,15 @@ export const PickMulti: Story = {
   },
 }
 
-/** Level-up: one skill; picking another moves the selection. */
+/** Level-up: one skill; picking another moves the selection. One tab stop, and the arrow keys move and pick. */
 export const PickSingle: Story = {
   render: (args) => ({
     components: { SelectableRow },
     setup() {
       const picked = ref<string | null>(null)
-      return { args, skills: ['Heal', 'Lore', 'Survival'], picked }
+      const skills = ['Heal', 'Lore', 'Survival']
+      const { tabIndexFor, onKeydown } = useRovingSelection(() => skills.map((value) => ({ value })), picked)
+      return { args, skills, picked, tabIndexFor, onKeydown }
     },
     template: `
       <div role="radiogroup" aria-label="New skill">
@@ -143,6 +147,8 @@ export const PickSingle: Story = {
           type="radio"
           :title="s"
           :selected="picked === s"
+          :tabindex="tabIndexFor(s)"
+          @keydown="onKeydown"
           @toggle="picked = s"
         />
       </div>
@@ -150,6 +156,22 @@ export const PickSingle: Story = {
   }),
   play: async ({ canvasElement }) => {
     const group = within(within(canvasElement).getByRole('radiogroup', { name: 'New skill' }))
+    const radio = (name: string) => group.getByRole('radio', { name })
+
+    await userEvent.tab()
+    await expect(radio('Heal')).toHaveFocus()
+    await expect(radio('Heal')).not.toBeChecked()
+    await userEvent.tab()
+    await expect(group.queryAllByRole('radio').filter((r) => r === document.activeElement)).toHaveLength(0)
+    await userEvent.tab({ shift: true })
+    await expect(radio('Heal')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(radio('Lore')).toHaveFocus()
+    await expect(radio('Lore')).toBeChecked()
+    await userEvent.keyboard('{ArrowUp}{ArrowUp}')
+    await expect(radio('Survival')).toHaveFocus()
+    await expect(radio('Survival')).toBeChecked()
+
     await userEvent.click(group.getByRole('radio', { name: 'Lore' }))
     await expect(group.getByRole('radio', { name: 'Lore' })).toBeChecked()
     group.getByRole('radio', { name: 'Heal' }).focus()

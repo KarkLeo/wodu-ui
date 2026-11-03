@@ -7,6 +7,7 @@ import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import SpiritCard from '@/features/in-game/components/magic/SpiritCard.vue'
 import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import SelectableRow from '@/components/ui/SelectableRow.vue'
@@ -153,7 +154,7 @@ function onAbilityClick(id: AbilityId) {
 
 <template>
   <template v-if="draft">
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.training.skillsLabel')" :hint="skillsHint">
       <template #action><Pill tone="accent">{{ skillsCounterText }}</Pill></template>
     </SectionHeader>
@@ -168,9 +169,9 @@ function onAbilityClick(id: AbilityId) {
         @toggle="onSkillClick(id)"
       />
     </div>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.training.abilitiesLabel')" :hint="abilitiesHint">
       <template #action><Pill tone="accent">{{ abilitiesCounterText }}</Pill></template>
     </SectionHeader>
@@ -187,9 +188,9 @@ function onAbilityClick(id: AbilityId) {
         @toggle="onAbilityClick(id)"
       />
     </div>
-  </section>
+  </WizardSection>
 
-  <section v-if="showMagic" class="cc-section">
+  <WizardSection v-if="showMagic">
     <SectionHeader
       :title="t('characterCreation.training.magicLabel')"
       :hint="draft.classId === 'wizard' ? t('characterCreation.training.magicHintWizard') : t('characterCreation.training.magicHintOther')"
@@ -227,12 +228,11 @@ function onAbilityClick(id: AbilityId) {
         <CantripChip v-for="c in cantrips" :key="c" :name="cantripName(c)" />
       </div>
     </div>
-  </section>
+  </WizardSection>
   </template>
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
 .cc-skill-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .cc-magic-group { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }

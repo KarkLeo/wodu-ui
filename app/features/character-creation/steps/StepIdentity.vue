@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import TextField from '@/components/ui/TextField.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SelectableTile from '@/components/ui/SelectableTile.vue'
 import Button from '@/components/ui/Button.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import IconDiceFace from '@/components/ui/icons/IconDiceFace.vue'
+import IconReroll from '@/components/ui/icons/IconReroll.vue'
 import type { ClassId, SkillId, StatKey } from '@/types/character'
 import { CLASS_LIST } from '@/data/classes'
 import { STAT_KEYS } from '@/data/xpTable'
@@ -12,6 +15,7 @@ import { statBonusFrom2d6 } from '@/utils/derived'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useDebouncedField } from '@/composables/useDebouncedField'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 import { t } from '@/locales'
 import { skillName, statShort, className } from '@/locales/content'
 
@@ -88,6 +92,15 @@ function selectClass(id: ClassId) {
   pickClass(id)
 }
 
+const pickedClass = computed<ClassId | undefined>({
+  get: () => draft.value?.classId,
+  set: (id) => { if (id) selectClass(id) },
+})
+const { tabIndexFor: classTabIndex, onKeydown: onClassKeydown } = useRovingSelection(
+  () => CLASS_LIST.map(cls => ({ value: cls.id })),
+  pickedClass,
+)
+
 function classTagText(classId: ClassId, grantedSkillIds: readonly SkillId[]): string {
   if (classId === 'custom') return t('characterCreation.identity.classTags.custom')
   const skill = grantedSkillIds[0] ? skillName(grantedSkillIds[0]) : ''
@@ -102,6 +115,15 @@ function rollTrace(key: StatKey): { a: number; b: number } | null {
 function rollTotal(key: StatKey): number {
   return draft.value?.statRolls[key] ?? 0
 }
+function statValue(key: StatKey): string {
+  if (!rollTotal(key)) return '—'
+  const bonus = draft.value?.stats[key] ?? 0
+  return bonus > 0 ? `+${bonus}` : '0'
+}
+function statTone(key: StatKey): 'neutral' | 'muted' | 'accent' {
+  if (!rollTotal(key)) return 'muted'
+  return rollTotal(key) === 12 ? 'accent' : 'neutral'
+}
 
 const CLASS_GLYPHS: Record<ClassId, string> = {
   fighter: 'M14 3 L19 8 L14 25 L9 8 Z M9 8 L19 8',
@@ -115,7 +137,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 
 <template>
   <template v-if="draft">
-  <section class="cc-section cc-section--names">
+  <WizardSection gap="lg">
     <TextField
       :model-value="nameField.value.value"
       variant="underline"
@@ -139,9 +161,9 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         {{ t('characterCreation.identity.trueNameHint') }}
       </template>
     </TextField>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.identity.attrsLabel')" :hint="t('characterCreation.identity.attrsHint')">
       <template #action>
         <Button variant="roll" :icon-left="IconDiceFace" :disabled="isRolling" @click="rollAll">
@@ -156,44 +178,43 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
         static
         size="sm"
         :label="statShort(key)"
-        :class="{ 'cc-attr-empty': !draft.statRolls[key], 'is-max': draft.statRolls[key] === 12, 'is-fresh': freshKey === key }"
+        :value="statValue(key)"
+        :value-tone="statTone(key)"
+        :class="{ 'is-fresh': freshKey === key }"
       >
         <template #action>
-          <button
-            type="button"
-            class="cc-attr-roll"
-            :disabled="isRolling"
+          <IconButton
+            variant="bare"
+            size="sm"
+            :label="t('characterCreation.identity.attrRollTitle')"
             :title="t('characterCreation.identity.attrRollTitle')"
+            :disabled="isRolling"
             @click="rerollOne(key)"
           >
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 7 C3 4 5 3 7 3 M11 7 C11 10 9 11 7 11 M11 7 L13 5 M11 7 L9 5"/></svg>
-          </button>
+            <IconReroll :size="16" :stroke-width="1" />
+          </IconButton>
         </template>
-        <span class="cc-attr-value">
-          <span class="cc-attr-mod">
-            {{ draft.statRolls[key] ? (draft.stats[key] > 0 ? `+${draft.stats[key]}` : '0') : '—' }}
-          </span>
-          <span v-if="rollTrace(key)" class="cc-attr-roll-trace">
-            2d6: <em>{{ rollTrace(key)!.a }} + {{ rollTrace(key)!.b }}</em>
-          </span>
-          <span v-else-if="rollTotal(key)" class="cc-attr-roll-trace">
-            2d6: <em>{{ rollTotal(key) }}</em>
-          </span>
-          <span v-else class="cc-attr-roll-trace">{{ t('characterCreation.identity.attrEmpty') }}</span>
+        <span v-if="rollTrace(key)" class="cc-attr-roll-trace">
+          2d6: <em>{{ rollTrace(key)!.a }} + {{ rollTrace(key)!.b }}</em>
         </span>
+        <span v-else-if="rollTotal(key)" class="cc-attr-roll-trace">
+          2d6: <em>{{ rollTotal(key) }}</em>
+        </span>
+        <span v-else class="cc-attr-roll-trace">{{ t('characterCreation.identity.attrEmpty') }}</span>
       </SelectableTile>
     </div>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.identity.classLabel')" :hint="t('characterCreation.identity.classHint')" />
     <div class="cc-class-grid" role="radiogroup" :aria-label="t('characterCreation.identity.classLabel')">
       <SelectableTile
         v-for="cls in CLASS_LIST"
         :key="cls.id"
         class="cc-class"
-        :class="{ 'is-picked': draft.classId === cls.id }"
         :selected="draft.classId === cls.id"
+        :tabindex="classTabIndex(cls.id)"
+        @keydown="onClassKeydown"
         @select="selectClass(cls.id)"
       >
         <span class="cc-class-glyph">
@@ -218,14 +239,11 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
       @update:model-value="customClassField.onInput"
       @blur="customClassField.flush()"
     />
-  </section>
+  </WizardSection>
   </template>
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-
-.cc-section--names { gap: var(--s-4); }
 /* The true name reads as a name of power: italic gold. */
 .cc-truename :deep(.form-field-control) { font-style: italic; color: var(--vtt-accent-soft); }
 .cc-hint-icon { width: 11px; height: 11px; color: var(--vtt-accent-deep); flex-shrink: 0; }
@@ -240,37 +258,6 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   .cc-attr-grid,
   .cc-class-grid { grid-template-columns: repeat(2, 1fr); }
 }
-.cc-attr-roll {
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  padding: 0;
-  color: var(--vtt-text-muted);
-  cursor: pointer;
-  border-radius: var(--r-pill);
-  transition: color var(--t-fast) var(--ease);
-}
-.cc-attr-roll:hover:not(:disabled) { color: var(--vtt-accent); }
-.cc-attr-roll:disabled { cursor: not-allowed; opacity: 0.4; }
-.cc-attr-roll svg { width: 14px; height: 14px; }
-.cc-attr-value {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 2px;
-}
-.cc-attr-mod {
-  font-family: var(--font-serif);
-  font-size: 32px;
-  font-weight: 500;
-  color: var(--vtt-accent-soft);
-  line-height: 1;
-}
-.cc-attr-empty .cc-attr-mod { color: var(--vtt-text-muted); }
 .cc-attr-roll-trace {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -282,10 +269,6 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   font-style: normal;
 }
 .is-fresh { animation: cc-fresh 1400ms var(--ease); }
-.is-max .cc-attr-mod {
-  color: var(--vtt-accent);
-  text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
-}
 @keyframes cc-fresh {
   0%   { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.3); }
   100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
@@ -301,7 +284,7 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
   color: var(--vtt-accent-deep);
   margin-bottom: 2px;
 }
-.cc-class.is-picked .cc-class-glyph { color: var(--vtt-accent); }
+[aria-checked='true'] .cc-class-glyph { color: var(--vtt-accent); }
 .cc-class-glyph svg { width: 100%; height: 100%; }
 .cc-class-name {
   font-family: var(--font-serif);

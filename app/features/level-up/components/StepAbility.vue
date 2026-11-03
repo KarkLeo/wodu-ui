@@ -3,17 +3,20 @@ import { computed } from 'vue'
 import type { Character, AbilityId } from '@/types/character'
 import { ABILITY_IDS } from '@/types/character'
 import { getAbilityEffect } from '@/data/abilities'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SelectableRow from '@/components/ui/SelectableRow.vue'
 import Pill from '@/components/ui/Pill.vue'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 import { t } from '@/locales'
 import { abilityName, abilityDescription } from '@/locales/content'
 
-const props = defineProps<{ char: Character; currentAbilityIds: readonly AbilityId[]; selected: AbilityId | null }>()
-const emit = defineEmits<{ 'update:selected': [id: AbilityId] }>()
+const props = defineProps<{ char: Character; currentAbilityIds: readonly AbilityId[] }>()
+const selected = defineModel<AbilityId | null>('selected', { required: true })
 
 const available = computed(() => ABILITY_IDS.filter(id => !props.currentAbilityIds.includes(id)))
+const { tabIndexFor, onKeydown } = useRovingSelection(() => available.value.map(value => ({ value })), selected)
 
 function chipFor(id: AbilityId): { text: string; tone: 'accent' | 'danger' } | null {
   const eff = getAbilityEffect(id)
@@ -25,7 +28,7 @@ function chipFor(id: AbilityId): { text: string; tone: 'accent' | 'danger' } | n
 </script>
 
 <template>
-  <div class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('levelUp.steps.ability.label')" :hint="t('levelUp.steps.ability.hint')" />
     <div v-if="available.length" role="radiogroup" :aria-label="t('levelUp.steps.ability.label')">
       <SelectableRow
@@ -35,7 +38,9 @@ function chipFor(id: AbilityId): { text: string; tone: 'accent' | 'danger' } | n
         :title="abilityName(id)"
         :description="abilityDescription(id)"
         :selected="selected === id"
-        @toggle="emit('update:selected', id)"
+        :tabindex="tabIndexFor(id)"
+        @keydown="onKeydown"
+        @toggle="selected = id"
       >
         <template v-if="chipFor(id)" #trailing>
           <Pill size="sm" :tone="chipFor(id)!.tone">{{ chipFor(id)!.text }}</Pill>
@@ -43,9 +48,5 @@ function chipFor(id: AbilityId): { text: string; tone: 'accent' | 'danger' } | n
       </SelectableRow>
     </div>
     <StateNote v-else size="sm">{{ t('levelUp.steps.ability.empty') }}</StateNote>
-  </div>
+  </WizardSection>
 </template>
-
-<style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-</style>

@@ -121,6 +121,33 @@ export const IdentityClassPick: Story = {
   },
 }
 
+/** The class cards are one tab stop, on the picked class; the arrow keys move and pick. */
+export const IdentityClassKeyboard: Story = {
+  tags: ['no-visual'],
+  decorators: [withStores({ characters: [draftTraining], creation: { draftId: draftTraining.id, step: 1 } })],
+  play: async ({ canvasElement }) => {
+    const classes = within(await screen(canvasElement).findByRole('radiogroup', { name: 'Class' }))
+    const radios = classes.getAllByRole('radio')
+    const tabStops = () => radios.filter(r => r.tabIndex === 0)
+    const cleric = classes.getByRole('radio', { name: /^Cleric/ })
+    await expect(tabStops()).toEqual([cleric])
+
+    cleric.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    const next = radios[radios.indexOf(cleric) + 1]
+    await expect(next).toHaveFocus()
+    await expect(next).toBeChecked()
+    await expect(tabStops()).toEqual([next])
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(cleric).toHaveFocus()
+    await expect(cleric).toBeChecked()
+    await expect(classes.getAllByRole('radio', { checked: true })).toHaveLength(1)
+
+    await userEvent.tab()
+    await expect(radios.includes(document.activeElement as HTMLElement)).toBe(false)
+  },
+}
+
 export const GearBeforeHpRoll: Story = {
   decorators: [withStores({ characters: [draftHpUnrolled], creation: { draftId: draftHpUnrolled.id, step: 3 } })],
 }

@@ -2,10 +2,14 @@
 const props = withDefaults(defineProps<{
   selected?: boolean
   disabled?: boolean
-  /** A display-only tile: a plain element with the same frame, no role; it can hold an `action`. */
+  /** A display-only tile: a plain element with the same frame, no role; only this form shows `#action`. */
   static?: boolean
   /** A mono caption at the top. */
   label?: string
+  /** A large number under the caption (a stat); the default slot then sits beside it as a note. */
+  value?: string
+  /** Colour of `value`. A selected tile always draws it in `accent`. */
+  valueTone?: 'neutral' | 'muted' | 'accent'
   /** `md` for a card with a glyph and a name, `sm` for a compact value tile. */
   size?: 'md' | 'sm'
 }>(), {
@@ -13,6 +17,8 @@ const props = withDefaults(defineProps<{
   disabled: false,
   static: false,
   label: undefined,
+  value: undefined,
+  valueTone: 'neutral',
   size: 'md',
 })
 
@@ -34,11 +40,15 @@ function onClick() {
     :disabled="props.static ? undefined : disabled"
     @click="onClick"
   >
-    <span v-if="label || $slots.action" class="sel-tile-head">
+    <span v-if="label || (props.static && $slots.action)" class="sel-tile-head">
       <span class="sel-tile-label">{{ label }}</span>
       <slot v-if="props.static" name="action" />
     </span>
-    <slot />
+    <span v-if="value !== undefined" :class="['sel-tile-value', `vt-${valueTone}`]">
+      <span class="sel-tile-number">{{ value }}</span>
+      <slot />
+    </span>
+    <slot v-else />
   </component>
 </template>
 
@@ -55,7 +65,7 @@ function onClick() {
   transition: all var(--t-fast) var(--ease);
 }
 button.sel-tile { cursor: pointer; }
-.sel-tile:hover:not(:disabled) { background: rgba(36, 28, 21, 0.65); }
+.sel-tile:hover:not(:disabled):not(.is-selected) { background: rgba(36, 28, 21, 0.65); }
 .sel-tile:disabled { opacity: 0.4; cursor: not-allowed; }
 .sel-tile.is-selected {
   background: rgba(140, 106, 58, 0.2);
@@ -77,5 +87,25 @@ button.sel-tile { cursor: pointer; }
   text-transform: uppercase;
   color: var(--vtt-accent-deep);
   line-height: 1;
+}
+
+.sel-tile-value {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 2px;
+}
+.sel-tile-number {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--vtt-accent-soft);
+  line-height: 1;
+}
+.vt-muted .sel-tile-number { color: var(--vtt-text-muted); }
+.vt-accent .sel-tile-number,
+.is-selected .sel-tile-number {
+  color: var(--vtt-accent);
+  text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
 }
 </style>

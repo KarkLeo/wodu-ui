@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Character, AbilityId, SkillId, StatKey } from '@/types/character'
 import { STAT_KEYS } from '@/data/xpTable'
 import type { LevelUpPatch } from '@/domain/commands'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import KeyValueRow from '@/components/ui/KeyValueRow.vue'
 import IconCheckCircle from '@/components/ui/icons/IconCheckCircle.vue'
@@ -69,7 +70,7 @@ function formatMod(n: number) {
 </script>
 
 <template>
-  <div class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('levelUp.summary.sectionLabel')" :hint="t('levelUp.summary.sectionHint')" />
     <div class="lu-summary">
       <KeyValueRow class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.level')">
@@ -109,11 +110,10 @@ function formatMod(n: number) {
         <template #action><span class="lu-sum-value is-hp">+{{ maxHpDelta }} <em>{{ t('levelUp.summary.was', { n: char.maxHp }) }}</em></span></template>
       </KeyValueRow>
     </div>
-  </div>
+  </WizardSection>
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
 .lu-summary { display: flex; flex-direction: column; }
 .lu-summary .lu-sum-row { padding: 12px 8px; }
 .lu-sum-value {

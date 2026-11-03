@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { Character, StatKey, Stats } from '@/types/character'
 import { STAT_KEYS, MAX_STAT_BONUS } from '@/data/xpTable'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SelectableTile from '@/components/ui/SelectableTile.vue'
+import { useRovingSelection } from '@/composables/useRovingSelection'
 import { t } from '@/locales'
 import { statShort } from '@/locales/content'
 
-const props = defineProps<{ char: Character; currentStats: Stats; selected: StatKey | null }>()
-const emit = defineEmits<{ 'update:selected': [key: StatKey] }>()
+const props = defineProps<{ char: Character; currentStats: Stats }>()
+const selected = defineModel<StatKey | null>('selected', { required: true })
 
 function canBump(k: StatKey) {
   return props.currentStats[k] < MAX_STAT_BONUS
@@ -15,10 +17,15 @@ function canBump(k: StatKey) {
 function formatMod(n: number) {
   return n > 0 ? `+${n}` : String(n)
 }
+
+const { tabIndexFor, onKeydown } = useRovingSelection(
+  () => STAT_KEYS.map(value => ({ value, disabled: !canBump(value) })),
+  selected,
+)
 </script>
 
 <template>
-  <div class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('levelUp.steps.stat.label')" :hint="t('levelUp.steps.stat.hint', { max: MAX_STAT_BONUS })" />
     <div class="cc-attr-grid" role="radiogroup" :aria-label="t('levelUp.steps.stat.label')">
       <SelectableTile
@@ -26,39 +33,24 @@ function formatMod(n: number) {
         :key="k"
         size="sm"
         :label="statShort(k)"
-        :class="{ 'is-picked': selected === k, 'is-capped': !canBump(k) }"
+        :value="formatMod(currentStats[k])"
         :selected="selected === k"
         :disabled="!canBump(k)"
-        @select="emit('update:selected', k)"
+        :tabindex="tabIndexFor(k)"
+        @keydown="onKeydown"
+        @select="selected = k"
       >
-        <span class="cc-attr-value">
-          <span class="cc-attr-mod">{{ formatMod(currentStats[k]) }}</span>
-          <span class="cc-attr-next">
-            <template v-if="canBump(k)">→ <em>{{ formatMod(currentStats[k] + 1) }}</em></template>
-            <template v-else>{{ t('levelUp.steps.stat.max') }}</template>
-          </span>
+        <span class="cc-attr-next">
+          <template v-if="canBump(k)">→ <em>{{ formatMod(currentStats[k] + 1) }}</em></template>
+          <template v-else>{{ t('levelUp.steps.stat.max') }}</template>
         </span>
       </SelectableTile>
     </div>
-  </div>
+  </WizardSection>
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
 .cc-attr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
-.cc-attr-value {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 2px;
-}
-.cc-attr-mod {
-  font-family: var(--font-serif);
-  font-size: 32px;
-  font-weight: 500;
-  color: var(--vtt-accent-soft);
-  line-height: 1;
-}
 .cc-attr-next {
   font-family: var(--font-serif);
   font-style: italic;
@@ -66,9 +58,5 @@ function formatMod(n: number) {
   color: var(--vtt-text-muted);
 }
 .cc-attr-next em { color: var(--vtt-accent); font-style: normal; }
-.is-picked .cc-attr-mod {
-  color: var(--vtt-accent);
-  text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
-}
-.is-capped .cc-attr-next { color: var(--vtt-danger-bright); opacity: 0.7; }
+:disabled .cc-attr-next { color: var(--vtt-danger-bright); opacity: 0.7; }
 </style>

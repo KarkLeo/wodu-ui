@@ -11,6 +11,7 @@ import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
 import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
 import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import Button from '@/components/ui/Button.vue'
 import IconReroll from '@/components/ui/icons/IconReroll.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -96,7 +97,7 @@ function onUse(item: InventoryItem) {
 
 <template>
   <template v-if="draft">
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader
       :title="t('characterCreation.gear.hpLabel')"
       :hint="t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' })"
@@ -120,9 +121,9 @@ function onUse(item: InventoryItem) {
         <span v-else class="cc-hp-formula">{{ t('characterCreation.gear.hpEmpty') }}</span>
       </div>
     </div>
-  </section>
+  </WizardSection>
 
-  <section class="cc-section">
+  <WizardSection>
     <SectionHeader :title="t('characterCreation.gear.gearLabel')" :hint="t('characterCreation.gear.gearHint')" />
 
     <CoinBar :coins="draft.coins" @update="inv.setCoins" />
@@ -144,7 +145,7 @@ function onUse(item: InventoryItem) {
       />
     </div>
     <EmptyState v-else :hint="t('characterCreation.gear.boughtEmpty')" />
-  </section>
+  </WizardSection>
 
   <CatalogSheet
     v-model:open="catalogOpen"
@@ -171,8 +172,6 @@ function onUse(item: InventoryItem) {
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-
 .cc-hp {
   display: grid;
   grid-template-columns: auto 1fr;

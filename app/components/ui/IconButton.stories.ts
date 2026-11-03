@@ -8,6 +8,7 @@ import IconChevronLeft from './icons/IconChevronLeft.vue'
 import IconClose from './icons/IconClose.vue'
 import IconEdit from './icons/IconEdit.vue'
 import IconMenu from './icons/IconMenu.vue'
+import IconReroll from './icons/IconReroll.vue'
 import IconTrash from './icons/IconTrash.vue'
 
 const meta = {
@@ -23,7 +24,7 @@ const meta = {
   },
   argTypes: {
     size: { control: 'inline-radio', options: ['lg', 'md', 'sm'] },
-    variant: { control: 'inline-radio', options: ['round', 'square'] },
+    variant: { control: 'inline-radio', options: ['round', 'square', 'bare'] },
     tone: { control: 'inline-radio', options: ['neutral', 'accent', 'danger'] },
     type: { control: 'inline-radio', options: ['button', 'submit', 'reset'] },
   },
@@ -64,6 +65,24 @@ export const Sizes: Story = {
       </div>
     `,
   }),
+}
+
+/** `bare` has no frame, for an action inside something already framed, such as a stat tile's reroll. */
+export const Bare: Story = {
+  render: (args) => ({
+    components: { IconButton, IconReroll },
+    setup: () => ({ args }),
+    template: `
+      <div style="display: flex; align-items: center; gap: 12px">
+        <IconButton v-bind="args" variant="bare" size="sm" label="Reroll"><IconReroll :size="16" :stroke-width="1" /></IconButton>
+        <IconButton v-bind="args" variant="bare" size="sm" label="Reroll, not now" disabled><IconReroll :size="16" :stroke-width="1" /></IconButton>
+      </div>
+    `,
+  }),
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reroll' }))
+    await expect(args.onClick).toHaveBeenCalledOnce()
+  },
 }
 
 /** Square buttons are the row actions of inventory and magic lists; `danger` reddens on hover for a remove. */

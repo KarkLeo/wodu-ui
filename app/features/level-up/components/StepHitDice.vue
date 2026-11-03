@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { t } from '@/locales'
+import WizardSection from '@/components/layout/WizardSection.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import Button from '@/components/ui/Button.vue'
@@ -54,7 +55,7 @@ const captionPost = computed(() => {
 </script>
 
 <template>
-  <div class="cc-section">
+  <WizardSection>
     <SectionHeader
       :title="t('levelUp.steps.hitDice.label')"
       :hint="rolls.length ? hintPost : t('levelUp.steps.hitDice.hintPre', { n: numDice, k: targetLevel })"
@@ -97,11 +98,10 @@ const captionPost = computed(() => {
         <span class="lu-hp-result-formula" v-html="t('levelUp.steps.hitDice.resultFormula', { old: previousMaxHp }).replace(/(\d+)/, '<em>$1</em>')" />
       </div>
     </div>
-  </div>
+  </WizardSection>
 </template>
 
 <style scoped>
-.cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
 .lu-dice-scene {
   display: flex;
   flex-direction: column;
