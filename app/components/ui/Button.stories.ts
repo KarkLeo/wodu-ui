@@ -3,6 +3,7 @@ import { fn } from 'storybook/test'
 import Button from './Button.vue'
 import IconDice from './icons/IconDice.vue'
 import IconHeart from './icons/IconHeart.vue'
+import IconPlus from './icons/IconPlus.vue'
 import IconStar from './icons/IconStar.vue'
 import IconTrash from './icons/IconTrash.vue'
 
@@ -18,7 +19,7 @@ const meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'hero', 'hero-danger', 'ghost', 'danger-ghost'],
+      options: ['primary', 'hero', 'hero-danger', 'ghost', 'dashed', 'danger-ghost'],
     },
     size: { control: 'inline-radio', options: ['sm', 'base', 'lg'] },
     type: { control: 'inline-radio', options: ['button', 'submit', 'reset'] },
@@ -47,6 +48,11 @@ export const Hero: Story = {
 
 export const HeroDanger: Story = {
   args: { variant: 'hero-danger', default: 'Reset session' },
+}
+
+/** An add action that opens a picker or appends an empty entry: catalog, library, a new spirit or ritual. */
+export const Dashed: Story = {
+  args: { variant: 'dashed', iconLeft: IconPlus, default: 'Add spirit' },
 }
 
 export const DangerGhost: Story = {

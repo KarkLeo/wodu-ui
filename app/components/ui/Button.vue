@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-type Variant = 'primary' | 'hero' | 'hero-danger' | 'ghost' | 'danger-ghost'
+type Variant = 'primary' | 'hero' | 'hero-danger' | 'ghost' | 'dashed' | 'danger-ghost'
 type Size = 'sm' | 'base' | 'lg'
 
 const props = withDefaults(defineProps<{
@@ -83,6 +83,16 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
 .v-ghost:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--vtt-border-strong);
   color: var(--vtt-accent-soft);
+}
+
+.v-dashed {
+  color: var(--vtt-text-secondary);
+  border: 1px dashed var(--vtt-border-strong);
+}
+.v-dashed:hover:not(:disabled):not([aria-disabled='true']) {
+  border-color: var(--vtt-border-gold);
+  color: var(--vtt-accent-soft);
+  background: color-mix(in srgb, var(--vtt-border-gold) 5%, transparent);
 }
 
 .v-primary {
