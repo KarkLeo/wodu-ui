@@ -66,14 +66,18 @@ export const AsButton: Story = {
   play: async ({ canvasElement }) => {
     const row = within(canvasElement).getByRole('button', { name: /Brann Ironhide/ })
     await expect(row).toHaveAttribute('type', 'button')
+    await expect(row).not.toHaveAttribute('aria-pressed')
     await userEvent.click(row)
     await expect(row).toHaveTextContent('Clicked 1')
   },
 }
 
-/** The open entry: a gold tint behind the row and a gold avatar. */
+/** The open entry: a gold tint behind the row and a gold avatar; a row that toggles it is pressed. */
 export const Selected: Story = {
-  args: { as: 'button', selected: true },
+  args: { as: 'button', selected: true, pressed: true },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button', { name: /Brann Ironhide/ })).toHaveAttribute('aria-pressed', 'true')
+  },
 }
 
 /** A disabled button row does not act. */
@@ -177,6 +181,28 @@ export const Dashed: Story = {
   }),
 }
 
+/** A disabled link row keeps the link role but has no href and no click, so it neither navigates nor takes the focus. */
+export const DisabledLink: Story = {
+  tags: ['no-visual'],
+  args: { as: 'a', variant: 'card', title: 'Olden’s Tower', subtitle: '2 players', disabled: true },
+  render: (args) => ({
+    components: { ListRow },
+    setup: () => ({ args, clicks: ref(0) }),
+    template: '<ListRow v-bind="args" href="#olden" :note="\'Clicked \' + clicks" @click="clicks++" />',
+  }),
+  play: async ({ canvasElement }) => {
+    const row = within(canvasElement).getByRole('link', { name: /Olden’s Tower/ })
+    await expect(row).toHaveAttribute('aria-disabled', 'true')
+    await expect(row).not.toHaveAttribute('href')
+    const before = window.location.hash
+    await userEvent.click(row)
+    await expect(window.location.hash).toBe(before)
+    await expect(row).toHaveTextContent('Clicked 0')
+    await userEvent.tab()
+    await expect(row).not.toHaveFocus()
+  },
+}
+
 /** A link row navigates; here it is a plain anchor. */
 export const AsLink: Story = {
   args: { as: 'a', variant: 'card', title: 'Olden’s Tower', subtitle: '2 players' },
@@ -197,7 +223,7 @@ export const List: Story = {
     template: `
       <ul style="display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none">
         <li v-for="c in [{ id: 'brann', name: 'Brann Ironhide' }, { id: 'wren', name: 'Wren Ashfoot' }, { id: 'mirel', name: 'Mirel Vane' }]" :key="c.id">
-          <ListRow as="button" :title="c.name" subtitle="Fighter · level 1" :selected="open === c.id" @click="open = c.id">
+          <ListRow as="button" :title="c.name" subtitle="Fighter · level 1" :selected="open === c.id" :pressed="open === c.id" @click="open = c.id">
             <template #leading><Avatar :name="c.name" :selected="open === c.id" /></template>
           </ListRow>
         </li>
@@ -209,5 +235,7 @@ export const List: Story = {
     await userEvent.click(canvas.getByRole('button', { name: /Mirel Vane/ }))
     await expect(canvas.getByRole('button', { name: /Mirel Vane/ })).toHaveClass('is-selected')
     await expect(canvas.getByRole('button', { name: /Wren Ashfoot/ })).not.toHaveClass('is-selected')
+    await expect(canvas.getByRole('button', { name: /Mirel Vane/ })).toHaveAttribute('aria-pressed', 'true')
+    await expect(canvas.getByRole('button', { name: /Wren Ashfoot/ })).toHaveAttribute('aria-pressed', 'false')
   },
 }

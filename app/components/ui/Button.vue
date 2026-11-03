@@ -92,6 +92,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
 .v-dashed:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--vtt-border-gold);
   color: var(--vtt-accent-soft);
+  background: var(--vtt-bg-surface);
   background: color-mix(in srgb, var(--vtt-border-gold) 5%, transparent);
 }
 

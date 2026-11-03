@@ -14,6 +14,7 @@ import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { t } from '@/locales'
 
 const { draft, dispatch, setHitDiceResult } = useCharacterCreation()
@@ -109,7 +110,7 @@ function onUse(item: InventoryItem) {
     <div class="cc-hp">
       <span class="cc-hp-value">{{ draft.maxHp || '—' }}</span>
       <div class="cc-hp-body">
-        <span class="cc-hp-label">{{ t('characterCreation.gear.hpFormulaLabel') }}</span>
+        <SectionLabel>{{ t('characterCreation.gear.hpFormulaLabel') }}</SectionLabel>
         <span v-if="hpFormulaLines" class="cc-hp-formula">
           {{ numDice }}d6 → <em>{{ hpFormulaLines.top }}</em>
           <span v-if="hpFormulaLines.sturdy">
@@ -213,13 +214,6 @@ function onUse(item: InventoryItem) {
   line-height: 1;
 }
 .cc-hp-body { display: flex; flex-direction: column; gap: 4px; }
-.cc-hp-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
 .cc-hp-formula {
   font-family: var(--font-serif);
   font-style: italic;
@@ -228,55 +222,6 @@ function onUse(item: InventoryItem) {
 }
 .cc-hp-formula em { color: var(--vtt-text-secondary); font-style: normal; }
 .cc-hp-formula-note { color: var(--vtt-accent-deep); }
-
-.cc-summary {
-  display: grid;
-  grid-template-columns: 22px 1fr auto;
-  align-items: center;
-  column-gap: 14px;
-  padding: 12px 14px;
-  background: rgba(140, 106, 58, 0.08);
-  border: 1px solid rgba(140, 106, 58, 0.3);
-  border-radius: var(--r-sm);
-}
-.cc-check {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--r-pill);
-  background: transparent;
-  border: 1px solid rgba(140, 106, 58, 0.35);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-}
-.cc-check svg { width: 12px; height: 12px; }
-.cc-check.cc-check-locked {
-  background: rgba(140, 106, 58, 0.45);
-  border-color: rgba(140, 106, 58, 0.55);
-  color: var(--vtt-accent-soft);
-}
-.cc-summary-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.cc-summary-name {
-  font-family: var(--font-serif);
-  font-size: 16px;
-  color: var(--vtt-text-primary);
-  line-height: 1.2;
-}
-.cc-summary-desc {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-  line-height: 1.35;
-}
-.cc-summary-flag {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
 
 .cc-gear-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .cc-gear-btn {

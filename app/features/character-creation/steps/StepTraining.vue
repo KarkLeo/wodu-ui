@@ -8,6 +8,7 @@ import SpiritCard from '@/features/in-game/components/magic/SpiritCard.vue'
 import RitualCard from '@/features/in-game/components/magic/RitualCard.vue'
 import CantripChip from '@/features/in-game/components/magic/CantripChip.vue'
 import SectionHeader from '@/components/ui/SectionHeader.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { t } from '@/locales'
 import { skillName, abilityName, abilityDescription, cantripName } from '@/locales/content'
 
@@ -207,7 +208,7 @@ function onAbilityClick(id: AbilityId) {
     />
 
     <div class="cc-magic-group">
-      <span class="cc-magic-sub">{{ t('characterCreation.training.spiritsSection') }}</span>
+      <SectionLabel tone="neutral">{{ t('characterCreation.training.spiritsSection') }}</SectionLabel>
       <div class="cc-magic-stack">
         <SpiritCard
           v-for="(sp, idx) in (draft.magic?.spirits ?? [])"
@@ -220,7 +221,7 @@ function onAbilityClick(id: AbilityId) {
     </div>
 
     <div v-if="hasRitualAbility" class="cc-magic-group">
-      <span class="cc-magic-sub">{{ t('characterCreation.training.ritualsHint') }}</span>
+      <SectionLabel tone="neutral">{{ t('characterCreation.training.ritualsHint') }}</SectionLabel>
       <div class="cc-magic-stack">
         <RitualCard
           v-for="i in 2"
@@ -233,7 +234,7 @@ function onAbilityClick(id: AbilityId) {
     </div>
 
     <div v-if="cantrips.length" class="cc-magic-group">
-      <span class="cc-magic-sub">{{ t('characterCreation.training.cantripsSection') }}</span>
+      <SectionLabel tone="neutral">{{ t('characterCreation.training.cantripsSection') }}</SectionLabel>
       <div class="cc-cantrips-row">
         <CantripChip v-for="c in cantrips" :key="c" :name="cantripName(c)" />
       </div>
@@ -346,13 +347,6 @@ function onAbilityClick(id: AbilityId) {
 .cc-skill .lock-glyph svg { width: 100%; height: 100%; }
 
 .cc-magic-group { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
-.cc-magic-sub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
 .cc-magic-stack { display: flex; flex-direction: column; gap: 10px; }
 .cc-cantrips-row { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>

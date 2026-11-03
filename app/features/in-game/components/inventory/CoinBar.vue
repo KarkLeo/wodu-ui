@@ -4,6 +4,7 @@ import IconCoin from '@/components/ui/icons/IconCoin.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconMinus from '@/components/ui/icons/IconMinus.vue'
 import IconButton from '@/components/ui/IconButton.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { t } from '@/locales'
 
 const props = defineProps<{ coins: number }>()
@@ -35,7 +36,7 @@ function bump(delta: number) {
 <template>
   <div class="coin-bar">
     <div class="coin-bar-icon"><IconCoin /></div>
-    <span class="coin-bar-label">{{ t('inGame.inventory.coinsLabel') }}</span>
+    <SectionLabel tone="neutral">{{ t('inGame.inventory.coinsLabel') }}</SectionLabel>
     <input
       v-if="editing"
       class="coin-bar-input"
@@ -81,13 +82,6 @@ function bump(delta: number) {
   flex-shrink: 0;
 }
 .coin-bar-icon :deep(svg) { width: 100%; height: 100%; }
-.coin-bar-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
 .coin-bar-value {
   font-family: var(--font-serif);
   font-size: 22px;

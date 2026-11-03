@@ -16,6 +16,7 @@ import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FormError from '@/components/ui/FormError.vue'
 import IconButton from '@/components/ui/IconButton.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { useGameLayout } from '@/components/layout/gameLayoutContext'
@@ -254,7 +255,7 @@ function logDelta(e: ChangeEntry): string | undefined {
       >
         <IconChevronRight :size="14" />
       </IconButton>
-      <span class="drawer-title">{{ t('diceDrawer.title') }}</span>
+      <SectionLabel size="md" class="drawer-title">{{ t('diceDrawer.title') }}</SectionLabel>
       <IconButton
         class="drawer-clear"
         :title="t('diceDrawer.actions.clear')"
@@ -428,15 +429,7 @@ function logDelta(e: ChangeEntry): string | undefined {
   gap: 10px;
   padding: var(--s-3) var(--s-4) var(--s-2);
 }
-.drawer-title {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-  margin: 0;
-}
+.drawer-title { flex: 1; }
 
 
 .drawer-filter {
@@ -522,7 +515,6 @@ function logDelta(e: ChangeEntry): string | undefined {
 .dice-row-formula .f-expr { color: var(--vtt-text-primary); font-weight: 500; }
 .dice-row-formula .f-rolls { color: var(--vtt-text-muted); font-style: italic; margin: 0 4px; }
 .dice-row-formula .f-rolls em { color: var(--vtt-text-secondary); font-style: normal; }
-.dice-row-formula .f-mod { color: var(--vtt-text-muted); }
 .dice-row-formula .f-alt {
   color: var(--vtt-text-muted);
   font-style: italic;

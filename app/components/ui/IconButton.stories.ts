@@ -99,6 +99,36 @@ export const Pressed: Story = {
   },
 }
 
+/** A disclosure toggle passes `expanded` through as `aria-expanded`; a plain button carries neither attribute. */
+export const Expanded: Story = {
+  tags: ['no-visual'],
+  render: () => ({
+    components: { IconButton, IconMenu, IconClose },
+    setup: () => ({ open: ref(false) }),
+    template: `
+      <div style="display: flex; gap: 8px; align-items: flex-start">
+        <IconButton label="Show details" aria-controls="details" :expanded="open" @click="open = !open"><IconMenu :size="14" /></IconButton>
+        <IconButton label="Dismiss"><IconClose :size="12" /></IconButton>
+        <p v-if="open" id="details" style="margin: 0">Details</p>
+      </div>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const toggle = canvas.getByRole('button', { name: 'Show details' })
+    const plain = canvas.getByRole('button', { name: 'Dismiss' })
+    await expect(plain).not.toHaveAttribute('aria-expanded')
+    await expect(plain).not.toHaveAttribute('aria-pressed')
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await expect(toggle).not.toHaveAttribute('aria-pressed')
+    await userEvent.click(toggle)
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(canvas.getByText('Details')).toBeVisible()
+    await userEvent.click(toggle)
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  },
+}
+
 /** Disabled: dimmed, and a click does nothing. */
 export const Disabled: Story = {
   args: { label: 'Clear history', disabled: true },

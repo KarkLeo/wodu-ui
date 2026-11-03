@@ -27,7 +27,7 @@ const isInteractive = computed(() => props.interactive ?? (typeof props.as !== '
   <component
     :is="as"
     :class="['avatar', `sz-${size}`, { 'is-selected': selected, 'is-interactive': isInteractive }]"
-  >{{ initial }}<slot /></component>
+  ><span :aria-hidden="isInteractive ? undefined : 'true'">{{ initial }}</span><slot /></component>
 </template>
 
 <style scoped>
@@ -78,7 +78,6 @@ const isInteractive = computed(() => props.interactive ?? (typeof props.as !== '
   box-shadow: inset 0 0 0 1px var(--vtt-border-strong);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vtt-accent-soft) 28%, transparent);
 }
-.avatar.is-interactive:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: 2px; }
 .avatar.is-interactive.is-selected,
 .avatar.is-interactive[aria-current='page'] {
   box-shadow: inset 0 0 0 1px var(--vtt-border-gold), 0 0 10px var(--vtt-border-gold);

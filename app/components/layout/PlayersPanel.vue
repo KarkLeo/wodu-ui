@@ -160,6 +160,7 @@ async function startNew() {
         class="player-row"
         :subtitle="subLine(c)"
         :selected="openIdsSet.has(c.id)"
+        :pressed="openIdsSet.has(c.id)"
         @click="toggleCharacter(c.id)"
       >
         <template #leading><Avatar :name="c.name" :selected="openIdsSet.has(c.id)" /></template>

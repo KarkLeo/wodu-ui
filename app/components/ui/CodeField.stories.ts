@@ -83,6 +83,30 @@ export const ResetAndFocus: Story = {
   },
 }
 
+/** A field mounted again on the same page (back to the email step and on) takes the focus again. */
+export const FocusOnRemount: Story = {
+  tags: ['no-visual'],
+  args: { autofocus: true },
+  render: (args) => ({
+    components: { CodeField, Button },
+    setup: () => ({ args, shown: ref(true) }),
+    template: `
+      <div style="display: grid; gap: 12px">
+        <CodeField v-if="shown" v-bind="args" />
+        <Button variant="ghost" size="sm" @click="shown = !shown">{{ shown ? 'Hide' : 'Show' }}</Button>
+      </div>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(input(canvasElement)).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: 'Hide' }))
+    await expect(canvas.queryByLabelText('Code from the email')).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Show' }))
+    await waitFor(() => expect(input(canvasElement)).toHaveFocus())
+  },
+}
+
 export const Disabled: Story = {
   args: { disabled: true },
   play: async ({ canvasElement }) => {

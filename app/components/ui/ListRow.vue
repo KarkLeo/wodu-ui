@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed, useAttrs, useSlots } from 'vue'
 import type { Component } from 'vue'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
   /** `button` or `a` / RouterLink for a row that acts, `div` / `li` for a static one. */
@@ -17,29 +19,45 @@ const props = withDefaults(defineProps<{
   /** An italic line under the sub line (cards only need it so far). */
   note?: string
   selected?: boolean
+  /** A button row that toggles something (a sheet it opens) sets this; it becomes `aria-pressed`. */
+  pressed?: boolean
+  /** A disabled link row renders without its link, so it neither navigates nor takes the focus. */
   disabled?: boolean
 }>(), {
   as: 'div',
   variant: 'plain',
   subtitleTone: 'neutral',
   selected: false,
+  // Left out unless set, so a row that toggles nothing carries no aria-pressed.
+  pressed: undefined,
   disabled: false,
 })
 
 const slots = useSlots()
+const attrs = useAttrs()
 
 const isButton = computed(() => props.as === 'button')
 const interactive = computed(() => typeof props.as !== 'string' || props.as === 'button' || props.as === 'a')
+const disabledLink = computed(() => props.disabled && interactive.value && !isButton.value)
+
+// A disabled link becomes an `<a>` without href, RouterLink `to` or click handlers.
+function rootAttrs() {
+  if (!disabledLink.value) return attrs
+  const { href: _href, to: _to, onClick: _onClick, ...rest } = attrs
+  return { ...rest, role: 'link' }
+}
 // A card keeps its trailing piece on the title line; a plain row gives it a column of its own.
 const trailingInHead = computed(() => props.variant !== 'plain')
 </script>
 
 <template>
   <component
-    :is="as"
+    :is="disabledLink ? 'a' : as"
+    v-bind="rootAttrs()"
     :type="isButton ? 'button' : undefined"
     :disabled="isButton ? disabled : undefined"
     :aria-disabled="!isButton && disabled ? 'true' : undefined"
+    :aria-pressed="isButton ? pressed : undefined"
     :class="[
       'list-row',
       `is-${variant === 'plain' ? 'plain' : 'card'}`,
@@ -156,7 +174,6 @@ const trailingInHead = computed(() => props.variant !== 'plain')
   transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease);
 }
 .is-card.is-interactive:hover:not(.is-disabled) { border-color: var(--vtt-border-strong); background: var(--vtt-bg-elevated); }
-.is-card.is-interactive:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: 2px; }
 .list-row.is-card.is-selected { border-color: var(--vtt-border-gold); }
 .list-row.is-dashed { opacity: 0.7; border-style: dashed; background: transparent; }
 .list-row.is-dashed.is-interactive:hover:not(.is-disabled) { opacity: 1; background: var(--vtt-bg-surface); }

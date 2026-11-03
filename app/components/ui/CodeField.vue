@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<{
   /** Number of cells; the code is complete when it has this many characters. */
@@ -44,6 +44,11 @@ function onInput(e: Event) {
 // A reset from outside (a wrong code, a new code sent) empties the input as well.
 watch(model, (value) => {
   if (input.value && input.value.value !== value) input.value.value = value
+})
+
+// The attribute alone is honoured once per document, so a second mount in the SPA would not get the focus.
+onMounted(() => {
+  if (props.autofocus) input.value?.focus()
 })
 
 defineExpose({ focus: () => input.value?.focus() })

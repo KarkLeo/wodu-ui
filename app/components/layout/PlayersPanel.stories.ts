@@ -60,6 +60,9 @@ export const OneOpen: Story = {
     await expect(canvas.queryByRole('radio', { name: 'Online' })).toBeNull()
     await expect(canvas.queryByText('Offline characters', { exact: false })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Full state reset' })).toBeNull()
+    // The open sheet's row is pressed, and the avatar's initial is not part of the row's name.
+    await expect(canvas.getByRole('button', { name: new RegExp(`^${brann.name}`) })).toHaveAttribute('aria-pressed', 'true')
+    await expect(canvas.getByRole('button', { name: new RegExp(`^${mirel.name}`) })).toHaveAttribute('aria-pressed', 'false')
   },
 }
 
@@ -80,8 +83,10 @@ export const OpenAnother: Story = {
   loaders: [atRoute(`/party/${brann.id}`)],
   play: async ({ canvasElement }) => {
     const row = await within(canvasElement).findByRole('button', { name: new RegExp(mirel.name) })
+    await expect(row).toHaveAttribute('aria-pressed', 'false')
     await userEvent.click(row)
     await expect(row).toHaveClass('is-selected')
+    await expect(row).toHaveAttribute('aria-pressed', 'true')
   },
 }
 
