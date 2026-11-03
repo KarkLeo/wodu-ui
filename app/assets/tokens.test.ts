@@ -65,10 +65,10 @@ describe('Pill tones', () => {
     return { color: values('color'), background: values('background') }
   }
   const base = block('.pill')
+  const toneNames = [...pillCss.matchAll(/\n\.is-([a-z]+) \{/g)].map((m) => m[1])
   const tones = {
     neutral: base,
-    accent: { ...base, ...pick(block('.is-accent')) },
-    danger: { ...base, ...pick(block('.is-danger')) },
+    ...Object.fromEntries(toneNames.map((name) => [name, { ...base, ...pick(block(`.is-${name}`)) }])),
   }
   function pick(b: { color: string[]; background: string[] }) {
     return Object.fromEntries(Object.entries(b).filter(([, v]) => v.length))
@@ -80,6 +80,7 @@ describe('Pill tones', () => {
   )
 
   it('reads every tone from Pill.vue', () => {
+    expect(toneNames).toEqual(expect.arrayContaining(['accent', 'danger']))
     for (const { color, background } of Object.values(tones)) {
       expect(color.length).toBeGreaterThan(0)
       expect(background.length).toBeGreaterThan(0)
