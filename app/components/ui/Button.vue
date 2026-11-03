@@ -77,8 +77,8 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-text-secondary);
   border-color: var(--vtt-border-subtle);
   /* A transparent button over the textured background reads poorly without it. */
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
 .v-ghost:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--vtt-border-strong);
