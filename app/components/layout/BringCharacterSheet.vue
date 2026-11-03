@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { useCharactersStore } from '@/stores/characters'
 import { currentUser } from '@/transport/auth'
@@ -44,7 +46,7 @@ async function bring(c: Character) {
 <template>
   <BottomSheet v-model:open="open" :title="t('games.bring.title')" :max-width="420">
     <div class="gs-stack">
-      <p class="gs-hint">{{ t('games.bring.hint') }}</p>
+      <StateNote inline align="start" size="sm">{{ t('games.bring.hint') }}</StateNote>
       <ul v-if="free.length" class="gs-list">
         <li v-for="c in free" :key="c.id">
           <button type="button" class="gs-row" :disabled="busy" @click="bring(c)">
@@ -56,7 +58,7 @@ async function bring(c: Character) {
           </button>
         </li>
       </ul>
-      <div v-else class="gs-empty">{{ t('games.bring.empty') }}</div>
+      <EmptyState v-else :hint="t('games.bring.empty')" />
     </div>
   </BottomSheet>
 </template>

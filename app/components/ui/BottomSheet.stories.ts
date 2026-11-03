@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import { ref, watch } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import Button from './Button.vue'
@@ -98,4 +98,31 @@ export const Narrow: Story = {
       </BottomSheet>
     `,
   }),
+}
+
+/** The `head-right` slot puts a short status next to the close button, e.g. the coins in the catalog. */
+export const HeadRight: Story = {
+  args: { open: true },
+  render: (args) => ({
+    components: { BottomSheet, Button },
+    setup() {
+      const open = ref(args.open)
+      watch(() => args.open, (v) => { open.value = v })
+      return { args, open, catalog }
+    },
+    template: `
+      <Button variant="hero" @click="open = true">Open catalog</Button>
+      <BottomSheet v-bind="args" v-model:open="open">
+        <template #head-right>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--vtt-accent)">42 s.</span>
+        </template>
+        ${listTemplate}
+      </BottomSheet>
+    `,
+  }),
+  play: async () => {
+    const dialog = await within(document.body).findByRole('dialog', { name: 'Gear catalog' })
+    await expect(within(dialog).getByText('42 s.')).toBeVisible()
+    await expect(within(dialog).getByRole('button', { name: 'Close' })).toBeVisible()
+  },
 }

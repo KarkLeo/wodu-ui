@@ -86,11 +86,3 @@
   color: var(--vtt-danger-bright);
   background: rgba(121, 43, 59, 0.16);
 }
-.lu-empty {
-  padding: 24px;
-  text-align: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  color: var(--vtt-text-muted);
-}

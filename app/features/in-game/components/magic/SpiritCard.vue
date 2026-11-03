@@ -7,6 +7,8 @@ import SphereChip from './SphereChip.vue'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import Button from '@/components/ui/Button.vue'
+import TextField from '@/components/ui/TextField.vue'
+import TextareaField from '@/components/ui/TextareaField.vue'
 import { t } from '@/locales'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 
@@ -104,47 +106,31 @@ function save() {
     </template>
 
     <form v-else class="spirit-edit-form" @click.stop @submit.prevent="save">
-      <div class="form-row">
-        <label class="form-label">{{ t('inGame.magic.spirits.name') }}</label>
-        <input
-          v-model="draft.name"
-          class="form-input"
-          :placeholder="t('inGame.magic.spirits.namePlaceholder')"
-        />
-      </div>
-      <div class="form-row">
-        <label class="form-label">{{ t('inGame.magic.spirits.appearance') }}</label>
-        <textarea
-          v-model="draft.appearance"
-          class="form-textarea"
-          :placeholder="t('inGame.magic.spirits.appearancePlaceholder')"
-        />
-      </div>
+      <TextField
+        v-model="draft.name"
+        :label="t('inGame.magic.spirits.name')"
+        :placeholder="t('inGame.magic.spirits.namePlaceholder')"
+      />
+      <TextareaField
+        v-model="draft.appearance"
+        :label="t('inGame.magic.spirits.appearance')"
+        :placeholder="t('inGame.magic.spirits.appearancePlaceholder')"
+      />
       <div class="form-row-pair">
-        <div class="form-row">
-          <label class="form-label">
-            {{ t('inGame.magic.spirits.sphere1') }}
-            <span class="form-label-note">{{ t('inGame.magic.spirits.sphereCustomNote') }}</span>
-          </label>
-          <input
-            v-model="draft.sphere1"
-            class="form-input"
-            list="sphere-presets"
-            :placeholder="t('inGame.magic.spirits.sphereEmpty')"
-          />
-        </div>
-        <div class="form-row">
-          <label class="form-label">
-            {{ t('inGame.magic.spirits.sphere2') }}
-            <span class="form-label-note">{{ t('inGame.magic.spirits.sphereCustomNote') }}</span>
-          </label>
-          <input
-            v-model="draft.sphere2"
-            class="form-input"
-            list="sphere-presets"
-            :placeholder="t('inGame.magic.spirits.sphereEmpty')"
-          />
-        </div>
+        <TextField
+          v-model="draft.sphere1"
+          list="sphere-presets"
+          :label="t('inGame.magic.spirits.sphere1')"
+          :optional="t('inGame.magic.spirits.sphereCustomNote')"
+          :placeholder="t('inGame.magic.spirits.sphereEmpty')"
+        />
+        <TextField
+          v-model="draft.sphere2"
+          list="sphere-presets"
+          :label="t('inGame.magic.spirits.sphere2')"
+          :optional="t('inGame.magic.spirits.sphereCustomNote')"
+          :placeholder="t('inGame.magic.spirits.sphereEmpty')"
+        />
       </div>
       <datalist id="sphere-presets">
         <option v-for="id in SPHERE_PRESET_IDS" :key="id" :value="spherePresetName(id)" />
@@ -248,55 +234,7 @@ function save() {
   gap: 10px;
   margin-top: 8px;
 }
-.form-row { display: flex; flex-direction: column; gap: 4px; }
 .form-row-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-.form-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-.form-label-note {
-  margin-left: 6px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 10px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--vtt-text-muted);
-  opacity: 0.8;
-}
-.form-input,
-.form-textarea {
-  width: 100%;
-  padding: 8px 11px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  box-sizing: border-box;
-}
-.form-textarea {
-  font-family: var(--font-serif);
-  font-style: italic;
-  min-height: 68px;
-  resize: none;
-}
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
-}
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: var(--vtt-text-muted);
-  font-style: italic;
-}
 
 .spirit-edit-foot {
   display: flex;

@@ -64,8 +64,9 @@ export default defineConfig({
                 // Paths carry no directory, browser or platform so that moving sources does not orphan the baseline.
                 resolveScreenshotPath: ({ testFileName, testName, ext }) =>
                   resolve(import.meta.dirname, '.visual/baseline', testFileName, testName + ext),
-                resolveDiffPath: ({ testFileName, testName, ext }) =>
-                  resolve(import.meta.dirname, '.visual/diff', testFileName, testName + ext),
+                // Vitest writes the reference copy, the actual screenshot and the diff here; `arg` ends in their role.
+                resolveDiffPath: ({ testFileName, testName, arg, ext }) =>
+                  resolve(import.meta.dirname, '.visual/diff', testFileName, testName + (arg.match(/-(reference|actual|diff)$/)?.[0] ?? '') + ext),
               },
             },
           },

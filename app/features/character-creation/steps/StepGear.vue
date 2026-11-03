@@ -12,6 +12,7 @@ import InvItem from '@/features/in-game/components/inventory/InvItem.vue'
 import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { t } from '@/locales'
 
 const { draft, dispatch, setHitDiceResult } = useCharacterCreation()
@@ -144,7 +145,7 @@ function onUse(item: InventoryItem) {
         @remove="removeItem(item.id)"
       />
     </div>
-    <div v-else class="cc-gear-empty">{{ t('characterCreation.gear.boughtEmpty') }}</div>
+    <EmptyState v-else :hint="t('characterCreation.gear.boughtEmpty')" />
   </section>
 
   <CatalogSheet
@@ -317,13 +318,4 @@ function onUse(item: InventoryItem) {
 }
 
 .cc-gear-list { display: flex; flex-direction: column; gap: 8px; }
-.cc-gear-empty {
-  padding: 18px 14px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-size: 12px;
-  font-style: italic;
-  border: 1px dashed var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-}
 </style>

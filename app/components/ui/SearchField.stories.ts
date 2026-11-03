@@ -19,7 +19,7 @@ const meta = {
       watch(() => args.modelValue, (v) => { value.value = v })
       return { args, value }
     },
-    template: `<SearchField v-model="value" :label="args.label" :placeholder="args.placeholder"
+    template: `<SearchField v-model="value" :label="args.label" :placeholder="args.placeholder" :size="args.size"
       @update:model-value="args['onUpdate:modelValue']" />`,
   }),
   decorators: [() => ({ template: '<div style="max-width: 360px"><story /></div>' })],
@@ -55,5 +55,15 @@ export const Clearing: Story = {
     await expect(input).toHaveFocus()
     await expect(args['onUpdate:modelValue']).toHaveBeenLastCalledWith('')
     await expect(canvas.queryByRole('button', { name: 'Clear search' })).toBeNull()
+  },
+}
+
+/** Tight headers (the gear catalog): smaller pill and placeholder, while typed text stays 16px so iOS does not zoom. */
+export const Compact: Story = {
+  args: { size: 'sm', placeholder: 'Search: sword, armor, bandage…' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('searchbox', { name: 'Search items' })
+    await expect(getComputedStyle(input).fontSize).toBe('16px')
+    await expect(input.closest('label')!.getBoundingClientRect().height).toBeLessThan(34)
   },
 }

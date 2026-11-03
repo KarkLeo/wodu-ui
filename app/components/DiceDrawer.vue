@@ -13,7 +13,10 @@ import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import FormError from '@/components/ui/FormError.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { useGameLayout } from '@/components/layout/gameLayoutContext'
 
 const filterOptions = computed<Array<{ value: LogFilter; label: string }>>(() => [
@@ -275,12 +278,9 @@ function logDelta(e: ChangeEntry): string | undefined {
 
     <div class="drawer-log">
       <div v-if="!items.length" class="drawer-empty">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
-          <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
-          <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
-        </svg>
-        <div class="e-title">{{ t('diceDrawer.empty.title') }}</div>
-        <div class="e-hint">{{ t('diceDrawer.empty.hint') }}</div>
+        <EmptyState variant="plain" :title="t('diceDrawer.empty.title')" :hint="t('diceDrawer.empty.hint')">
+          <template #icon><IconDice /></template>
+        </EmptyState>
       </div>
 
       <template v-for="item in items" :key="item.id">
@@ -409,9 +409,11 @@ function logDelta(e: ChangeEntry): string | undefined {
           {{ t('diceDrawer.input.submit') }}
         </button>
       </div>
-      <div v-if="notationError" class="drawer-input-hint is-error">{{ notationError }}</div>
-      <div v-else-if="readOnlyActive" class="drawer-input-hint">{{ t('diceDrawer.input.readOnly', { name: readOnlyActive.name }) }}</div>
-      <div v-else-if="!activeChar" class="drawer-input-hint">{{ t('diceDrawer.input.hint') }}</div>
+      <div v-if="notationError || readOnlyActive || !activeChar" class="drawer-input-note">
+        <FormError v-if="notationError">{{ notationError }}</FormError>
+        <StateNote v-else-if="readOnlyActive" inline align="start" size="xs">{{ t('diceDrawer.input.readOnly', { name: readOnlyActive.name }) }}</StateNote>
+        <StateNote v-else inline align="start" size="xs">{{ t('diceDrawer.input.hint') }}</StateNote>
+      </div>
     </div>
   </aside>
 </template>
@@ -486,22 +488,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 }
 .drawer-log::-webkit-scrollbar-track { background: transparent; }
 
-.drawer-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px;
-  flex: 1;
-  min-height: 200px;
-  color: var(--vtt-text-muted);
-  text-align: center;
-  padding: 0 24px;
-}
-.drawer-empty svg { width: 48px; height: 48px; opacity: 0.4; color: var(--vtt-accent-deep); }
-.drawer-empty .e-title {
-  font-family: var(--font-serif);
-  font-size: 15px; font-style: italic;
-  color: var(--vtt-text-secondary);
-}
-.drawer-empty .e-hint { font-size: 12px; }
+.drawer-empty { flex: 1; min-height: 200px; display: flex; align-items: center; }
 
 /* Dice row */
 .dice-row {
@@ -854,12 +841,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 .btn-hero:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
 .btn-hero svg { width: 14px; height: 14px; }
 
-.drawer-input-hint {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--vtt-text-muted);
-  margin-top: 6px;
-}
-.drawer-input-hint.is-error { color: var(--vtt-danger-bright); }
+.drawer-input-note { margin-top: 6px; }
 
 /* ── COLLAPSED VIEW · rail 56px ─────────────────────── */
 .dice-rail {

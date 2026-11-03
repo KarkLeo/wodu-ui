@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import ScreenColumn from '@/components/layout/ScreenColumn.vue'
 import Button from '@/components/ui/Button.vue'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
@@ -113,7 +114,7 @@ function goHome() {
 </script>
 
 <template>
-  <div class="content-wrap jv-screen">
+  <ScreenColumn size="narrow">
     <section class="jv-card" :aria-busy="state === 'checking' || state === 'joining'">
       <template v-if="state === 'checking' || state === 'joining'">
         <p class="eyebrow">{{ t('games.invite.eyebrow') }}</p>
@@ -149,16 +150,10 @@ function goHome() {
         </div>
       </template>
     </section>
-  </div>
+  </ScreenColumn>
 </template>
 
 <style scoped>
-.jv-screen {
-  --jv-w: min(420px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-  width: var(--jv-w);
-  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--jv-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--jv-w));
-  padding: 48px 16px;
-}
 .jv-card {
   display: flex;
   flex-direction: column;

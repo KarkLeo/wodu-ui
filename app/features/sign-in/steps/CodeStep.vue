@@ -2,6 +2,8 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AuthScreen from '../AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
+import FormError from '@/components/ui/FormError.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { OTP_LENGTH, OTP_TTL_MS, RESEND_COOLDOWN_MS, sanitizeCode } from '@/transport/authHelpers'
 import { t } from '@/locales'
 
@@ -83,8 +85,8 @@ watch(() => props.sentAt, () => {
       </div>
     </div>
 
-    <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
-    <p v-else class="cs-hint">{{ t('auth.code.hint') }}</p>
+    <FormError v-if="error" role="alert">{{ error }}</FormError>
+    <StateNote v-else inline align="start" size="xs">{{ t('auth.code.hint') }}</StateNote>
 
     <div class="cs-row">
       <span class="cs-status">
@@ -96,7 +98,7 @@ watch(() => props.sentAt, () => {
     </div>
 
     <template #footer>
-      <p class="auth-note">{{ t('auth.code.spamHint') }}</p>
+      <StateNote inline size="xs">{{ t('auth.code.spamHint') }}</StateNote>
     </template>
   </AuthScreen>
 </template>
@@ -149,14 +151,6 @@ watch(() => props.sentAt, () => {
   box-shadow: 0 6px 10px -8px rgba(212, 168, 87, 0.6);
 }
 
-.cs-hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--vtt-text-muted);
-}
 .cs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-1); }
 .cs-status {
   font-family: var(--font-mono);

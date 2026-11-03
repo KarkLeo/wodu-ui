@@ -35,3 +35,28 @@ export const WithAction: Story = {
     `,
   }),
 }
+
+/** A hint in the flow of a sheet or a form: no room around it, left-aligned, panel size. */
+export const InlineHint: Story = {
+  args: { inline: true, align: 'start', size: 'sm' },
+  render: (args) => ({
+    components: { StateNote },
+    setup: () => ({ args }),
+    template: `
+      <div style="max-width: 360px; display: flex; flex-direction: column; gap: 12px">
+        <StateNote v-bind="args">Pick a character to bring to the table. It stays yours; the master can see it.</StateNote>
+        <div style="height: 40px; border: 1px solid var(--vtt-border-subtle); border-radius: var(--r-md)" />
+      </div>
+    `,
+  }),
+}
+
+/** A footnote under the actions of a screen, centred and small. */
+export const Footnote: Story = {
+  args: { inline: true, size: 'xs' },
+  render: (args) => ({
+    components: { StateNote },
+    setup: () => ({ args }),
+    template: '<div style="max-width: 360px"><StateNote v-bind="args">Characters stay on this device only.</StateNote></div>',
+  }),
+}

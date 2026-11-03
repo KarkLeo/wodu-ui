@@ -2,7 +2,8 @@
 import { ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
-import AuthField from '@/features/sign-in/AuthField.vue'
+import FormError from '@/components/ui/FormError.vue'
+import TextField from '@/components/ui/TextField.vue'
 import { useAccount } from '@/composables/useAccount'
 import { NAME_MAX } from '@/transport/authHelpers'
 import { t } from '@/locales'
@@ -42,15 +43,16 @@ async function save() {
 <template>
   <BottomSheet v-model:open="open" :title="t('profile.changeName')" :max-width="420">
     <form class="rs-form" @submit.prevent="save">
-      <AuthField
-        id="account-name"
+      <TextField
         v-model="draft"
+        variant="underline"
         :label="t('auth.name.label')"
         :hint="t('auth.name.hint')"
         :maxlength="NAME_MAX"
         autocomplete="nickname"
+        :spellcheck="false"
       />
-      <p v-if="error" class="rs-error" role="alert">{{ error }}</p>
+      <FormError v-if="error" role="alert">{{ error }}</FormError>
       <Button type="submit" variant="hero" class="rs-save" :disabled="busy || !draft.trim()">
         {{ t('common.save') }}
       </Button>
@@ -60,6 +62,5 @@ async function save() {
 
 <style scoped>
 .rs-form { display: flex; flex-direction: column; gap: var(--s-4); }
-.rs-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 .rs-save { align-self: flex-end; }
 </style>

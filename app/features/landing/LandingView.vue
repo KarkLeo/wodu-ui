@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import AuthScreen from '@/features/sign-in/AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import { signedIn } from '@/transport/auth'
 import { t } from '@/locales'
 
@@ -28,7 +29,7 @@ function playOffline() {
       <Button variant="ghost" size="lg" class="auth-wide" @click="playOffline">
         {{ t('auth.email.playOffline') }}
       </Button>
-      <p class="lv-offline-hint">{{ t('auth.email.offlineHint') }}</p>
+      <StateNote inline size="xs">{{ t('auth.email.offlineHint') }}</StateNote>
     </template>
   </AuthScreen>
 </template>
@@ -38,13 +39,5 @@ function playOffline() {
   height: 1px;
   margin-bottom: var(--s-2);
   background: linear-gradient(90deg, transparent, rgba(140, 106, 58, 0.4), transparent);
-}
-.lv-offline-hint {
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 11px;
-  color: var(--vtt-text-muted);
 }
 </style>

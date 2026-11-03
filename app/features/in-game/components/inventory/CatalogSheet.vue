@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogClose, DialogTitle } from 'reka-ui'
-import IconClose from '@/components/ui/icons/IconClose.vue'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import SearchField from '@/components/ui/SearchField.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import { GEAR_CATEGORY_IDS, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
 import { isConsumable } from '@/domain/inventory'
@@ -58,164 +59,78 @@ function onBuyClick(tpl: GearTemplate) {
 </script>
 
 <template>
-  <DialogRoot v-model:open="open">
-    <DialogPortal>
-      <DialogOverlay class="bs-overlay" />
-      <DialogContent class="bs-content-wrap" :aria-describedby="undefined">
-        <div class="bottom-sheet catalog-sheet">
-          <div class="bs-head">
-            <DialogTitle as="span" class="bs-title">{{ t('inGame.inventory.catalog.title') }}</DialogTitle>
-            <div class="bs-head-right">
-              <span class="bs-coins">{{ coins }} {{ t('inGame.inventory.coinsUnit') }}</span>
-              <DialogClose class="bs-close" :aria-label="t('common.close')">
-                <IconClose />
-              </DialogClose>
-            </div>
-          </div>
-          <div class="bs-body">
-            <div class="catalog-search">
-              <input
-                class="catalog-search-input"
-                type="text"
-                :placeholder="t('inGame.inventory.catalog.search')"
-                v-model="search"
-              />
-              <SegmentedFilter v-model="activeCat" :options="segments" class="catalog-segments" />
-            </div>
+  <BottomSheet v-model:open="open" :title="t('inGame.inventory.catalog.title')" :max-width="560">
+    <template #head-right>
+      <span class="catalog-coins">{{ coins }} {{ t('inGame.inventory.coinsUnit') }}</span>
+    </template>
 
-            <div v-if="!filtered.length" class="catalog-empty">
-              {{ t('inGame.inventory.catalog.empty') }}
-            </div>
-            <div v-else>
-              <div v-for="tpl in filtered" :key="tpl.templateId" class="cat-item">
-                <ItemIcon
-                  :kind="tpl.descriptor.kind"
-                  :consumable="isConsumable(tpl)"
-                />
-                <div class="cat-item-body">
-                  <div class="cat-item-name">{{ gearName(tpl.templateId) }}</div>
-                  <div v-if="gearNotes(tpl.templateId)" class="cat-item-desc">{{ gearNotes(tpl.templateId) }}</div>
-                </div>
-                <div class="cat-item-stats">
-                  <ItemStatChip v-if="tpl.damage" variant="damage">{{ tpl.damage }}</ItemStatChip>
-                  <ItemStatChip v-if="armorChip(tpl)" variant="armor">{{ armorChip(tpl) }}</ItemStatChip>
-                  <ItemStatChip
-                    v-if="isConsumable(tpl)"
-                    variant="qty"
-                  >{{ t('inGame.inventory.catalog.consumableShort') }}</ItemStatChip>
-                  <ItemStatChip
-                    v-if="tpl.price !== undefined"
-                    variant="price"
-                    :class="{ 'is-warn': (tpl.price ?? 0) > coins }"
-                  >
-                    {{ tpl.price }} {{ t('inGame.inventory.coinsUnit') }}
-                  </ItemStatChip>
-                </div>
-                <button
-                  type="button"
-                  :class="['cat-buy', { 'is-locked': (tpl.price ?? 0) > coins }]"
-                  @click="onBuyClick(tpl)"
-                >
-                  {{ (tpl.price ?? 0) > coins ? t('inGame.inventory.catalog.ask') : t('inGame.inventory.buy') }}
-                </button>
-              </div>
-            </div>
-          </div>
+    <div class="catalog-search">
+      <SearchField
+        v-model="search"
+        size="sm"
+        :label="t('inGame.inventory.catalog.search')"
+        :placeholder="t('inGame.inventory.catalog.search')"
+      />
+      <SegmentedFilter v-model="activeCat" :options="segments" class="catalog-segments" />
+    </div>
+
+    <EmptyState v-if="!filtered.length" :hint="t('inGame.inventory.catalog.empty')" />
+    <div v-else>
+      <div v-for="tpl in filtered" :key="tpl.templateId" class="cat-item">
+        <ItemIcon
+          :kind="tpl.descriptor.kind"
+          :consumable="isConsumable(tpl)"
+        />
+        <div class="cat-item-body">
+          <div class="cat-item-name">{{ gearName(tpl.templateId) }}</div>
+          <div v-if="gearNotes(tpl.templateId)" class="cat-item-desc">{{ gearNotes(tpl.templateId) }}</div>
         </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+        <div class="cat-item-stats">
+          <ItemStatChip v-if="tpl.damage" variant="damage">{{ tpl.damage }}</ItemStatChip>
+          <ItemStatChip v-if="armorChip(tpl)" variant="armor">{{ armorChip(tpl) }}</ItemStatChip>
+          <ItemStatChip
+            v-if="isConsumable(tpl)"
+            variant="qty"
+          >{{ t('inGame.inventory.catalog.consumableShort') }}</ItemStatChip>
+          <ItemStatChip
+            v-if="tpl.price !== undefined"
+            variant="price"
+            :class="{ 'is-warn': (tpl.price ?? 0) > coins }"
+          >
+            {{ tpl.price }} {{ t('inGame.inventory.coinsUnit') }}
+          </ItemStatChip>
+        </div>
+        <button
+          type="button"
+          :class="['cat-buy', { 'is-locked': (tpl.price ?? 0) > coins }]"
+          @click="onBuyClick(tpl)"
+        >
+          {{ (tpl.price ?? 0) > coins ? t('inGame.inventory.catalog.ask') : t('inGame.inventory.buy') }}
+        </button>
+      </div>
+    </div>
+  </BottomSheet>
 </template>
 
 <style scoped>
-.catalog-sheet {
-  width: 100%;
-  max-width: 560px;
-}
-.bs-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  flex-shrink: 0;
-}
-.bs-title {
-  font-family: var(--font-serif);
-  font-size: 17px;
-  color: var(--vtt-accent-soft);
-}
-.bs-head-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.bs-coins {
+.catalog-coins {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--vtt-accent);
 }
-.bs-close {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-text-secondary);
-  cursor: pointer;
-  padding: 0;
-}
-.bs-close :deep(svg) { width: 12px; height: 12px; }
-.bs-close:hover {
-  border-color: var(--vtt-border-strong);
-  color: var(--vtt-accent-soft);
-}
 
-.bs-body {
-  padding: 0 18px 18px;
-  max-height: 70vh;
-  overflow-y: auto;
-  flex: 1;
-}
-
+/* Pinned under the sheet's head while the list scrolls; the negative offsets cancel the body's top padding. */
 .catalog-search {
   position: sticky;
-  top: 0;
+  top: -14px;
   background: rgba(26, 21, 16, 0.96);
   backdrop-filter: blur(10px);
+  margin-top: -14px;
   padding: 14px 0 12px;
   margin-bottom: 8px;
   z-index: 2;
 }
-.catalog-search-input {
-  width: 100%;
-  padding: 9px 12px;
-  background: var(--vtt-bg-sunken);
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-primary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  outline: none;
-}
-.catalog-search-input::placeholder { color: var(--vtt-text-muted); }
-.catalog-search-input:focus {
-  border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
-}
 .catalog-segments { margin-top: 8px; }
-
-.catalog-empty {
-  padding: 22px 14px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-size: 13px;
-  font-style: italic;
-  border: 1px dashed var(--vtt-border-subtle);
-  border-radius: var(--r-sm);
-}
 
 .cat-item {
   display: grid;

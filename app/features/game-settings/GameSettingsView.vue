@@ -3,9 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import FormError from '@/components/ui/FormError.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import InvitePanel from '@/components/layout/InvitePanel.vue'
 import MembersList from '@/components/layout/MembersList.vue'
-import AuthField from '@/features/sign-in/AuthField.vue'
+import ScreenColumn from '@/components/layout/ScreenColumn.vue'
+import ScreenHeader from '@/components/layout/ScreenHeader.vue'
+import TextField from '@/components/ui/TextField.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { exitGameQuietly } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
@@ -80,32 +84,30 @@ function backToTable() {
 </script>
 
 <template>
-  <div class="content-wrap st-screen">
-    <header class="st-head">
-      <div class="st-titles">
-        <h1 class="st-title">{{ t('games.settings.title') }}</h1>
-        <p v-if="game" class="st-game">{{ game.name }}</p>
-      </div>
-      <Button variant="ghost" size="sm" @click="backToTable">{{ t('games.settings.back') }}</Button>
-    </header>
+  <ScreenColumn>
+    <ScreenHeader :title="t('games.settings.title')" :subtitle="game?.name">
+      <template #actions>
+        <Button variant="ghost" size="sm" @click="backToTable">{{ t('games.settings.back') }}</Button>
+      </template>
+    </ScreenHeader>
 
-    <div v-if="!game" class="st-loading" role="status">{{ t('games.loading') }}</div>
+    <StateNote v-if="!game" role="status">{{ t('games.loading') }}</StateNote>
 
     <template v-else>
       <!-- The field's own label says what it is; the section keeps a name for assistive tech. -->
       <section class="st-section" :aria-label="t('games.settings.name')">
         <form class="st-form" novalidate @submit.prevent="saveName">
-          <AuthField
-            id="game-settings-name"
+          <TextField
             v-model="name"
+            variant="underline"
             :label="t('games.create.label')"
             :placeholder="t('games.create.placeholder')"
-            autocomplete="off"
+            :spellcheck="false"
           />
-          <p v-if="nameError === 'tooLong'" class="st-error" role="alert">
+          <FormError v-if="nameError === 'tooLong'" role="alert">
             {{ t('games.create.tooLong', { max: GAME_NAME_MAX }) }}
-          </p>
-          <p v-else-if="nameStatus === 'failed'" class="st-error" role="alert">{{ t('games.settings.renameFailed') }}</p>
+          </FormError>
+          <FormError v-else-if="nameStatus === 'failed'" role="alert">{{ t('games.settings.renameFailed') }}</FormError>
           <div class="st-form-foot">
             <p class="st-status" role="status">{{ nameStatus === 'saved' ? t('games.settings.saved') : '' }}</p>
             <Button type="submit" variant="primary" size="sm" :disabled="!canSave">{{ t('common.save') }}</Button>
@@ -125,7 +127,7 @@ function backToTable() {
 
       <section class="st-section is-danger" aria-labelledby="st-delete">
         <h2 id="st-delete" class="st-label">{{ t('games.menu.delete') }}</h2>
-        <p class="st-hint">{{ t('games.settings.deleteHint') }}</p>
+        <StateNote inline align="start" size="sm">{{ t('games.settings.deleteHint') }}</StateNote>
         <Button variant="danger-ghost" size="sm" class="st-delete" @click="deleteOpen = true">{{ t('games.menu.delete') }}</Button>
       </section>
 
@@ -137,57 +139,10 @@ function backToTable() {
         </template>
       </ConfirmSheet>
     </template>
-  </div>
+  </ScreenColumn>
 </template>
 
 <style scoped>
-.st-screen {
-  /* Same column as CharacterListView: centred, never under GameLayout's side panels. */
-  --st-w: min(640px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-  width: var(--st-w);
-  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--st-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--st-w));
-  padding: 16px 16px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.st-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.st-titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.st-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 22px;
-  line-height: 1.2;
-  color: var(--vtt-accent-soft);
-}
-.st-game {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-  color: var(--vtt-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.st-loading {
-  margin: 48px auto;
-  padding: 24px;
-  text-align: center;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-}
-
 .st-section {
   display: flex;
   flex-direction: column;
@@ -208,18 +163,9 @@ function backToTable() {
   text-transform: uppercase;
   color: var(--vtt-text-muted);
 }
-.st-hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--vtt-text-muted);
-}
 
 .st-form { display: flex; flex-direction: column; gap: 10px; }
 .st-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.st-error { margin: 0; font-family: var(--font-serif); font-size: 13px; color: var(--vtt-danger-bright); }
 .st-status {
   margin: 0;
   min-height: 1.4em;

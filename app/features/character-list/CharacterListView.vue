@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
+import ScreenColumn from '@/components/layout/ScreenColumn.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { usePwaInstall } from '@/pwa/useInstall'
 import { onlineDataReady } from '@/transport/bootstrap'
@@ -35,7 +38,7 @@ function resumeCreation(id: string) {
 </script>
 
 <template>
-  <div class="content-wrap cl-screen">
+  <ScreenColumn>
     <section v-if="draftChars.length > 0" class="cl-drafts">
       <div class="cl-drafts__label">{{ t('characterList.drafts') }}</div>
       <button
@@ -52,21 +55,22 @@ function resumeCreation(id: string) {
       </button>
     </section>
 
-    <div v-if="!onlineDataReady" class="cl-loading" role="status">
+    <StateNote v-if="!onlineDataReady" role="status">
       {{ t('characterList.loading') }}
-    </div>
+    </StateNote>
 
-    <div v-else-if="activeChars.length === 0 && draftChars.length === 0" class="cl-empty">
-      <div class="cl-empty__icon">
-        <IconDice />
-      </div>
-      <div class="cl-empty__title">{{ t('characterList.empty.title') }}</div>
-      <div class="cl-empty__hint">{{ t('characterList.empty.hint') }}</div>
-    </div>
+    <EmptyState
+      v-else-if="activeChars.length === 0 && draftChars.length === 0"
+      variant="plain"
+      :title="t('characterList.empty.title')"
+      :hint="t('characterList.empty.hint')"
+    >
+      <template #icon><IconDice /></template>
+    </EmptyState>
 
-    <div v-else-if="activeChars.length > 0" class="cl-hint">
+    <StateNote v-else-if="activeChars.length > 0">
       {{ t('characterList.pickFromSidebar') }}
-    </div>
+    </StateNote>
 
     <button
       v-if="install.canInstall.value"
@@ -76,21 +80,10 @@ function resumeCreation(id: string) {
     >
       {{ t('pwa.installCta') }}
     </button>
-  </div>
+  </ScreenColumn>
 </template>
 
 <style scoped>
-.cl-screen {
-  /* Centred, but never under GameLayout's side panels: shrinks first, then shifts off-centre. */
-  --cl-w: min(640px, 100% - var(--gl-inset-left, 0px) - var(--gl-inset-right, 0px));
-  width: var(--cl-w);
-  margin-left: clamp(var(--gl-inset-left, 0px), (100% - var(--cl-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--cl-w));
-  padding: 24px 16px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 .cl-drafts { display: flex; flex-direction: column; gap: 10px; }
 .cl-drafts__label {
   font-family: var(--font-mono);
@@ -147,53 +140,6 @@ function resumeCreation(id: string) {
   background: transparent;
 }
 .cl-card--draft:hover { opacity: 1; background: var(--vtt-bg-surface); }
-
-.cl-empty {
-  margin: 32px auto;
-  padding: 40px 20px;
-  text-align: center;
-  max-width: 360px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.cl-empty__icon {
-  width: 48px;
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--vtt-border-subtle);
-  border-radius: var(--r-pill);
-  color: var(--vtt-accent-deep);
-}
-.cl-empty__icon :deep(svg) { width: 22px; height: 22px; }
-.cl-empty__title {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  color: var(--vtt-accent-soft);
-}
-.cl-empty__hint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
-
-.cl-loading,
-.cl-hint {
-  margin: 48px auto;
-  padding: 24px;
-  text-align: center;
-  max-width: 320px;
-  color: var(--vtt-text-muted);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-  line-height: 1.55;
-}
 
 .cl-install {
   align-self: center;

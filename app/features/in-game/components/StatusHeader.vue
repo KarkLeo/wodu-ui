@@ -26,6 +26,7 @@ import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
 import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
 import StatusChip from '@/components/ui/StatusChip.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconWeapon from '@/components/ui/icons/IconWeapon.vue'
@@ -272,7 +273,7 @@ async function handleRollDamage() {
               <span class="pop-title">{{ t('inGame.statusHeader.trio.damage') }}</span>
               <span class="pop-sub">—</span>
             </div>
-            <div class="sh-pop-empty">{{ t('inGame.statusHeader.trio.damageEmpty') }}</div>
+            <StateNote compact align="start" size="sm">{{ t('inGame.statusHeader.trio.damageEmpty') }}</StateNote>
           </template>
         </StatusChip>
         <StatusChip
@@ -302,7 +303,7 @@ async function handleRollDamage() {
                 <span class="br-value">{{ line.value }}</span>
               </div>
             </div>
-            <div v-else class="sh-pop-empty">{{ t('inGame.statusHeader.trio.armorEmpty') }}</div>
+            <StateNote v-else compact align="start" size="sm">{{ t('inGame.statusHeader.trio.armorEmpty') }}</StateNote>
             <div v-if="armorBreakdown.note" class="sh-pop-note">{{ tLabel(armorBreakdown.note) }}</div>
             <div v-if="!readonly" class="sh-pop-mod">
               <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
@@ -477,11 +478,6 @@ async function handleRollDamage() {
 </style>
 
 <style>
-.info-popover .sh-pop-empty {
-  font-size: 13px;
-  color: var(--vtt-text-muted);
-  padding: 8px 0;
-}
 .info-popover .sh-pop-note {
   margin-top: 10px;
   padding-top: 10px;

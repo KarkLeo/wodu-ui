@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import CreateGameSheet from './CreateGameSheet.vue'
 import JoinByCodeSheet from './JoinByCodeSheet.vue'
 import { useGamesStore } from '@/stores/games'
@@ -77,10 +78,12 @@ function joinWith(code: string) {
       </span>
     </button>
 
-    <div v-if="cards.length === 0" class="hm-empty">
-      <div class="hm-empty__title">{{ t('games.list.emptyTitle') }}</div>
-      <div class="hm-empty__hint">{{ t('games.list.emptyHint') }}</div>
-    </div>
+    <EmptyState
+      v-if="cards.length === 0"
+      variant="plain"
+      :title="t('games.list.emptyTitle')"
+      :hint="t('games.list.emptyHint')"
+    />
 
     <div class="hm-actions">
       <Button variant="hero" size="lg" @click="createOpen = true">{{ t('games.list.create') }}</Button>
