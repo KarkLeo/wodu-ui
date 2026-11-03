@@ -1,47 +1,16 @@
 <script setup lang="ts">
-type Mode = 'reference' | 'pick-multi' | 'pick-single' | 'display'
-type State = 'default' | 'selected' | 'locked'
-
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   title: string
   level?: number | string
-  mode?: Mode
   variant?: 'default' | 'reference'
-  state?: State
 }>(), {
-  mode: 'display',
   variant: 'default',
-  state: 'default',
 })
-
-const emit = defineEmits<{ (e: 'toggle'): void }>()
-
-const isPick = () => props.mode === 'pick-multi' || props.mode === 'pick-single'
-
-function onClick() {
-  if (props.state === 'locked' || !isPick()) return
-  emit('toggle')
-}
 </script>
 
 <template>
-  <div
-    :class="[
-      'ability-card',
-      `mode-${props.mode}`,
-      `variant-${props.variant}`,
-      { 'mode-pick': isPick(), 'is-selected': state === 'selected', 'is-locked': state === 'locked' },
-    ]"
-    :role="mode === 'pick-multi' ? 'checkbox' : mode === 'pick-single' ? 'radio' : undefined"
-    :aria-checked="isPick() ? state === 'selected' : undefined"
-    :aria-disabled="isPick() && state === 'locked' ? 'true' : undefined"
-    :tabindex="isPick() && state !== 'locked' ? 0 : undefined"
-    @click="onClick"
-    @keydown.space.prevent="onClick"
-    @keydown.enter.prevent="onClick"
-  >
+  <div :class="['ability-card', `variant-${variant}`]">
     <div class="ability-head">
-      <span v-if="isPick()" class="ability-head-mark" />
       <div class="ability-head-title">
         <span class="ability-head-title-text">{{ title }}</span>
         <span v-if="level !== undefined" class="ability-level-badge">{{ level }}</span>
@@ -65,7 +34,6 @@ function onClick() {
   transition: border-color var(--t-fast) var(--ease);
 }
 .ability-card:hover { border-color: var(--vtt-border-strong); }
-.ability-card.mode-pick { cursor: pointer; }
 
 .ability-head {
   display: grid;
@@ -75,23 +43,6 @@ function onClick() {
   padding: 12px 16px 8px;
   user-select: none;
 }
-.ability-card.mode-pick .ability-head {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.ability-head-mark {
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid var(--vtt-border-strong);
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.ability-card.mode-pick-multi .ability-head-mark { border-radius: 3px; }
-.ability-card.mode-pick-single .ability-head-mark { border-radius: var(--r-pill); }
-
 .ability-head-title {
   font-family: var(--font-serif);
   font-size: 16px;
@@ -137,38 +88,6 @@ function onClick() {
   border-top: 1px solid var(--vtt-border-subtle);
   margin-top: 10px;
 }
-
-.ability-card.is-selected {
-  border-color: var(--vtt-border-gold);
-  background: rgba(140, 106, 58, 0.06);
-}
-.ability-card.is-selected .ability-head-mark {
-  border-color: var(--vtt-accent);
-  background: var(--vtt-accent);
-}
-.ability-card.mode-pick-single.is-selected .ability-head-mark::after {
-  content: "";
-  width: 8px;
-  height: 8px;
-  background: var(--vtt-bg-base);
-  border-radius: var(--r-pill);
-}
-.ability-card.mode-pick-multi.is-selected .ability-head-mark::after {
-  content: "";
-  width: 10px;
-  height: 5px;
-  border: 1.5px solid var(--vtt-bg-base);
-  border-top: 0;
-  border-right: 0;
-  transform: rotate(-45deg) translate(0, -1px);
-}
-
-.ability-card.is-locked {
-  opacity: 0.45;
-  pointer-events: none;
-}
-.ability-card.is-locked .ability-head-title { color: var(--vtt-text-muted); }
-.ability-card.is-locked .ability-head-mark { border-style: dashed; }
 
 .ability-card.variant-reference {
   background: transparent;

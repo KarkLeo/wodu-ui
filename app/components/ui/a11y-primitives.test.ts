@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import SkillChip from './SkillChip.vue'
-import AbilityCard from './AbilityCard.vue'
 import Stepper from './Stepper.vue'
 import FormCheckbox from './FormCheckbox.vue'
 import ConfirmSheet from './ConfirmSheet.vue'
@@ -27,13 +26,6 @@ describe('SkillChip', () => {
     const chip = wrapper.find('button')
     expect(chip.attributes('role')).toBe('checkbox')
     expect(chip.attributes('aria-checked')).toBe('true')
-  })
-})
-
-describe('AbilityCard', () => {
-  it('marks a locked pick card as disabled for assistive technology', () => {
-    wrapper = mount(AbilityCard, { props: { title: 'Cure', mode: 'pick-multi', state: 'locked' } })
-    expect(wrapper.find('[role="checkbox"]').attributes('aria-disabled')).toBe('true')
   })
 })
 

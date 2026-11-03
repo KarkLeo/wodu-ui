@@ -13,7 +13,7 @@ const meta = {
     onToggle: fn(),
   },
   argTypes: {
-    mode: { control: 'inline-radio', options: ['display', 'pick-multi', 'pick-single', 'add'] },
+    mode: { control: 'inline-radio', options: ['display', 'pick-multi', 'add'] },
     state: { control: 'inline-radio', options: ['default', 'auto', 'selected', 'locked'] },
     icon: { control: false },
   },
@@ -92,34 +92,6 @@ export const PickMulti: Story = {
           mode="pick-multi"
           :state="picked.includes(skill) ? 'selected' : picked.length >= 2 ? 'locked' : 'default'"
           @toggle="toggle(skill)"
-        />
-      </div>
-    `,
-  }),
-}
-
-export const PickSingle: Story = {
-  render: (args) => ({
-    components: { SkillChip },
-    setup() {
-      const skills = ['Heal', 'Lore', 'Survival']
-      const picked = ref('Lore')
-      function pick(skill: string) {
-        picked.value = skill
-        args.onToggle?.()
-      }
-      return { args, skills, picked, pick }
-    },
-    template: `
-      <div role="radiogroup" aria-label="Level-up skill" style="display: flex; flex-wrap: wrap; gap: 8px">
-        <SkillChip
-          v-for="skill in skills"
-          :key="skill"
-          v-bind="args"
-          :label="skill"
-          mode="pick-single"
-          :state="picked === skill ? 'selected' : 'default'"
-          @toggle="pick(skill)"
         />
       </div>
     `,

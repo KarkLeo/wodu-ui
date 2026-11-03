@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 
-type Mode = 'display' | 'pick-multi' | 'pick-single' | 'add'
+type Mode = 'display' | 'pick-multi' | 'add'
 type State = 'default' | 'auto' | 'selected' | 'locked'
 
 const props = withDefaults(defineProps<{
@@ -16,7 +16,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ (e: 'toggle'): void }>()
 
-const isPick = computed(() => props.mode === 'pick-multi' || props.mode === 'pick-single')
+const isPick = computed(() => props.mode === 'pick-multi')
 
 function onClick() {
   if (props.state === 'locked' || props.state === 'auto') return
@@ -38,7 +38,7 @@ function onClick() {
       },
     ]"
     :disabled="mode === 'display' ? undefined : state === 'locked' || (isPick && state === 'auto')"
-    :role="mode === 'pick-multi' ? 'checkbox' : mode === 'pick-single' ? 'radio' : undefined"
+    :role="isPick ? 'checkbox' : undefined"
     :aria-checked="isPick ? state === 'selected' || state === 'auto' : undefined"
     @click="mode !== 'display' && onClick()"
   >
@@ -75,8 +75,7 @@ function onClick() {
   color: var(--vtt-accent-soft);
 }
 
-.skill-chip.mode-pick-multi,
-.skill-chip.mode-pick-single {
+.skill-chip.mode-pick-multi {
   padding-left: 10px;
 }
 
@@ -151,17 +150,9 @@ function onClick() {
   position: relative;
 }
 .skill-chip.mode-pick-multi .skill-pick-mark { border-radius: 3px; }
-.skill-chip.mode-pick-single .skill-pick-mark { border-radius: var(--r-pill); }
 
 .skill-chip.is-selected .skill-pick-mark {
   border-color: var(--vtt-accent-deep);
-}
-.skill-chip.mode-pick-single.is-selected .skill-pick-mark::after {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: var(--vtt-accent);
-  border-radius: var(--r-pill);
 }
 .skill-chip.mode-pick-multi.is-selected .skill-pick-mark::after {
   content: "";

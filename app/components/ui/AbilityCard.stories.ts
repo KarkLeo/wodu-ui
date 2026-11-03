@@ -1,6 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { ref } from 'vue'
-import { fn } from 'storybook/test'
 import AbilityCard from './AbilityCard.vue'
 import Button from './Button.vue'
 import IconDice from './icons/IconDice.vue'
@@ -26,12 +24,9 @@ const meta = {
   }),
   args: {
     title: 'Cure',
-    onToggle: fn(),
   },
   argTypes: {
-    mode: { control: 'inline-radio', options: ['display', 'reference', 'pick-multi', 'pick-single'] },
     variant: { control: 'inline-radio', options: ['default', 'reference'] },
-    state: { control: 'inline-radio', options: ['default', 'selected', 'locked'] },
   },
   decorators: [() => ({ template: '<div style="max-width: 420px"><story /></div>' })],
   parameters: {
@@ -85,83 +80,6 @@ export const WithActions: Story = {
     `,
   }),
   args: { title: 'Lucky' },
-}
-
-export const Selected: Story = {
-  args: { mode: 'pick-multi', state: 'selected' },
-}
-
-export const Locked: Story = {
-  render: (args) => ({
-    components: { AbilityCard },
-    setup: () => ({ args }),
-    template: `
-      <AbilityCard v-bind="args">
-        You can attempt to dominate any spirit, demon, and so on.
-      </AbilityCard>
-    `,
-  }),
-  args: { title: 'Command', mode: 'pick-multi', state: 'locked' },
-}
-
-export const PickMulti: Story = {
-  render: (args) => ({
-    components: { AbilityCard },
-    setup() {
-      const picked = ref<string[]>(['hewing'])
-      function toggle(id: string) {
-        picked.value = picked.value.includes(id)
-          ? picked.value.filter((p) => p !== id)
-          : [...picked.value, id]
-        args.onToggle?.()
-      }
-      return { args, abilities: FIGHTER_ABILITIES, picked, toggle }
-    },
-    template: `
-      <div role="group" aria-label="Fighter abilities" style="display: grid; gap: 8px">
-        <AbilityCard
-          v-for="a in abilities"
-          :key="a.id"
-          v-bind="args"
-          :title="a.name"
-          mode="pick-multi"
-          :state="picked.includes(a.id) ? 'selected' : 'default'"
-          @toggle="toggle(a.id)"
-        >
-          {{ a.description }}
-        </AbilityCard>
-      </div>
-    `,
-  }),
-}
-
-export const PickSingle: Story = {
-  render: (args) => ({
-    components: { AbilityCard },
-    setup() {
-      const picked = ref('skirmish')
-      function pick(id: string) {
-        picked.value = id
-        args.onToggle?.()
-      }
-      return { args, abilities: FIGHTER_ABILITIES, picked, pick }
-    },
-    template: `
-      <div role="radiogroup" aria-label="New ability" style="display: grid; gap: 8px">
-        <AbilityCard
-          v-for="a in abilities"
-          :key="a.id"
-          v-bind="args"
-          :title="a.name"
-          mode="pick-single"
-          :state="a.id === 'sturdy' ? 'locked' : picked === a.id ? 'selected' : 'default'"
-          @toggle="pick(a.id)"
-        >
-          {{ a.description }}
-        </AbilityCard>
-      </div>
-    `,
-  }),
 }
 
 export const Reference: Story = {

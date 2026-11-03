@@ -36,7 +36,6 @@ const sheetOpen = ref(false)
         v-for="id in items"
         :key="id"
         :title="abilityName(id)"
-        mode="display"
       >
         {{ abilityDescription(id) }}
       </AbilityCard>
@@ -49,7 +48,6 @@ const sheetOpen = ref(false)
       v-for="id in ABILITY_IDS"
       :key="id"
       :title="abilityName(id)"
-      mode="display"
       variant="reference"
     >
       {{ abilityDescription(id) }}
