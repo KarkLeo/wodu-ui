@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import { ref, watch } from 'vue'
 import SegmentedFilter from './SegmentedFilter.vue'
 
@@ -94,6 +94,20 @@ export const Toned: Story = {
     ],
   },
   decorators: [() => ({ template: '<div style="width: 288px"><story /></div>' })],
+}
+
+/** The tone holds in the `pill` variant too. */
+export const TonedPill: Story = {
+  args: { ...Toned.args, variant: 'pill' },
+  decorators: [() => ({ template: '<div style="width: 288px"><story /></div>' })],
+  play: async ({ canvasElement }) => {
+    const damage = within(canvasElement).getByRole('radio', { name: 'Damage' })
+    const swatch = document.createElement('span')
+    swatch.style.color = 'var(--vtt-danger-bright)'
+    canvasElement.append(swatch)
+    await expect(getComputedStyle(damage).color).toBe(getComputedStyle(swatch).color)
+    swatch.remove()
+  },
 }
 
 export const Variants: Story = {

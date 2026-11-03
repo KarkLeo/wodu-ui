@@ -58,7 +58,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: inherit;
   white-space: nowrap;
 }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
 
 .btn-icon {
   width: 14px;

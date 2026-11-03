@@ -77,8 +77,6 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.options, model
   color: var(--vtt-accent);
   box-shadow: inset 0 0 0 1px var(--vtt-border-strong);
 }
-.segmented-btn.is-active.tone-danger { color: var(--vtt-danger-bright); }
-.segmented-btn.is-active.tone-success { color: var(--vtt-success); }
 
 .segmented.is-pill {
   padding: 2px;
@@ -102,4 +100,8 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.options, model
   border-radius: 0;
 }
 .segmented.is-plain .segmented-btn { padding: 2px 6px; }
+
+/* After the variants, so a tone holds in each of them. */
+.segmented .segmented-btn.is-active.tone-danger { color: var(--vtt-danger-bright); }
+.segmented .segmented-btn.is-active.tone-success { color: var(--vtt-success); }
 </style>

@@ -33,10 +33,10 @@ function step(delta: number) { setCurrent(props.current + delta) }
     </div>
 
     <div class="xp-pop-steps">
-      <Button size="sm" class="xp-step-btn is-minus" @click="step(-100)">−100</Button>
-      <Button size="sm" class="xp-step-btn is-minus" @click="step(-10)">−10</Button>
-      <Button size="sm" class="xp-step-btn is-plus" @click="step(10)">+10</Button>
-      <Button size="sm" class="xp-step-btn is-plus" @click="step(100)">+100</Button>
+      <Button size="sm" class="xp-step-btn" @click="step(-100)">−100</Button>
+      <Button size="sm" class="xp-step-btn" @click="step(-10)">−10</Button>
+      <Button size="sm" class="xp-step-btn" @click="step(10)">+10</Button>
+      <Button size="sm" class="xp-step-btn" @click="step(100)">+100</Button>
     </div>
 
     <div class="xp-pop-manual">
@@ -101,18 +101,7 @@ function step(delta: number) { setCurrent(props.current + delta) }
   gap: 6px;
   margin-bottom: 14px;
 }
-.xp-step-btn {
-  height: 34px;
-  justify-content: center;
-}
-.xp-pop-steps .xp-step-btn.is-minus:hover:not(:disabled) {
-  border-color: var(--vtt-danger);
-  color: var(--vtt-danger-bright);
-}
-.xp-pop-steps .xp-step-btn.is-plus:hover:not(:disabled) {
-  border-color: var(--vtt-success);
-  color: var(--vtt-success);
-}
+.xp-step-btn { justify-content: center; }
 
 .xp-pop-manual {
   display: grid;

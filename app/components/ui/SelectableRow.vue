@@ -71,7 +71,7 @@ function onClick() {
   transition: background var(--t-fast) var(--ease);
 }
 .sel-row + .sel-row { border-top: 1px solid rgba(140, 106, 58, 0.1); }
-.sel-row:hover:not(:disabled) { background: rgba(228, 201, 160, 0.03); }
+.sel-row:hover:not(:disabled):not(.is-selected) { background: rgba(228, 201, 160, 0.03); }
 .sel-row.is-selected { background: rgba(140, 106, 58, 0.12); }
 .sel-row.is-locked { opacity: 0.75; cursor: default; }
 .sel-row.is-disabled { opacity: 0.35; cursor: not-allowed; }
