@@ -3,6 +3,7 @@ import { expect, spyOn, userEvent, within } from 'storybook/test'
 import AuthScreen from './AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
 import FormError from '@/components/ui/FormError.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { currentLocale } from '@/locales'
 import { pb, signInMock } from '../../../.storybook/mocks/pb'
@@ -39,11 +40,11 @@ export const Default: Story = {}
 
 export const WithBackLink: Story = {
   render: (args) => ({
-    components: { AuthScreen, FormError },
+    components: { AuthScreen, FormError, SectionLabel },
     setup: () => ({ args }),
     template: `
       <AuthScreen v-bind="args">
-        <template #back><span class="eyebrow" style="margin: 0">← back</span></template>
+        <template #back><SectionLabel size="md">← back</SectionLabel></template>
         <FormError>An error line inside the card.</FormError>
       </AuthScreen>
     `,

@@ -13,6 +13,7 @@ import CatalogSheet from '@/features/in-game/components/inventory/CatalogSheet.v
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import { t } from '@/locales'
 
 const { draft, dispatch, setHitDiceResult } = useCharacterCreation()
@@ -94,18 +95,17 @@ function onUse(item: InventoryItem) {
 <template>
   <template v-if="draft">
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.gear.hpLabel') }}</span>
-      <span class="cc-section-hint">
-        {{ t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' }) }}
-      </span>
-      <span class="cc-section-action">
+    <SectionHeader
+      :title="t('characterCreation.gear.hpLabel')"
+      :hint="t('characterCreation.gear.hpHint', { dice: numDice, sturdy: hasSturdy ? t('characterCreation.gear.hpSturdy') : '' })"
+    >
+      <template #action>
         <button type="button" class="cc-btn-roll" :disabled="isRolling" @click="rollHp">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M3 6 C3 4 4.5 3 6 3 M9 6 C9 8 7.5 9 6 9 M9 6 L10.5 4.5 M9 6 L7.5 4.5"/></svg>
           {{ hpRolled ? t('characterCreation.shell.reroll') : t('characterCreation.shell.rollAll') }}
         </button>
-      </span>
-    </div>
+      </template>
+    </SectionHeader>
     <div class="cc-hp">
       <span class="cc-hp-value">{{ draft.maxHp || '—' }}</span>
       <div class="cc-hp-body">
@@ -122,10 +122,7 @@ function onUse(item: InventoryItem) {
   </section>
 
   <section class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('characterCreation.gear.gearLabel') }}</span>
-      <span class="cc-section-hint">{{ t('characterCreation.gear.gearHint') }}</span>
-    </div>
+    <SectionHeader :title="t('characterCreation.gear.gearLabel')" :hint="t('characterCreation.gear.gearHint')" />
 
     <CoinBar :coins="draft.coins" @update="inv.setCoins" />
 
@@ -174,21 +171,6 @@ function onUse(item: InventoryItem) {
 
 <style scoped>
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-.cc-section-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cc-section-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.cc-section-hint {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
-.cc-section-action { margin-left: auto; }
 
 .cc-btn-roll {
   display: inline-flex;

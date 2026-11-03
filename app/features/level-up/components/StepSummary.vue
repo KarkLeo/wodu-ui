@@ -3,6 +3,10 @@ import { computed } from 'vue'
 import type { Character, AbilityId, SkillId, StatKey } from '@/types/character'
 import { STAT_KEYS } from '@/data/xpTable'
 import type { LevelUpPatch } from '@/domain/commands'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
+import KeyValueRow from '@/components/ui/KeyValueRow.vue'
+import IconCheckCircle from '@/components/ui/icons/IconCheckCircle.vue'
+import IconClock from '@/components/ui/icons/IconClock.vue'
 import { t } from '@/locales'
 import { skillName as skillNameOf, abilityName as abilityNameOf, statShort } from '@/locales/content'
 
@@ -66,82 +70,44 @@ function formatMod(n: number) {
 
 <template>
   <div class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('levelUp.summary.sectionLabel') }}</span>
-      <span class="cc-section-hint">{{ t('levelUp.summary.sectionHint') }}</span>
-    </div>
+    <SectionHeader :title="t('levelUp.summary.sectionLabel')" :hint="t('levelUp.summary.sectionHint')" />
     <div class="lu-summary">
-      <div class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L15 5 L15 11 C15 13 12 16 9 16 C6 16 3 13 3 11 L3 5 Z"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.level') }}</span>
-          <span class="lu-sum-name">{{ targetLevel }}</span>
-        </div>
-        <span class="lu-sum-value"><em>{{ t('levelUp.summary.was', { n: char.level }) }}</em></span>
-      </div>
+      <KeyValueRow class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.level')">
+        {{ targetLevel }}
+        <template #icon><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L15 5 L15 11 C15 13 12 16 9 16 C6 16 3 13 3 11 L3 5 Z"/></svg></template>
+        <template #action><span class="lu-sum-value"><em>{{ t('levelUp.summary.was', { n: char.level }) }}</em></span></template>
+      </KeyValueRow>
 
-      <div v-if="skillName" class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M9 5 L9 9 L12 11"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.skill') }}</span>
-          <span class="lu-sum-name">{{ skillName }}</span>
-        </div>
-      </div>
+      <KeyValueRow v-if="skillName" class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.skill')">
+        {{ skillName }}
+        <template #icon><IconClock :size="18" :stroke-width="1.4" /></template>
+      </KeyValueRow>
 
-      <div v-if="abilityName" class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L11 7 L16 8 L12 12 L13 17 L9 14 L5 17 L6 12 L2 8 L7 7 Z"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.ability') }}</span>
-          <span class="lu-sum-name">{{ abilityName }}</span>
-        </div>
-      </div>
+      <KeyValueRow v-if="abilityName" class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.ability')">
+        {{ abilityName }}
+        <template #icon><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L11 7 L16 8 L12 12 L13 17 L9 14 L5 17 L6 12 L2 8 L7 7 Z"/></svg></template>
+      </KeyValueRow>
 
-      <div v-if="bumpedStat" class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14 L9 4 L15 14 Z"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.stat') }}</span>
-          <span class="lu-sum-name">{{ statShort(bumpedStat.key) }} {{ formatMod(bumpedStat.from) }} → {{ formatMod(bumpedStat.to) }}</span>
-        </div>
-      </div>
+      <KeyValueRow v-if="bumpedStat" class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.stat')">
+        {{ statShort(bumpedStat.key) }} {{ formatMod(bumpedStat.from) }} → {{ formatMod(bumpedStat.to) }}
+        <template #icon><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14 L9 4 L15 14 Z"/></svg></template>
+      </KeyValueRow>
 
-      <div v-if="damageDelta > 0" class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 L9 3 L15 9 L9 15 Z"/><path d="M9 6 L9 12"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.damage') }}</span>
-          <span class="lu-sum-name">+{{ damageDelta }}d6 <span class="lu-sum-pill">{{ t('levelUp.summary.pillAuto') }}</span></span>
-        </div>
-      </div>
+      <KeyValueRow v-if="damageDelta > 0" class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.damage')">
+        +{{ damageDelta }}d6 <span class="lu-sum-pill">{{ t('levelUp.summary.pillAuto') }}</span>
+        <template #icon><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 L9 3 L15 9 L9 15 Z"/><path d="M9 6 L9 12"/></svg></template>
+      </KeyValueRow>
 
-      <div v-if="magicOpened" class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L11 7 L16 8 L12 12 L13 17 L9 14 L5 17 L6 12 L2 8 L7 7 Z"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.magic') }}</span>
-          <span class="lu-sum-name">{{ t('levelUp.summary.magicOpened') }} <span class="lu-sum-pill">{{ t('levelUp.summary.pillOpen') }}</span></span>
-        </div>
-      </div>
+      <KeyValueRow v-if="magicOpened" class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.magic')">
+        {{ t('levelUp.summary.magicOpened') }} <span class="lu-sum-pill">{{ t('levelUp.summary.pillOpen') }}</span>
+        <template #icon><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L11 7 L16 8 L12 12 L13 17 L9 14 L5 17 L6 12 L2 8 L7 7 Z"/></svg></template>
+      </KeyValueRow>
 
-      <div v-if="maxHpDelta > 0" class="lu-sum-row">
-        <span class="lu-sum-glyph" aria-hidden="true">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M6 9 L9 12 L12 7"/></svg>
-        </span>
-        <div class="lu-sum-body">
-          <span class="lu-sum-label">{{ t('levelUp.summary.hp') }}</span>
-          <span class="lu-sum-name">{{ newCurrentHp }} / {{ newMaxHp }}</span>
-        </div>
-        <span class="lu-sum-value is-hp">+{{ maxHpDelta }} <em>{{ t('levelUp.summary.was', { n: char.maxHp }) }}</em></span>
-      </div>
+      <KeyValueRow v-if="maxHpDelta > 0" class="lu-sum-row" layout="stacked" tone="accent" :label="t('levelUp.summary.hp')">
+        {{ newCurrentHp }} / {{ newMaxHp }}
+        <template #icon><IconCheckCircle :size="18" :stroke-width="1.4" /></template>
+        <template #action><span class="lu-sum-value is-hp">+{{ maxHpDelta }} <em>{{ t('levelUp.summary.was', { n: char.maxHp }) }}</em></span></template>
+      </KeyValueRow>
     </div>
   </div>
 </template>
@@ -150,30 +116,7 @@ function formatMod(n: number) {
 
 <style scoped>
 .lu-summary { display: flex; flex-direction: column; }
-.lu-sum-row {
-  display: grid;
-  grid-template-columns: 22px 1fr auto;
-  align-items: center;
-  column-gap: 14px;
-  padding: 12px 8px;
-}
-.lu-sum-row + .lu-sum-row { border-top: 1px solid rgba(140, 106, 58, 0.1); }
-.lu-sum-glyph { width: 18px; height: 18px; color: var(--vtt-accent-deep); }
-.lu-sum-glyph svg { width: 100%; height: 100%; }
-.lu-sum-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.lu-sum-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.lu-sum-name {
-  font-family: var(--font-serif);
-  font-size: 16px;
-  color: var(--vtt-text-primary);
-  line-height: 1.2;
-}
+.lu-summary .lu-sum-row { padding: 12px 8px; }
 .lu-sum-value {
   font-family: var(--font-serif);
   font-size: 18px;

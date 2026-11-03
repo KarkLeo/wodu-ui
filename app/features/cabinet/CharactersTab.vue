@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useGamesStore } from '@/stores/games'
@@ -66,7 +67,7 @@ async function createCharacter() {
 
 <template>
   <section v-if="drafts.length > 0" class="hm-list" :aria-label="t('characterList.drafts')">
-    <div class="hm-label">{{ t('characterList.drafts') }}</div>
+    <SectionLabel tone="neutral" class="hm-label">{{ t('characterList.drafts') }}</SectionLabel>
     <button
       v-for="c in drafts"
       :key="c.id"

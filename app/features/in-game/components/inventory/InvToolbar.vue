@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from '@/components/ui/Button.vue'
 import IconBag from '@/components/ui/icons/IconBag.vue'
 import { t } from '@/locales'
 
@@ -11,14 +12,12 @@ defineEmits<{
 
 <template>
   <div class="inv-toolbar">
-    <button v-if="fromLibrary" type="button" class="inv-toolbar-btn" @click="$emit('open-library')">
-      <IconBag />
+    <Button v-if="fromLibrary" variant="dashed" class="inv-toolbar-btn" :icon-left="IconBag" @click="$emit('open-library')">
       {{ t('inGame.inventory.fromLibrary') }}
-    </button>
-    <button v-if="catalog" type="button" class="inv-toolbar-btn" @click="$emit('open-catalog')">
-      <IconBag />
+    </Button>
+    <Button v-if="catalog" variant="dashed" class="inv-toolbar-btn" :icon-left="IconBag" @click="$emit('open-catalog')">
       {{ t('inGame.inventory.openCatalog') }}
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -28,27 +27,5 @@ defineEmits<{
   gap: 8px;
   margin-top: 6px;
 }
-.inv-toolbar-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
-  background: transparent;
-  border: 1px dashed var(--vtt-border-strong);
-  border-radius: var(--r-sm);
-  color: var(--vtt-text-secondary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-.inv-toolbar-btn:hover {
-  border-color: var(--vtt-border-gold);
-  color: var(--vtt-accent-soft);
-  background: rgba(140, 106, 58, 0.05);
-}
-.inv-toolbar-btn :deep(svg) { width: 14px; height: 14px; }
+.inv-toolbar-btn { flex: 1; justify-content: center; }
 </style>

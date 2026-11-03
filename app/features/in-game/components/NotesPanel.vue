@@ -2,6 +2,7 @@
 import { watch } from 'vue'
 import type { Character } from '@/types/character'
 import type { CharacterCommand } from '@/domain/commands'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import TextareaField from '@/components/ui/TextareaField.vue'
 import { t } from '@/locales'
 import { useDebouncedField } from '@/composables/useDebouncedField'
@@ -24,7 +25,7 @@ watch(readonly, (ro) => { if (ro) notes.discard() })
 
 <template>
   <section class="notes-section">
-    <h2 class="notes-title">{{ t('inGame.notes.title') }}</h2>
+    <SectionHeader variant="heading" as="h2" :title="t('inGame.notes.title')" />
     <div v-if="readonly" :class="['notes-text', { 'is-empty': !char.notes }]">{{ char.notes || t('inGame.notes.empty') }}</div>
     <TextareaField
       v-else
@@ -45,13 +46,6 @@ watch(readonly, (ro) => { if (ro) notes.discard() })
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
-}
-.notes-title {
-  font-family: var(--font-serif);
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: var(--vtt-text-primary);
 }
 /* The notes are the whole tab: a tall page to write on. */
 .notes-field :deep(.form-field-control) { min-height: 60vh; line-height: 1.55; }

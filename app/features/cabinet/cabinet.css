@@ -1,13 +1,6 @@
 /* Shared by the cabinet pages: the card look and a role/where pill. */
 .hm-list { display: flex; flex-direction: column; gap: 10px; }
-.hm-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  padding-left: 4px;
-}
+.hm-label { padding-left: 4px; }
 
 .hm-card {
   display: flex;

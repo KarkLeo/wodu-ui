@@ -12,6 +12,7 @@ import { mode } from '@/transport/mode'
 import { charactersInScope } from '@/utils/scope'
 import { isMaster } from '@/utils/permissions'
 import Button from '@/components/ui/Button.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import GameMenu from './GameMenu.vue'
 import PanelFooter from './PanelFooter.vue'
@@ -132,12 +133,12 @@ async function startNew() {
     <div class="gl-panel-head">
       <div v-if="game" class="pr-game">
         <span class="pr-game-eyebrow">
-          <span class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</span>
+          <SectionLabel size="md">{{ t('gameLayout.players.eyebrow') }}</SectionLabel>
           <span v-if="role" :class="['pr-role', { 'is-master': game.master === me }]">{{ role }}</span>
         </span>
         <span class="pr-game-title" :title="game.name">{{ game.name }}</span>
       </div>
-      <p v-else class="eyebrow">{{ t('gameLayout.players.eyebrow') }}</p>
+      <SectionLabel v-else as="p" size="md">{{ t('gameLayout.players.eyebrow') }}</SectionLabel>
       <div v-if="game" class="pr-game-menu"><GameMenu :game="game" /></div>
       <span v-if="mode === 'offline'" class="pr-offline-badge">
         <span class="pr-offline-dot" aria-hidden="true" />
@@ -213,10 +214,6 @@ async function startNew() {
   justify-content: space-between;
   gap: var(--s-2);
   padding: var(--s-3) var(--s-4) var(--s-2);
-}
-.gl-panel-head .eyebrow {
-  margin: 0;
-  color: var(--vtt-accent-deep);
 }
 
 .pr-game {

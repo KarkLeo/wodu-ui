@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import FormError from '@/components/ui/FormError.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import InvitePanel from '@/components/layout/InvitePanel.vue'
 import MembersList from '@/components/layout/MembersList.vue'
@@ -116,17 +117,17 @@ function backToTable() {
       </section>
 
       <section class="st-section" aria-labelledby="st-invite">
-        <h2 id="st-invite" class="st-label">{{ t('games.settings.invite') }}</h2>
+        <SectionLabel id="st-invite" as="h2" tone="neutral">{{ t('games.settings.invite') }}</SectionLabel>
         <InvitePanel :game="game" />
       </section>
 
       <section class="st-section" aria-labelledby="st-members">
-        <h2 id="st-members" class="st-label">{{ t('games.settings.members') }}</h2>
+        <SectionLabel id="st-members" as="h2" tone="neutral">{{ t('games.settings.members') }}</SectionLabel>
         <MembersList :game="game" @transferred="afterTransfer" />
       </section>
 
       <section class="st-section is-danger" aria-labelledby="st-delete">
-        <h2 id="st-delete" class="st-label">{{ t('games.menu.delete') }}</h2>
+        <SectionLabel id="st-delete" as="h2" tone="neutral">{{ t('games.menu.delete') }}</SectionLabel>
         <StateNote inline align="start" size="sm">{{ t('games.settings.deleteHint') }}</StateNote>
         <Button variant="danger-ghost" size="sm" class="st-delete" @click="deleteOpen = true">{{ t('games.menu.delete') }}</Button>
       </section>
@@ -154,15 +155,6 @@ function backToTable() {
   box-shadow: var(--shadow-1);
 }
 .st-section.is-danger { border-color: var(--vtt-border-strong); }
-.st-label {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-weight: 400;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
 
 .st-form { display: flex; flex-direction: column; gap: 10px; }
 .st-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

@@ -96,13 +96,6 @@ button.gs-row:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Invite: the code and link to copy ── */
 .gs-field { display: flex; flex-direction: column; gap: 6px; }
-.gs-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-}
 .gs-value {
   padding: 8px 10px;
   border: 1px solid var(--vtt-border-subtle);

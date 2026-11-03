@@ -1,19 +1,4 @@
 .cc-section { display: flex; flex-direction: column; gap: var(--s-3); }
-.cc-section-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cc-section-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.cc-section-hint {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
-.cc-section-action { margin-left: auto; }
 .cc-abil-list { display: flex; flex-direction: column; }
 .cc-abil {
   display: grid;

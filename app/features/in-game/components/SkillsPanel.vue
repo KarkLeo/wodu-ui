@@ -4,6 +4,7 @@ import type { Character, SkillId } from '@/types/character'
 import { SKILL_IDS } from '@/types/character'
 import { CLASSES } from '@/data/classes'
 import SkillChip from '@/components/ui/SkillChip.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import IconLock from '@/components/ui/icons/IconLock.vue'
 import { t } from '@/locales'
@@ -28,12 +29,11 @@ const rows = computed<Row[]>(() =>
 
 <template>
   <section class="skills-section">
-    <div class="skills-section-head">
-      <span class="skills-section-title">{{ t('inGame.skills.title') }}</span>
-      <span v-if="rows.length" class="skills-section-hint">
-        {{ t('inGame.skills.hintCount', { count: rows.length }) }}
-      </span>
-    </div>
+    <SectionHeader
+      class="skills-section-head"
+      :title="t('inGame.skills.title')"
+      :meta="rows.length ? t('inGame.skills.hintCount', { count: rows.length }) : undefined"
+    />
     <div v-if="rows.length" class="skills-row">
       <SkillChip
         v-for="row in rows"
@@ -52,25 +52,7 @@ const rows = computed<Row[]>(() =>
 .skills-section {
   padding: 14px 16px;
 }
-.skills-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.skills-section-title {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
-}
-.skills-section-hint {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--vtt-text-muted);
-}
+.skills-section-head { margin-bottom: 12px; }
 .skills-row {
   display: flex;
   gap: var(--s-2);

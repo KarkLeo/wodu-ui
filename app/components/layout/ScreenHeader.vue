@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SectionLabel from '@/components/ui/SectionLabel.vue'
+
 withDefaults(defineProps<{
   title: string
   subtitle?: string
@@ -13,7 +15,8 @@ withDefaults(defineProps<{
 <template>
   <header :class="['screen-header', `screen-header--${variant}`]">
     <div class="screen-header-titles">
-      <h1 class="screen-header-title">{{ title }}</h1>
+      <SectionLabel v-if="variant === 'eyebrow'" as="h1" size="md" class="screen-header-eyebrow">{{ title }}</SectionLabel>
+      <h1 v-else class="screen-header-title">{{ title }}</h1>
       <p v-if="subtitle" class="screen-header-subtitle">{{ subtitle }}</p>
     </div>
     <slot name="actions" />
@@ -42,16 +45,10 @@ withDefaults(defineProps<{
   white-space: nowrap;
 }
 
-/* Same look as the global `.eyebrow`. */
-.screen-header--eyebrow .screen-header-title {
+.screen-header--eyebrow .screen-header-eyebrow {
   padding-left: 4px;
-  font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 11px;
   line-height: 1.5;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--vtt-accent-deep);
 }
 
 .screen-header--hero { flex-direction: column; align-items: center; text-align: center; }

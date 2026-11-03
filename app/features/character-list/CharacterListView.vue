@@ -6,6 +6,7 @@ import { useCreationStore } from '@/stores/creation'
 import { t } from '@/locales'
 import ScreenColumn from '@/components/layout/ScreenColumn.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import { usePwaInstall } from '@/pwa/useInstall'
@@ -40,7 +41,7 @@ function resumeCreation(id: string) {
 <template>
   <ScreenColumn>
     <section v-if="draftChars.length > 0" class="cl-drafts">
-      <div class="cl-drafts__label">{{ t('characterList.drafts') }}</div>
+      <SectionLabel tone="neutral" class="cl-drafts__label">{{ t('characterList.drafts') }}</SectionLabel>
       <button
         v-for="char in draftChars"
         :key="char.id"
@@ -85,14 +86,7 @@ function resumeCreation(id: string) {
 
 <style scoped>
 .cl-drafts { display: flex; flex-direction: column; gap: 10px; }
-.cl-drafts__label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  padding-left: 4px;
-}
+.cl-drafts__label { padding-left: 4px; }
 
 .cl-card {
   display: grid;

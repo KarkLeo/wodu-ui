@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ScreenColumn from '@/components/layout/ScreenColumn.vue'
 import Button from '@/components/ui/Button.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
 import { onlineDataReady } from '@/transport/bootstrap'
@@ -117,14 +118,14 @@ function goHome() {
   <ScreenColumn size="narrow">
     <section class="jv-card" :aria-busy="state === 'checking' || state === 'joining'">
       <template v-if="state === 'checking' || state === 'joining'">
-        <p class="eyebrow">{{ t('games.invite.eyebrow') }}</p>
+        <SectionLabel as="p" size="md">{{ t('games.invite.eyebrow') }}</SectionLabel>
         <p class="jv-status" role="status">
           {{ state === 'joining' ? t('games.join.joining', { game: gameName }) : t('games.join.checking') }}
         </p>
       </template>
 
       <template v-else-if="state === 'notFound'">
-        <p class="eyebrow">{{ t('games.invite.eyebrow') }}</p>
+        <SectionLabel as="p" size="md">{{ t('games.invite.eyebrow') }}</SectionLabel>
         <h2 class="jv-title">{{ t('games.invite.notFound') }}</h2>
         <p class="jv-body">{{ t('games.invite.notFoundHint') }}</p>
         <div class="jv-actions">
@@ -133,7 +134,7 @@ function goHome() {
       </template>
 
       <template v-else-if="state === 'member'">
-        <p class="eyebrow">{{ t('games.invite.eyebrow') }}</p>
+        <SectionLabel as="p" size="md">{{ t('games.invite.eyebrow') }}</SectionLabel>
         <h2 class="jv-title">{{ t('games.join.memberTitle', { game: gameName }) }}</h2>
         <div class="jv-actions">
           <Button variant="hero" size="lg" @click="openTable">{{ t('games.join.openTable') }}</Button>
@@ -142,7 +143,7 @@ function goHome() {
       </template>
 
       <template v-else>
-        <p class="eyebrow">{{ t('games.invite.eyebrow') }}</p>
+        <SectionLabel as="p" size="md">{{ t('games.invite.eyebrow') }}</SectionLabel>
         <p class="jv-body" role="alert">{{ t('games.join.failed') }}</p>
         <div class="jv-actions">
           <Button variant="hero" size="lg" @click="run">{{ t('games.join.retry') }}</Button>
@@ -164,7 +165,6 @@ function goHome() {
   background: var(--vtt-bg-surface);
   box-shadow: var(--shadow-3);
 }
-.jv-card .eyebrow { margin: 0; }
 .jv-title {
   margin: 0;
   font-family: var(--font-serif);

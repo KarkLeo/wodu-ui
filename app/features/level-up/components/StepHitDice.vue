@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { t } from '@/locales'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 
 const props = defineProps<{
   numDice: number
@@ -51,13 +52,11 @@ const captionPost = computed(() => {
 
 <template>
   <div class="cc-section">
-    <div class="cc-section-head">
-      <span class="cc-section-label">{{ t('levelUp.steps.hitDice.label') }}</span>
-      <span class="cc-section-hint">
-        <template v-if="rolls.length">{{ hintPost }}</template>
-        <template v-else>{{ t('levelUp.steps.hitDice.hintPre', { n: numDice, k: targetLevel }) }}</template>
-      </span>
-      <span class="cc-section-action">
+    <SectionHeader
+      :title="t('levelUp.steps.hitDice.label')"
+      :hint="rolls.length ? hintPost : t('levelUp.steps.hitDice.hintPre', { n: numDice, k: targetLevel })"
+    >
+      <template #action>
         <button type="button" class="btn-roll" :disabled="isRolling" @click="doRoll">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3">
             <rect x="2" y="2" width="8" height="8" rx="1"/>
@@ -69,8 +68,8 @@ const captionPost = computed(() => {
           </svg>
           {{ rolls.length ? t('levelUp.steps.hitDice.reroll') : t('levelUp.steps.hitDice.roll') }}
         </button>
-      </span>
-    </div>
+      </template>
+    </SectionHeader>
 
     <div class="lu-dice-scene">
       <div class="lu-dice-row">

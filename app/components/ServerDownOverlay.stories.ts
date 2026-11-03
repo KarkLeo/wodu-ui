@@ -6,6 +6,7 @@ import { atRoute } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import BottomSheet from './ui/BottomSheet.vue'
 import Button from './ui/Button.vue'
+import SectionLabel from './ui/SectionLabel.vue'
 
 const meta = {
   title: 'Layout/ServerDownOverlay',
@@ -20,11 +21,11 @@ const meta = {
   },
   // A stand-in for the app underneath, so the veil has something to cover.
   render: (args) => ({
-    components: { ServerDownOverlay },
+    components: { ServerDownOverlay, SectionLabel },
     setup: () => ({ args }),
     template: `
       <div style="min-height: 100dvh; padding: 24px; display: flex; flex-direction: column; gap: 16px">
-        <p class="eyebrow">At the table</p>
+        <SectionLabel as="p" size="md" style="margin-bottom: 10px">At the table</SectionLabel>
         <p style="margin: 0; font-family: var(--font-serif); font-size: 22px; color: var(--vtt-accent-soft)">Brann the Bold</p>
         <button type="button" data-testid="behind" style="align-self: flex-start; padding: 10px 20px">Roll 2d6</button>
         <ServerDownOverlay v-bind="args" />

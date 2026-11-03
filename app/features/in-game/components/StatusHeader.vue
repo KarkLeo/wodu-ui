@@ -26,6 +26,7 @@ import HpBar from '@/components/ui/HpBar.vue'
 import XpBar from '@/components/ui/XpBar.vue'
 import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
 import StatusChip from '@/components/ui/StatusChip.vue'
+import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
@@ -230,7 +231,7 @@ async function handleRollDamage() {
               </div>
             </div>
             <div v-if="!readonly" class="sh-pop-mod">
-              <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
+              <SectionLabel tone="neutral" class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</SectionLabel>
               <Stepper
                 v-model="damageModModel"
                 :min="-10"
@@ -306,7 +307,7 @@ async function handleRollDamage() {
             <StateNote v-else compact align="start" size="sm">{{ t('inGame.statusHeader.trio.armorEmpty') }}</StateNote>
             <div v-if="armorBreakdown.note" class="sh-pop-note">{{ tLabel(armorBreakdown.note) }}</div>
             <div v-if="!readonly" class="sh-pop-mod">
-              <span class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</span>
+              <SectionLabel tone="neutral" class="sh-pop-mod-label">{{ t('inGame.statusHeader.modSection') }}</SectionLabel>
               <Stepper
                 v-model="armorModModel"
                 :min="-10"
@@ -508,14 +509,7 @@ async function handleRollDamage() {
   padding-top: 10px;
   border-top: 1px solid var(--vtt-border-subtle);
 }
-.info-popover .sh-pop-mod-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  flex: 1;
-}
+.info-popover .sh-pop-mod-label { flex: 1; }
 .info-popover .sh-pop-mod-reset {
   background: transparent;
   border: 0;
