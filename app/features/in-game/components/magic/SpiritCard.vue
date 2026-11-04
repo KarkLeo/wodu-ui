@@ -173,7 +173,7 @@ function save() {
   border: 1px solid var(--vtt-border-gold);
   border-radius: var(--r-pill);
   color: var(--vtt-accent);
-  background: radial-gradient(circle at center, rgba(140, 106, 58, 0.15), transparent 70%);
+  background: radial-gradient(circle at center, var(--vtt-gold-a15), transparent 70%);
   font-family: var(--font-serif);
   font-size: 15px;
   font-style: italic;

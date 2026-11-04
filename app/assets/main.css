@@ -62,6 +62,122 @@
   --vtt-hero-ink: #1a1205;
   --vtt-primary-hover: #2e241a;
 
+  --vtt-gold-a05: rgba(140, 106, 58, 0.05);
+  --vtt-gold-a06: rgba(140, 106, 58, 0.06);
+  --vtt-gold-a08: rgba(140, 106, 58, 0.08);
+  --vtt-gold-a10: rgba(140, 106, 58, 0.1);
+  --vtt-gold-a15: rgba(140, 106, 58, 0.15);
+  --vtt-gold-a20: rgba(140, 106, 58, 0.2);
+  --vtt-gold-a25: rgba(140, 106, 58, 0.25);
+  --vtt-gold-a30: rgba(140, 106, 58, 0.3);
+  --vtt-gold-a35: rgba(140, 106, 58, 0.35);
+  --vtt-gold-a40: rgba(140, 106, 58, 0.4);
+  --vtt-gold-a45: rgba(140, 106, 58, 0.45);
+  --vtt-gold-a50: rgba(140, 106, 58, 0.5);
+  --vtt-gold-a55: rgba(140, 106, 58, 0.55);
+
+  --vtt-accent-a00: rgba(212, 168, 87, 0);
+  --vtt-accent-a06: rgba(212, 168, 87, 0.06);
+  --vtt-accent-a10: rgba(212, 168, 87, 0.1);
+  --vtt-accent-a18: rgba(212, 168, 87, 0.18);
+  --vtt-accent-a25: rgba(212, 168, 87, 0.25);
+  --vtt-accent-a30: rgba(212, 168, 87, 0.3);
+  --vtt-accent-a35: rgba(212, 168, 87, 0.35);
+  --vtt-accent-a40: rgba(212, 168, 87, 0.4);
+  --vtt-accent-a45: rgba(212, 168, 87, 0.45);
+  --vtt-accent-a50: rgba(212, 168, 87, 0.5);
+  --vtt-accent-a60: rgba(212, 168, 87, 0.6);
+  --vtt-accent-a75: rgba(212, 168, 87, 0.75);
+  --vtt-accent-a80: rgba(212, 168, 87, 0.8);
+
+  --vtt-accent-soft-a03: rgba(228, 201, 160, 0.03);
+  --vtt-accent-soft-a28: rgba(228, 201, 160, 0.28);
+  --vtt-accent-soft-a45: rgba(228, 201, 160, 0.45);
+  --vtt-accent-soft-a85: rgba(228, 201, 160, 0.85);
+
+  --vtt-sunken-a00: rgba(7, 5, 10, 0);
+  --vtt-sunken-a15: rgba(7, 5, 10, 0.15);
+  --vtt-sunken-a35: rgba(7, 5, 10, 0.35);
+  --vtt-sunken-a45: rgba(7, 5, 10, 0.45);
+  --vtt-sunken-a50: rgba(7, 5, 10, 0.5);
+  --vtt-sunken-a55: rgba(7, 5, 10, 0.55);
+  --vtt-sunken-a62: rgba(7, 5, 10, 0.62);
+  --vtt-sunken-a72: rgba(7, 5, 10, 0.72);
+  --vtt-sunken-a78: rgba(7, 5, 10, 0.78);
+  --vtt-sunken-a82: rgba(7, 5, 10, 0.82);
+  --vtt-sunken-a86: rgba(7, 5, 10, 0.86);
+
+  --vtt-base-a30: rgba(14, 11, 8, 0.3);
+  --vtt-base-a70: rgba(14, 11, 8, 0.7);
+  --vtt-base-a80: rgba(14, 11, 8, 0.8);
+  --vtt-base-a88: rgba(14, 11, 8, 0.88);
+
+  --vtt-surface-a55: rgba(26, 21, 16, 0.55);
+  --vtt-surface-a62: rgba(26, 21, 16, 0.62);
+  --vtt-surface-a70: rgba(26, 21, 16, 0.7);
+  --vtt-surface-a82: rgba(26, 21, 16, 0.82);
+  --vtt-surface-a88: rgba(26, 21, 16, 0.88);
+  --vtt-surface-a94: rgba(26, 21, 16, 0.94);
+  --vtt-surface-a96: rgba(26, 21, 16, 0.96);
+  --vtt-surface-a98: rgba(26, 21, 16, 0.98);
+
+  --vtt-elevated-a40: rgba(36, 28, 21, 0.4);
+  --vtt-elevated-a45: rgba(36, 28, 21, 0.45);
+  --vtt-elevated-a55: rgba(36, 28, 21, 0.55);
+  --vtt-elevated-a65: rgba(36, 28, 21, 0.65);
+  --vtt-elevated-a72: rgba(36, 28, 21, 0.72);
+  --vtt-elevated-a78: rgba(36, 28, 21, 0.78);
+  --vtt-elevated-a96: rgba(36, 28, 21, 0.96);
+
+  --vtt-black-a00: rgba(0, 0, 0, 0);
+  --vtt-black-a40: rgba(0, 0, 0, 0.4);
+  --vtt-black-a50: rgba(0, 0, 0, 0.5);
+  --vtt-black-a55: rgba(0, 0, 0, 0.55);
+  --vtt-black-a60: rgba(0, 0, 0, 0.6);
+  --vtt-black-a70: rgba(0, 0, 0, 0.7);
+  --vtt-black-a72: rgba(0, 0, 0, 0.72);
+  --vtt-black-a100: rgba(0, 0, 0, 1);
+
+  --vtt-danger-a06: rgba(121, 43, 59, 0.06);
+  --vtt-danger-a14: rgba(121, 43, 59, 0.14);
+  --vtt-danger-a18: rgba(121, 43, 59, 0.18);
+
+  --vtt-danger-soft-a55: rgba(58, 24, 32, 0.55);
+  --vtt-danger-soft-a90: rgba(58, 24, 32, 0.9);
+
+  --vtt-warning-a08: rgba(192, 138, 62, 0.08);
+  --vtt-warning-a35: rgba(192, 138, 62, 0.35);
+
+  --vtt-border-strong-a75: rgba(74, 58, 40, 0.75);
+
+  /* Not the lightened text tokens: WODU-33 lightened text only, and tints keep the palette's colours. */
+  --vtt-danger-glow-a00: rgba(178, 59, 79, 0);
+  --vtt-danger-glow-a06: rgba(178, 59, 79, 0.06);
+  --vtt-danger-glow-a10: rgba(178, 59, 79, 0.1);
+  --vtt-danger-glow-a35: rgba(178, 59, 79, 0.35);
+  --vtt-danger-glow-a50: rgba(178, 59, 79, 0.5);
+  --vtt-danger-glow-a55: rgba(178, 59, 79, 0.55);
+  --vtt-danger-glow-a70: rgba(178, 59, 79, 0.7);
+
+  --vtt-success-glow-a10: rgba(107, 142, 78, 0.1);
+  --vtt-success-glow-a15: rgba(107, 142, 78, 0.15);
+  --vtt-success-glow-a35: rgba(107, 142, 78, 0.35);
+  --vtt-success-glow-a55: rgba(107, 142, 78, 0.55);
+  --vtt-success-glow-a60: rgba(107, 142, 78, 0.6);
+
+  --vtt-info-glow-a45: rgba(90, 122, 142, 0.45);
+  --vtt-info-glow-a70: rgba(90, 122, 142, 0.7);
+
+  --vtt-toast-error-border: rgba(180, 70, 60, 0.6);
+  --vtt-toast-error-text: #f3c8c2;
+  --vtt-hp-full-end: #8FAF68;
+  --vtt-hp-wounded-end: #D9A45C;
+  --vtt-sphere-fire: #C04A2B;
+  --vtt-sphere-shadow: #5A4A6E;
+  --vtt-sphere-stone: #7A6A4E;
+  --vtt-sphere-storm: #8EA8B8;
+  --vtt-sphere-secret: #B0853D;
+
   /* Fonts */
   --font-serif: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -144,8 +260,8 @@ body {
   font-size: 15px;
   line-height: 1.5;
   background-image:
-    radial-gradient(ellipse at top, rgba(140, 106, 58, 0.08) 0%, transparent 55%),
-    radial-gradient(ellipse at bottom, rgba(121, 43, 59, 0.06) 0%, transparent 60%);
+    radial-gradient(ellipse at top, var(--vtt-gold-a08) 0%, transparent 55%),
+    radial-gradient(ellipse at bottom, var(--vtt-danger-a06) 0%, transparent 60%);
   min-height: 100dvh;
 }
 
@@ -159,13 +275,13 @@ body {
 }
 
 @keyframes dice-row-fresh {
-  0%   { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.25); }
-  100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
+  0%   { box-shadow: 0 0 0 2px var(--vtt-accent-a25); }
+  100% { box-shadow: 0 0 0 2px var(--vtt-accent-a00); }
 }
 
 @keyframes qs-pulse {
-  0%, 100% { box-shadow: var(--shadow-inset), 0 0 0 0 rgba(178, 59, 79, 0); }
-  50%      { box-shadow: var(--shadow-inset), 0 0 0 4px rgba(178, 59, 79, 0.12); }
+  0%, 100% { box-shadow: var(--shadow-inset), 0 0 0 0 var(--vtt-danger-glow-a00); }
+  50%      { box-shadow: var(--shadow-inset), 0 0 0 4px var(--vtt-danger-glow-a10); }
 }
 
 @keyframes lu-die-roll {
@@ -185,7 +301,7 @@ body {
 .bs-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--vtt-black-a72);
   backdrop-filter: blur(4px);
   z-index: 300;
 }
@@ -205,7 +321,7 @@ body {
 .bottom-sheet {
   width: 100%;
   max-width: 520px;
-  background: rgba(26, 21, 16, 0.94);
+  background: var(--vtt-surface-a94);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--vtt-border-gold);
@@ -271,7 +387,7 @@ body {
   min-width: 280px;
   max-width: min(320px, calc(100vw - 24px));
   padding: 14px 16px 12px;
-  background: rgba(36, 28, 21, 0.96);
+  background: var(--vtt-elevated-a96);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--vtt-border-strong);

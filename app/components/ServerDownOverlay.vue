@@ -93,7 +93,7 @@ function retry() {
   position: fixed;
   inset: 0;
   z-index: 900;
-  background: rgba(7, 5, 10, 0.72);
+  background: var(--vtt-sunken-a72);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -110,7 +110,7 @@ function retry() {
   flex-direction: column;
   gap: var(--s-3);
   padding: var(--s-5);
-  background: rgba(26, 21, 16, 0.96);
+  background: var(--vtt-surface-a96);
   border: 1px solid var(--vtt-border-gold);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-3);

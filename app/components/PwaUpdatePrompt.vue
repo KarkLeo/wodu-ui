@@ -45,13 +45,13 @@ function dismiss() {
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: rgba(28, 22, 16, 0.96);
-  border: 1px solid rgba(140, 106, 58, 0.55);
+  background: var(--vtt-surface-a96);
+  border: 1px solid var(--vtt-gold-a55);
   border-radius: var(--r-md);
   font-family: var(--font-serif);
   font-size: 13px;
   color: var(--vtt-text-primary);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 20px var(--vtt-black-a40);
   max-width: 92vw;
 }
 .pwa-prompt__text {
@@ -60,7 +60,7 @@ function dismiss() {
 .pwa-prompt__action {
   padding: 6px 10px;
   background: transparent;
-  border: 1px solid rgba(140, 106, 58, 0.55);
+  border: 1px solid var(--vtt-gold-a55);
   border-radius: var(--r-sm);
   color: var(--vtt-accent);
   font-family: var(--font-mono);
@@ -70,7 +70,7 @@ function dismiss() {
   cursor: pointer;
 }
 .pwa-prompt__action:hover:not(:disabled) {
-  background: rgba(140, 106, 58, 0.2);
+  background: var(--vtt-gold-a20);
 }
 .pwa-prompt__action:disabled {
   opacity: 0.6;

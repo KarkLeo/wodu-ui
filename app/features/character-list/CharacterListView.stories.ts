@@ -7,6 +7,7 @@ import { brann, crookhollow, draftIdentity, draftTraining, inGame, MEMBERS, mire
 import { atRoute, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
+import { listenForInstallPrompt, usePwaInstall } from '@/pwa/useInstall'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useToastsStore } from '@/stores/toasts'
@@ -50,6 +51,39 @@ export const PartyWithDrafts: Story = {
 
 export const Empty: Story = {
   decorators: [offlineMode, withStores({ characters: [] })],
+}
+
+// The browser's offer outlives the story, since the install state is module-wide, so answering it on the way out takes it back.
+const installOffered: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    listenForInstallPrompt()
+    window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), {
+      prompt: async () => {},
+      userChoice: Promise.resolve({ outcome: 'dismissed' }),
+    }))
+    onUnmounted(() => void usePwaInstall().promptInstall())
+  },
+  template: '<story />',
+})
+
+/** The browser offers installation. */
+export const InstallOffered: Story = {
+  decorators: [installOffered, offlineMode, withStores({ characters: [] })],
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findByRole('button', { name: t('pwa.installCta') })).toBeVisible()
+  },
+}
+
+/** Gone once the browser's prompt is answered. */
+export const InstallAnswered: Story = {
+  tags: ['no-visual'],
+  decorators: [installOffered, offlineMode, withStores({ characters: [] })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: t('pwa.installCta') }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: t('pwa.installCta') })).toBeNull())
+  },
 }
 
 /**

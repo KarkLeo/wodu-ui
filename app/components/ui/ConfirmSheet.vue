@@ -68,12 +68,12 @@ const open = defineModel<boolean>('open', { required: true })
   border: 1px solid var(--vtt-warning);
   border-radius: var(--r-pill);
   color: var(--vtt-warning);
-  background: rgba(192, 138, 62, 0.08);
+  background: var(--vtt-warning-a08);
 }
 .confirm-sheet.v-danger .cs-icon {
   border-color: var(--vtt-danger-bright);
   color: var(--vtt-danger-bright);
-  background: rgba(178, 59, 79, 0.08);
+  background: var(--vtt-danger-glow-a06);
 }
 .cs-icon :deep(svg) { width: 22px; height: 22px; }
 

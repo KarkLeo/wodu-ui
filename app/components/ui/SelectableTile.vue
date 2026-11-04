@@ -58,18 +58,18 @@ function onClick() {
   flex-direction: column;
   border: 1px solid transparent;
   border-radius: var(--r-md);
-  background: rgba(36, 28, 21, 0.4);
+  background: var(--vtt-elevated-a40);
   text-align: left;
   font-family: inherit;
   color: inherit;
   transition: all var(--t-fast) var(--ease);
 }
 button.sel-tile { cursor: pointer; }
-.sel-tile:hover:not(:disabled):not(.is-selected) { background: rgba(36, 28, 21, 0.65); }
+.sel-tile:hover:not(:disabled):not(.is-selected) { background: var(--vtt-elevated-a65); }
 .sel-tile:disabled { opacity: 0.4; cursor: not-allowed; }
 .sel-tile.is-selected {
-  background: rgba(140, 106, 58, 0.2);
-  border-color: rgba(140, 106, 58, 0.55);
+  background: var(--vtt-gold-a20);
+  border-color: var(--vtt-gold-a55);
 }
 
 .sz-md { padding: 14px 14px 16px; }
@@ -106,6 +106,6 @@ button.sel-tile { cursor: pointer; }
 .vt-accent .sel-tile-number,
 .is-selected .sel-tile-number {
   color: var(--vtt-accent);
-  text-shadow: 0 0 12px rgba(212, 168, 87, 0.4);
+  text-shadow: 0 0 12px var(--vtt-accent-a40);
 }
 </style>

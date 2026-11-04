@@ -85,6 +85,6 @@ const emit = defineEmits<{
 .es-rule {
   height: 1px;
   margin-bottom: var(--s-2);
-  background: linear-gradient(90deg, transparent, rgba(140, 106, 58, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, var(--vtt-gold-a40), transparent);
 }
 </style>

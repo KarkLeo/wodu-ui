@@ -40,16 +40,16 @@ const { items } = storeToRefs(toasts)
   font-size: 14px;
   padding: 10px 14px;
   border-radius: var(--r-md);
-  border: 1px solid rgba(140, 106, 58, 0.4);
-  background: rgba(28, 22, 16, 0.95);
+  border: 1px solid var(--vtt-gold-a40);
+  background: var(--vtt-surface-a96);
   color: var(--vtt-text-primary);
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 20px var(--vtt-black-a40);
   animation: toast-in 200ms ease-out;
 }
 .toast--error {
-  border-color: rgba(180, 70, 60, 0.6);
-  color: #f3c8c2;
+  border-color: var(--vtt-toast-error-border);
+  color: var(--vtt-toast-error-text);
 }
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(8px); }

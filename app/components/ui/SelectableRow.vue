@@ -70,9 +70,9 @@ function onClick() {
   cursor: pointer;
   transition: background var(--t-fast) var(--ease);
 }
-.sel-row + .sel-row { border-top: 1px solid rgba(140, 106, 58, 0.1); }
-.sel-row:hover:not(:disabled):not(.is-selected) { background: rgba(228, 201, 160, 0.03); }
-.sel-row.is-selected { background: rgba(140, 106, 58, 0.12); }
+.sel-row + .sel-row { border-top: 1px solid var(--vtt-gold-a10); }
+.sel-row:hover:not(:disabled):not(.is-selected) { background: var(--vtt-accent-soft-a03); }
+.sel-row.is-selected { background: var(--vtt-gold-a10); }
 .sel-row.is-locked { opacity: 0.75; cursor: default; }
 .sel-row.is-disabled { opacity: 0.35; cursor: not-allowed; }
 
@@ -80,7 +80,7 @@ function onClick() {
   width: 22px;
   height: 22px;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(140, 106, 58, 0.35);
+  border: 1px solid var(--vtt-gold-a35);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -92,8 +92,8 @@ function onClick() {
   color: var(--vtt-bg-base);
 }
 .sel-row.is-locked .sel-row-check {
-  background: rgba(140, 106, 58, 0.45);
-  border-color: rgba(140, 106, 58, 0.55);
+  background: var(--vtt-gold-a45);
+  border-color: var(--vtt-gold-a55);
   color: var(--vtt-accent-soft);
 }
 

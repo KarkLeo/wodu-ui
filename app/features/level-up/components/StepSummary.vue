@@ -138,7 +138,7 @@ function formatMod(n: number) {
   gap: 4px;
   padding: 2px 8px;
   margin-left: 6px;
-  background: rgba(107, 142, 78, 0.15);
+  background: var(--vtt-success-glow-a15);
   border-radius: var(--r-pill);
   color: var(--vtt-success);
   font-family: var(--font-mono);

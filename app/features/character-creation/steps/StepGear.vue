@@ -178,7 +178,7 @@ function onUse(item: InventoryItem) {
   align-items: center;
   column-gap: var(--s-4);
   padding: 18px 20px;
-  background: rgba(36, 28, 21, 0.45);
+  background: var(--vtt-elevated-a45);
   border-radius: var(--r-md);
 }
 .cc-hp-value {

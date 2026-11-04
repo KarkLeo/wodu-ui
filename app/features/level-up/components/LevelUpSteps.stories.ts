@@ -6,8 +6,10 @@ import StepStat from './StepStat.vue'
 import StepHitDice from './StepHitDice.vue'
 import StepSummary from './StepSummary.vue'
 import { oda, wren } from '@/stories/fixtures'
+import { withStores } from '@/stories/state'
 import { MAX_STAT_BONUS } from '@/data/xpTable'
 import { ABILITY_IDS, SKILL_IDS } from '@/types/character'
+import { t } from '@/locales'
 import { tamsin } from '../LevelUpView.stories'
 
 const padded: Decorator = (story) => ({
@@ -126,6 +128,30 @@ export const StatKeyboard: StoryObj<typeof StepStat> = {
 export const HitDiceBeforeRoll: StoryObj<typeof StepHitDice> = {
   render: (args) => ({ components: { StepHitDice }, setup: () => ({ args }), template: '<StepHitDice v-bind="args" />' }),
   args: { numDice: oda.hitDice + 1, targetLevel: oda.level + 1, characterId: oda.id, characterName: oda.name, previousMaxHp: oda.maxHp },
+}
+
+/** Rolled: the dice kept and dropped, and the new maximum. The dice engine draws from Math.random, so a fixed sequence gives the same dice on every run. */
+export const HitDiceAfterRoll: StoryObj<typeof StepHitDice> = {
+  ...HitDiceBeforeRoll,
+  args: { ...HitDiceBeforeRoll.args, numDice: oda.hitDice + 2 },
+  decorators: [withStores({ characters: [oda] })],
+  beforeEach() {
+    const real = Math.random
+    const draws = [0.9, 0.1, 0.5]
+    let next = 0
+    Math.random = () => draws[next++ % draws.length]
+    return () => {
+      Math.random = real
+    }
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: t('levelUp.steps.hitDice.roll') }))
+    await expect(await canvas.findByText(t('levelUp.steps.hitDice.resultLabel'))).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.lu-die.is-kept')).toHaveLength(oda.level + 1)
+    await expect(canvasElement.querySelectorAll('.lu-die.is-discarded')).toHaveLength(1)
+    await expect(canvas.getByRole('button', { name: t('levelUp.steps.hitDice.reroll') })).toBeEnabled()
+  },
 }
 
 const renderSummary: StoryObj<typeof StepSummary>['render'] = (args) => ({

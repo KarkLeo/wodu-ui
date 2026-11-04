@@ -199,7 +199,7 @@ onBeforeUnmount(stopListening)
 .stat-chip.is-active {
   border-color: var(--vtt-accent-deep);
   background: var(--vtt-bg-elevated);
-  box-shadow: 0 0 0 3px rgba(212, 168, 87, 0.12);
+  box-shadow: 0 0 0 3px var(--vtt-accent-a10);
 }
 
 .stat-chip.is-disabled { opacity: 0.4; cursor: not-allowed; }
@@ -282,7 +282,7 @@ onBeforeUnmount(stopListening)
   font-weight: 600;
   letter-spacing: 0.02em;
   border-radius: var(--r-pill);
-  background: rgba(26, 21, 16, 0.55);
+  background: var(--vtt-surface-a55);
   border: 1px solid var(--vtt-border-strong);
   line-height: 1;
   pointer-events: none;
@@ -291,13 +291,13 @@ onBeforeUnmount(stopListening)
 }
 .stat-chip .sc-mod.is-buff {
   color: var(--vtt-success);
-  border-color: rgba(107, 142, 78, 0.55);
-  background: rgba(107, 142, 78, 0.18);
+  border-color: var(--vtt-success-glow-a55);
+  background: var(--vtt-success-glow-a15);
 }
 .stat-chip .sc-mod.is-debuff {
   color: var(--vtt-danger-bright);
-  border-color: rgba(178, 59, 79, 0.55);
-  background: rgba(58, 24, 32, 0.55);
+  border-color: var(--vtt-danger-glow-a55);
+  background: var(--vtt-danger-soft-a55);
 }
 
 .stat-chip .sc-base {
@@ -318,7 +318,7 @@ onBeforeUnmount(stopListening)
   padding: 8px 6px 6px;
   background: var(--vtt-bg-elevated);
   border-color: var(--vtt-accent-deep);
-  box-shadow: 0 0 0 3px rgba(212, 168, 87, 0.15);
+  box-shadow: 0 0 0 3px var(--vtt-accent-a18);
   cursor: default;
 }
 .stat-chip.is-editing .sc-dice { display: none; }
@@ -372,11 +372,11 @@ onBeforeUnmount(stopListening)
 }
 .info-popover .pop-effect-delta.is-buff {
   color: var(--vtt-success);
-  background: rgba(107, 142, 78, 0.1);
+  background: var(--vtt-success-glow-a10);
 }
 .info-popover .pop-effect-delta.is-debuff {
   color: var(--vtt-danger-bright);
-  background: rgba(178, 59, 79, 0.1);
+  background: var(--vtt-danger-glow-a10);
 }
 .info-popover .pop-effect-name {
   flex: 1;

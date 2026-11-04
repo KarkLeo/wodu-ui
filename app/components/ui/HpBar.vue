@@ -224,9 +224,9 @@ const tempPct = computed(() => {
   position: absolute;
   top: 0;
   height: 100%;
-  background: linear-gradient(to right, rgba(212, 168, 87, 0.75), rgba(228, 201, 160, 0.85));
+  background: linear-gradient(to right, var(--vtt-accent-a75), var(--vtt-accent-soft-a85));
   border-radius: var(--r-pill);
-  box-shadow: 0 0 8px rgba(212, 168, 87, 0.4);
+  box-shadow: 0 0 8px var(--vtt-accent-a40);
   transition: width var(--t-med) var(--ease);
 }
 
@@ -282,13 +282,13 @@ const tempPct = computed(() => {
 .hp-bar-btn.is-heal:hover { border-color: var(--vtt-success); color: var(--vtt-success); }
 
 .hp-bar.state-full .hp-bar-fill {
-  background: linear-gradient(to right, var(--vtt-success), #8FAF68);
+  background: linear-gradient(to right, var(--vtt-success), var(--vtt-hp-full-end));
 }
 .hp-bar.state-healthy .hp-bar-fill {
   background: linear-gradient(to right, var(--vtt-accent-deep), var(--vtt-accent));
 }
 .hp-bar.state-wounded .hp-bar-fill {
-  background: linear-gradient(to right, var(--vtt-warning), #D9A45C);
+  background: linear-gradient(to right, var(--vtt-warning), var(--vtt-hp-wounded-end));
 }
 .hp-bar.state-critical .hp-bar-fill {
   background: linear-gradient(to right, var(--vtt-danger), var(--vtt-danger-bright));
@@ -299,7 +299,7 @@ const tempPct = computed(() => {
 
 @keyframes hp-pulse {
   0%, 100% { filter: brightness(0.9); }
-  50% { filter: brightness(1.2) drop-shadow(0 0 6px rgba(178, 59, 79, 0.5)); }
+  50% { filter: brightness(1.2) drop-shadow(0 0 6px var(--vtt-danger-glow-a50)); }
 }
 
 .hp-bar.hp-sm { gap: 8px; min-width: 160px; }
@@ -327,7 +327,7 @@ const tempPct = computed(() => {
   font-size: 11px;
   letter-spacing: 0.04em;
   border-radius: var(--r-pill);
-  background: rgba(26, 21, 16, 0.7);
+  background: var(--vtt-surface-a70);
   border: 1px solid var(--vtt-border-subtle);
   color: var(--vtt-text-secondary);
 }
@@ -338,9 +338,9 @@ const tempPct = computed(() => {
   border-radius: 50%;
   background: currentColor;
 }
-.hp-effect-chip.is-dot { color: var(--vtt-danger-bright); border-color: rgba(178, 59, 79, 0.35); }
-.hp-effect-chip.is-hot { color: var(--vtt-success); border-color: rgba(107, 142, 78, 0.35); }
-.hp-effect-chip.is-warn { color: var(--vtt-warning); border-color: rgba(192, 138, 62, 0.35); }
+.hp-effect-chip.is-dot { color: var(--vtt-danger-bright); border-color: var(--vtt-danger-glow-a35); }
+.hp-effect-chip.is-hot { color: var(--vtt-success); border-color: var(--vtt-success-glow-a35); }
+.hp-effect-chip.is-warn { color: var(--vtt-warning); border-color: var(--vtt-warning-a35); }
 .hp-effect-chip .chip-meta {
   color: var(--vtt-text-muted);
   font-weight: 400;
@@ -354,7 +354,7 @@ const tempPct = computed(() => {
   min-width: 0;
   max-width: 340px;
   padding: 14px 16px;
-  background: rgba(36, 28, 21, 0.96);
+  background: var(--vtt-elevated-a96);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--vtt-border-strong);

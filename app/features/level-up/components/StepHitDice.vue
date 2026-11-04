@@ -140,7 +140,7 @@ const captionPost = computed(() => {
 .lu-die.is-empty {
   color: var(--vtt-text-muted);
   border-style: dashed;
-  border-color: rgba(140, 106, 58, 0.25);
+  border-color: var(--vtt-gold-a25);
   background: transparent;
   box-shadow: none;
 }
@@ -148,7 +148,7 @@ const captionPost = computed(() => {
   background: var(--vtt-accent);
   border-color: var(--vtt-accent);
   color: var(--vtt-bg-base);
-  box-shadow: 0 0 16px rgba(212, 168, 87, 0.24);
+  box-shadow: 0 0 16px var(--vtt-accent-a25);
 }
 .lu-die.is-kept::after { color: var(--vtt-bg-base); opacity: 0.6; }
 .lu-die.is-discarded { opacity: 0.35; }
@@ -179,7 +179,7 @@ const captionPost = computed(() => {
   align-items: center;
   column-gap: var(--s-4);
   padding: 14px 18px;
-  background: rgba(36, 28, 21, 0.45);
+  background: var(--vtt-elevated-a45);
   border-radius: var(--r-md);
 }
 .lu-hp-result-value {

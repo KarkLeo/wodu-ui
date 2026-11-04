@@ -59,12 +59,12 @@ const label = computed(() => props.value || props.placeholder || t('inGame.magic
   background: var(--vtt-text-muted);
   flex-shrink: 0;
 }
-.sphere-chip.sphere-fire .sphere-chip-dot { background: #C04A2B; }
-.sphere-chip.sphere-shadow .sphere-chip-dot { background: #5A4A6E; }
-.sphere-chip.sphere-stone .sphere-chip-dot { background: #7A6A4E; }
-.sphere-chip.sphere-storm .sphere-chip-dot { background: #8EA8B8; }
-.sphere-chip.sphere-secret .sphere-chip-dot { background: #B0853D; }
-.sphere-chip.sphere-fear .sphere-chip-dot { background: #792B3B; }
+.sphere-chip.sphere-fire .sphere-chip-dot { background: var(--vtt-sphere-fire); }
+.sphere-chip.sphere-shadow .sphere-chip-dot { background: var(--vtt-sphere-shadow); }
+.sphere-chip.sphere-stone .sphere-chip-dot { background: var(--vtt-sphere-stone); }
+.sphere-chip.sphere-storm .sphere-chip-dot { background: var(--vtt-sphere-storm); }
+.sphere-chip.sphere-secret .sphere-chip-dot { background: var(--vtt-sphere-secret); }
+.sphere-chip.sphere-fear .sphere-chip-dot { background: var(--vtt-danger); }
 .sphere-chip.sphere-custom .sphere-chip-dot {
   background: transparent;
   border: 1px dashed var(--vtt-text-muted);

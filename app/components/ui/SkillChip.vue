@@ -87,7 +87,7 @@ function onClick() {
 .skill-chip.mode-add:hover:not(:disabled) {
   color: var(--vtt-accent-soft);
   border-color: var(--vtt-border-gold);
-  background: rgba(140, 106, 58, 0.05);
+  background: var(--vtt-gold-a05);
 }
 
 .skill-chip.mode-display { cursor: default; }

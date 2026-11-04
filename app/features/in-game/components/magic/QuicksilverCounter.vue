@@ -78,7 +78,7 @@ const title = computed(() =>
 }
 .qs-counter.is-overdose {
   border-color: var(--vtt-danger);
-  background: linear-gradient(to right, rgba(121, 43, 59, 0.14), var(--vtt-bg-surface) 60%);
+  background: linear-gradient(to right, var(--vtt-danger-a14), var(--vtt-bg-surface) 60%);
 }
 
 .qs-dice {

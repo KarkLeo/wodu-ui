@@ -222,8 +222,8 @@ function setCurrent(v: number) {
     to right,
     transparent 0,
     transparent calc(25% - 1px),
-    rgba(14, 11, 8, 0.8) calc(25% - 1px),
-    rgba(14, 11, 8, 0.8) 25%
+    var(--vtt-base-a80) calc(25% - 1px),
+    var(--vtt-base-a80) 25%
   );
   opacity: 0.55;
   border-radius: var(--r-pill);
@@ -269,7 +269,7 @@ function setCurrent(v: number) {
 
 @keyframes xp-pulse {
   0%, 100% { filter: brightness(1); box-shadow: none; }
-  50% { filter: brightness(1.2) drop-shadow(0 0 6px rgba(212, 168, 87, 0.6)); }
+  50% { filter: brightness(1.2) drop-shadow(0 0 6px var(--vtt-accent-a60)); }
 }
 
 .xp-ready-dot {
@@ -278,7 +278,7 @@ function setCurrent(v: number) {
   height: 6px;
   border-radius: var(--r-pill);
   background: var(--vtt-accent);
-  box-shadow: 0 0 6px rgba(212, 168, 87, 0.8);
+  box-shadow: 0 0 6px var(--vtt-accent-a80);
   margin-left: 6px;
   vertical-align: middle;
   animation: xp-dot-pulse 1.6s ease-in-out infinite;
@@ -303,7 +303,7 @@ function setCurrent(v: number) {
   width: 340px;
   min-width: 0;
   max-width: 360px;
-  background: rgba(26, 21, 16, 0.88);
+  background: var(--vtt-surface-a88);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--vtt-border-gold);

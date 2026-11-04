@@ -158,7 +158,7 @@ const { game } = useTable()
   min-height: 100dvh;
   color: var(--vtt-text-primary);
   background-image:
-    linear-gradient(to bottom, rgba(7, 5, 10, 0.35), rgba(7, 5, 10, 0.15) 40%, rgba(7, 5, 10, 0.55)),
+    linear-gradient(to bottom, var(--vtt-sunken-a35), var(--vtt-sunken-a15) 40%, var(--vtt-sunken-a55)),
     var(--gl-bg);
   background-size: cover;
   background-position: center;
@@ -178,7 +178,7 @@ const { game } = useTable()
   align-items: center;
   gap: var(--s-4);
   padding: 0 var(--s-4);
-  background: linear-gradient(to bottom, rgba(7, 5, 10, 0.72), rgba(7, 5, 10, 0));
+  background: linear-gradient(to bottom, var(--vtt-sunken-a72), var(--vtt-sunken-a00));
   z-index: 3;
   pointer-events: none;
 }
@@ -192,7 +192,7 @@ const { game } = useTable()
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 4px var(--vtt-black-a60);
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -206,7 +206,7 @@ const { game } = useTable()
   text-transform: uppercase;
   color: var(--vtt-text-secondary);
   justify-self: center;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 3px var(--vtt-black-a70);
 }
 .gl-top-actions {
   display: inline-flex;
@@ -230,19 +230,19 @@ const { game } = useTable()
 .gl-mob-topbar::before {
   content: "";
   position: absolute; inset: 0;
-  background: rgba(7, 5, 10, 0.78);
+  background: var(--vtt-sunken-a78);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   backdrop-filter: blur(22px) saturate(1.1);
   -webkit-mask-image: linear-gradient(to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0) 100%);
+    var(--vtt-black-a100) 0%,
+    var(--vtt-black-a100) 55%,
+    var(--vtt-black-a60) 80%,
+    var(--vtt-black-a00) 100%);
   mask-image: linear-gradient(to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0) 100%);
+    var(--vtt-black-a100) 0%,
+    var(--vtt-black-a100) 55%,
+    var(--vtt-black-a60) 80%,
+    var(--vtt-black-a00) 100%);
   z-index: -1;
   pointer-events: none;
 }
@@ -274,19 +274,19 @@ const { game } = useTable()
 .gl-left::before {
   content: "";
   position: absolute; inset: 0;
-  background: rgba(7, 5, 10, 0.78);
+  background: var(--vtt-sunken-a78);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   backdrop-filter: blur(22px) saturate(1.1);
   -webkit-mask-image: linear-gradient(to right,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0) 100%);
+    var(--vtt-black-a100) 0%,
+    var(--vtt-black-a100) 55%,
+    var(--vtt-black-a60) 80%,
+    var(--vtt-black-a00) 100%);
   mask-image: linear-gradient(to right,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0) 100%);
+    var(--vtt-black-a100) 0%,
+    var(--vtt-black-a100) 55%,
+    var(--vtt-black-a60) 80%,
+    var(--vtt-black-a00) 100%);
   z-index: -1;
   pointer-events: none;
 }
@@ -304,19 +304,19 @@ const { game } = useTable()
 .gl-right::before {
   content: "";
   position: absolute; inset: 0;
-  background: rgba(7, 5, 10, 0.78);
+  background: var(--vtt-sunken-a78);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   backdrop-filter: blur(22px) saturate(1.1);
   -webkit-mask-image: linear-gradient(to left,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0) 100%);
+    var(--vtt-black-a100) 0%,
+    var(--vtt-black-a100) 55%,
+    var(--vtt-black-a60) 80%,
+    var(--vtt-black-a00) 100%);
   mask-image: linear-gradient(to left,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0) 100%);
+    var(--vtt-black-a100) 0%,
+    var(--vtt-black-a100) 55%,
+    var(--vtt-black-a60) 80%,
+    var(--vtt-black-a00) 100%);
   z-index: -1;
   pointer-events: none;
 }
@@ -335,13 +335,13 @@ const { game } = useTable()
 /* ── MOBILE OVERLAYS ─────────────────────────────────── */
 .mob-overlay {
   position: absolute; inset: 0;
-  background: rgba(7, 5, 10, 0.5);
+  background: var(--vtt-sunken-a50);
   z-index: 7;
 }
 .mob-side {
   position: absolute; left: 0; top: 0; bottom: 0;
   width: 100%;
-  background: rgba(7, 5, 10, 0.62);
+  background: var(--vtt-sunken-a62);
   -webkit-backdrop-filter: blur(28px) saturate(1.2);
   backdrop-filter: blur(28px) saturate(1.2);
   display: flex; flex-direction: column;
