@@ -103,7 +103,7 @@ function resumeCreation(id: string) {
   transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
 }
 .cl-install:hover {
-  background: rgba(140, 106, 58, 0.18);
+  background: var(--vtt-gold-a18);
   border-color: var(--vtt-accent);
 }
 </style>

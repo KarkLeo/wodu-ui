@@ -105,7 +105,7 @@ const armorChip = computed(() => {
 .inv-item.is-equipped {
   border-left: 2px solid var(--vtt-accent);
   padding-left: 13px;
-  background: linear-gradient(to right, rgba(140, 106, 58, 0.06), transparent 40%);
+  background: linear-gradient(to right, var(--vtt-gold-a06), transparent 40%);
 }
 
 .inv-item-body { min-width: 0; }
@@ -136,7 +136,7 @@ const armorChip = computed(() => {
   padding: 1px 5px;
   border: 1px solid var(--vtt-accent-deep);
   border-radius: var(--r-xs);
-  background: rgba(140, 106, 58, 0.08);
+  background: var(--vtt-gold-a08);
   line-height: 1.2;
   flex-shrink: 0;
 }
@@ -176,5 +176,5 @@ const armorChip = computed(() => {
   cursor: pointer;
   transition: all var(--t-fast) var(--ease);
 }
-.inv-use:hover { background: rgba(140, 106, 58, 0.15); }
+.inv-use:hover { background: var(--vtt-gold-a15); }
 </style>

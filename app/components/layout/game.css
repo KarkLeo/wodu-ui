@@ -7,7 +7,7 @@
   padding: 6px;
   border: 1px solid var(--vtt-border-gold);
   border-radius: var(--r-md);
-  background: rgba(26, 21, 16, 0.98);
+  background: var(--vtt-surface-a98);
   box-shadow: var(--shadow-3);
 }
 .gm-sep { height: 1px; margin: 4px; background: var(--vtt-border-subtle); }
@@ -20,7 +20,7 @@
   cursor: pointer;
   outline: none;
 }
-.gm-item[data-highlighted] { background: rgba(212, 168, 87, 0.06); color: var(--vtt-accent-soft); }
+.gm-item[data-highlighted] { background: var(--vtt-accent-a06); color: var(--vtt-accent-soft); }
 .gm-item.is-danger { color: var(--vtt-danger-bright); }
 
 /* ── Sheet content: a hint over a list of ListRows ── */

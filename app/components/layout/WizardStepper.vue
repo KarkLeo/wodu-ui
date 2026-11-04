@@ -70,7 +70,7 @@ function onSelect(n: number) {
 }
 .wz-steps-line {
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(140, 106, 58, 0.4), transparent);
+  background: linear-gradient(to right, transparent, var(--vtt-gold-a40), transparent);
 }
 .wz-steps-dots {
   display: inline-flex;
@@ -84,11 +84,11 @@ function onSelect(n: number) {
   align-items: center;
   justify-content: center;
   border-radius: var(--r-pill);
-  background: rgba(36, 28, 21, 0.55);
+  background: var(--vtt-elevated-a55);
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--vtt-text-muted);
-  border: 1px solid rgba(140, 106, 58, 0.25);
+  border: 1px solid var(--vtt-gold-a25);
   position: relative;
 }
 .wz-dot--button {
@@ -99,18 +99,18 @@ function onSelect(n: number) {
 .wz-dot--button:disabled { cursor: default; }
 .wz-dot.is-done {
   color: var(--vtt-accent-soft);
-  background: rgba(140, 106, 58, 0.25);
-  border-color: rgba(140, 106, 58, 0.5);
+  background: var(--vtt-gold-a25);
+  border-color: var(--vtt-gold-a50);
 }
 .wz-dot--button.is-done:hover {
-  background: rgba(140, 106, 58, 0.4);
+  background: var(--vtt-gold-a40);
   border-color: var(--vtt-border-gold);
 }
 .wz-dot.is-active {
   color: var(--vtt-bg-base);
   background: linear-gradient(to bottom, var(--vtt-accent), var(--vtt-accent-deep));
   border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 14px rgba(212, 168, 87, 0.35);
+  box-shadow: 0 0 14px var(--vtt-accent-a35);
 }
 .wz-dot + .wz-dot::before {
   content: "";
@@ -120,7 +120,7 @@ function onSelect(n: number) {
   transform: translateY(-50%);
   width: 6px;
   height: 1px;
-  background: rgba(140, 106, 58, 0.35);
+  background: var(--vtt-gold-a35);
 }
 .wz-dot svg { width: 12px; height: 12px; }
 </style>

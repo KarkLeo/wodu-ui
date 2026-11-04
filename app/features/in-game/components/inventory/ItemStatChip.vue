@@ -31,7 +31,7 @@ defineProps<{
 }
 .item-stat-chip.is-armor {
   color: var(--vtt-info);
-  border-color: rgba(90, 122, 142, 0.45);
+  border-color: var(--vtt-info-glow-a45);
 }
 .item-stat-chip.is-qty {
   color: var(--vtt-text-muted);
@@ -40,11 +40,11 @@ defineProps<{
 }
 .item-stat-chip.is-hp {
   color: var(--vtt-danger-bright);
-  border-color: rgba(178, 59, 79, 0.35);
+  border-color: var(--vtt-danger-glow-a35);
 }
 .item-stat-chip.is-price {
   color: var(--vtt-accent);
   border-color: var(--vtt-accent-deep);
-  background: rgba(140, 106, 58, 0.08);
+  background: var(--vtt-gold-a08);
 }
 </style>

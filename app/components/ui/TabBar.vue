@@ -100,7 +100,7 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.tabs, model)
 }
 .tab-item:hover:not(:disabled) {
   color: var(--vtt-text-secondary);
-  background: rgba(228, 201, 160, 0.03);
+  background: var(--vtt-accent-soft-a03);
 }
 .tab-item:focus-visible {
   outline: 1px solid var(--vtt-border-gold);
@@ -149,17 +149,17 @@ const { tabIndexFor, onKeydown } = useRovingSelection(() => props.tabs, model)
   height: 6px;
   border-radius: var(--r-pill);
   background: var(--vtt-accent);
-  box-shadow: 0 0 6px rgba(212, 168, 87, 0.8);
+  box-shadow: 0 0 6px var(--vtt-accent-a80);
   animation: tab-dot-pulse 1.8s ease-in-out infinite;
   flex-shrink: 0;
 }
 .tab-item-dot.kind-danger {
   background: var(--vtt-danger-bright);
-  box-shadow: 0 0 6px rgba(178, 59, 79, 0.7);
+  box-shadow: 0 0 6px var(--vtt-danger-glow-a70);
 }
 .tab-item-dot.kind-info {
   background: var(--vtt-info);
-  box-shadow: 0 0 6px rgba(90, 122, 142, 0.7);
+  box-shadow: 0 0 6px var(--vtt-info-glow-a70);
   animation: none;
 }
 @keyframes tab-dot-pulse {

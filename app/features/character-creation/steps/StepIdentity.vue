@@ -270,8 +270,8 @@ const CLASS_GLYPHS: Record<ClassId, string> = {
 }
 .is-fresh { animation: cc-fresh 1400ms var(--ease); }
 @keyframes cc-fresh {
-  0%   { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.3); }
-  100% { box-shadow: 0 0 0 2px rgba(212, 168, 87, 0); }
+  0%   { box-shadow: 0 0 0 2px var(--vtt-accent-a30); }
+  100% { box-shadow: 0 0 0 2px var(--vtt-accent-a00); }
 }
 @media (prefers-reduced-motion: reduce) {
   .is-fresh { animation: none; }

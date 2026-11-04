@@ -98,7 +98,7 @@ const describedBy = computed(() => {
 :slotted(.form-field-control)::placeholder { color: var(--vtt-text-muted); font-style: italic; }
 :slotted(.form-field-control:focus) {
   border-color: var(--vtt-border-gold);
-  box-shadow: 0 0 0 2px rgba(140, 106, 58, 0.15);
+  box-shadow: 0 0 0 2px var(--vtt-gold-a15);
 }
 :slotted(.form-field-control[aria-invalid='true']) { border-color: var(--vtt-danger); }
 :slotted(.form-field-control.is-mono) { font-family: var(--font-mono); }
@@ -109,7 +109,7 @@ const describedBy = computed(() => {
   padding: 8px 4px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid rgba(140, 106, 58, 0.3);
+  border-bottom: 1px solid var(--vtt-gold-a30);
   border-radius: 0;
   font-family: var(--font-serif);
   font-size: 18px;

@@ -112,12 +112,12 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-hero-ink);
   border-color: var(--vtt-border-gold);
   font-weight: 600;
-  filter: drop-shadow(0 0 10px rgba(140, 106, 58, 0.35));
+  filter: drop-shadow(0 0 10px var(--vtt-gold-a35));
 }
 .v-hero:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--vtt-hero-face-hover);
   border-color: var(--vtt-hero-face);
-  filter: drop-shadow(0 0 14px rgba(140, 106, 58, 0.5));
+  filter: drop-shadow(0 0 14px var(--vtt-gold-a50));
 }
 
 .v-hero-danger {
@@ -125,12 +125,12 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   color: var(--vtt-text-primary);
   border-color: var(--vtt-danger-bright);
   font-weight: 600;
-  filter: drop-shadow(0 0 10px rgba(178, 59, 79, 0.35));
+  filter: drop-shadow(0 0 10px var(--vtt-danger-glow-a35));
 }
 .v-hero-danger:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--vtt-danger-bright);
   border-color: var(--vtt-danger-bright);
-  filter: drop-shadow(0 0 14px rgba(178, 59, 79, 0.5));
+  filter: drop-shadow(0 0 14px var(--vtt-danger-glow-a50));
 }
 
 .v-hero-success {
@@ -153,14 +153,14 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
 .v-danger-ghost:hover:not(:disabled):not([aria-disabled='true']) {
   color: var(--vtt-danger-bright);
   border-color: var(--vtt-border-subtle);
-  background: rgba(178, 59, 79, 0.06);
+  background: var(--vtt-danger-glow-a06);
 }
 .v-roll {
   gap: 6px;
   padding: 7px 12px;
   border-radius: var(--r-sm);
-  border-color: rgba(140, 106, 58, 0.35);
-  background: rgba(36, 28, 21, 0.55);
+  border-color: var(--vtt-gold-a35);
+  background: var(--vtt-elevated-a55);
   color: var(--vtt-accent);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -168,7 +168,7 @@ defineEmits<{ (e: 'click', ev: MouseEvent): void }>()
   letter-spacing: 0.1em;
 }
 .v-roll:hover:not(:disabled):not([aria-disabled='true']) {
-  background: rgba(140, 106, 58, 0.2);
+  background: var(--vtt-gold-a20);
   border-color: var(--vtt-border-gold);
 }
 .v-roll .btn-icon { width: 12px; height: 12px; }

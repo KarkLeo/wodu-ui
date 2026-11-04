@@ -56,7 +56,7 @@ withDefaults(defineProps<{
 .screen-header--hero .screen-header-title {
   font-size: 28px;
   line-height: 1.5;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 4px var(--vtt-black-a60);
 }
 .screen-header--hero .screen-header-subtitle { font-size: 13px; white-space: normal; }
 </style>

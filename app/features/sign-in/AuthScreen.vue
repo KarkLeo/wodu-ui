@@ -51,7 +51,7 @@ defineProps<{
   justify-content: center;
   color: var(--vtt-text-primary);
   background-image:
-    linear-gradient(to bottom, rgba(7, 5, 10, 0.55), rgba(7, 5, 10, 0.35) 40%, rgba(7, 5, 10, 0.7)),
+    linear-gradient(to bottom, var(--vtt-sunken-a55), var(--vtt-sunken-a35) 40%, var(--vtt-sunken-a70)),
     var(--as-bg);
   background-size: cover;
   background-position: center;
@@ -84,7 +84,7 @@ defineProps<{
   border: 1px solid var(--vtt-border-gold);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-3);
-  background: rgba(26, 21, 16, 0.96);
+  background: var(--vtt-surface-a96);
 }
 .as-card-title {
   margin: 0;

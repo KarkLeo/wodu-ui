@@ -20,7 +20,7 @@ import CabinetHeader from './CabinetHeader.vue'
   flex-direction: column;
   color: var(--vtt-text-primary);
   background-image:
-    linear-gradient(to bottom, rgba(7, 5, 10, 0.78), rgba(7, 5, 10, 0.62) 40%, rgba(7, 5, 10, 0.86)),
+    linear-gradient(to bottom, var(--vtt-sunken-a78), var(--vtt-sunken-a62) 40%, var(--vtt-sunken-a86)),
     var(--cl-bg);
   background-size: cover;
   background-position: center;

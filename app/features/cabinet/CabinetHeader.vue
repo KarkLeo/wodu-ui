@@ -44,7 +44,7 @@ const avatarName = computed(() => {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(14, 11, 8, 0.88);
+  background: var(--vtt-base-a88);
   border-bottom: 1px solid var(--vtt-border-subtle);
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
   backdrop-filter: blur(14px) saturate(1.15);
@@ -89,7 +89,7 @@ const avatarName = computed(() => {
   white-space: nowrap;
   transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
-.ch-link:hover { color: var(--vtt-text-secondary); background: rgba(228, 201, 160, 0.03); }
+.ch-link:hover { color: var(--vtt-text-secondary); background: var(--vtt-accent-soft-a03); }
 .ch-link:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: -2px; }
 .ch-link[aria-current='page'] { color: var(--vtt-accent-soft); background: var(--vtt-bg-elevated); }
 .ch-link[aria-current='page']::after {

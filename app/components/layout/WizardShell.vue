@@ -78,8 +78,8 @@ const isMobile = useIsMobile()
   margin: 0 auto;
   overflow: hidden;
   background:
-    linear-gradient(to bottom, rgba(26, 21, 16, 0.62), rgba(14, 11, 8, 0.7)),
-    rgba(7, 5, 10, 0.35);
+    linear-gradient(to bottom, var(--vtt-surface-a62), var(--vtt-base-a70)),
+    var(--vtt-sunken-a35);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   backdrop-filter: blur(22px) saturate(1.1);
   position: relative;
@@ -110,7 +110,7 @@ const isMobile = useIsMobile()
     margin: 40px auto 40px
       clamp(var(--gl-inset-left, 0px), (100% - var(--wz-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--wz-w));
     border-radius: var(--r-lg);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(140, 106, 58, 0.18);
+    box-shadow: 0 12px 40px var(--vtt-black-a50), 0 0 0 1px var(--vtt-gold-a18);
   }
 }
 
@@ -134,7 +134,7 @@ const isMobile = useIsMobile()
   font-weight: 500;
   color: var(--vtt-accent-soft);
   line-height: 1;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 4px var(--vtt-black-a60);
 }
 .wz-title-text,
 .wz-subtitle {
@@ -178,7 +178,7 @@ const isMobile = useIsMobile()
   gap: var(--s-5);
 }
 .wz-content::-webkit-scrollbar { width: 4px; }
-.wz-content::-webkit-scrollbar-thumb { background: rgba(140, 106, 58, 0.3); border-radius: var(--r-pill); }
+.wz-content::-webkit-scrollbar-thumb { background: var(--vtt-gold-a30); border-radius: var(--r-pill); }
 
 .wz-footer {
   grid-area: footer;

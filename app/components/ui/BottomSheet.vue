@@ -92,7 +92,7 @@ const open = defineModel<boolean>('open', { required: true })
   justify-content: flex-end;
   padding: 12px 18px;
   border-top: 1px solid var(--vtt-border-subtle);
-  background: rgba(14, 11, 8, 0.3);
+  background: var(--vtt-base-a30);
   flex-shrink: 0;
 }
 </style>

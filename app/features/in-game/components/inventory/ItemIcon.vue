@@ -53,7 +53,7 @@ const ICONS: Record<ItemDescriptor['kind'], Component> = {
 .item-icon.is-equipped {
   border-color: var(--vtt-border-gold);
   color: var(--vtt-accent);
-  background: rgba(140, 106, 58, 0.1);
+  background: var(--vtt-gold-a10);
 }
 .item-icon.is-consumable {
   border-style: dashed;

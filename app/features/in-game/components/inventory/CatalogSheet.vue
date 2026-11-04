@@ -123,7 +123,7 @@ function onBuyClick(tpl: GearTemplate) {
 .catalog-search {
   position: sticky;
   top: -14px;
-  background: rgba(26, 21, 16, 0.96);
+  background: var(--vtt-surface-a96);
   backdrop-filter: blur(10px);
   margin-top: -14px;
   padding: 14px 0 12px;

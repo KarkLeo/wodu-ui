@@ -160,7 +160,7 @@ export const withNavigationNotice: Decorator = (story, context) => ({
     <story />
     <Teleport to="body">
       <div v-if="leftTo" role="status" style="position: fixed; inset: 0; z-index: 10000; display: grid;
-        place-items: center; padding: 24px; background: rgba(7, 5, 10, 0.82); backdrop-filter: blur(4px)">
+        place-items: center; padding: 24px; background: var(--vtt-sunken-a82); backdrop-filter: blur(4px)">
         <div style="max-width: 340px; padding: 16px 18px; border: 1px solid var(--vtt-border-gold);
           border-radius: var(--r-md); background: var(--vtt-bg-elevated); color: var(--vtt-text-primary);
           font-family: var(--font-sans); font-size: 14px; line-height: 1.5; text-align: center">
