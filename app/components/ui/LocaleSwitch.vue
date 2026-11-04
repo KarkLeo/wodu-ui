@@ -6,7 +6,7 @@ import { LOCALES, type Locale } from '@/locales'
 // Only shows and reports the choice: each caller decides what a switch does (the local UI language,
 // or the profile's as well).
 withDefaults(defineProps<{
-  /** `pill` in a settings row, `plain` in a corner or a footer. */
+  /** `pill` in a settings row or over the artwork, `plain` in a footer. */
   variant?: 'pill' | 'plain'
 }>(), {
   variant: 'plain',

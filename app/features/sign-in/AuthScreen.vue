@@ -79,7 +79,7 @@ defineProps<{
 .as-locale { margin-left: auto; }
 
 .as-brand { position: relative; margin: var(--s-7) 0 var(--s-6); }
-/* The sky behind the title is the brightest part of the artwork. A patch here keeps the text readable over any pixel and the rest of the image untouched. */
+/* The sky behind the title is the brightest part of the artwork. A patch here dims it and leaves the rest of the image untouched. */
 .as-brand::before {
   content: '';
   position: absolute;
@@ -116,6 +116,8 @@ defineProps<{
   gap: var(--s-2);
 }
 .as-footer:empty { display: none; }
+/* A note here lies directly on the artwork, and a short screen scrolls it over a brighter part. */
+.as-footer :slotted(.state-note) { color: var(--vtt-text-secondary); }
 </style>
 
 <!-- Shared by the step components that fill the slots. -->

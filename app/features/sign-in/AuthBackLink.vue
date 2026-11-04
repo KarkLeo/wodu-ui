@@ -22,11 +22,12 @@ defineProps<{
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10px;
+  /* A link and a button would otherwise differ in height. */
+  line-height: 15px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   text-decoration: none;
   color: var(--vtt-text-secondary);
 }
 .auth-back:hover { color: var(--vtt-accent-soft); }
-.auth-back:focus-visible { outline: 1px solid var(--vtt-border-gold); outline-offset: 2px; }
 </style>

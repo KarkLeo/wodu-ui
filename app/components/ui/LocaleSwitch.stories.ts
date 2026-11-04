@@ -20,7 +20,7 @@ const meta = {
     template: '<LocaleSwitch v-bind="args" v-model="locale" aria-label="Language" />',
   }),
   parameters: {
-    docs: { description: { component: 'EN / RU / UK on `SegmentedFilter`: a radio group with one tab stop, arrow keys move the choice. It only reports the choice through `v-model`; the caller decides whether it also goes to the profile. `plain` on the sign-in screen and in the offline players panel, `pill` in the profile.' } },
+    docs: { description: { component: 'EN / RU / UK on `SegmentedFilter`: a radio group with one tab stop, arrow keys move the choice. It only reports the choice through `v-model`; the caller decides whether it also goes to the profile. `plain` in the offline players panel, `pill` in the profile and on the sign-in screen.' } },
   },
 } satisfies Meta<typeof LocaleSwitch>
 
