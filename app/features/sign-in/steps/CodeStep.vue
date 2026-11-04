@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import AuthBackLink from '../AuthBackLink.vue'
 import AuthScreen from '../AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
 import CodeField from '@/components/ui/CodeField.vue'
@@ -53,7 +54,7 @@ watch(() => props.sentAt, () => {
 <template>
   <AuthScreen :title="t('auth.code.heading')" :subtitle="t('auth.code.sentTo', { email })" :card-title="t('auth.code.title')">
     <template #back>
-      <button type="button" class="cs-back" @click="emit('back')">{{ t('auth.code.back') }}</button>
+      <AuthBackLink @click="emit('back')">{{ t('auth.code.back') }}</AuthBackLink>
     </template>
 
     <CodeField
@@ -88,19 +89,6 @@ watch(() => props.sentAt, () => {
 </template>
 
 <style scoped>
-.cs-back {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vtt-text-secondary);
-}
-.cs-back:hover { color: var(--vtt-accent-soft); }
-
 .cs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-1); }
 .cs-status {
   font-family: var(--font-mono);

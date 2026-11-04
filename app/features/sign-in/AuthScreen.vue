@@ -22,6 +22,7 @@ defineProps<{
         <slot name="back" />
         <LocaleSwitch
           class="as-locale"
+          variant="pill"
           :model-value="currentLocale"
           :aria-label="t('gameLayout.players.language')"
           @update:model-value="setLanguage"
@@ -51,13 +52,16 @@ defineProps<{
   justify-content: center;
   color: var(--vtt-text-primary);
   background-image:
-    linear-gradient(to bottom, var(--vtt-sunken-a55), var(--vtt-sunken-a35) 40%, var(--vtt-sunken-a72)),
+    linear-gradient(to bottom, var(--vtt-sunken-a55), var(--vtt-sunken-a35) 40%, var(--vtt-sunken-a82)),
     var(--as-bg);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
+  overflow-x: clip;
 }
 .as-column {
+  position: relative;
+  z-index: 0;
   width: 100%;
   max-width: 380px;
   min-height: 100dvh;
@@ -74,7 +78,15 @@ defineProps<{
 }
 .as-locale { margin-left: auto; }
 
-.as-brand { margin: var(--s-7) 0 var(--s-6); }
+.as-brand { position: relative; margin: var(--s-7) 0 var(--s-6); }
+/* The sky behind the title is the brightest part of the artwork. A patch here keeps the text readable over any pixel and the rest of the image untouched. */
+.as-brand::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -36px -48px;
+  background: radial-gradient(closest-side, var(--vtt-sunken-a94) 62%, var(--vtt-sunken-a00));
+}
 
 .as-card {
   display: flex;

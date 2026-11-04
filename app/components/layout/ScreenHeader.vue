@@ -58,5 +58,5 @@ withDefaults(defineProps<{
   line-height: 1.5;
   text-shadow: 0 1px 4px var(--vtt-black-a60);
 }
-.screen-header--hero .screen-header-subtitle { font-size: 13px; white-space: normal; }
+.screen-header--hero .screen-header-subtitle { font-size: 13px; white-space: normal; color: var(--vtt-text-secondary); }
 </style>
