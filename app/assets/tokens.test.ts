@@ -238,7 +238,7 @@ const TINT_ROWS: TintRow[] = [
   { on: '.cl-shell', fills: [['sunken-a78', 'sunken-a62', 'sunken-a86']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted'] },
 
   // What sits on the bright sky of the sign-in screens: it has to hold over any pixel.
-  { on: '.as-brand::before', fills: ['sunken-a94'], over: 'any', text: ['accent-soft', 'text-secondary'] },
+  { on: '.as-brand::before', fills: ['sunken-a86'], over: 'any', text: ['accent-soft', 'text-secondary'] },
   { on: '.auth-back', fills: ['bg-sunken'], over: 'any', text: ['text-secondary'] },
   { on: '.segmented', fills: ['bg-sunken'], over: 'any', text: ['text-muted'] },
 

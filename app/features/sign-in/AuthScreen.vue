@@ -85,7 +85,7 @@ defineProps<{
   position: absolute;
   z-index: -1;
   inset: -36px -48px;
-  background: radial-gradient(closest-side, var(--vtt-sunken-a94) 62%, var(--vtt-sunken-a00));
+  background: radial-gradient(closest-side, var(--vtt-sunken-a86) 62%, var(--vtt-sunken-a00));
 }
 
 .as-card {
