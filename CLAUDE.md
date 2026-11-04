@@ -34,7 +34,7 @@ Run a single test file: `npm run test -- app/utils/derived.test.ts`.
 - **UI Primitives**: [Reka UI](https://reka-ui.com/) (dropdowns, popovers, dialogs, tabs)
 - **3D Dice**: `@3d-dice/dice-box-threejs` wrapped in `app/services/DiceAnimationQueue.ts`
 - **Routing**: Nuxt file-based pages in `app/pages/` (vue-router underneath); guards are named route middleware in `app/middleware/` over pure functions in `app/utils/routeGuards.ts`
-- **Tooling globals**: Storybook builds through `viteFinal` + `.storybook/vite.shared.ts`. `__APP_VERSION__` and `__BUILD_TIMESTAMP__` are frozen there on purpose (the visual baseline depends on them) — do not make them read `package.json`. A new global define or alias must be added to `nuxt.config.ts`, `vitest.config.ts` and `.storybook/vite.shared.ts`, and declared in `app/types/globals.d.ts`
+- **Tooling globals**: Storybook builds through `viteFinal` + `.storybook/vite.shared.ts`. `__APP_VERSION__` and `__BUILD_TIMESTAMP__` are frozen there on purpose (the visual baseline depends on them) — do not make them read `package.json`. A new global define or alias must be added to `nuxt.config.ts`, `vitest.config.ts` and `.storybook/vite.shared.ts`, and declared in `app/types/globals.d.ts`. The exception is a Storybook-only mock under `.storybook/mocks/`, aliased in `vite.shared.ts` alone: `pb`, and `diceAnimationQueue`, which stubs the dice queue because stories have no 3D scene (`isAnimating` stays false, so no story shows the rolling state)
 - **Testing**: Vitest + happy-dom + `@vue/test-utils`. Coverage of **domain core only** — `app/utils/derived.ts`, `app/domain/reducer.ts` and the route guards in `app/utils/routeGuards.ts`, `app/utils/permissions.ts` (incl. `itemSources`). Do not add unit tests for UI/stores/composables — UI behaviour is covered by Storybook stories with `play` functions, which CI runs.
 
 ## Routes
@@ -232,14 +232,15 @@ Games exist online only; the server is the authority (see the workspace `CLAUDE.
 
 ## Colours and tints (`app/assets/main.css`)
 
-Every colour in the UI comes from a token in the `:root` block of `main.css`. **A new tint is a new token, not a literal.** `utils/logger.ts` console colours are not UI and stay as they are.
+Every colour in the UI comes from a token in the `:root` block of `main.css`. **A new tint is a new token, not a literal.** `utils/logger.ts` console colours are not UI and stay as they are; outside `app/`, `nuxt.config.ts` and `public/site.webmanifest` keep their own copy of the page colour for the browser.
 
 - **Naming:** `--vtt-<family>-a<NN>`, where `NN` is the alpha in percent and the value is written `rgba(r, g, b, a)`: `--vtt-gold-a35` is `rgba(140, 106, 58, 0.35)`. `a00` is fully transparent. A family has one RGB; most equal a palette token (`gold` is `--vtt-border-gold`, `sunken` is `--vtt-bg-sunken`).
 - **`*-glow` families** (`danger-glow`, `success-glow`, `info-glow`) keep the palette's colours, not the lightened text tokens: WODU-33 lightened text only.
 - **Plain tokens** cover what has no family: `--vtt-toast-error-*`, `--vtt-hp-*-end`, `--vtt-sphere-*`. `--shadow-*` and `--glow-*` keep their literals and mirror `palette.html`.
 - **Do not reuse a close tint to save a token.** A tint can set the contrast of the text on it, and the worst point of a gradient or a stack of tints sets it, so the number has to be measured on rendered pixels. Two tokens merge only when the lowest-pixel contrast of every text element does not drop. More tokens beats lower contrast.
-- **Guards in `app/assets/tokens.test.ts`:** no `rgba()` outside the `:root` of `main.css`; no hex in a `<style>` block or `.css` file outside it; each alpha token matches its family and its name; every `var(--vtt-*)` used under `app/` is defined (a typo silently draws nothing, and the browser reports no error); text on a tint meets AA, by a table of text token, fill stack and backdrop. A row under AA holds a floor in `KNOWN_LOW`, which can only rise. The table is computed from tokens, not pixels, and does not model `opacity` or `backdrop-filter`.
-- **`test-visual` will not catch a small tint change:** its comparison uses pixelmatch's default threshold, and a shift of a few levels passes. Compare exact pixels to prove a tint did or did not move.
+- **Guards in `app/assets/tokens.test.ts`:** no colour function (`rgba()`, `hsl()`, `oklch()`, …) outside the `:root` of `main.css`; no hex anywhere under `app/` outside it and `logger.ts`; each alpha token matches its family and its name; every `var(--vtt-*)` used under `app/` is defined (a typo silently draws nothing, and the browser reports no error); text on a tint meets AA, by a table of text token, fill stack and backdrop, whose top fill must be in the `background` of the rule it names. A row under AA holds a floor in `KNOWN_LOW` at its computed value, so any change shows in the diff; lowering one is a decision, not a fix. Named colours (`red`, `white` in a `color-mix`) are not guarded.
+- **What that table does not see:** it is computed from tokens, not pixels. It does not model `opacity` or `backdrop-filter`, a row marked `artwork` computes over the flat page instead of the image behind it, and a row `over: 'artwork'` has no number at all. Most of the app sits on the artwork, so a real contrast question needs a rendered measurement.
+- **`test-visual` will not catch a small tint change:** its comparison uses pixelmatch's default threshold (0.1), and a shift of several levels passes. Compare exact pixels to prove a tint did or did not move.
 
 ## Design References
 

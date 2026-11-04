@@ -135,7 +135,7 @@ function occurrences(read: (file: string) => string, pattern: RegExp): string[] 
 describe('colour literals', () => {
   it('rgba() and friends appear only in the :root block of main.css', () => {
     expect(SOURCES).toContain(mainCss)
-    expect(occurrences(source, /\b(?:rgba?|hsla?)\(/g)).toEqual([])
+    expect(occurrences(source, /\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(/gi)).toEqual([])
   })
 
   it('inside :root, a literal rgba() is a tint token, a shadow or a glow', () => {
@@ -144,8 +144,9 @@ describe('colour literals', () => {
     expect(lines.filter((line) => !/^\s*--(?:vtt|shadow|glow)-[a-z0-9-]+:/.test(line))).toEqual([])
   })
 
-  it('no hex colour in a <style> block or a .css file, outside the :root block of main.css', () => {
-    expect(occurrences(styleBlocks, /(?:^|[^\w&-])#[0-9a-fA-F]{3,8}\b/gm)).toEqual([])
+  it('no hex colour anywhere under app/, outside the :root block of main.css and the console colours of logger.ts', () => {
+    const notLogger = (file: string) => (file.endsWith('utils/logger.ts') ? '' : source(file))
+    expect(occurrences(notLogger, /(?:^|[^\w&-])#[0-9a-fA-F]{3,8}\b/gm)).toEqual([])
   })
 })
 
@@ -153,7 +154,7 @@ describe('var(--vtt-*)', () => {
   it('every one used under app/ is defined in main.css', () => {
     const defined = new Set([...css.matchAll(/--vtt-([a-z0-9-]+)\s*:/g)].map((m) => m[1]))
     // Raw text on purpose: this also reads -webkit- copies, inline style strings, templates and fallbacks, which the browser never reports.
-    const used = occurrences((file) => readFileSync(file, 'utf8'), /var\(\s*--vtt-[\w-]+/g)
+    const used = occurrences((file) => readFileSync(file, 'utf8'), /var\(\s*--vtt-[\w-]+/gi)
     expect(used.length).toBeGreaterThan(100)
     expect(used.filter((hit) => !defined.has(hit.split('--vtt-')[1]))).toEqual([])
   })
@@ -187,7 +188,7 @@ describe('alpha tokens', () => {
   const names = Object.keys(tints).filter((name) => !PLAIN_TINTS.includes(name))
 
   it('are all written rgba(r, g, b, a)', () => {
-    const declared = [...css.matchAll(/--vtt-([a-z0-9-]+):\s*rgba\(/g)].map((m) => m[1])
+    const declared = [...css.matchAll(/--vtt-([a-z0-9-]+):\s*rgba\(|--vtt-([a-z0-9-]+-a\d+):/g)].map((m) => m[1] ?? m[2])
     expect(declared.length).toBeGreaterThan(0)
     expect(declared.filter((name) => !(name in tints))).toEqual([])
   })
@@ -212,7 +213,7 @@ interface TintRow {
   /** Top first. */
   fills: Fill[]
   /** `page` is bg-base under the gradients on `body`. */
-  over: 'page' | 'bg-surface' | 'artwork'
+  over: 'page' | 'bg-surface' | 'bg-elevated' | 'artwork'
   /**
    * The real backdrop under these fills is the artwork. The number is for the page instead, since an image
    * cannot be computed here; `over: 'artwork'` has no number at all. The rendered audit covers both.
@@ -262,14 +263,14 @@ const TINT_ROWS: TintRow[] = [
   { on: '.dice-row, .log-row, .mode-chip, .qr-chip, .v-roll', fills: ['elevated-a55'], over: 'page', artwork: true, text: ['text-primary', 'text-secondary', 'text-muted', 'accent', 'accent-deep'] },
   { on: '.dice-row:hover, .log-row:hover', fills: ['elevated-a72'], over: 'page', artwork: true, text: ['text-primary', 'text-secondary', 'text-muted', 'accent-deep'] },
   { on: '.dice-row-result, .log-row-delta', fills: ['sunken-a45', 'elevated-a55'], over: 'page', artwork: true, text: ['text-primary'] },
-  { on: '.dice-row:hover .dice-row-result, .log-row:hover .log-row-delta', fills: ['sunken-a45', 'elevated-a72'], over: 'page', artwork: true, text: ['text-primary'] },
+  { on: '.dice-row-result, .log-row-delta, hovered row', fills: ['sunken-a45', 'elevated-a72'], over: 'page', artwork: true, text: ['text-primary'] },
   { on: '.dice-row.is-crit, .log-row.is-levelup', fills: [['gold-a20', 'elevated-a55']], over: 'page', artwork: true, text: ['text-primary', 'text-secondary', 'text-muted', 'accent-deep'] },
   { on: '.dice-row.is-fail', fills: ['danger-a18'], over: 'page', artwork: true, text: ['text-primary', 'text-secondary', 'text-muted', 'warning'] },
   { on: '.dice-row.is-fail .dice-row-result', fills: ['danger-a18', 'danger-a18'], over: 'page', artwork: true, text: ['danger-bright'] },
   { on: '.log-row.is-hp-damage .log-row-delta', fills: ['danger-a18', 'elevated-a55'], over: 'page', artwork: true, text: ['danger-bright'] },
-  { on: '.log-row.is-hp-damage:hover .log-row-delta', fills: ['danger-a18', 'elevated-a72'], over: 'page', artwork: true, text: ['danger-bright'] },
+  { on: '.log-row.is-hp-damage .log-row-delta, hovered row', fills: ['danger-a18', 'elevated-a72'], over: 'page', artwork: true, text: ['danger-bright'] },
   { on: '.log-row.is-hp-heal .log-row-delta', fills: ['success-glow-a15', 'elevated-a55'], over: 'page', artwork: true, text: ['success'] },
-  { on: '.log-row.is-hp-heal:hover .log-row-delta', fills: ['success-glow-a15', 'elevated-a72'], over: 'page', artwork: true, text: ['success'] },
+  { on: '.log-row.is-hp-heal .log-row-delta, hovered row', fills: ['success-glow-a15', 'elevated-a72'], over: 'page', artwork: true, text: ['success'] },
   { on: '.mode-chip:hover, .cl-install:hover', fills: ['gold-a15'], over: 'page', artwork: true, text: ['accent'] },
   { on: '.mode-chip.is-armed', fills: ['gold-a25'], over: 'page', artwork: true, text: ['accent'] },
   { on: '.qr-chip:hover, .v-roll:hover', fills: ['gold-a20'], over: 'page', artwork: true, text: ['accent'] },
@@ -291,6 +292,8 @@ const TINT_ROWS: TintRow[] = [
   { on: '.stat-chip .sc-mod', fills: ['surface-a55'], over: 'bg-surface', text: ['text-primary'] },
   { on: '.stat-chip .sc-mod.is-buff', fills: ['success-glow-a15'], over: 'bg-surface', text: ['success'] },
   { on: '.stat-chip .sc-mod.is-debuff', fills: ['danger-soft-a55'], over: 'bg-surface', text: ['danger-bright'] },
+  { on: '.stat-chip .sc-mod.is-buff, hovered or active chip', fills: ['success-glow-a15'], over: 'bg-elevated', text: ['success'] },
+  { on: '.stat-chip .sc-mod.is-debuff, hovered or active chip', fills: ['danger-soft-a55'], over: 'bg-elevated', text: ['danger-bright'] },
   { on: '.qs-counter.is-overdose', fills: [['danger-a14', 'bg-surface']], over: 'page', artwork: true, text: ['text-secondary', 'danger-bright'] },
   { on: '.spirit-sigil', fills: [['gold-a15', 'transparent']], over: 'bg-surface', text: ['accent'] },
   { on: '.tab-item:hover', fills: ['accent-soft-a03'], over: 'bg-surface', text: ['text-secondary'] },
@@ -309,7 +312,7 @@ const TINT_ROWS: TintRow[] = [
   { on: '.skill-chip.mode-add:hover', fills: ['gold-a05', ...WIZARD], over: 'page', artwork: true, text: ['text-primary'] },
 ]
 
-/** Under AA on main, reported to the owner and not fixed here. A floor that can only rise; the key is `row | text`. */
+/** Under AA, reported to the owner and not fixed here. Each floor is the computed value, so any change shows in the diff; the key is `row | text`. */
 const KNOWN_LOW: Record<string, number> = {
   '.pop-effect-delta.is-buff, popover | success': 4.129,
   '.pop-effect-delta.is-buff, sheet | success': 4.481,
@@ -318,14 +321,15 @@ const KNOWN_LOW: Record<string, number> = {
   '.dice-row.is-crit, .log-row.is-levelup | accent-deep': 4.165,
   '.dice-row.is-fail .dice-row-result | danger-bright': 4.331,
   '.log-row.is-hp-damage .log-row-delta | danger-bright': 4.495,
-  '.log-row.is-hp-damage:hover .log-row-delta | danger-bright': 4.395,
+  '.log-row.is-hp-damage .log-row-delta, hovered row | danger-bright': 4.395,
   '.log-row.is-hp-heal .log-row-delta | success': 4.024,
-  '.log-row.is-hp-heal:hover .log-row-delta | success': 3.958,
+  '.log-row.is-hp-heal .log-row-delta, hovered row | success': 3.958,
   '.status-chip:hover | text-muted': 4.468,
   '.status-chip .sc-mod.is-buff | success': 4.195,
   '.status-chip .sc-mod.is-debuff | danger-bright': 4.404,
   '.inv-item.is-equipped | text-muted': 4.459,
   '.stat-chip .sc-mod.is-buff | success': 4.192,
+  '.stat-chip .sc-mod.is-buff, hovered or active chip | success': 3.837,
   '.lu-sum-pill | success': 4.297,
   '.sel-tile.is-selected | text-muted': 4.188,
 }
@@ -368,5 +372,31 @@ describe('text on a tint', () => {
   it('keeps a known floor only for a row that is still under AA', () => {
     const lowNow = cases.filter(([, row, text]) => lowestContrast(row, text) < 4.5).map(([key]) => key)
     expect(Object.keys(KNOWN_LOW).sort()).toEqual(lowNow.sort())
+  })
+
+  it('holds each known floor at the computed value', () => {
+    for (const [key, row, text] of cases) {
+      if (key in KNOWN_LOW) expect(Math.floor(lowestContrast(row, text) * 1000) / 1000, key).toBe(KNOWN_LOW[key])
+    }
+  })
+
+  // Without this the table only reads itself: a site moved onto a weaker tint would pass.
+  it('each row names what its rule paints: the top fill is in the background of every selector', () => {
+    const rules = [...SOURCES.map(styleBlocks).join('\n').replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap(([, selectors, body]) => {
+      const background = [...body.matchAll(/background[\w-]*:[^;]*/g)].join(' ')
+      return selectors.replace(/:not\([^)]*\)/g, '').split(',').map((selector) => ({ selector: selector.trim(), background }))
+    })
+    const missing = TINT_ROWS.filter((row) => row.fills.length).flatMap((row) => {
+      const stops = [row.fills[0]].flat().filter((stop) => stop !== 'transparent')
+      return row.on
+        .split(', ')
+        .filter((selector) => selector.startsWith('.'))
+        .filter((selector) => {
+          const painted = rules.filter((rule) => rule.selector.endsWith(selector)).map((rule) => rule.background).join(' ')
+          return !stops.every((stop) => painted.includes(`var(--vtt-${stop})`))
+        })
+        .map((selector) => `${selector}: ${stops.join(', ')}`)
+    })
+    expect(missing).toEqual([])
   })
 })

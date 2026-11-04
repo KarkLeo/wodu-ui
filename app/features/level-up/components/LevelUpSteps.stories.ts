@@ -133,6 +133,7 @@ export const HitDiceBeforeRoll: StoryObj<typeof StepHitDice> = {
 /** Rolled: the dice kept and dropped, and the new maximum. The dice engine draws from Math.random, so a fixed sequence gives the same dice on every run. */
 export const HitDiceAfterRoll: StoryObj<typeof StepHitDice> = {
   ...HitDiceBeforeRoll,
+  args: { ...HitDiceBeforeRoll.args, numDice: oda.hitDice + 2 },
   decorators: [withStores({ characters: [oda] })],
   beforeEach() {
     const real = Math.random
@@ -148,6 +149,7 @@ export const HitDiceAfterRoll: StoryObj<typeof StepHitDice> = {
     await userEvent.click(canvas.getByRole('button', { name: t('levelUp.steps.hitDice.roll') }))
     await expect(await canvas.findByText(t('levelUp.steps.hitDice.resultLabel'))).toBeVisible()
     await expect(canvasElement.querySelectorAll('.lu-die.is-kept')).toHaveLength(oda.level + 1)
+    await expect(canvasElement.querySelectorAll('.lu-die.is-discarded')).toHaveLength(1)
     await expect(canvas.getByRole('button', { name: t('levelUp.steps.hitDice.reroll') })).toBeEnabled()
   },
 }
