@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, within } from 'storybook/test'
+import AuthBackLink from './AuthBackLink.vue'
 import AuthScreen from './AuthScreen.vue'
 import Button from '@/components/ui/Button.vue'
 import FormError from '@/components/ui/FormError.vue'
-import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { currentLocale } from '@/locales'
 import { pb, signInMock } from '../../../.storybook/mocks/pb'
@@ -40,15 +40,40 @@ export const Default: Story = {}
 
 export const WithBackLink: Story = {
   render: (args) => ({
-    components: { AuthScreen, FormError, SectionLabel },
+    components: { AuthBackLink, AuthScreen, FormError },
     setup: () => ({ args }),
     template: `
       <AuthScreen v-bind="args">
-        <template #back><SectionLabel size="md">← back</SectionLabel></template>
+        <template #back><AuthBackLink>← back</AuthBackLink></template>
         <FormError>An error line inside the card.</FormError>
       </AuthScreen>
     `,
   }),
+}
+
+/** What lies on the artwork has to hold over its bright parts: the language switch is opaque, and a footer note is lighter than a usual one. */
+export const ReadableOverTheArtwork: Story = {
+  tags: ['no-visual'],
+  render: (args) => ({
+    components: { AuthScreen, StateNote },
+    setup: () => ({ args }),
+    template: `
+      <AuthScreen v-bind="args">
+        <template #footer><StateNote inline size="xs">A note on the artwork.</StateNote></template>
+      </AuthScreen>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--vtt-text-secondary)'
+    probe.style.background = 'var(--vtt-bg-sunken)'
+    canvasElement.append(probe)
+    const expected = getComputedStyle(probe)
+    const note = within(canvasElement).getByText('A note on the artwork.')
+    await expect(getComputedStyle(note).color).toBe(expected.color)
+    await expect(getComputedStyle(canvasElement.querySelector('.as-locale')!).backgroundColor).toBe(expected.backgroundColor)
+    probe.remove()
+  },
 }
 
 export const LocaleButtons: Story = {

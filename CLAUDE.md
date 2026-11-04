@@ -187,7 +187,7 @@ The game-data stores (characters, roll history, change log) do not persist thems
 
 Feature-based folder structure:
 
-- `sign-in/` — `SignInView` + `steps/` (EmailStep, CodeStep, NameStep), `AuthScreen`
+- `sign-in/` — `SignInView` + `steps/` (EmailStep, CodeStep, NameStep), `AuthScreen` (the artwork frame; a soft patch behind the title, opaque controls on the top row and lighter footer notes keep the text readable over the bright sky), `AuthBackLink` (the top row's back action: a link with `to`, otherwise a button)
 - `landing/` — `LandingView`
 - `cabinet/` — `CabinetLayout` (shell: `CabinetHeader` + centred column), `CabinetHeader` ("World of Dungeons", Games · Characters with the open one marked `aria-current`, a separate "Offline table ↗" link, the profile avatar; on phones the links take a second row), `GamesView` (`GamesTab`), `CharactersView` (`CharactersTab`), `CreateGameSheet`, `JoinByCodeSheet`; the cards are `ListRow variant="card"` with a `Pill`; `cabinet.css` keeps the list spacing, the actions under a list and the sheet forms
 - `profile/` — `ProfileView`, `RenameSheet`, `accountError.ts`
@@ -239,7 +239,7 @@ Every colour in the UI comes from a token in the `:root` block of `main.css`. **
 - **Plain tokens** cover what has no family: `--vtt-toast-error-*`, `--vtt-hp-*-end`, `--vtt-sphere-*`. `--shadow-*` and `--glow-*` keep their literals and mirror `palette.html`.
 - **Do not reuse a close tint to save a token.** A tint can set the contrast of the text on it, and the worst point of a gradient or a stack of tints sets it, so the number has to be measured on rendered pixels. Two tokens merge only when the lowest-pixel contrast of every text element does not drop. More tokens beats lower contrast.
 - **Guards in `app/assets/tokens.test.ts`:** no colour function (`rgba()`, `hsl()`, `oklch()`, …) outside the `:root` of `main.css`; no hex anywhere under `app/` outside it and `logger.ts`; each alpha token matches its family and its name; every `var(--vtt-*)` used under `app/` is defined (a typo silently draws nothing, and the browser reports no error); text on a tint meets AA, by a table of text token, fill stack and backdrop, whose top fill must be in the `background` of the rule it names. A row under AA holds a floor in `KNOWN_LOW` at its computed value, so any change shows in the diff; lowering one is a decision, not a fix. Named colours (`red`, `white` in a `color-mix`) are not guarded.
-- **What that table does not see:** it is computed from tokens, not pixels. It does not model `opacity` or `backdrop-filter`, a row marked `artwork` computes over the flat page instead of the image behind it, and a row `over: 'artwork'` has no number at all. Most of the app sits on the artwork, so a real contrast question needs a rendered measurement.
+- **What that table does not see:** it is computed from tokens, not pixels. It does not model `opacity` or `backdrop-filter`, a row marked `artwork` computes over the flat page instead of the image behind it, and a row `over: 'artwork'` has no number at all; a row `over: 'any'` computes over a white pixel, which an opaque fill holds whatever the image shows, but a patch that fades (`.as-brand::before`) holds only at its solid centre. Most of the app sits on the artwork, so a real contrast question needs a rendered measurement.
 - **`test-visual` will not catch a small tint change:** its comparison uses pixelmatch's default threshold (0.1), and a shift of several levels passes. Compare exact pixels to prove a tint did or did not move.
 
 ## Design References

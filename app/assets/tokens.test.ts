@@ -213,7 +213,8 @@ interface TintRow {
   /** Top first. */
   fills: Fill[]
   /** `page` is bg-base under the gradients on `body`. */
-  over: 'page' | 'bg-surface' | 'bg-elevated' | 'artwork'
+  /** `any` computes over a white pixel. An opaque fill holds whatever is behind it; a patch that fades holds only at its solid centre. */
+  over: 'page' | 'bg-surface' | 'bg-elevated' | 'artwork' | 'any'
   /**
    * The real backdrop under these fills is the artwork. The number is for the page instead, since an image
    * cannot be computed here; `over: 'artwork'` has no number at all. The rendered audit covers both.
@@ -231,10 +232,15 @@ const TINT_ROWS: TintRow[] = [
   { on: 'body', fills: [], over: 'page', text: ['text-primary', 'text-secondary', 'text-muted'] },
 
   // Directly on the artwork: only the rendered audit can tell.
-  { on: '.as-shell', fills: [['sunken-a55', 'sunken-a35', 'sunken-a72']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted', 'accent-deep', 'danger-bright'] },
+  { on: '.as-shell', fills: [['sunken-a55', 'sunken-a35', 'sunken-a82']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted', 'accent-deep', 'danger-bright'] },
   { on: '.gl-shell', fills: [['sunken-a35', 'sunken-a15', 'sunken-a55']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted'] },
   { on: '.gl-top', fills: [['sunken-a72', 'sunken-a00'], ['sunken-a35', 'sunken-a15', 'sunken-a55']], over: 'artwork', text: ['text-primary', 'text-secondary'] },
   { on: '.cl-shell', fills: [['sunken-a78', 'sunken-a62', 'sunken-a86']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted'] },
+
+  // What sits on the bright sky of the sign-in screens. The patch fades, and text can reach past this number: only the rendered audit sees that.
+  { on: '.as-brand::before', fills: ['sunken-a86'], over: 'any', text: ['accent-soft', 'text-secondary'] },
+  { on: '.auth-back', fills: ['bg-sunken'], over: 'any', text: ['text-secondary'] },
+  { on: '.segmented', fills: ['bg-sunken'], over: 'any', text: ['text-muted'] },
 
   // Panels on the artwork.
   { on: '.gl-left::before, .gl-right::before, .gl-mob-topbar::before', fills: ['sunken-a78'], over: 'page', artwork: true, text: ['text-primary', 'text-muted', 'accent', 'danger-bright'] },
@@ -344,7 +350,7 @@ function rgbaOf(name: string): number[] {
 function lowestContrast(row: TintRow, text: string): number {
   const layers = [...row.fills, ...(row.over === 'page' ? [BODY] : [])].map((fill) => (Array.isArray(fill) ? fill : [fill]))
   const stacks = layers.reduce<string[][]>((all, stops) => all.flatMap((stack) => stops.map((stop) => [...stack, stop])), [[]])
-  const base = hexToRgb(tokens[row.over === 'page' ? 'bg-base' : row.over])
+  const base = row.over === 'any' ? [255, 255, 255] : hexToRgb(tokens[row.over === 'page' ? 'bg-base' : row.over])
   const painted = stacks.map((stack) =>
     stack.reduceRight((under, name) => {
       const [r, g, b, a] = rgbaOf(name)
