@@ -66,13 +66,9 @@
   --vtt-gold-a06: rgba(140, 106, 58, 0.06);
   --vtt-gold-a08: rgba(140, 106, 58, 0.08);
   --vtt-gold-a10: rgba(140, 106, 58, 0.1);
-  --vtt-gold-a12: rgba(140, 106, 58, 0.12);
   --vtt-gold-a15: rgba(140, 106, 58, 0.15);
-  --vtt-gold-a18: rgba(140, 106, 58, 0.18);
   --vtt-gold-a20: rgba(140, 106, 58, 0.2);
-  --vtt-gold-a22: rgba(140, 106, 58, 0.22);
   --vtt-gold-a25: rgba(140, 106, 58, 0.25);
-  --vtt-gold-a28: rgba(140, 106, 58, 0.28);
   --vtt-gold-a30: rgba(140, 106, 58, 0.3);
   --vtt-gold-a35: rgba(140, 106, 58, 0.35);
   --vtt-gold-a40: rgba(140, 106, 58, 0.4);
@@ -82,12 +78,8 @@
 
   --vtt-accent-a00: rgba(212, 168, 87, 0);
   --vtt-accent-a06: rgba(212, 168, 87, 0.06);
-  --vtt-accent-a08: rgba(212, 168, 87, 0.08);
   --vtt-accent-a10: rgba(212, 168, 87, 0.1);
-  --vtt-accent-a12: rgba(212, 168, 87, 0.12);
-  --vtt-accent-a15: rgba(212, 168, 87, 0.15);
   --vtt-accent-a18: rgba(212, 168, 87, 0.18);
-  --vtt-accent-a24: rgba(212, 168, 87, 0.24);
   --vtt-accent-a25: rgba(212, 168, 87, 0.25);
   --vtt-accent-a30: rgba(212, 168, 87, 0.3);
   --vtt-accent-a35: rgba(212, 168, 87, 0.35);
@@ -99,7 +91,6 @@
   --vtt-accent-a80: rgba(212, 168, 87, 0.8);
 
   --vtt-accent-soft-a03: rgba(228, 201, 160, 0.03);
-  --vtt-accent-soft-a04: rgba(228, 201, 160, 0.04);
   --vtt-accent-soft-a28: rgba(228, 201, 160, 0.28);
   --vtt-accent-soft-a45: rgba(228, 201, 160, 0.45);
   --vtt-accent-soft-a85: rgba(228, 201, 160, 0.85);
@@ -110,9 +101,7 @@
   --vtt-sunken-a45: rgba(7, 5, 10, 0.45);
   --vtt-sunken-a50: rgba(7, 5, 10, 0.5);
   --vtt-sunken-a55: rgba(7, 5, 10, 0.55);
-  --vtt-sunken-a60: rgba(7, 5, 10, 0.6);
   --vtt-sunken-a62: rgba(7, 5, 10, 0.62);
-  --vtt-sunken-a70: rgba(7, 5, 10, 0.7);
   --vtt-sunken-a72: rgba(7, 5, 10, 0.72);
   --vtt-sunken-a78: rgba(7, 5, 10, 0.78);
   --vtt-sunken-a82: rgba(7, 5, 10, 0.82);
@@ -122,7 +111,6 @@
   --vtt-base-a70: rgba(14, 11, 8, 0.7);
   --vtt-base-a80: rgba(14, 11, 8, 0.8);
   --vtt-base-a88: rgba(14, 11, 8, 0.88);
-  --vtt-base-a90: rgba(14, 11, 8, 0.9);
 
   --vtt-surface-a55: rgba(26, 21, 16, 0.55);
   --vtt-surface-a62: rgba(26, 21, 16, 0.62);
@@ -153,7 +141,6 @@
   --vtt-danger-a06: rgba(121, 43, 59, 0.06);
   --vtt-danger-a14: rgba(121, 43, 59, 0.14);
   --vtt-danger-a18: rgba(121, 43, 59, 0.18);
-  --vtt-danger-a20: rgba(121, 43, 59, 0.2);
 
   --vtt-danger-soft-a55: rgba(58, 24, 32, 0.55);
   --vtt-danger-soft-a90: rgba(58, 24, 32, 0.9);
@@ -166,27 +153,20 @@
   /* Not the lightened text tokens: WODU-33 lightened text only, and tints keep the palette's colours. */
   --vtt-danger-glow-a00: rgba(178, 59, 79, 0);
   --vtt-danger-glow-a06: rgba(178, 59, 79, 0.06);
-  --vtt-danger-glow-a08: rgba(178, 59, 79, 0.08);
   --vtt-danger-glow-a10: rgba(178, 59, 79, 0.1);
-  --vtt-danger-glow-a12: rgba(178, 59, 79, 0.12);
   --vtt-danger-glow-a35: rgba(178, 59, 79, 0.35);
   --vtt-danger-glow-a50: rgba(178, 59, 79, 0.5);
   --vtt-danger-glow-a55: rgba(178, 59, 79, 0.55);
   --vtt-danger-glow-a70: rgba(178, 59, 79, 0.7);
 
   --vtt-success-glow-a10: rgba(107, 142, 78, 0.1);
-  --vtt-success-glow-a12: rgba(107, 142, 78, 0.12);
   --vtt-success-glow-a15: rgba(107, 142, 78, 0.15);
-  --vtt-success-glow-a18: rgba(107, 142, 78, 0.18);
   --vtt-success-glow-a35: rgba(107, 142, 78, 0.35);
   --vtt-success-glow-a55: rgba(107, 142, 78, 0.55);
   --vtt-success-glow-a60: rgba(107, 142, 78, 0.6);
 
   --vtt-info-glow-a45: rgba(90, 122, 142, 0.45);
   --vtt-info-glow-a70: rgba(90, 122, 142, 0.7);
-
-  --vtt-toast-a95: rgba(28, 22, 16, 0.95);
-  --vtt-toast-a96: rgba(28, 22, 16, 0.96);
 
   --vtt-toast-error-border: rgba(180, 70, 60, 0.6);
   --vtt-toast-error-text: #f3c8c2;
@@ -301,7 +281,7 @@ body {
 
 @keyframes qs-pulse {
   0%, 100% { box-shadow: var(--shadow-inset), 0 0 0 0 var(--vtt-danger-glow-a00); }
-  50%      { box-shadow: var(--shadow-inset), 0 0 0 4px var(--vtt-danger-glow-a12); }
+  50%      { box-shadow: var(--shadow-inset), 0 0 0 4px var(--vtt-danger-glow-a10); }
 }
 
 @keyframes lu-die-roll {

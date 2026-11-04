@@ -148,7 +148,7 @@ const captionPost = computed(() => {
   background: var(--vtt-accent);
   border-color: var(--vtt-accent);
   color: var(--vtt-bg-base);
-  box-shadow: 0 0 16px var(--vtt-accent-a24);
+  box-shadow: 0 0 16px var(--vtt-accent-a25);
 }
 .lu-die.is-kept::after { color: var(--vtt-bg-base); opacity: 0.6; }
 .lu-die.is-discarded { opacity: 0.35; }

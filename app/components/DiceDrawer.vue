@@ -532,7 +532,7 @@ function logDelta(e: ChangeEntry): string | undefined {
   flex-shrink: 0;
 }
 .dice-row.is-crit {
-  background: linear-gradient(to right, var(--vtt-gold-a22), var(--vtt-elevated-a55) 60%);
+  background: linear-gradient(to right, var(--vtt-gold-a20), var(--vtt-elevated-a55) 60%);
   box-shadow: inset 0 0 0 1px var(--vtt-accent-a25);
 }
 .dice-row.is-crit .dice-row-result {
@@ -552,7 +552,7 @@ function logDelta(e: ChangeEntry): string | undefined {
 .dice-row.is-fail { background: var(--vtt-danger-a18); }
 .dice-row.is-fail .dice-row-result {
   color: var(--vtt-danger-bright);
-  background: var(--vtt-danger-a20);
+  background: var(--vtt-danger-a18);
 }
 .dice-row.is-fail .dice-row-glyph { color: var(--vtt-danger-bright); opacity: 0.75; }
 .dice-row.is-damage .dice-row-glyph { color: var(--vtt-danger-bright); }
@@ -637,17 +637,17 @@ function logDelta(e: ChangeEntry): string | undefined {
 .log-row.is-hp-damage .log-row-glyph { color: var(--vtt-danger-bright); }
 .log-row.is-hp-damage .log-row-delta {
   color: var(--vtt-danger-bright);
-  background: var(--vtt-danger-a20);
+  background: var(--vtt-danger-a18);
 }
 .log-row.is-hp-heal .log-row-glyph { color: var(--vtt-success); }
 .log-row.is-hp-heal .log-row-delta {
   color: var(--vtt-success);
-  background: var(--vtt-success-glow-a18);
+  background: var(--vtt-success-glow-a15);
 }
 .log-row.is-xp .log-row-glyph { color: var(--vtt-accent); }
 .log-row.is-xp .log-row-delta { color: var(--vtt-accent); }
 .log-row.is-levelup {
-  background: linear-gradient(to right, var(--vtt-gold-a22), var(--vtt-elevated-a55) 60%);
+  background: linear-gradient(to right, var(--vtt-gold-a20), var(--vtt-elevated-a55) 60%);
   box-shadow: inset 0 0 0 1px var(--vtt-accent-a25);
 }
 .log-row.is-levelup .log-row-glyph { color: var(--vtt-accent); }
@@ -716,12 +716,12 @@ function logDelta(e: ChangeEntry): string | undefined {
 .mode-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
 .mode-chip:hover:not(:disabled) {
   color: var(--vtt-accent);
-  background: var(--vtt-gold-a18);
+  background: var(--vtt-gold-a15);
 }
 .mode-chip:disabled { opacity: 0.4; cursor: not-allowed; }
 .mode-chip.is-armed {
   color: var(--vtt-accent);
-  background: var(--vtt-gold-a28);
+  background: var(--vtt-gold-a25);
   border-color: var(--vtt-accent-a45);
   box-shadow: 0 0 10px var(--vtt-accent-a18);
 }
@@ -842,7 +842,7 @@ function logDelta(e: ChangeEntry): string | undefined {
   box-shadow: inset 0 0 0 1px var(--vtt-accent-a45);
 }
 .rh-value.is-fail {
-  background: var(--vtt-danger-a20);
+  background: var(--vtt-danger-a18);
   color: var(--vtt-danger-bright);
 }
 .rh-value.is-damage { color: var(--vtt-danger-bright); }

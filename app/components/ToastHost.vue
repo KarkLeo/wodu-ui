@@ -41,7 +41,7 @@ const { items } = storeToRefs(toasts)
   padding: 10px 14px;
   border-radius: var(--r-md);
   border: 1px solid var(--vtt-gold-a40);
-  background: var(--vtt-toast-a95);
+  background: var(--vtt-surface-a96);
   color: var(--vtt-text-primary);
   cursor: pointer;
   box-shadow: 0 6px 20px var(--vtt-black-a40);

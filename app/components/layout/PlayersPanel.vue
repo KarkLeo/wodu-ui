@@ -286,7 +286,7 @@ async function startNew() {
   display: block;
   height: 2px;
   margin-top: 5px;
-  background: var(--vtt-sunken-a60);
+  background: var(--vtt-sunken-a62);
   border-radius: var(--r-pill);
   overflow: hidden;
 }
@@ -345,7 +345,7 @@ async function startNew() {
   bottom: -1px;
   width: 7px;
   height: 7px;
-  border: 1.5px solid var(--vtt-base-a90);
+  border: 1.5px solid var(--vtt-base-a88);
 }
 
 @media (max-width: 960px) {

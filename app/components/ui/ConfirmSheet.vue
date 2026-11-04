@@ -73,7 +73,7 @@ const open = defineModel<boolean>('open', { required: true })
 .confirm-sheet.v-danger .cs-icon {
   border-color: var(--vtt-danger-bright);
   color: var(--vtt-danger-bright);
-  background: var(--vtt-danger-glow-a08);
+  background: var(--vtt-danger-glow-a06);
 }
 .cs-icon :deep(svg) { width: 22px; height: 22px; }
 

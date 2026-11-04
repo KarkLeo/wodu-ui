@@ -89,7 +89,7 @@ const modClass = computed(() => {
   font-family: inherit;
   line-height: 1;
 }
-.status-chip:hover { background: var(--vtt-accent-soft-a04); }
+.status-chip:hover { background: var(--vtt-accent-soft-a03); }
 
 .status-chip .sc-glyph {
   width: 18px;
@@ -181,7 +181,7 @@ const modClass = computed(() => {
 .status-chip .sc-mod.is-buff {
   color: var(--vtt-success);
   border-color: var(--vtt-success-glow-a55);
-  background: var(--vtt-success-glow-a12);
+  background: var(--vtt-success-glow-a10);
 }
 .status-chip .sc-mod.is-debuff {
   color: var(--vtt-danger-bright);

@@ -110,7 +110,7 @@ const isMobile = useIsMobile()
     margin: 40px auto 40px
       clamp(var(--gl-inset-left, 0px), (100% - var(--wz-w)) / 2, 100% - var(--gl-inset-right, 0px) - var(--wz-w));
     border-radius: var(--r-lg);
-    box-shadow: 0 12px 40px var(--vtt-black-a50), 0 0 0 1px var(--vtt-gold-a18);
+    box-shadow: 0 12px 40px var(--vtt-black-a50), 0 0 0 1px var(--vtt-gold-a15);
   }
 }
 

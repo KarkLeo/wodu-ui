@@ -137,7 +137,7 @@ function step(delta: number) { setCurrent(props.current + delta) }
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: var(--vtt-accent-a08);
+  background: var(--vtt-accent-a06);
   border: 1px solid var(--vtt-border-gold);
   border-radius: var(--r-sm);
 }

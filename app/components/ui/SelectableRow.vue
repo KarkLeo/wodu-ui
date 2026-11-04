@@ -72,7 +72,7 @@ function onClick() {
 }
 .sel-row + .sel-row { border-top: 1px solid var(--vtt-gold-a10); }
 .sel-row:hover:not(:disabled):not(.is-selected) { background: var(--vtt-accent-soft-a03); }
-.sel-row.is-selected { background: var(--vtt-gold-a12); }
+.sel-row.is-selected { background: var(--vtt-gold-a10); }
 .sel-row.is-locked { opacity: 0.75; cursor: default; }
 .sel-row.is-disabled { opacity: 0.35; cursor: not-allowed; }
 

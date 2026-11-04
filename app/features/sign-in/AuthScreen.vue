@@ -51,7 +51,7 @@ defineProps<{
   justify-content: center;
   color: var(--vtt-text-primary);
   background-image:
-    linear-gradient(to bottom, var(--vtt-sunken-a55), var(--vtt-sunken-a35) 40%, var(--vtt-sunken-a70)),
+    linear-gradient(to bottom, var(--vtt-sunken-a55), var(--vtt-sunken-a35) 40%, var(--vtt-sunken-a72)),
     var(--as-bg);
   background-size: cover;
   background-position: center;

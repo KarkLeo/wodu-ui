@@ -45,7 +45,7 @@ function dismiss() {
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: var(--vtt-toast-a96);
+  background: var(--vtt-surface-a96);
   border: 1px solid var(--vtt-gold-a55);
   border-radius: var(--r-md);
   font-family: var(--font-serif);

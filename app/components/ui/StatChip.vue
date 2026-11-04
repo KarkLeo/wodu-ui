@@ -199,7 +199,7 @@ onBeforeUnmount(stopListening)
 .stat-chip.is-active {
   border-color: var(--vtt-accent-deep);
   background: var(--vtt-bg-elevated);
-  box-shadow: 0 0 0 3px var(--vtt-accent-a12);
+  box-shadow: 0 0 0 3px var(--vtt-accent-a10);
 }
 
 .stat-chip.is-disabled { opacity: 0.4; cursor: not-allowed; }
@@ -292,7 +292,7 @@ onBeforeUnmount(stopListening)
 .stat-chip .sc-mod.is-buff {
   color: var(--vtt-success);
   border-color: var(--vtt-success-glow-a55);
-  background: var(--vtt-success-glow-a18);
+  background: var(--vtt-success-glow-a15);
 }
 .stat-chip .sc-mod.is-debuff {
   color: var(--vtt-danger-bright);
@@ -318,7 +318,7 @@ onBeforeUnmount(stopListening)
   padding: 8px 6px 6px;
   background: var(--vtt-bg-elevated);
   border-color: var(--vtt-accent-deep);
-  box-shadow: 0 0 0 3px var(--vtt-accent-a15);
+  box-shadow: 0 0 0 3px var(--vtt-accent-a18);
   cursor: default;
 }
 .stat-chip.is-editing .sc-dice { display: none; }
