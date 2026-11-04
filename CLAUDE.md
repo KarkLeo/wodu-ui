@@ -230,6 +230,17 @@ Games exist online only; the server is the authority (see the workspace `CLAUDE.
 - Existing hardcoded strings are migrated as files are touched — no mass migration.
 - Key style: `section.subsection.name` in camelCase (e.g. `header.hpLabel`, `inventory.emptyState`). Group by screen/feature.
 
+## Colours and tints (`app/assets/main.css`)
+
+Every colour in the UI comes from a token in the `:root` block of `main.css`. **A new tint is a new token, not a literal.** `utils/logger.ts` console colours are not UI and stay as they are.
+
+- **Naming:** `--vtt-<family>-a<NN>`, where `NN` is the alpha in percent and the value is written `rgba(r, g, b, a)`: `--vtt-gold-a35` is `rgba(140, 106, 58, 0.35)`. `a00` is fully transparent. A family has one RGB; most equal a palette token (`gold` is `--vtt-border-gold`, `sunken` is `--vtt-bg-sunken`).
+- **`*-glow` families** (`danger-glow`, `success-glow`, `info-glow`) keep the palette's colours, not the lightened text tokens: WODU-33 lightened text only.
+- **Plain tokens** cover what has no family: `--vtt-toast-error-*`, `--vtt-hp-*-end`, `--vtt-sphere-*`. `--shadow-*` and `--glow-*` keep their literals and mirror `palette.html`.
+- **Do not reuse a close tint to save a token.** A tint can set the contrast of the text on it, and the worst point of a gradient or a stack of tints sets it, so the number has to be measured on rendered pixels. Two tokens merge only when the lowest-pixel contrast of every text element does not drop. More tokens beats lower contrast.
+- **Guards in `app/assets/tokens.test.ts`:** no `rgba()` outside the `:root` of `main.css`; no hex in a `<style>` block or `.css` file outside it; each alpha token matches its family and its name; every `var(--vtt-*)` used under `app/` is defined (a typo silently draws nothing, and the browser reports no error); text on a tint meets AA, by a table of text token, fill stack and backdrop. A row under AA holds a floor in `KNOWN_LOW`, which can only rise. The table is computed from tokens, not pixels, and does not model `opacity` or `backdrop-filter`.
+- **`test-visual` will not catch a small tint change:** its comparison uses pixelmatch's default threshold, and a shift of a few levels passes. Compare exact pixels to prove a tint did or did not move.
+
 ## Design References
 
 Reference materials live outside this repo, in the workspace folder next to it (paths below are relative to this repo's root):
