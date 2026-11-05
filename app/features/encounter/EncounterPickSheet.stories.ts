@@ -40,8 +40,8 @@ type Story = StoryObj<typeof meta>
 const dialog = (canvasElement: HTMLElement) =>
   within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Add a monster' }).then(d => within(d))
 const rowOf = (list: HTMLElement, name: string) =>
-  within(list).getAllByRole('listitem').find(li => li.querySelector('.ep-name')?.textContent?.trim() === name)!
-const rowNames = (list: HTMLElement) => within(list).getAllByRole('listitem').map(li => li.querySelector('.ep-name')?.textContent)
+  within(list).getAllByRole('listitem').find(li => li.querySelector('.epr-name')?.textContent?.trim() === name)!
+const rowNames = (list: HTMLElement) => within(list).getAllByRole('listitem').map(li => li.querySelector('.epr-name')?.textContent)
 const created = (spy: { mock: { calls: unknown[][] } }) =>
   spy.mock.calls.map(c => (c[0] as { data: EncounterMonster }).data)
 
