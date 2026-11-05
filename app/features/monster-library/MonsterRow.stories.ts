@@ -15,6 +15,7 @@ const meta = {
     'onUpdate:expanded': fn(),
     onEdit: fn(),
     onDuplicate: fn(),
+    'onAdd-to-encounter': fn(),
     onDelete: fn(),
   },
   // A row is a list item; it lives in the screen's list.
@@ -53,6 +54,8 @@ export const Expanded: Story = {
     await expect(canvas.getByText('Three of them hide in the mill loft.')).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Edit' }))
     await expect(args.onEdit).toHaveBeenCalledOnce()
+    await userEvent.click(canvas.getByRole('button', { name: 'To encounter' }))
+    await expect(args['onAdd-to-encounter']).toHaveBeenCalledOnce()
     await userEvent.click(canvas.getByRole('button', { name: 'Duplicate' }))
     await expect(args.onDuplicate).toHaveBeenCalledOnce()
     await userEvent.click(canvas.getByRole('button', { name: 'Delete' }))
@@ -60,13 +63,15 @@ export const Expanded: Story = {
   },
 }
 
-/** A starter entry: only a copy can be made, there is nothing to edit or delete. */
+/** A starter entry: it can be added to the encounter or copied, there is nothing to edit or delete. */
 export const ReadOnly: Story = {
   args: { expanded: true, readonly: true },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     await expect(canvas.queryByRole('button', { name: 'Edit' })).toBeNull()
     await expect(canvas.queryByRole('button', { name: 'Delete' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'To encounter' }))
+    await expect(args['onAdd-to-encounter']).toHaveBeenCalledOnce()
     await userEvent.click(canvas.getByRole('button', { name: 'Duplicate' }))
     await expect(args.onDuplicate).toHaveBeenCalledOnce()
   },

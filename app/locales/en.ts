@@ -732,6 +732,7 @@ export const messages = {
       special: 'Special',
       notes: 'Notes',
       edit: 'Edit',
+      toEncounter: 'To encounter',
       duplicate: 'Duplicate',
       delete: 'Delete',
       copyName: '{name} (copy)',
@@ -860,6 +861,13 @@ export const messages = {
   },
   encounter: {
     close: 'Close encounter',
+    addMonster: 'Monster',
+    added: '{name} #{n} added to the encounter',
+    pick: {
+      title: 'Add a monster',
+      add: 'Add',
+      count: '{count} added',
+    },
     title: 'Encounter',
     loading: 'Loading…',
     loadFailed: 'Couldn’t load the encounter.',

@@ -262,3 +262,18 @@ export const Edit: Story = {
     await waitFor(() => expect(cardNames(canvasElement)[0]).toBe('Goblin chief #1'))
   },
 }
+
+/** "Monster" opens the picker over the library; the panel behind shows each add. */
+export const AddsFromThePanel: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Monster' }))
+    const sheet = await body(canvasElement).findByRole('dialog', { name: 'Add a monster' })
+    const starter = await within(sheet).findByRole('list', { name: 'Starter set' })
+    const dragon = within(starter).getAllByRole('listitem').find(li => li.textContent?.startsWith('Dragon'))!
+    await userEvent.click(within(dragon).getByRole('button', { name: 'Add' }))
+    // The open sheet hides the panel from the accessibility tree.
+    await waitFor(() => expect([...canvasElement.querySelectorAll('article')].map(a => a.getAttribute('aria-label'))).toContain('Dragon #1'))
+    await expect(body(canvasElement).getByRole('dialog', { name: 'Add a monster' })).toBeVisible()
+  },
+}

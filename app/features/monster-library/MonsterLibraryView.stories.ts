@@ -7,11 +7,14 @@ import { atRoute, DESKTOP_VIEWPORT, withGameTable } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
 import { STARTER_MONSTERS } from '@/data/starterMonsters'
+import { emptyEncounter } from '@/domain/encounter'
+import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { useLibraryStore } from '@/stores/library'
 import { useToastsStore } from '@/stores/toasts'
 import { connection } from '@/transport/connection'
 import type { LibraryMonster } from '@/types/library'
+import type { EncounterMonster } from '@/types/encounter'
 import { pb, resetRecords } from '../../../.storybook/mocks/pb'
 
 /** The game's monsters on the (mock) server, loaded by the screen itself as in the app. */
@@ -500,5 +503,63 @@ export const Russian: Story = {
   globals: { locale: 'ru' },
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByRole('list', { name: 'Библиотека монстров' })
+  },
+}
+
+/** At a table the encounter is already open; stories seed it as `useEncounterSession` would. */
+const withOpenEncounter: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    resetRecords('encounter_monsters', [])
+    const store = useEncounterStore()
+    store.clearAll()
+    store.setAll(crookhollow.id, emptyEncounter(crookhollow.id), [], [])
+  },
+  template: '<story />',
+})
+
+/** A row's "To encounter" adds an instance and says which one; the screen stays as it is, and a repeat takes the next number. */
+export const AddToEncounterFromLibrary: Story = {
+  decorators: [withOpenEncounter],
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const create = spyOn(pb.collection('encounter_monsters'), 'create')
+    await loaded(canvasElement)
+    await userEvent.click(head(canvasElement, 'Goblin'))
+    const add = within(row(canvasElement, 'Goblin')).getByRole('button', { name: 'To encounter' })
+    await userEvent.click(add)
+    await userEvent.click(add)
+    await waitFor(() => expect(toastTexts()).toEqual(['Goblin #1 added to the encounter', 'Goblin #2 added to the encounter']))
+    await expect(create.mock.calls.map(c => (c[0] as { data: EncounterMonster }).data.n)).toEqual([1, 2])
+    await expect(within(canvasElement).getByRole('heading', { level: 1, name: 'Monster library' })).toBeVisible()
+  },
+}
+
+/** A starter row adds too. */
+export const AddStarterToEncounter: Story = {
+  decorators: [withOpenEncounter],
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const create = spyOn(pb.collection('encounter_monsters'), 'create')
+    const set = await starter(canvasElement)
+    await userEvent.click(set.getByRole('button', { name: /Ogre/ }))
+    await userEvent.click(set.getByRole('button', { name: 'To encounter' }))
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    await expect((create.mock.calls[0]![0] as { data: EncounterMonster }).data.sourceId).toBe('starter-ogre')
+    await waitFor(() => expect(toastTexts()).toEqual(['Ogre #1 added to the encounter']))
+  },
+}
+
+/** The encounter has not loaded: the press is not dropped silently. */
+export const AddToEncounterNotReady: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    useEncounterStore().clearAll()
+    const create = spyOn(pb.collection('encounter_monsters'), 'create')
+    await loaded(canvasElement)
+    await userEvent.click(head(canvasElement, 'Goblin'))
+    await userEvent.click(within(row(canvasElement, 'Goblin')).getByRole('button', { name: 'To encounter' }))
+    await waitFor(() => expect(toastTexts()).toEqual(['Failed to save the monster. Check your connection.']))
+    await expect(create).not.toHaveBeenCalled()
   },
 }

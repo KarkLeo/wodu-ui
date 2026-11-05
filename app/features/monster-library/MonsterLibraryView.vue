@@ -12,12 +12,14 @@ import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import MonsterRow from './MonsterRow.vue'
 import MonsterSheet, { type MonsterDraft, type MonsterSheetMode } from './MonsterSheet.vue'
+import { useEncounterAdd } from '@/composables/useEncounterAdd'
 import { useGameAction } from '@/composables/useGameAction'
 import { isGameMaster } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
 import { searchMonsters } from '@/domain/library'
 import { starterMonsters } from '@/domain/starterLibrary'
 import { useLibraryStore } from '@/stores/library'
+import { useToastsStore } from '@/stores/toasts'
 import { connection } from '@/transport/connection'
 import { createMonster, deleteMonster, loadMonsters, updateMonster } from '@/transport/library'
 import type { LibraryMonster } from '@/types/library'
@@ -30,6 +32,8 @@ const router = useRouter()
 const { game, gameId, tableRoute } = useTable()
 const library = useLibraryStore()
 const { busy, run } = useGameAction()
+const toasts = useToastsStore()
+const { add: addToEncounter } = useEncounterAdd()
 
 // Only the master loads: a player who opened the address is on the way back to the table.
 const masterOf = computed(() => (game.value && isGameMaster(game.value.id) ? game.value.id : null))
@@ -86,6 +90,15 @@ async function save(draft: MonsterDraft) {
   } finally {
     saving.value = false
   }
+}
+
+// ── To the encounter ──
+// The screen stays as it is; each press says what was added.
+async function toEncounter(monster: LibraryMonster) {
+  const id = gameId.value
+  if (!id) return
+  const added = await addToEncounter(id, monster)
+  if (added) toasts.push(t('encounter.added', { name: monster.name, n: added.n }))
 }
 
 // ── Delete ──
@@ -162,6 +175,7 @@ function backToTable() {
             @update:expanded="v => expandedId = v ? m.id : null"
             @edit="openSheet('edit', m)"
             @duplicate="openSheet('duplicate', m)"
+            @add-to-encounter="toEncounter(m)"
             @delete="deleting = m"
           />
         </ul>
@@ -178,6 +192,7 @@ function backToTable() {
             :expanded="expandedId === m.id"
             @update:expanded="v => expandedId = v ? m.id : null"
             @duplicate="openSheet('duplicate', m)"
+            @add-to-encounter="toEncounter(m)"
           />
         </ul>
       </section>

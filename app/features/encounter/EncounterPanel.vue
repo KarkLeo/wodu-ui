@@ -2,11 +2,13 @@
 import { computed, ref } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
+import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import MonsterSheet, { type MonsterDraft } from '@/features/monster-library/MonsterSheet.vue'
 import EncounterCard from './EncounterCard.vue'
+import EncounterPickSheet from './EncounterPickSheet.vue'
 import { useMonsterRolls } from '@/composables/useMonsterRolls'
 import { useTableSelection } from '@/composables/useTableSelection'
 import {
@@ -82,6 +84,8 @@ function onToggleCondition(id: string, condition: ConditionId) {
   if (m) saveMonster(toggleCondition(m, condition, Date.now()))
 }
 
+const pickOpen = ref(false)
+
 const editingId = ref<string | null>(null)
 const editOpen = computed({
   get: () => editingId.value !== null,
@@ -135,6 +139,7 @@ async function confirmRemove() {
   <section class="ep" :aria-label="t('encounter.title')">
     <header class="ep-head">
       <h2 class="ep-title">{{ t('encounter.title') }}</h2>
+      <Button variant="dashed" size="sm" :icon-left="IconPlus" @click="pickOpen = true">{{ t('encounter.addMonster') }}</Button>
     </header>
 
     <div class="ep-stack">
@@ -178,6 +183,7 @@ async function confirmRemove() {
       </template>
     </div>
 
+    <EncounterPickSheet v-model:open="pickOpen" :game-id="store.gameId" />
     <MonsterSheet v-model:open="editOpen" mode="edit" :source="editSource" @save="onSave" />
 
     <ConfirmSheet v-model:open="removeOpen" variant="danger" :title="t('encounter.remove.title', { name: removing ? monsterLabel(removing) : '' })">
@@ -205,7 +211,8 @@ async function confirmRemove() {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px 10px;
+  /* Room on the right for the column's close button. */
+  padding: 12px 40px 10px 14px;
   border-bottom: 1px solid var(--vtt-border-subtle);
 }
 .ep-title {

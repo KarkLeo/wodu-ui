@@ -734,6 +734,7 @@ export const messages: Messages = {
       special: 'Особенность',
       notes: 'Заметки',
       edit: 'Изменить',
+      toEncounter: 'В схватку',
       duplicate: 'Копия',
       delete: 'Удалить',
       copyName: '{name} (копия)',
@@ -862,6 +863,13 @@ export const messages: Messages = {
   },
   encounter: {
     close: 'Закрыть энкаунтер',
+    addMonster: 'Монстр',
+    added: '{name} №{n} добавлен в схватку',
+    pick: {
+      title: 'Добавить монстра',
+      add: 'Добавить',
+      count: 'добавлено: {count}',
+    },
     title: 'Энкаунтер',
     loading: 'Загрузка…',
     loadFailed: 'Не удалось загрузить энкаунтер.',

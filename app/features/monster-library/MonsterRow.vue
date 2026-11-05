@@ -17,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'edit'): void
   (e: 'duplicate'): void
+  (e: 'add-to-encounter'): void
   (e: 'delete'): void
 }>()
 
@@ -38,6 +39,7 @@ const details = computed(() => [
     </template>
     <template #actions>
       <Button v-if="!readonly" variant="ghost" size="sm" :icon-left="IconEdit" @click="emit('edit')">{{ t('library.monsters.edit') }}</Button>
+      <Button variant="ghost" size="sm" :icon-left="IconPlus" @click="emit('add-to-encounter')">{{ t('library.monsters.toEncounter') }}</Button>
       <Button variant="ghost" size="sm" :icon-left="IconPlus" @click="emit('duplicate')">{{ t('library.monsters.duplicate') }}</Button>
       <Button v-if="!readonly" variant="danger-ghost" size="sm" :icon-left="IconTrash" class="mr-delete" @click="emit('delete')">
         {{ t('library.monsters.delete') }}

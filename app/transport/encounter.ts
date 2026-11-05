@@ -265,18 +265,18 @@ function mayWrite(gameId: string): EncounterState {
 let addQueue: Promise<unknown> = Promise.resolve()
 
 /** Master: adds an instance of a library monster. The monster is written first, then the counter. */
-export function addMonster(gameId: string, entry: LibraryMonster): Promise<void> {
+export function addMonster(gameId: string, entry: LibraryMonster): Promise<EncounterMonster | undefined> {
   const run = addQueue.catch(() => undefined).then(() => addOne(gameId, entry))
   addQueue = run
   return run
 }
 
-async function addOne(gameId: string, entry: LibraryMonster): Promise<void> {
+async function addOne(gameId: string, entry: LibraryMonster): Promise<EncounterMonster | undefined> {
   const state = mayWrite(gameId)
   const current = staysCurrent()
   const { monster } = addInstance(state, entry, crypto.randomUUID(), Date.now())
   await call(() => pb.collection('encounter_monsters').create({ id: monster.id, game: gameId, data: monster }))
-  if (!current()) return
+  if (!current()) return undefined
   const store = useEncounterStore()
   const here = store.gameId === gameId
   if (here) store.putMonster(monster)
@@ -288,6 +288,7 @@ async function addOne(gameId: string, entry: LibraryMonster): Promise<void> {
     manualOrder: [monster.id, ...latest.manualOrder],
     counters: { ...latest.counters, [entry.id]: Math.max(latest.counters[entry.id] ?? 0, monster.n) },
   })
+  return monster
 }
 
 /** Master: the one write path for HP, conditions and edits; see `serialWriter`. */

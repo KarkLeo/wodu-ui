@@ -734,6 +734,7 @@ export const messages: Messages = {
       special: 'Особливість',
       notes: 'Нотатки',
       edit: 'Змінити',
+      toEncounter: 'До сутички',
       duplicate: 'Копія',
       delete: 'Видалити',
       copyName: '{name} (копія)',
@@ -862,6 +863,13 @@ export const messages: Messages = {
   },
   encounter: {
     close: 'Закрити енкаунтер',
+    addMonster: 'Монстр',
+    added: '{name} №{n} додано до сутички',
+    pick: {
+      title: 'Додати монстра',
+      add: 'Додати',
+      count: 'додано: {count}',
+    },
     title: 'Енкаунтер',
     loading: 'Завантаження…',
     loadFailed: 'Не вдалося завантажити енкаунтер.',
