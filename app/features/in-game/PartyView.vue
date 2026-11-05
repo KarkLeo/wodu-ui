@@ -96,6 +96,11 @@ function scrollToIndex(i: number) {
   const el = itemEls.value[i]
   if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
 }
+
+// On a phone, opened from a later sheet, the panel would come up off-screen to the left.
+watch(showEncounter, (shown) => {
+  if (shown) nextTick(() => scrollToIndex(0))
+})
 </script>
 
 <template>

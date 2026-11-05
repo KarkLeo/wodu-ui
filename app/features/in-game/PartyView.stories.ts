@@ -1,13 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import PartyView from './PartyView.vue'
+import CharacterListView from '@/features/character-list/CharacterListView.vue'
 import { brann, wren, mirel, PARTY, crookhollow, CROOKHOLLOW_META, ENCOUNTER_MONSTERS } from '@/stories/fixtures'
 import type { Decorator } from '@storybook/vue3-vite'
 import { emptyEncounter } from '@/domain/encounter'
+import { useEncounterPanelShown } from '@/composables/useTableSelection'
 import { useEncounterStore } from '@/stores/encounter'
+import { useGamesStore } from '@/stores/games'
 import { atRoute, withGameTable, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useCharactersStore } from '@/stores/characters'
+import { t } from '@/locales'
 import { pb } from '../../../.storybook/mocks/pb'
 
 const meta = {
@@ -165,6 +169,27 @@ const withOpenPanel: Decorator = (story) => ({
   template: '<story />',
 })
 
+const withEncounterClosed: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const encounter = useEncounterStore()
+    encounter.clearAll()
+    encounter.setAll(crookhollow.id, emptyEncounter(crookhollow.id), structuredClone(ENCOUNTER_MONSTERS), [])
+  },
+  template: '<story />',
+})
+
+const withLeftoverMonster: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const encounter = useEncounterStore()
+    encounter.clearAll()
+    encounter.setAll(crookhollow.id, emptyEncounter(crookhollow.id), structuredClone(ENCOUNTER_MONSTERS), [])
+    encounter.selectMonster('story-enc-goblin-1')
+  },
+  template: '<story />',
+})
+
 /** The panel's column comes first, ahead of the sheets, and counts as a card of the carousel. */
 export const EncounterColumnFirst: Story = {
   decorators: [withOpenPanel, crookhollowTable],
@@ -241,5 +266,63 @@ export const PressingSheetClearsMonster: Story = {
     await expect(encounter.selectedMonsterId).toBeNull()
     await expect(characters.activeId).toBe(wren.id)
     await waitFor(() => expect(columns(canvasElement)[2]).toHaveClass('is-active'))
+  },
+}
+
+/** On a phone, opened from a later sheet: the panel comes first in the carousel, and the carousel goes to it. */
+export const OpeningFromLaterSheetShowsPanel: Story = {
+  tags: ['no-visual'],
+  decorators: [withEncounterClosed, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const scroller = canvasElement.querySelector<HTMLElement>('.party-center')!
+    await userEvent.click(await canvas.findByRole('button', { name: 'Go to card 2' }))
+    await waitFor(() => expect(scroller.scrollLeft).toBeGreaterThan(0))
+    useEncounterStore().togglePanel()
+    const region = await canvas.findByRole('region', { name: 'Encounter' })
+    const left = () => region.getBoundingClientRect().left - scroller.getBoundingClientRect().left
+    // Once the scroll has settled: on the way there the panel can pass through the view and still end off-screen.
+    await new Promise(r => setTimeout(r, 1200))
+    await expect(Math.abs(left())).toBeLessThan(30)
+  },
+}
+
+/** A monster left selected in a game does not take the highlight from a sheet at the free table. */
+export const LeftoverMonsterKeepsHighlight: Story = {
+  tags: ['no-visual'],
+  decorators: [withLeftoverMonster],
+  loaders: [atRoute(`/party/${brann.id}`)],
+  play: async ({ canvasElement }) => {
+    await expect(useEncounterStore().selectedMonsterId).toBe('story-enc-goblin-1')
+    await waitFor(() => expect(columns(canvasElement)[0]).toHaveClass('is-active'))
+  },
+}
+
+/**
+ * The game page's two faces (`pages/games/[gameId]/index.vue`, which a story cannot render): the master loses the
+ * game while the panel shows, and the panel goes at once, leaving the table's list.
+ */
+export const MasterLosesGameWhilePanelShows: Story = {
+  tags: ['no-visual'],
+  decorators: [withOpenPanel, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  render: () => ({
+    components: { PartyView, CharacterListView },
+    setup: () => ({ showEncounter: useEncounterPanelShown() }),
+    template: '<PartyView v-if="showEncounter" /><CharacterListView v-else />',
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const encounter = useEncounterStore()
+    await expect(await canvas.findByRole('region', { name: 'Encounter' })).toBeVisible()
+    await expect(canvasElement.querySelector('.party-center')).not.toBeNull()
+
+    useGamesStore().upsertGame({ ...crookhollow, master: 'someone-else' })
+    await waitFor(() => expect(canvas.queryByRole('region', { name: 'Encounter' })).toBeNull())
+    await expect(encounter.panelOpen).toBe(false)
+    await expect(encounter.monsters).toEqual([])
+    await expect(canvasElement.querySelector('.party-center')).toBeNull()
+    await expect(await canvas.findByText(t('characterList.pickFromSidebar'))).toBeVisible()
   },
 }

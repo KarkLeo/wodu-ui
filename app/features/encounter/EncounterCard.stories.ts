@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import EncounterCard from './EncounterCard.vue'
 import { ENCOUNTER_MONSTERS } from '@/stories/fixtures'
+import { animatingMock } from '../../../.storybook/mocks/diceAnimationQueue'
 
 const goblin = ENCOUNTER_MONSTERS[0]!
 const goblin2 = ENCOUNTER_MONSTERS[1]!
@@ -116,5 +117,42 @@ export const ManualGrip: Story = {
     // The grip is not the card: a click on it selects nothing.
     await userEvent.click(grip)
     await expect(card(canvasElement, 'Goblin #1').querySelector('.ec-title')).toHaveAttribute('aria-pressed', 'false')
+  },
+}
+
+/** A roll in progress locks Attack like the sheet's buttons: a double press would be two public rolls. */
+export const AttackLockedWhileRolling: Story = {
+  tags: ['no-visual'],
+  args: { onAttack: fn() },
+  play: async ({ canvasElement, args }) => {
+    const attack = within(canvasElement).getByRole('button', { name: 'Attack' })
+    await expect(attack).toBeEnabled()
+    animatingMock.value = true
+    try {
+      await waitFor(() => expect(attack).toBeDisabled())
+      await userEvent.click(attack, { pointerEventsCheck: 0 })
+      await expect(args.onAttack).not.toHaveBeenCalled()
+    } finally {
+      animatingMock.value = false
+    }
+    await waitFor(() => expect(attack).toBeEnabled())
+  },
+}
+
+/** The lock takes the focus from a focused button; a keyboard user gets it back when the roll ends. */
+export const AttackGetsFocusBack: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const attack = within(canvasElement).getByRole('button', { name: 'Attack' })
+    attack.focus()
+    await expect(attack.matches(':focus-visible')).toBe(true)
+    animatingMock.value = true
+    try {
+      await waitFor(() => expect(attack).toBeDisabled())
+      await waitFor(() => expect(canvasElement.ownerDocument.activeElement).not.toBe(attack))
+    } finally {
+      animatingMock.value = false
+    }
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(attack))
   },
 }

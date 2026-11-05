@@ -16,8 +16,7 @@ import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import InviteSheet from './InviteSheet.vue'
 import MembersSheet from './MembersSheet.vue'
 import BringCharacterSheet from './BringCharacterSheet.vue'
-import { useEncounterStore } from '@/stores/encounter'
-import { useGameLayout } from './gameLayoutContext'
+import { useEncounterPanel } from '@/composables/useEncounterPanel'
 import { useGameAction } from '@/composables/useGameAction'
 import { exitGameQuietly } from '@/composables/useRouteRecheck'
 import { currentUser } from '@/transport/auth'
@@ -31,13 +30,7 @@ const props = defineProps<{ game: Game }>()
 
 const router = useRouter()
 const { busy, run } = useGameAction()
-const encounter = useEncounterStore()
-const layout = useGameLayout()
-
-function toggleEncounter() {
-  encounter.togglePanel()
-  layout?.closeMobileOverlays()
-}
+const { toggle: toggleEncounter } = useEncounterPanel()
 
 const master = computed(() => isMaster(props.game, currentUser.value?.id ?? null))
 

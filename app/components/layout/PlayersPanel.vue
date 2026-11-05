@@ -7,6 +7,7 @@ import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useTable } from '@/composables/useTable'
 import { useTableSelection } from '@/composables/useTableSelection'
+import { useEncounterPanel } from '@/composables/useEncounterPanel'
 import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
@@ -38,6 +39,7 @@ const { createDraft } = useCharacterCreation()
 const layout = useGameLayout()
 const games = useGamesStore()
 const encounter = useEncounterStore()
+const { toggle: toggleEncounter } = useEncounterPanel()
 const { selectCharacter } = useTableSelection()
 const { tableScope, gameId, game, partyRoute, newCharacterRoute } = useTable()
 
@@ -100,12 +102,6 @@ function toggleCharacter(id: string) {
   }
   router.replace(partyRoute([...openIds.value, id]))
   selectCharacter(id)
-}
-
-// The panel opens without a route change, so the phone's drawer would stay over it.
-function toggleEncounter() {
-  encounter.togglePanel()
-  layout?.closeMobileOverlays()
 }
 
 // Inside a game the draft is created in it (createDraft follows the scope) and the wizard stays there.

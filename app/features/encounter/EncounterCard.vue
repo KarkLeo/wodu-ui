@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import HpBar from '@/components/ui/HpBar.vue'
 import IconButton from '@/components/ui/IconButton.vue'
@@ -16,6 +16,7 @@ import Pill from '@/components/ui/Pill.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import ItemStatChip from '@/features/in-game/components/inventory/ItemStatChip.vue'
 import ConditionPicker from './ConditionPicker.vue'
+import { isRolling } from '@/composables/useDiceRoller'
 import { monsterLabel } from '@/domain/encounter'
 import { conditionName } from '@/locales/content'
 import type { ConditionId, EncounterMonster, SortMode } from '@/types/encounter'
@@ -41,6 +42,19 @@ const expanded = defineModel<boolean>('expanded', { default: false })
 const uid = useId()
 const dead = computed(() => props.monster.diedAt !== undefined)
 const label = computed(() => monsterLabel(props.monster))
+
+// Disabling a focused button drops the focus: a keyboard user gets it back when the roll ends.
+const attackRef = ref<{ $el: HTMLElement } | null>(null)
+let attackHadFocus = false
+watch(isRolling, (rolling) => {
+  const el = attackRef.value?.$el
+  if (rolling) {
+    attackHadFocus = !!el?.matches(':focus-visible')
+    return
+  }
+  if (attackHadFocus) void nextTick(() => { if (document.activeElement === document.body) el?.focus() })
+  attackHadFocus = false
+})
 
 function onGripKeydown(e: KeyboardEvent) {
   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
@@ -82,7 +96,7 @@ function onHeadClick(e: MouseEvent) {
         <span class="ec-num">#{{ monster.n }}</span>
       </button>
       <div class="ec-btns">
-        <IconButton size="md" variant="square" :label="t('encounter.card.attack')" :disabled="dead" @click="emit('attack')">
+        <IconButton ref="attackRef" size="md" variant="square" :label="t('encounter.card.attack')" :disabled="dead || isRolling" @click="emit('attack')">
           <IconSwords :size="14" />
         </IconButton>
         <IconButton

@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { ClientResponseError } from 'pocketbase'
+import { watch } from 'vue'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import DiceDrawer from './DiceDrawer.vue'
 import {
@@ -12,6 +13,7 @@ import { emptyEncounter } from '@/domain/encounter'
 import { useCharactersStore } from '@/stores/characters'
 import { useEncounterStore } from '@/stores/encounter'
 import { useToastsStore } from '@/stores/toasts'
+import { closeEncounter, openEncounter } from '@/transport/encounter'
 import { setScope } from '@/transport/scope'
 import { totalArmor } from '@/utils/derived'
 import type { Character } from '@/types/character'
@@ -34,6 +36,8 @@ const meta = {
     (story) => ({ components: { story }, template: '<div style="height: 100dvh; display: flex; flex-direction: column; align-items: flex-end"><story /></div>' }),
     withStores({ characters: PARTY, rolls: ROLLS, changes: CHANGES }),
   ],
+  // A character rolls only with its sheet open.
+  loaders: [atRoute(`/party/${brann.id}`)],
 } satisfies Meta<typeof DiceDrawer>
 
 export default meta
@@ -123,6 +127,7 @@ export const CollapseToRail: Story = {
 /** The active sheet is a teammate's (read-only): the drawer offers no roll for it and says why. */
 export const ReadOnlyActive: Story = {
   decorators: [asActive(oda.id), asTeammate(PARTY)],
+  loaders: [atRoute(`/games/${olden.id}/party/${oda.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText(`You can’t roll for ${oda.name}.`)).toBeVisible()
@@ -148,6 +153,7 @@ export const ActiveLeftOnAnotherTable: Story = {
       scope: { kind: 'game', gameId: crookhollow.id },
     }),
   ],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const store = useCharactersStore()
@@ -201,15 +207,15 @@ const HITS: EncounterHit[] = [
 ]
 
 /** The master's open encounter, as openEncounter() would leave the store; the monsters are also on the mock server. */
-function withEncounter(hits: EncounterHit[] = []): Decorator {
+function withEncounter(hits: EncounterHit[] = [], game = crookhollow): Decorator {
   return (story) => ({
     components: { story },
     setup() {
-      resetRecords('encounter_monsters', encounterMonsterRows(crookhollow))
+      resetRecords('encounter_monsters', encounterMonsterRows(game))
       resetRecords('encounter_hits', [])
       const store = useEncounterStore()
       store.clearAll()
-      store.setAll(crookhollow.id, emptyEncounter(crookhollow.id), structuredClone(ENCOUNTER_MONSTERS), structuredClone(hits))
+      store.setAll(game.id, emptyEncounter(game.id), structuredClone(ENCOUNTER_MONSTERS), structuredClone(hits))
       useToastsStore().clearAll()
     },
     template: '<story />',
@@ -240,7 +246,7 @@ const masterTable = (opts: { characters?: Character[]; meta?: typeof CROOKHOLLOW
 
 const masterStory = {
   globals: DESKTOP_VIEWPORT,
-  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
   tags: ['no-visual'],
 }
 
@@ -574,7 +580,7 @@ export const DamageFilterMasterOnly: Story = {
       meta: OLDEN_META, scope: { kind: 'game', gameId: olden.id }, rolls: MASTER_ROLLS, changes: [],
     }),
   ],
-  loaders: [atRoute(`/games/${olden.id}`)],
+  loaders: [atRoute(`/games/${olden.id}/party/${wren.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await canvas.findByRole('radio', { name: 'Rolls' })
@@ -582,28 +588,137 @@ export const DamageFilterMasterOnly: Story = {
   },
 }
 
-/** A player sees a monster's roll like any other: name, formula, dice and total, with nothing to apply and no encounter request. */
+/**
+ * A player sees a monster's roll like any other: name, formula, dice and total, with nothing to apply and no
+ * encounter request. The store holds an encounter of this very table with a selected monster, so only the
+ * master check stands between it and the player's log and dice.
+ */
 export const PlayerSeesPlainRolls: Story = {
   ...masterStory,
   decorators: [
-    asActive(wren.id), desktopColumn,
-    // Stale encounter data from another table must not leak into a player's log.
-    withEncounter(HITS),
+    asActive(wren.id), selecting(GOBLIN_1), desktopColumn,
+    withEncounter(HITS, olden),
     withStores({
       characters: [oda, wren], games: [olden], members: MEMBERS.filter(m => m.game === olden.id),
       meta: OLDEN_META, scope: { kind: 'game', gameId: olden.id }, rolls: MASTER_ROLLS, changes: [],
     }),
     (story) => ({ components: { story }, setup: () => clearPbRequests(), template: '<story />' }),
   ],
-  loaders: [atRoute(`/games/${olden.id}`)],
+  loaders: [atRoute(`/games/${olden.id}/party/${wren.id}`)],
   play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
     const row = rowOf(canvasElement, 'roll-goblin-hit')
     await expect(row).toHaveTextContent('Goblin #1')
     await expect(row).toHaveTextContent('1d6')
     await expect(row.querySelector('.dice-row-result')).toHaveTextContent('5')
     await expect(canvasElement.querySelectorAll('.dice-row[role="button"]')).toHaveLength(0)
     await expect(canvasElement.querySelector('.dice-row-hits, .dice-row-go')).toBeNull()
+    await expect(canvas.queryByRole('radio', { name: 'Damage' })).toBeNull()
+
+    // The dice are the player's own: never the monster's, never shut by it.
+    await expect(canvas.queryByText(/Rolling as/)).toBeNull()
+    const rollWrites = spyOn(pb.collection('roll_events'), 'create')
+    await userEvent.click(canvas.getByRole('button', { name: 'd8' }))
+    await waitFor(() => expect(rollWrites).toHaveBeenCalledOnce())
+    const sent = rollWrites.mock.calls[0]![0] as { character: string; data: RollRecord }
+    await expect(sent.character).toBe(wren.id)
+    await expect(sent.data.characterName).toBe(wren.name)
+    await expect(sent.data.monster).toBeUndefined()
     await expect(pbRequests().filter(r => r.includes('encounter'))).toEqual([])
+  },
+}
+
+/** Back from a library with no sheet open: `activeId` survived, but no character is offered, in the log or the dice. */
+export const NoSheetNoCharacter: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(null), withEncounter(), desktopColumn, masterTable()],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(rowsOf(canvasElement).length).toBeGreaterThan(0))
+    await expect(offered(canvasElement)).toEqual([])
+    await expect(canvasElement.querySelector('.dice-row-go')).toBeNull()
+    await expect(canvas.getByRole('button', { name: '2d6' })).toBeDisabled()
+    await expect(canvas.getByText('Open a character sheet to roll.')).toBeVisible()
+  },
+}
+
+/** At the free table a monster left selected from a game counts for nothing: the sheet's character rolls. */
+export const LeftoverMonsterAtFreeTable: Story = {
+  ...masterStory,
+  decorators: [
+    asActive(brann.id), selecting(GOBLIN_1), withEncounter(), desktopColumn,
+    withStores({ characters: PARTY, rolls: ROLLS, changes: [] }),
+  ],
+  loaders: [atRoute(`/party/${brann.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(useEncounterStore().selectedMonsterId).toBe(GOBLIN_1)
+    await expect(canvas.queryByText(/Rolling as/)).toBeNull()
+    await expect(canvas.getByRole('button', { name: '2d6' })).toBeEnabled()
+    const rollWrites = spyOn(pb.collection('roll_events'), 'create')
+    await userEvent.click(canvas.getByRole('button', { name: '2d6' }))
+    await waitFor(() => expect(rollWrites).toHaveBeenCalledOnce())
+    await expect((rollWrites.mock.calls[0]![0] as { data: RollRecord }).data.characterName).toBe(brann.name)
+  },
+}
+
+/**
+ * The selected monster's encounter is not ready: the bar stays shut and says who it is for. A roll goes out to
+ * everyone, so it must never fall through to the active character.
+ */
+export const MonsterNotReadyCannotRoll: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(GOBLIN_1), withEncounter(), desktopColumn, masterTable()],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const store = useEncounterStore()
+    const rollWrites = spyOn(pb.collection('roll_events'), 'create')
+    await expect(await canvas.findByText('Rolling as Goblin #1')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: '2d6' })).toBeEnabled()
+    for (const status of ['loading', 'failed'] as const) {
+      store.$patch({ status })
+      await waitFor(() => expect(canvas.getByRole('button', { name: '2d6' })).toBeDisabled())
+      await expect(canvas.getByPlaceholderText('2d6+1, d20, 4d6…')).toBeDisabled()
+      await expect(canvas.getByText('Rolling as Goblin #1')).toBeVisible()
+    }
+    await expect(rollWrites).not.toHaveBeenCalled()
+  },
+}
+
+/** A dropped connection closes and reopens the encounter: the Damage filter and the status live through it. */
+export const ReopenKeepsDamageFilter: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(OGRE), withEncounter(HITS), desktopColumn, masterTable()],
+  play: async ({ canvasElement }) => {
+    const store = useEncounterStore()
+    const statuses: string[] = []
+    const stop = watch(() => store.status, s => statuses.push(s), { flush: 'sync' })
+    const damage = await within(canvasElement).findByRole('radio', { name: 'Damage' })
+    await userEvent.click(damage)
+    await expect(damage).toHaveAttribute('aria-checked', 'true')
+    closeEncounter()
+    await openEncounter(crookhollow.id)
+    stop()
+    await expect(statuses).toEqual([])
+    await expect(store.status).toBe('ready')
+    await expect(damage).toHaveAttribute('aria-checked', 'true')
+    await expect(store.selectedMonsterId).toBe(OGRE)
+  },
+}
+
+/** The same reopen under an open popup: it stays, on the same roll and target. */
+export const ReopenKeepsPopup: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(OGRE), withEncounter(), desktopColumn, masterTable()],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(rowOf(canvasElement, 'roll-2')).toHaveAttribute('role', 'button'))
+    await userEvent.click(rowOf(canvasElement, 'roll-2'))
+    await dialogOf(canvasElement, 'Ogre #1')
+    closeEncounter()
+    await openEncounter(crookhollow.id)
+    await new Promise(r => setTimeout(r, 100))
+    await expect(body(canvasElement).getByRole('dialog', { name: 'Ogre #1' })).toBeVisible()
   },
 }
 

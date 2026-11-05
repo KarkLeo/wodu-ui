@@ -43,6 +43,11 @@ const dialogIn = (el: HTMLElement, name: string) => within(el.ownerDocument.body
 export const Monster: Story = {
   play: async ({ canvasElement }) => {
     const dialog = within(await dialogIn(canvasElement, 'Ogre #1'))
+    // The target is the heading; the source, its weapon and the total stay the first row under it.
+    await expect(dialog.getByRole('heading', { name: 'Ogre #1' })).toBeVisible()
+    const source = dialog.getByText('Brann Ironhide').closest('.apply-hit-source')
+    await expect(source).toHaveTextContent('Brann IronhideMartial weapon6')
+    await expect(dialog.getByRole('heading', { name: 'Ogre #1' }).compareDocumentPosition(source!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await expect(dialog.getByRole('spinbutton', { name: 'Damage' })).toHaveValue(5)
     await expect(dialog.getByText('HP 18 → 13')).toBeVisible()
   },
@@ -75,6 +80,8 @@ export const Mobile: Story = {
   play: async ({ canvasElement }) => {
     const dialog = within(await dialogIn(canvasElement, 'Ogre #1'))
     await expect(dialog.getByRole('button', { name: 'Close' })).toBeVisible()
+    // The sheet's title already names the target.
+    await expect(dialog.getAllByRole('heading', { name: 'Ogre #1' })).toHaveLength(1)
     await expect(dialog.getByText('HP 18 → 13')).toBeVisible()
   },
 }

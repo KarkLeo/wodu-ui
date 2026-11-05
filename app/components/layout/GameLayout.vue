@@ -21,7 +21,6 @@ function toggleCollapsed(side: Side) {
   else rightCollapsed.value = !rightCollapsed.value
 }
 
-
 // Topbar clock: updates once a minute.
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const
 const now = ref(new Date())

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
@@ -11,6 +12,7 @@ import MonsterSheet, { type MonsterDraft } from '@/features/monster-library/Mons
 import EncounterCard from './EncounterCard.vue'
 import EncounterPickSheet from './EncounterPickSheet.vue'
 import { useDeferredOrder } from '@/composables/useDeferredOrder'
+import { retryEncounter } from '@/composables/useEncounterSession'
 import { useMonsterRolls } from '@/composables/useMonsterRolls'
 import { useSortableList } from '@/composables/useSortableList'
 import { useTableSelection } from '@/composables/useTableSelection'
@@ -55,44 +57,61 @@ const sortOptions = computed(() => [
   { value: 'manual' as const, label: t('encounter.sort.manual') },
 ])
 
-// The list must not move under the pointer: while a card is held every card keeps its slot, so a card that
+// The list must not move under the pointer: while anything holds it every card keeps its slot, so a card that
 // dies or revives under the pointer stays put, rendered as it now is, and the next one never slides under it.
 const HOLD_TOUCH_MS = 2000
-const holdingId = ref<string | null>(null)
-let holdTimer: ReturnType<typeof setTimeout> | undefined
-// A drag keeps the hold for its whole length: the pointer crosses cards and gaps, and a touch has no timer to run out.
+// A mouse or a pen holds it anywhere in the list, not just on one card: the card above would otherwise slide into
+// the slot the pointer is heading for.
+const pointerInList = ref(false)
+// A touch has no leave, so it holds for a while after each touch.
+const touching = ref(false)
+let touchTimer: ReturnType<typeof setTimeout> | undefined
+// A drag holds for its whole length: the pointer crosses cards and gaps, and a touch has no timer to run out.
 const dragging = ref(false)
+// The card with keyboard focus: moving its node would drop the focus.
+const focusedId = ref<string | null>(null)
+const held = computed(() => pointerInList.value || touching.value || dragging.value || focusedId.value !== null)
+
 const target = computed(() => [order.value.alive.map(m => m.id), order.value.dead.map(m => m.id)])
-const shown = useDeferredOrder(target, holdingId)
+const { shown, showTarget } = useDeferredOrder(target, held)
 const monsterIds = computed(() => new Map(store.monsters.map(m => [m.id, m])))
 const shownAlive = computed(() => shown.value[0]!.flatMap(id => monsterIds.value.get(id) ?? []))
 const shownDead = computed(() => shown.value[1]!.flatMap(id => monsterIds.value.get(id) ?? []))
 
-function release() {
-  clearTimeout(holdTimer)
-  holdingId.value = null
+function holdByTouch() {
+  touching.value = true
+  clearTimeout(touchTimer)
+  touchTimer = setTimeout(() => { touching.value = false }, HOLD_TOUCH_MS)
 }
-function holdByTouch(id: string) {
-  if (dragging.value) return
-  holdingId.value = id
-  clearTimeout(holdTimer)
-  holdTimer = setTimeout(() => { if (!dragging.value) holdingId.value = null }, HOLD_TOUCH_MS)
+function onListEnter(e: PointerEvent) {
+  if (e.pointerType === 'touch') holdByTouch()
+  else pointerInList.value = true
 }
-function onPointerEnter(id: string, e: PointerEvent) {
-  if (dragging.value) return
-  if (e.pointerType === 'touch') holdByTouch(id)
-  else holdingId.value = id
+function onListLeave(e: PointerEvent) {
+  if (e.pointerType !== 'touch') pointerInList.value = false
 }
-function onPointerLeave(id: string, e: PointerEvent) {
-  if (dragging.value) return
-  if (e.pointerType !== 'touch' && holdingId.value === id) holdingId.value = null
+function onListDown(e: PointerEvent) {
+  if (e.pointerType === 'touch') holdByTouch()
 }
-function onPointerDown(id: string, e: PointerEvent) {
-  if (e.pointerType === 'touch') holdByTouch(id)
+onBeforeUnmount(() => clearTimeout(touchTimer))
+
+function cardIdOf(el: EventTarget | null): string | null {
+  return el instanceof Element ? el.closest<HTMLElement>('[data-id]')?.dataset.id ?? null : null
 }
-// Only a removed row ends a hold from the data side: it never sends a leave. A death or a revive keeps its slot.
-watch(target, (sections) => { if (holdingId.value !== null && !sections.flat().includes(holdingId.value)) release() })
-onBeforeUnmount(() => clearTimeout(holdTimer))
+function onFocusIn(e: FocusEvent) {
+  const el = e.target as Element
+  focusedId.value = el.matches(':focus-visible') ? cardIdOf(el) : null
+}
+function onFocusOut(e: FocusEvent) {
+  // On to another card, the focusin that follows decides; a window that lost the focus gives it back to this node.
+  if (cardIdOf(e.relatedTarget) || e.target === document.activeElement) return
+  focusedId.value = null
+}
+const stackRef = ref<HTMLElement | null>(null)
+// The focus can go without a focusout (a removed card, a button turned disabled); the hold must not outlive it.
+watch(target, () => {
+  if (focusedId.value !== null && !stackRef.value?.contains(document.activeElement)) focusedId.value = null
+}, { flush: 'post' })
 
 const listRef = ref<{ $el: HTMLElement } | null>(null)
 const listEl = computed(() => listRef.value?.$el ?? null)
@@ -101,21 +120,14 @@ const listEl = computed(() => listRef.value?.$el ?? null)
 function moveCard(id: string, beforeId: string | null) {
   const state = currentState()
   saveEncounterState({ ...state, manualOrder: moveInOrder(shown.value[0]!, id, beforeId) })
-  release()
+  showTarget()
 }
 useSortableList(listEl, {
   enabled: computed(() => sortMode.value === 'manual'),
   handle: '.ec-grip',
   onMove: moveCard,
-  onStart: (id) => {
-    dragging.value = true
-    clearTimeout(holdTimer)
-    holdingId.value = id
-  },
-  onEnd: () => {
-    dragging.value = false
-    release()
-  },
+  onStart: () => { dragging.value = true },
+  onEnd: () => { dragging.value = false },
 })
 
 async function onKeyMove(id: string, direction: -1 | 1) {
@@ -152,7 +164,6 @@ function onChangeHp(id: string, delta: number) {
   const next = changeHp(m, delta, Date.now())
   if (next.hp === m.hp) return
   saveMonster(next)
-  if (next.diedAt !== undefined && store.selectedMonsterId === id) store.selectMonster(null)
   if (m.diedAt !== undefined && next.diedAt === undefined) putFirstInManual(id)
 }
 
@@ -169,7 +180,6 @@ function onKillOrRevive(id: string) {
   const dead = m.diedAt !== undefined
   saveMonster(dead ? reviveMonster(m, Date.now()) : killMonster(m, Date.now()))
   if (dead) putFirstInManual(id)
-  if (!dead && store.selectedMonsterId === id) store.selectMonster(null)
 }
 
 function onAttack(id: string) {
@@ -215,8 +225,14 @@ const removeOpen = computed({
   get: () => removingId.value !== null,
   set: (v: boolean) => { if (!v) removingId.value = null },
 })
-const removing = computed(() => (removingId.value ? fresh(removingId.value) : undefined))
+// Kept when the sheet closes, or the title loses the name during the closing animation.
+const removingLabel = ref('')
 const removeBusy = ref(false)
+
+function askRemove(m: EncounterMonster) {
+  removingLabel.value = monsterLabel(m)
+  removingId.value = m.id
+}
 
 async function confirmRemove() {
   const id = removingId.value
@@ -242,12 +258,31 @@ async function confirmRemove() {
       <Button variant="dashed" size="sm" :icon-left="IconPlus" @click="pickOpen = true">{{ t('encounter.addMonster') }}</Button>
     </header>
 
-    <div class="ep-stack">
-      <StateNote v-if="store.status === 'loading' && !store.monsters.length" size="sm">{{ t('encounter.loading') }}</StateNote>
-      <StateNote v-else-if="store.status === 'failed' && !store.monsters.length" size="sm">{{ t('encounter.loadFailed') }}</StateNote>
+    <div
+      ref="stackRef"
+      class="ep-stack"
+      @pointerenter="onListEnter"
+      @pointerleave="onListLeave"
+      @pointerdown="onListDown"
+      @focusin="onFocusIn"
+      @focusout="onFocusOut"
+    >
+      <StateNote v-if="store.status === 'loading' && !store.monsters.length" size="sm" role="status">{{ t('encounter.loading') }}</StateNote>
+      <StateNote v-else-if="store.status === 'failed' && !store.monsters.length" size="sm" role="alert">
+        {{ t('encounter.loadFailed') }}
+        <template #action>
+          <Button variant="ghost" size="sm" @click="retryEncounter">{{ t('encounter.retry') }}</Button>
+        </template>
+      </StateNote>
       <EmptyState v-else-if="!store.monsters.length" :hint="t('encounter.empty')" />
 
       <template v-else>
+        <AlertBanner v-if="store.refreshFailed">
+          {{ t('encounter.loadFailed') }}
+          <template #action>
+            <Button variant="ghost" size="sm" @click="retryEncounter">{{ t('encounter.retry') }}</Button>
+          </template>
+        </AlertBanner>
         <TransitionGroup ref="listRef" tag="div" name="ep-move" class="ep-alive">
           <EncounterCard
             v-for="m in shownAlive"
@@ -257,9 +292,6 @@ async function confirmRemove() {
             :selected="store.selectedMonsterId === m.id"
             :expanded="expandedOf(m.id)"
             :sort-mode="sortMode"
-            @pointerenter="onPointerEnter(m.id, $event)"
-            @pointerleave="onPointerLeave(m.id, $event)"
-            @pointerdown="onPointerDown(m.id, $event)"
             @update:expanded="v => setExpanded(m.id, v)"
             @select="select(m)"
             @attack="onAttack(m.id)"
@@ -268,7 +300,7 @@ async function confirmRemove() {
             @toggle-condition="c => onToggleCondition(m.id, c)"
             @move="d => onKeyMove(m.id, d)"
             @edit="editingId = m.id"
-            @remove="removingId = m.id"
+            @remove="askRemove(m)"
           />
         </TransitionGroup>
         <SectionLabel v-if="shownDead.length" as="h3" tone="neutral" class="ep-dead">{{ t('encounter.defeated') }}</SectionLabel>
@@ -276,13 +308,11 @@ async function confirmRemove() {
           <EncounterCard
             v-for="m in shownDead"
             :key="m.id"
+            :data-id="m.id"
             :monster="m"
             :selected="store.selectedMonsterId === m.id"
             :expanded="expandedOf(m.id)"
             :sort-mode="sortMode"
-            @pointerenter="onPointerEnter(m.id, $event)"
-            @pointerleave="onPointerLeave(m.id, $event)"
-            @pointerdown="onPointerDown(m.id, $event)"
             @select="select(m)"
             @update:expanded="v => setExpanded(m.id, v)"
             @attack="onAttack(m.id)"
@@ -290,7 +320,7 @@ async function confirmRemove() {
             @change-hp="d => onChangeHp(m.id, d)"
             @toggle-condition="c => onToggleCondition(m.id, c)"
             @edit="editingId = m.id"
-            @remove="removingId = m.id"
+            @remove="askRemove(m)"
           />
         </div>
       </template>
@@ -299,7 +329,7 @@ async function confirmRemove() {
     <EncounterPickSheet v-model:open="pickOpen" :game-id="store.gameId" />
     <MonsterSheet v-model:open="editOpen" mode="edit" :source="editSource" @save="onSave" />
 
-    <ConfirmSheet v-model:open="removeOpen" variant="danger" :title="t('encounter.remove.title', { name: removing ? monsterLabel(removing) : '' })">
+    <ConfirmSheet v-model:open="removeOpen" variant="danger" :title="t('encounter.remove.title', { name: removingLabel })">
       <p>{{ t('encounter.remove.body') }}</p>
       <template #actions>
         <Button variant="hero-danger" :disabled="removeBusy" @click="confirmRemove">{{ t('encounter.remove.confirm') }}</Button>

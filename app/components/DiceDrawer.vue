@@ -62,11 +62,11 @@ function toggleMode(mode: Exclude<RollMode, 'normal'>) {
   pendingMode.value = pendingMode.value === mode ? 'normal' : mode
 }
 
-// Rolls go to the active character, only one at the open table, and only one the user can edit (not a
-// teammate's read-only sheet).
+// Rolls go to the selected character: at the open table, with an open sheet, and only one the user can edit (not
+// a teammate's read-only sheet).
 const scopedActive = computed(() => {
-  const c = charStore.active
-  return c && charStore.inScope(c.id) ? c : undefined
+  const sel = selection.value
+  return sel?.kind === 'character' ? charStore.getById(sel.id) : undefined
 })
 const activeChar = computed(() => {
   const c = scopedActive.value
@@ -77,13 +77,13 @@ const readOnlyActive = computed(() => (activeChar.value ? undefined : scopedActi
 const items = computed(() => unified.filtered(filter.value))
 const listed = computed(() => (filter.value === 'hits' ? applyHit.hits.value.length : items.value.length))
 
-// A selected monster rolls in place of the active character; only the master has one.
+// A selected monster rolls in place of the active character; only the master has one. While its encounter is not
+// ready the bar stays shut: the roll goes out to everyone, so it never falls through to the character.
 const rollingMonster = computed(() => {
   const sel = selection.value
-  if (!applyHit.enabled.value || sel?.kind !== 'monster') return undefined
-  return encounter.monsterById(sel.id)
+  return sel?.kind === 'monster' ? encounter.monsterById(sel.id) : undefined
 })
-const canRoll = computed(() => !!rollingMonster.value || !!activeChar.value)
+const canRoll = computed(() => (rollingMonster.value ? applyHit.enabled.value : !!activeChar.value))
 
 const applicableIds = computed(() => new Set(
   items.value.filter(i => i.kind === 'roll' && applyHit.applicable(i.payload)).map(i => i.id),

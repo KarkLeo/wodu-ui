@@ -6,6 +6,7 @@ import { useIsMobile } from '@/composables/useIsMobile'
 import type { ApplyTarget } from '@/composables/useApplyHit'
 import type { RollRecord } from '@/types/dice'
 import ApplyHitForm from './ApplyHitForm.vue'
+import NumberedName from './NumberedName.vue'
 
 const props = defineProps<{
   roll: RollRecord
@@ -71,6 +72,8 @@ function onApply(amount: number) {
         @interact-outside="onInteractOutside"
         @close-auto-focus="onCloseAutoFocus"
       >
+        <!-- The popup changes someone's HP and can cover the selected card; the phone's sheet has this in its title. -->
+        <h3 class="apply-pop-title"><NumberedName :label="target.name" /></h3>
         <ApplyHitForm :key="`${roll.id}:${target.id}`" :roll="roll" :target="target" @apply="onApply" @cancel="open = false" />
       </PopoverContent>
     </PopoverPortal>
@@ -80,4 +83,13 @@ function onApply(amount: number) {
 <style>
 /* The popup is portalled to <body>, past the scoped styles of its parents. */
 .apply-pop { width: 300px; max-width: calc(100vw - 24px); }
+.apply-pop-title {
+  margin: 0 0 var(--s-2);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--vtt-border-subtle);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--vtt-text-primary);
+}
 </style>

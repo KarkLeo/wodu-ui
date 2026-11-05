@@ -54,3 +54,20 @@ export const LongName: Story = {
     await expect(within(canvasElement).getByRole('button', { name: 'Add' })).toBeVisible()
   },
 }
+
+/** Add is pressed again and again: it stays where it is when the count appears. */
+export const AddStaysPut: Story = {
+  tags: ['no-visual'],
+  render: (args) => ({
+    components: { EncounterPickRow },
+    setup: () => ({ args }),
+    template: `<ul style="margin: 0; padding: 0; list-style: none">
+      <EncounterPickRow :monster="args.monster" :count="0" />
+      <EncounterPickRow :monster="args.monster" :count="3" />
+    </ul>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const [plain, counted] = within(canvasElement).getAllByRole('button', { name: 'Add' })
+    await expect(counted!.getBoundingClientRect().left).toBe(plain!.getBoundingClientRect().left)
+  },
+}

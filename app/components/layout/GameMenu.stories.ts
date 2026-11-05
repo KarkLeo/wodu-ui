@@ -241,3 +241,18 @@ export const MasterTogglesEncounter: Story = {
     await expect(encounter.panelOpen).toBe(true)
   },
 }
+
+/** Off the table the menu item goes to the table with the panel open. */
+export const EncounterGoesToTheTable: Story = {
+  tags: ['no-visual'],
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}/items`)],
+  play: async ({ canvasElement }) => {
+    const encounter = useEncounterStore()
+    encounter.clearAll()
+    const menu = await openMenu(canvasElement)
+    await userEvent.click(menu.getByRole('menuitem', { name: 'Encounter' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
+    await expect(encounter.panelOpen).toBe(true)
+  },
+}

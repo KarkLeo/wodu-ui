@@ -20,8 +20,8 @@ defineEmits<{ (e: 'add'): void }>()
       <ItemStatChip variant="hp">{{ t('library.monsters.hp', { hp: monster.hp }) }}</ItemStatChip>
       <ItemStatChip variant="damage">{{ monster.damage }}</ItemStatChip>
     </span>
-    <Pill v-if="count > 0" tone="accent" role="status">{{ t('encounter.pick.count', { count }) }}</Pill>
-    <Button variant="primary" size="sm" @click="$emit('add')">{{ t('encounter.pick.add') }}</Button>
+    <Pill v-if="count > 0" class="epr-count" tone="accent" role="status">{{ t('encounter.pick.count', { count }) }}</Pill>
+    <Button class="epr-add" variant="primary" size="sm" @click="$emit('add')">{{ t('encounter.pick.add') }}</Button>
   </li>
 </template>
 
@@ -46,4 +46,7 @@ defineEmits<{ (e: 'add'): void }>()
   color: var(--vtt-text-primary);
 }
 .epr-chips { display: inline-flex; gap: 4px; }
+/* Fixed tracks: Add is pressed again and again, and must not move when the count appears. */
+.epr-count { grid-column: 3; }
+.epr-add { grid-column: 4; }
 </style>

@@ -335,6 +335,25 @@ export const MasterSeesEncounterRow: Story = {
   },
 }
 
+/** Off the table the panel cannot show: the row goes to the table with it open, even if it was already open. */
+export const EncounterRowGoesToTheTable: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}/monsters`)],
+  play: async ({ canvasElement }) => {
+    const encounter = useEncounterStore()
+    encounter.clearAll()
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Encounter' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
+    await expect(encounter.panelOpen).toBe(true)
+
+    await storyRouter.push(`/games/${crookhollow.id}/settings`)
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Encounter' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
+    await expect(encounter.panelOpen).toBe(true)
+  },
+}
+
 /** Opening a sheet from the panel selects that character and drops the selected monster. */
 export const OpeningSheetClearsMonster: Story = {
   tags: ['no-visual'],
