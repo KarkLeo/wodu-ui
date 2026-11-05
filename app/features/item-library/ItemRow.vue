@@ -9,7 +9,11 @@ import ItemChips from './ItemChips.vue'
 import type { LibraryItem } from '@/types/library'
 import { t } from '@/locales'
 
-const props = defineProps<{ item: LibraryItem }>()
+const props = defineProps<{
+  item: LibraryItem
+  /** A starter entry: it can be given and copied, not changed. */
+  readonly?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'give'): void
   (e: 'edit'): void
@@ -27,9 +31,9 @@ const details = computed(() => (props.item.notes ? [{ label: t('library.items.no
     <template #meta><ItemChips :item="item" /></template>
     <template #actions>
       <Button variant="primary" size="sm" @click="emit('give')">{{ t('library.items.give.action') }}</Button>
-      <Button variant="ghost" size="sm" :icon-left="IconEdit" @click="emit('edit')">{{ t('library.items.edit') }}</Button>
+      <Button v-if="!readonly" variant="ghost" size="sm" :icon-left="IconEdit" @click="emit('edit')">{{ t('library.items.edit') }}</Button>
       <Button variant="ghost" size="sm" :icon-left="IconPlus" @click="emit('duplicate')">{{ t('library.items.duplicate') }}</Button>
-      <Button variant="danger-ghost" size="sm" :icon-left="IconTrash" class="ir-delete" @click="emit('delete')">
+      <Button v-if="!readonly" variant="danger-ghost" size="sm" :icon-left="IconTrash" class="ir-delete" @click="emit('delete')">
         {{ t('library.items.delete') }}
       </Button>
     </template>

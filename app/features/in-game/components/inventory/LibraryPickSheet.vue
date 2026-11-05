@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import SearchField from '@/components/ui/SearchField.vue'
@@ -9,6 +8,7 @@ import ItemChips from '@/features/item-library/ItemChips.vue'
 import ItemKindTabs from '@/features/item-library/ItemKindTabs.vue'
 import { useGiveItem } from '@/composables/useGiveItem'
 import { searchItems } from '@/domain/library'
+import { starterItems } from '@/domain/starterLibrary'
 import { useLibraryStore } from '@/stores/library'
 import { loadItems } from '@/transport/library'
 import type { ItemKindFilter, LibraryItem } from '@/types/library'
@@ -17,7 +17,6 @@ import { t } from '@/locales'
 const props = defineProps<{ gameId: string; characterId: string }>()
 const open = defineModel<boolean>('open', { required: true })
 
-const router = useRouter()
 const library = useLibraryStore()
 const { give } = useGiveItem()
 
@@ -41,7 +40,11 @@ const forThisGame = computed(() => library.gameId === props.gameId)
 const hasList = computed(() => forThisGame.value && (library.status.items === 'ready' || library.items.length > 0))
 const failed = computed(() => forThisGame.value && library.status.items === 'failed' && !hasList.value)
 const loading = computed(() => !hasList.value && !failed.value)
-const shown = computed(() => searchItems(hasList.value ? library.items : [], query.value, kind.value))
+// The game's own items first, then the rulebook's.
+const shown = computed(() => [
+  ...searchItems(hasList.value ? library.items : [], query.value, kind.value),
+  ...searchItems(hasList.value ? starterItems() : [], query.value, kind.value),
+])
 
 // ── Give ──
 const GIVEN_MS = 2000
@@ -75,11 +78,6 @@ async function pick(item: LibraryItem) {
 }
 
 onBeforeUnmount(() => timers.forEach(clearTimeout))
-
-function toLibrary() {
-  open.value = false
-  void router.push({ name: 'game-items', params: { gameId: props.gameId } })
-}
 </script>
 
 <template>
@@ -91,13 +89,6 @@ function toLibrary() {
         {{ t('library.items.loadFailed') }}
         <template #action>
           <Button variant="ghost" size="sm" @click="loadItems(gameId)">{{ t('library.items.retry') }}</Button>
-        </template>
-      </StateNote>
-
-      <StateNote v-else-if="library.items.length === 0" compact>
-        {{ t('library.items.pick.empty') }}
-        <template #action>
-          <Button variant="ghost" size="sm" @click="toLibrary">{{ t('library.items.pick.emptyLink') }}</Button>
         </template>
       </StateNote>
 

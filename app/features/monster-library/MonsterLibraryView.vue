@@ -6,9 +6,9 @@ import ScreenHeader from '@/components/layout/ScreenHeader.vue'
 import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import SearchField from '@/components/ui/SearchField.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import MonsterRow from './MonsterRow.vue'
 import MonsterSheet, { type MonsterDraft, type MonsterSheetMode } from './MonsterSheet.vue'
@@ -16,6 +16,7 @@ import { useGameAction } from '@/composables/useGameAction'
 import { isGameMaster } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
 import { searchMonsters } from '@/domain/library'
+import { starterMonsters } from '@/domain/starterLibrary'
 import { useLibraryStore } from '@/stores/library'
 import { connection } from '@/transport/connection'
 import { createMonster, deleteMonster, loadMonsters, updateMonster } from '@/transport/library'
@@ -49,6 +50,7 @@ const loading = computed(() => !hasList.value && !failed.value)
 
 const query = ref('')
 const shown = computed(() => searchMonsters(hasList.value ? library.monsters : [], query.value))
+const starterShown = computed(() => searchMonsters(starterMonsters(), query.value))
 const expandedId = ref<string | null>(null)
 
 // ── Add / edit / duplicate ──
@@ -141,24 +143,44 @@ function backToTable() {
         <Button variant="primary" size="sm" :icon-left="IconPlus" @click="openSheet('add')">{{ t('library.monsters.add') }}</Button>
       </div>
 
-      <EmptyState v-if="library.monsters.length === 0" :title="t('library.monsters.empty')" :hint="t('library.monsters.emptyHint')" />
+      <StateNote v-if="library.monsters.length === 0 && !query.trim()" inline align="start" size="sm">
+        {{ t('library.monsters.empty') }}
+      </StateNote>
 
-      <StateNote v-else-if="shown.length === 0" role="status">
+      <StateNote v-if="shown.length === 0 && starterShown.length === 0" role="status">
         {{ t('library.monsters.noMatches', { query: query.trim() }) }}
       </StateNote>
 
-      <ul v-else class="ml-list" :aria-label="t('library.monsters.title')">
-        <MonsterRow
-          v-for="m in shown"
-          :key="m.id"
-          :monster="m"
-          :expanded="expandedId === m.id"
-          @update:expanded="v => expandedId = v ? m.id : null"
-          @edit="openSheet('edit', m)"
-          @duplicate="openSheet('duplicate', m)"
-          @delete="deleting = m"
-        />
-      </ul>
+      <section v-if="shown.length > 0" class="ml-section">
+        <SectionHeader as="h2" :title="t('library.monsters.own')" :count="shown.length" />
+        <ul class="ml-list" :aria-label="t('library.monsters.title')">
+          <MonsterRow
+            v-for="m in shown"
+            :key="m.id"
+            :monster="m"
+            :expanded="expandedId === m.id"
+            @update:expanded="v => expandedId = v ? m.id : null"
+            @edit="openSheet('edit', m)"
+            @duplicate="openSheet('duplicate', m)"
+            @delete="deleting = m"
+          />
+        </ul>
+      </section>
+
+      <section v-if="starterShown.length > 0" class="ml-section">
+        <SectionHeader as="h2" :title="t('library.monsters.starter.title')" :count="starterShown.length" :hint="t('library.monsters.starter.hint')" />
+        <ul class="ml-list" :aria-label="t('library.monsters.starter.title')">
+          <MonsterRow
+            v-for="m in starterShown"
+            :key="m.id"
+            :monster="m"
+            readonly
+            :expanded="expandedId === m.id"
+            @update:expanded="v => expandedId = v ? m.id : null"
+            @duplicate="openSheet('duplicate', m)"
+          />
+        </ul>
+      </section>
     </template>
 
     <MonsterSheet
@@ -183,5 +205,6 @@ function backToTable() {
 <style scoped>
 .ml-toolbar { display: flex; align-items: center; gap: 10px; }
 .ml-search { flex: 1; }
+.ml-section { display: flex; flex-direction: column; gap: 8px; }
 .ml-list { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 </style>

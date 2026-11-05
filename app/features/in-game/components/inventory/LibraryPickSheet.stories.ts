@@ -2,6 +2,7 @@ import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { ClientResponseError } from 'pocketbase'
 import { expect, fn, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import LibraryPickSheet from './LibraryPickSheet.vue'
+import { starterItems } from '@/domain/starterLibrary'
 import { crookhollow, CROOKHOLLOW_META, itemRows, ITEMS, PARTY, sage } from '@/stories/fixtures'
 import { withGameTable } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
@@ -38,13 +39,17 @@ const dialog = (canvasElement: HTMLElement) =>
 const rowOf = (sheet: { getAllByRole: (role: 'listitem') => HTMLElement[] }, name: string) =>
   sheet.getAllByRole('listitem').find(li => li.querySelector('.lp-name')?.textContent?.trim() === name)!
 
-/** Opened before the library screen was ever visited: the sheet loads the items itself. */
+const rowNames = (sheet: { getAllByRole: (role: 'listitem') => HTMLElement[] }) =>
+  sheet.getAllByRole('listitem').map(li => li.querySelector('.lp-name')?.textContent)
+
+/** Opened before the library screen was ever visited: the sheet loads the items itself; the game's own come first, then the rulebook's. */
 export const Loads: Story = {
   play: async ({ canvasElement }) => {
     const sheet = await dialog(canvasElement)
     await expect(await sheet.findByRole('list', { name: 'From library' })).toBeVisible()
     await expect(pbRequests()).toContain('items.getFullList')
-    await expect(sheet.getAllByRole('listitem')).toHaveLength(ITEMS.length)
+    await expect(sheet.getAllByRole('listitem')).toHaveLength(ITEMS.length + starterItems().length)
+    await expect(rowNames(sheet)[0]).toBe('Amulet of the Drowned God')
     await expect(rowOf(sheet, 'Longsword')).toHaveTextContent(/1d8.*melee.*40 s/)
     await expect(sheet.getByRole('radio', { name: 'Weapons' })).toBeVisible()
   },
@@ -56,9 +61,9 @@ export const SearchAndFilter: Story = {
     const sheet = await dialog(canvasElement)
     await sheet.findByRole('list', { name: 'From library' })
     await userEvent.click(sheet.getByRole('radio', { name: 'Weapons' }))
-    await expect(sheet.getAllByRole('listitem').map(li => li.querySelector('.lp-name')?.textContent)).toEqual(['Hunting crossbow', 'Longsword'])
-    await userEvent.type(sheet.getByRole('searchbox', { name: 'Search items' }), 'sword')
-    await expect(sheet.getAllByRole('listitem')).toHaveLength(1)
+    await expect(rowNames(sheet).slice(0, 2)).toEqual(['Hunting crossbow', 'Longsword'])
+    await userEvent.type(sheet.getByRole('searchbox', { name: 'Search items' }), 'longsword')
+    await expect(rowNames(sheet)).toEqual(['Longsword'])
     await userEvent.clear(sheet.getByRole('searchbox', { name: 'Search items' }))
     await userEvent.type(sheet.getByRole('searchbox', { name: 'Search items' }), 'zzz')
     await expect(sheet.getByText('Nothing matches “zzz”.')).toBeVisible()
@@ -87,14 +92,18 @@ export const LoadFailed: Story = {
   },
 }
 
-/** A game with no items yet points the master at the library screen. */
-export const Empty: Story = {
+/** A game with no items of its own still has the rulebook's to give; they stack with bought ones and keep the catalog item's name. */
+export const NewGameGivesFromRulebook: Story = {
   decorators: [withLibrary([]), withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  play: async ({ canvasElement, args }) => {
+  play: async ({ canvasElement }) => {
     const sheet = await dialog(canvasElement)
-    await expect(await sheet.findByText('No items in the library yet.')).toBeVisible()
-    await userEvent.click(sheet.getByRole('button', { name: 'Open the library' }))
-    await expect(args['onUpdate:open']).toHaveBeenCalledWith(false)
+    await sheet.findByRole('list', { name: 'From library' })
+    await expect(sheet.getAllByRole('listitem')).toHaveLength(starterItems().length)
+    await userEvent.click(within(rowOf(sheet, 'Quicksilver (dose)')).getByRole('button', { name: 'Give' }))
+    await waitFor(() => expect(rowOf(sheet, 'Quicksilver (dose)')).toHaveTextContent('Given'))
+    const given = useCharactersStore().getById('story-wren')!.inventory.find(i => i.templateId === 'mercury')
+    await expect(given).toMatchObject({ name: '', descriptor: { kind: 'occult', consumable: true } })
+    await expect(given?.libraryItemId).toBeUndefined()
   },
 }
 

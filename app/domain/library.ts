@@ -167,6 +167,18 @@ export function checkItem(value: unknown): LibraryCheck<LibraryItem> {
 }
 
 export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, 'id'> {
+  // A starter entry hands out the catalog item itself: its name follows each viewer's language, it
+  // stacks with bought ones, and use-effects such as quicksilver keep working.
+  if (item.templateId) {
+    const out: Omit<InventoryItem, 'id'> = {
+      templateId: item.templateId,
+      name: '',
+      descriptor: { ...item.descriptor },
+    }
+    if (item.damage !== undefined) out.damage = item.damage
+    if (item.price !== undefined) out.price = item.price
+    return out
+  }
   const out: Omit<InventoryItem, 'id'> = {
     name: item.name,
     descriptor: { ...item.descriptor },
