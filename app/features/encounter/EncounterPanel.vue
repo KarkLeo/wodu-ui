@@ -55,38 +55,43 @@ const sortOptions = computed(() => [
   { value: 'manual' as const, label: t('encounter.sort.manual') },
 ])
 
-// The list must not move under the pointer: while a card is held the others keep their places.
+// The list must not move under the pointer: while a card is held every card keeps its slot, so a card that
+// dies or revives under the pointer stays put, rendered as it now is, and the next one never slides under it.
 const HOLD_TOUCH_MS = 2000
 const holdingId = ref<string | null>(null)
 let holdTimer: ReturnType<typeof setTimeout> | undefined
-const target = computed(() => order.value.alive.map(m => m.id))
-const shownIds = useDeferredOrder(target, holdingId)
-const shownAlive = computed(() => {
-  const byId = new Map(order.value.alive.map(m => [m.id, m]))
-  return shownIds.value.flatMap(id => byId.get(id) ?? [])
-})
+// A drag keeps the hold for its whole length: the pointer crosses cards and gaps, and a touch has no timer to run out.
+const dragging = ref(false)
+const target = computed(() => [order.value.alive.map(m => m.id), order.value.dead.map(m => m.id)])
+const shown = useDeferredOrder(target, holdingId)
+const monsterIds = computed(() => new Map(store.monsters.map(m => [m.id, m])))
+const shownAlive = computed(() => shown.value[0]!.flatMap(id => monsterIds.value.get(id) ?? []))
+const shownDead = computed(() => shown.value[1]!.flatMap(id => monsterIds.value.get(id) ?? []))
 
 function release() {
   clearTimeout(holdTimer)
   holdingId.value = null
 }
 function holdByTouch(id: string) {
+  if (dragging.value) return
   holdingId.value = id
   clearTimeout(holdTimer)
-  holdTimer = setTimeout(() => { holdingId.value = null }, HOLD_TOUCH_MS)
+  holdTimer = setTimeout(() => { if (!dragging.value) holdingId.value = null }, HOLD_TOUCH_MS)
 }
 function onPointerEnter(id: string, e: PointerEvent) {
+  if (dragging.value) return
   if (e.pointerType === 'touch') holdByTouch(id)
   else holdingId.value = id
 }
 function onPointerLeave(id: string, e: PointerEvent) {
+  if (dragging.value) return
   if (e.pointerType !== 'touch' && holdingId.value === id) holdingId.value = null
 }
 function onPointerDown(id: string, e: PointerEvent) {
   if (e.pointerType === 'touch') holdByTouch(id)
 }
-// A card that died or was removed under the pointer never sends a leave.
-watch(target, (ids) => { if (holdingId.value !== null && !ids.includes(holdingId.value)) release() })
+// Only a removed row ends a hold from the data side: it never sends a leave. A death or a revive keeps its slot.
+watch(target, (sections) => { if (holdingId.value !== null && !sections.flat().includes(holdingId.value)) release() })
 onBeforeUnmount(() => clearTimeout(holdTimer))
 
 const listRef = ref<{ $el: HTMLElement } | null>(null)
@@ -95,13 +100,26 @@ const listEl = computed(() => listRef.value?.$el ?? null)
 // The dropped order is the one on screen, which a hold may have kept from the stored one.
 function moveCard(id: string, beforeId: string | null) {
   const state = currentState()
-  saveEncounterState({ ...state, manualOrder: moveInOrder(shownIds.value, id, beforeId) })
+  saveEncounterState({ ...state, manualOrder: moveInOrder(shown.value[0]!, id, beforeId) })
   release()
 }
-useSortableList(listEl, { enabled: computed(() => sortMode.value === 'manual'), handle: '.ec-grip', onMove: moveCard })
+useSortableList(listEl, {
+  enabled: computed(() => sortMode.value === 'manual'),
+  handle: '.ec-grip',
+  onMove: moveCard,
+  onStart: (id) => {
+    dragging.value = true
+    clearTimeout(holdTimer)
+    holdingId.value = id
+  },
+  onEnd: () => {
+    dragging.value = false
+    release()
+  },
+})
 
 async function onKeyMove(id: string, direction: -1 | 1) {
-  const ids = shownIds.value
+  const ids = shown.value[0]!
   const at = ids.indexOf(id)
   if (at === -1 || at + direction < 0 || at + direction >= ids.length) return
   moveCard(id, direction === -1 ? ids[at - 1]! : (ids[at + 2] ?? null))
@@ -135,6 +153,14 @@ function onChangeHp(id: string, delta: number) {
   if (next.hp === m.hp) return
   saveMonster(next)
   if (next.diedAt !== undefined && store.selectedMonsterId === id) store.selectMonster(null)
+  if (m.diedAt !== undefined && next.diedAt === undefined) putFirstInManual(id)
+}
+
+// A revived monster goes to the top of a manual order, however it was revived.
+function putFirstInManual(id: string) {
+  if (sortMode.value !== 'manual') return
+  const state = currentState()
+  saveEncounterState({ ...state, manualOrder: [id, ...state.manualOrder.filter(x => x !== id)] })
 }
 
 function onKillOrRevive(id: string) {
@@ -142,10 +168,7 @@ function onKillOrRevive(id: string) {
   if (!m) return
   const dead = m.diedAt !== undefined
   saveMonster(dead ? reviveMonster(m, Date.now()) : killMonster(m, Date.now()))
-  if (dead && sortMode.value === 'manual') {
-    const state = currentState()
-    saveEncounterState({ ...state, manualOrder: [id, ...state.manualOrder.filter(x => x !== id)] })
-  }
+  if (dead) putFirstInManual(id)
   if (!dead && store.selectedMonsterId === id) store.selectMonster(null)
 }
 
@@ -248,15 +271,19 @@ async function confirmRemove() {
             @remove="removingId = m.id"
           />
         </TransitionGroup>
-        <SectionLabel v-if="order.dead.length" as="h3" tone="neutral" class="ep-dead">{{ t('encounter.defeated') }}</SectionLabel>
-        <div v-if="order.dead.length" class="ep-dead-list">
+        <SectionLabel v-if="shownDead.length" as="h3" tone="neutral" class="ep-dead">{{ t('encounter.defeated') }}</SectionLabel>
+        <div v-if="shownDead.length" class="ep-dead-list">
           <EncounterCard
-            v-for="m in order.dead"
+            v-for="m in shownDead"
             :key="m.id"
             :monster="m"
-            :selected="false"
+            :selected="store.selectedMonsterId === m.id"
             :expanded="expandedOf(m.id)"
             :sort-mode="sortMode"
+            @pointerenter="onPointerEnter(m.id, $event)"
+            @pointerleave="onPointerLeave(m.id, $event)"
+            @pointerdown="onPointerDown(m.id, $event)"
+            @select="select(m)"
             @update:expanded="v => setExpanded(m.id, v)"
             @attack="onAttack(m.id)"
             @kill-or-revive="onKillOrRevive(m.id)"

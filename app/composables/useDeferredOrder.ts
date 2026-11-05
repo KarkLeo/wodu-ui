@@ -1,23 +1,23 @@
 import { shallowRef, watch, type Ref } from 'vue'
 
 /**
- * `target`, except that while a card is held (`holdingId` set) the relative order of the ids already shown
- * stays frozen, so a click never lands on a card that moved under the pointer. Ids new to the list go on
- * top; ids that left it drop out. The hold ends the moment `holdingId` is null again.
+ * `target` as lists of ids (sections), except that while a card is held (`holdingId` set) every id keeps its
+ * slot: the same section and the same place in it, whatever its data now says. So a card that dies under the
+ * pointer stays where it is, and the next one never slides under the pointer. Ids new to the list wait and
+ * appear at the release; ids that are gone drop out at once, since a gone row cannot be kept.
  */
-export function useDeferredOrder(target: Ref<string[]>, holdingId: Ref<string | null>): Readonly<Ref<string[]>> {
-  const shown = shallowRef<string[]>([...target.value])
+export function useDeferredOrder(target: Ref<string[][]>, holdingId: Ref<string | null>): Readonly<Ref<string[][]>> {
+  const copy = (sections: string[][]) => sections.map(s => [...s])
+  const shown = shallowRef<string[][]>(copy(target.value))
   watch(
     [target, holdingId],
     () => {
       if (holdingId.value === null) {
-        shown.value = [...target.value]
+        shown.value = copy(target.value)
         return
       }
-      const now = new Set(target.value)
-      const kept = shown.value.filter(id => now.has(id))
-      const known = new Set(kept)
-      shown.value = [...target.value.filter(id => !known.has(id)), ...kept]
+      const now = new Set(target.value.flat())
+      shown.value = shown.value.map(section => section.filter(id => now.has(id)))
     },
     { flush: 'sync' },
   )

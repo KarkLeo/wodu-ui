@@ -150,7 +150,11 @@ export const KillAndRevive: Story = {
     const defeatedLabel = () => within(canvasElement).queryByRole('heading', { name: 'Defeated' })
     const order = () => within(canvasElement).getAllByRole('article').map(a => a.getAttribute('aria-label'))
 
+    const goblinCard = () => within(canvasElement).getByRole('article', { name: 'Goblin #1' })
     await userEvent.click(cardOf(canvasElement, 'Goblin #1').getByRole('button', { name: 'Kill' }))
+    // The pointer is on the card, so it stays in its slot, rendered dead, until the pointer leaves.
+    await expect(order()).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1', 'Wolf #1'])
+    await userEvent.unhover(goblinCard())
     await waitFor(() => expect(order()).toEqual(['Goblin #2', 'Ogre #1', 'Goblin #1', 'Wolf #1']))
     const label = defeatedLabel()!
     const articles = within(canvasElement).getAllByRole('article')
@@ -160,6 +164,8 @@ export const KillAndRevive: Story = {
     await expect(cardOf(canvasElement, 'Goblin #1').getByRole('button', { name: 'Attack' })).toBeDisabled()
 
     await userEvent.click(cardOf(canvasElement, 'Goblin #1').getByRole('button', { name: 'Revive (1 HP)' }))
+    await expect(order()).toEqual(['Goblin #2', 'Ogre #1', 'Goblin #1', 'Wolf #1'])
+    await userEvent.unhover(goblinCard())
     await waitFor(() => expect(order()).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1', 'Wolf #1']))
     await expect(hpText(canvasElement, 'Goblin #1')).toBe('1/3')
     await expect(monsterIn('story-enc-goblin-1').diedAt).toBeUndefined()
@@ -387,38 +393,161 @@ export const ManualNewOnTop: Story = {
   },
 }
 
+const wolfCard = (el: HTMLElement) => within(el).getByRole('article', { name: 'Wolf #1' })
+
+/** Revive goes first in a manual order, by the Revive button and by `+` alike. */
 export const ManualReviveOnTop: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
     const store = useEncounterStore()
     await switchTo(canvasElement, 'Manual')
     await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
-    await userEvent.click(cardOf(canvasElement, 'Wolf #1').getByRole('button', { name: 'Revive (1 HP)' }))
+    await userEvent.click(within(wolfCard(canvasElement)).getByRole('button', { name: 'Revive (1 HP)' }))
+    await userEvent.unhover(wolfCard(canvasElement))
     await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Wolf #1', 'Goblin #1', 'Goblin #2', 'Ogre #1']))
     await waitFor(() => expect(store.state?.manualOrder[0]).toBe('story-enc-wolf-1'))
   },
 }
 
+export const ManualRevivePlusOnTop: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const store = useEncounterStore()
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
+    await userEvent.click(within(wolfCard(canvasElement)).getByRole('button', { name: 'Raise HP by 1' }))
+    await expect(monsterIn('story-enc-wolf-1').diedAt).toBeUndefined()
+    await userEvent.unhover(wolfCard(canvasElement))
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Wolf #1', 'Goblin #1', 'Goblin #2', 'Ogre #1']))
+    await waitFor(() => expect(store.state?.manualOrder[0]).toBe('story-enc-wolf-1'))
+  },
+}
+
+const deadNamesOf = (el: HTMLElement) => [...el.querySelectorAll('.ep-dead-list article')].map(a => a.getAttribute('aria-label'))
+const leave = (el: HTMLElement, name: string) => userEvent.unhover(within(el).getByRole('article', { name }))
+
+/** Newest death first, in either mode; a dead card has no grip. */
+async function killTwo(canvasElement: HTMLElement) {
+  await userEvent.click(cardOf(canvasElement, 'Ogre #1').getByRole('button', { name: 'Kill' }))
+  await leave(canvasElement, 'Ogre #1')
+  await waitFor(() => expect(deadNamesOf(canvasElement)).toEqual(['Ogre #1', 'Wolf #1']))
+  await userEvent.click(cardOf(canvasElement, 'Goblin #2').getByRole('button', { name: 'Kill' }))
+  await leave(canvasElement, 'Goblin #2')
+  await waitFor(() => expect(deadNamesOf(canvasElement)).toEqual(['Goblin #2', 'Ogre #1', 'Wolf #1']))
+  await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Goblin #1']))
+}
+
 export const DeadAlwaysBelow: Story = {
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
-    const deadNames = () => [...canvasElement.querySelectorAll('.ep-dead-list article')].map(a => a.getAttribute('aria-label'))
-    const store = useEncounterStore()
-    await userEvent.click(cardOf(canvasElement, 'Ogre #1').getByRole('button', { name: 'Kill' }))
-    await waitFor(() => expect(deadNames()).toEqual(['Ogre #1', 'Wolf #1']))
-    await userEvent.click(cardOf(canvasElement, 'Goblin #2').getByRole('button', { name: 'Kill' }))
-    await waitFor(() => expect(deadNames()).toEqual(['Goblin #2', 'Ogre #1', 'Wolf #1']))
-    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Goblin #1']))
+    await killTwo(canvasElement)
+    for (const name of ['Goblin #1', 'Goblin #2', 'Ogre #1', 'Wolf #1']) await expect(gripOf(canvasElement, name)).toBeNull()
+  },
+}
 
+export const DeadBelowInManual: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const store = useEncounterStore()
     await switchTo(canvasElement, 'Manual')
     await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
-    await expect(deadNames()).toEqual(['Goblin #2', 'Ogre #1', 'Wolf #1'])
-    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1'])
+    await killTwo(canvasElement)
     await expect(gripOf(canvasElement, 'Goblin #1')).toBeVisible()
     for (const name of ['Goblin #2', 'Ogre #1', 'Wolf #1']) await expect(gripOf(canvasElement, name)).toBeNull()
 
     await userEvent.click(cardOf(canvasElement, 'Goblin #1').getByRole('button', { name: 'Kill' }))
-    await waitFor(() => expect(deadNames()).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1', 'Wolf #1']))
+    await leave(canvasElement, 'Goblin #1')
+    await waitFor(() => expect(deadNamesOf(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1', 'Wolf #1']))
     await waitFor(() => expect(aliveNames(canvasElement)).toEqual([]))
+  },
+}
+
+const centreOf = (el: Element) => {
+  const r = el.getBoundingClientRect()
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+}
+const cardAt = (x: number, y: number) => document.elementFromPoint(x, y)?.closest('article')?.getAttribute('aria-label')
+const clickAt = (x: number, y: number) => userEvent.click(document.elementFromPoint(x, y) as HTMLElement)
+
+/** Clicking `−` again and again through a death: the pixel under the pointer must stay on the same card. */
+async function clickThroughDeath(canvasElement: HTMLElement, touch: boolean) {
+  const goblin2 = within(canvasElement).getByRole('article', { name: 'Goblin #2' })
+  const { x, y } = centreOf(within(goblin2).getByRole('button', { name: 'Lower HP by 1' }))
+  if (touch) goblin2.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true }))
+  else await userEvent.hover(goblin2)
+  for (let i = 0; i < 4; i++) {
+    await expect(cardAt(x, y)).toBe('Goblin #2')
+    await clickAt(x, y)
+  }
+  await expect(monsterIn('story-enc-goblin-2').hp).toBe(0)
+  await expect(monsterIn('story-enc-goblin-2').diedAt).toBeDefined()
+  await expect(monsterIn('story-enc-goblin-1').hp).toBe(3)
+  await expect(monsterIn('story-enc-ogre-1').hp).toBe(18)
+  await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+  await expect(goblin2).toHaveClass('is-dead')
+  if (!touch) await userEvent.unhover(goblin2)
+  await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Ogre #1']), { timeout: 4000 })
+}
+
+export const DeathUnderPointerKeepsSlot: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    await clickThroughDeath(canvasElement, false)
+  },
+}
+
+export const DeathUnderPointerKeepsSlotManual: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(useEncounterStore().state?.sortMode).toBe('manual'))
+    await userEvent.unhover(within(canvasElement).getByRole('radio', { name: 'Manual' }))
+    await clickThroughDeath(canvasElement, false)
+  },
+}
+
+export const DeathUnderTouchKeepsSlot: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    await clickThroughDeath(canvasElement, true)
+  },
+}
+
+const TWO_WOLVES = [...ENCOUNTER_MONSTERS, { ...ENCOUNTER_MONSTERS[3]!, id: 'story-enc-wolf-2', n: 2, touchedAt: 100, diedAt: 100 }]
+
+/** Reviving the second dead card: the first one slides into its place, and must not take the next click. */
+export const ReviveUnderPointerKeepsSlot: Story = {
+  tags: ['no-visual'],
+  decorators: [withEncounter(TWO_WOLVES)],
+  play: async ({ canvasElement }) => {
+    const deadNames = () => [...canvasElement.querySelectorAll('.ep-dead-list article')].map(a => a.getAttribute('aria-label'))
+    await expect(deadNames()).toEqual(['Wolf #1', 'Wolf #2'])
+    const wolf2 = within(canvasElement).getByRole('article', { name: 'Wolf #2' })
+    const { x, y } = centreOf(within(wolf2).getByRole('button', { name: 'Revive (1 HP)' }))
+    await userEvent.hover(wolf2)
+    await clickAt(x, y)
+    await waitFor(() => expect(monsterIn('story-enc-wolf-2').diedAt).toBeUndefined())
+    await expect(cardAt(x, y)).toBe('Wolf #2')
+    await expect(deadNames()).toEqual(['Wolf #1', 'Wolf #2'])
+    await expect(monsterIn('story-enc-wolf-1').diedAt).toBeDefined()
+    await expect(wolf2).not.toHaveClass('is-dead')
+
+    await userEvent.unhover(wolf2)
+    await waitFor(() => expect(deadNames()).toEqual(['Wolf #1']))
+    await expect(aliveNames(canvasElement)[0]).toBe('Wolf #2')
+  },
+}
+
+/** Another device adds a monster while a card is held: it waits, and shows on top at the release. */
+export const AdditionWaitsForRelease: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const goblin2 = within(canvasElement).getByRole('article', { name: 'Goblin #2' })
+    await userEvent.hover(goblin2)
+    useEncounterStore().putMonster({ id: 'story-enc-bat-1', sourceId: 'story-monster-bat', n: 1, name: 'Bat', hp: 1, maxHp: 1, armor: 0, damage: '1d3', conditions: [], touchedAt: 9_000_000_000_000 })
+    await new Promise(r => setTimeout(r, 200))
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+    await userEvent.unhover(goblin2)
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Bat #1', 'Goblin #1', 'Goblin #2', 'Ogre #1']))
   },
 }
