@@ -17,6 +17,7 @@ import IconDiceFace from './IconDiceFace.vue'
 import IconDiceOutline from './IconDiceOutline.vue'
 import IconEdit from './IconEdit.vue'
 import IconFlask from './IconFlask.vue'
+import IconGrip from './IconGrip.vue'
 import IconHeart from './IconHeart.vue'
 import IconHome from './IconHome.vue'
 import IconInfo from './IconInfo.vue'
@@ -27,9 +28,11 @@ import IconMinus from './IconMinus.vue'
 import IconPlus from './IconPlus.vue'
 import IconReroll from './IconReroll.vue'
 import IconSearch from './IconSearch.vue'
+import IconSkull from './IconSkull.vue'
 import IconShield from './IconShield.vue'
 import IconStar from './IconStar.vue'
 import IconStarBold from './IconStarBold.vue'
+import IconSwords from './IconSwords.vue'
 import IconTool from './IconTool.vue'
 import IconTrash from './IconTrash.vue'
 import IconWarning from './IconWarning.vue'
@@ -54,6 +57,7 @@ const icons = {
   IconDiceOutline,
   IconEdit,
   IconFlask,
+  IconGrip,
   IconHeart,
   IconHome,
   IconInfo,
@@ -64,9 +68,11 @@ const icons = {
   IconPlus,
   IconReroll,
   IconSearch,
+  IconSkull,
   IconShield,
   IconStar,
   IconStarBold,
+  IconSwords,
   IconTool,
   IconTrash,
   IconWarning,

@@ -5,6 +5,7 @@ import type { GearCategoryId, GearTemplateId } from '@/data/gear'
 import type { StarterMonsterId } from '@/data/starterMonsters'
 import { SPHERE_PRESET_IDS, type SpherePresetId } from '@/data/spheres'
 import { CANTRIP_IDS, type CantripId } from '@/data/abilities'
+import type { ConditionId } from '@/types/encounter'
 
 export function skillName(id: SkillId): string {
   return t(`content.skills.${id}` as never)
@@ -66,6 +67,10 @@ export function starterMonsterSpecial(id: StarterMonsterId): string {
   return t(`content.starterMonsters.${id}.special` as never)
 }
 
+export function conditionName(id: ConditionId): string {
+  return t(`content.conditions.${id}` as never)
+}
+
 export function spherePresetName(id: SpherePresetId): string {
   return t(`content.spherePresets.${id}` as never)
 }
@@ -109,6 +114,8 @@ type _StarterMonstersComplete =
     ? true
     : never
 
+type _ConditionsComplete = Messages['content']['conditions'] extends Record<ConditionId, string> ? true : never
+
 const _guards: [
   _SkillsComplete,
   _AbilitiesComplete,
@@ -119,5 +126,6 @@ const _guards: [
   _GearCategoriesComplete,
   _SpheresComplete,
   _StarterMonstersComplete,
-] = [true, true, true, true, true, true, true, true, true]
+  _ConditionsComplete,
+] = [true, true, true, true, true, true, true, true, true, true]
 void _guards

@@ -17,7 +17,7 @@ export function useMonsterRolls() {
 
   function rollFor(
     monster: EncounterMonster,
-    build: (label: string) => {
+    build: (label: string, current: EncounterMonster) => {
       notation: string
       modifier?: number
       label: string
@@ -32,8 +32,12 @@ export function useMonsterRolls() {
       log.error('roll refused: not the master of this encounter', { id: monster.id })
       return null
     }
+    if (current.diedAt !== undefined) {
+      log.error('roll refused: the monster is dead', { id: current.id })
+      return null
+    }
     const name = monsterLabel(current)
-    const params = build(name)
+    const params = build(name, current)
     if (!params.notation) return null
     const record = dice.roll({
       ...params,
@@ -47,8 +51,8 @@ export function useMonsterRolls() {
   }
 
   function rollAttack(monster: EncounterMonster): RollRecord | null {
-    return rollFor(monster, (name) => {
-      const { notation, modifier, formula } = damageRollParts(monster.damage, 0, 0)
+    return rollFor(monster, (name, current) => {
+      const { notation, modifier, formula } = damageRollParts(current.damage, 0, 0)
       return {
         notation,
         modifier,

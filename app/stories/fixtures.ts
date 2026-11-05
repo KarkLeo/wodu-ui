@@ -5,6 +5,7 @@ import type { ChangeEntry } from '@/types/changeLog'
 import type { RollRecord } from '@/types/dice'
 import type { CharacterMeta, Game, GameMember } from '@/types/game'
 import type { LibraryItem, LibraryMonster } from '@/types/library'
+import type { EncounterMonster } from '@/types/encounter'
 import { CLASSES } from '@/data/classes'
 import { XP_THRESHOLDS } from '@/data/xpTable'
 
@@ -306,3 +307,15 @@ export const ITEMS: LibraryItem[] = [
 /** PocketBase rows of a game's items, for seedRecords('items', …). */
 export const itemRows = (game: Game, items: LibraryItem[] = ITEMS) =>
   items.map(i => ({ id: i.id, game: game.id, data: structuredClone(i) }))
+
+/** Crookhollow's open encounter: three living instances (newest touch first) and a dead wolf. */
+export const ENCOUNTER_MONSTERS: EncounterMonster[] = [
+  { id: 'story-enc-goblin-1', sourceId: 'story-monster-goblin', n: 1, name: 'Goblin', hp: 3, maxHp: 3, armor: 0, damage: '1d6', special: 'Cowardly: flees once half the pack is down.', notes: 'Three of them hide in the mill loft.', conditions: [], touchedAt: 400 },
+  { id: 'story-enc-goblin-2', sourceId: 'story-monster-goblin', n: 2, name: 'Goblin', hp: 2, maxHp: 3, armor: 0, damage: '1d6', special: 'Cowardly: flees once half the pack is down.', conditions: ['poisoned', 'frightened'], touchedAt: 300 },
+  { id: 'story-enc-ogre-1', sourceId: 'story-monster-ogre', n: 1, name: 'Ogre', hp: 18, maxHp: 18, armor: 1, damage: '1d10+1', special: 'Hurls whoever it hits across the room.', conditions: [], touchedAt: 200 },
+  { id: 'story-enc-wolf-1', sourceId: 'story-monster-wolf', n: 1, name: 'Wolf', hp: 0, maxHp: 6, armor: 0, damage: '1d6', conditions: [], touchedAt: 150, diedAt: 150 },
+]
+
+/** PocketBase rows of a game's encounter monsters, for seedRecords('encounter_monsters', …). */
+export const encounterMonsterRows = (game: Game, monsters: EncounterMonster[] = ENCOUNTER_MONSTERS) =>
+  monsters.map(m => ({ id: m.id, game: game.id, data: structuredClone(m) }))
