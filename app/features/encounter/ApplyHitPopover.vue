@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { PopoverRoot, PopoverAnchor, PopoverPortal, PopoverContent } from 'reka-ui'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { useIsMobile } from '@/composables/useIsMobile'
@@ -19,23 +20,33 @@ const open = defineModel<boolean>('open', { required: true })
 
 const isMobile = useIsMobile()
 
+// How the popup was left decides where focus goes: an outside press keeps the focus the user just chose,
+// Apply goes to the fallback (the applied row stops being a button, whenever the write lands), the rest
+// (Escape, Cancel) return to the row.
+let closedBy: 'outside' | 'apply' | null = null
+watch(open, (isOpen) => { if (isOpen) closedBy = null })
+
 function onInteractOutside(e: Event) {
   const target = (e as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? e.target
   if (props.anchor && target instanceof Node && props.anchor.contains(target)) e.preventDefault()
+  else closedBy = 'outside'
 }
 
-// There is no trigger element, so Reka would leave focus on <body>: hand it back to the row. An applied
-// row has just lost its tabindex, so wait for the re-render and pick the fallback if it is no longer a stop.
+// There is no trigger element, so Reka would leave focus on <body>: hand it back ourselves.
 function onCloseAutoFocus(e: Event) {
   e.preventDefault()
+  // Reka reports a close twice; the flag stays until the next open.
+  const how = closedBy
+  if (how === 'outside') return
   requestAnimationFrame(() => {
     const row = props.anchor
-    const stop = row && row.isConnected && row.getAttribute('tabindex') !== null ? row : props.fallback
+    const stop = how !== 'apply' && row && row.isConnected && row.getAttribute('tabindex') !== null ? row : props.fallback
     stop?.focus({ preventScroll: true })
   })
 }
 
 function onApply(amount: number) {
+  closedBy = 'apply'
   emit('apply', amount)
   open.value = false
 }

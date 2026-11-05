@@ -687,3 +687,19 @@ export const ApplyReturnsFocusToLog: Story = {
     await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(canvasElement.querySelector('.drawer-log')))
   },
 }
+
+/** Clicking another control while the popup is open closes it and leaves the focus where the user put it. */
+export const OutsidePressKeepsFocus: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(OGRE), withEncounter(), desktopColumn, masterTable()],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(rowOf(canvasElement, 'roll-2')).toHaveAttribute('role', 'button'))
+    await userEvent.click(rowOf(canvasElement, 'roll-2'))
+    await dialogOf(canvasElement, 'Ogre #1')
+    const input = within(canvasElement).getByPlaceholderText('2d6+1, d20, 4d6…')
+    await userEvent.click(input)
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+    await expect(canvasElement.ownerDocument.activeElement).toBe(input)
+  },
+}
