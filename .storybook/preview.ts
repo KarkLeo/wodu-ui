@@ -30,6 +30,14 @@ setup((app) => {
 
 const preview: Preview = {
   tags: ['autodocs'],
+  // Unmounting the last app resets the router but not its history, and the next app.use() navigates back to the
+  // stale location after the story has mounted. A story with no route of its own would inherit the last story's.
+  // Not on a docs page: its stories share the router while mounted together.
+  loaders: [
+    async ({ viewMode }) => {
+      if (viewMode === 'story') await storyRouter.push('/')
+    },
+  ],
   beforeEach() {
     globalThis.Date = FixedDate as DateConstructor
     return () => {

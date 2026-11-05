@@ -3,6 +3,9 @@ import { computed, watch, ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useTable } from '@/composables/useTable'
+import { useEncounterPanelShown, useTableSelection } from '@/composables/useTableSelection'
+import { useEncounterStore } from '@/stores/encounter'
+import EncounterPanel from '@/features/encounter/EncounterPanel.vue'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
@@ -13,6 +16,12 @@ const route = useRoute()
 const router = useRouter()
 const store = useCharactersStore()
 const { gameId, partyRoute } = useTable()
+const encounter = useEncounterStore()
+const showEncounter = useEncounterPanelShown()
+const { selection, selectCharacter } = useTableSelection()
+// The panel's column comes first and counts as a card of the carousel.
+const cardCount = computed(() => ids.value.length + (showEncounter.value ? 1 : 0))
+const sheetOffset = computed(() => (showEncounter.value ? 1 : 0))
 
 // In a game, a character that left it (taken out, its owner gone) drops out of the table at once,
 // before the route re-check rewrites the URL.
@@ -33,7 +42,8 @@ const ids = computed(() => {
 // or we entered the route with a fresh set of ids — activate the first one.
 watch(ids, (list) => {
   if (list.length === 0) {
-    store.setActive(null)
+    // On the game route with only the panel open there is no sheet to keep in sync.
+    if (!showEncounter.value) store.setActive(null)
     return
   }
   if (!store.activeId || !list.includes(store.activeId)) {
@@ -73,8 +83,8 @@ function recalcActive() {
   activeIndex.value = bestIdx
 }
 
-watch(ids, () => {
-  itemEls.value = itemEls.value.slice(0, ids.value.length)
+watch(cardCount, (n) => {
+  itemEls.value = itemEls.value.slice(0, n)
   nextTick(recalcActive)
 })
 
@@ -86,17 +96,32 @@ function scrollToIndex(i: number) {
   const el = itemEls.value[i]
   if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
 }
+
+// On a phone, opened from a later sheet, the panel would come up off-screen to the left.
+watch(showEncounter, (shown) => {
+  if (shown) nextTick(() => scrollToIndex(0))
+})
 </script>
 
 <template>
   <div class="party-stage">
     <div class="party-center" ref="scrollerRef" @scroll.passive="recalcActive">
+      <article v-if="showEncounter" :ref="el => setItemRef(el as Element | null, 0)" class="sheet-column">
+        <div class="sheet-tools">
+          <IconButton :label="t('encounter.close')" @click.stop="encounter.togglePanel()">
+            <IconClose :size="14" />
+          </IconButton>
+        </div>
+        <div class="sheet-column-body">
+          <EncounterPanel />
+        </div>
+      </article>
       <article
         v-for="(id, i) in ids"
         :key="id"
-        :ref="el => setItemRef(el as Element | null, i)"
-        :class="['sheet-column', { 'is-active': id === store.activeId }]"
-        @mousedown="store.setActive(id)"
+        :ref="el => setItemRef(el as Element | null, i + sheetOffset)"
+        :class="['sheet-column', { 'is-active': selection?.kind === 'character' && selection.id === id }]"
+        @mousedown="selectCharacter(id)"
       >
         <div class="sheet-tools">
           <SheetActions :character-id="id" />
@@ -110,10 +135,10 @@ function scrollToIndex(i: number) {
       </article>
     </div>
 
-    <div v-if="ids.length > 1" class="party-dots">
+    <div v-if="cardCount > 1" class="party-dots">
       <button
-        v-for="(id, i) in ids"
-        :key="id"
+        v-for="(_, i) in cardCount"
+        :key="i"
         type="button"
         class="party-dot"
         :class="{ 'is-active': i === activeIndex }"

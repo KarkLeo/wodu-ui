@@ -21,12 +21,6 @@ function toggleCollapsed(side: Side) {
   else rightCollapsed.value = !rightCollapsed.value
 }
 
-provide(GameLayoutContextKey, {
-  leftCollapsed,
-  rightCollapsed,
-  toggleCollapsed,
-})
-
 // Topbar clock: updates once a minute.
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const
 const now = ref(new Date())
@@ -51,6 +45,13 @@ function closeMobOverlays() {
   leftOpenMobile.value = false
   rightOpenMobile.value = false
 }
+
+provide(GameLayoutContextKey, {
+  leftCollapsed,
+  rightCollapsed,
+  toggleCollapsed,
+  closeMobileOverlays: closeMobOverlays,
+})
 
 const route = useRoute()
 watch(() => route.fullPath, closeMobOverlays)

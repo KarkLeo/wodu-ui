@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<{
   maxWidth: 520,
 })
 
+const emit = defineEmits<{ (e: 'closeAutoFocus', event: Event): void }>()
 const open = defineModel<boolean>('open', { required: true })
 </script>
 
@@ -21,6 +22,7 @@ const open = defineModel<boolean>('open', { required: true })
       <DialogContent
         class="bs-content-wrap"
         :aria-describedby="undefined"
+        @close-auto-focus="emit('closeAutoFocus', $event)"
         @click.self="open = false"
       >
         <div class="bottom-sheet" :style="{ maxWidth: `${props.maxWidth}px` }">

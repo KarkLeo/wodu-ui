@@ -3,6 +3,7 @@ import type { Character } from '@/types/character'
 import type { RollRecord } from '@/types/dice'
 import type { ChangeEntry } from '@/types/changeLog'
 import type { LibraryItem, LibraryMonster } from '@/types/library'
+import type { EncounterHit, EncounterMonster, EncounterState } from '@/types/encounter'
 
 // The bootstrap plugin points this at runtimeConfig.public.pbUrl before the first request.
 export const pb = new PocketBase('http://127.0.0.1:8090')
@@ -66,4 +67,27 @@ export interface ItemRow {
   data: LibraryItem
   created: string
   updated: string
+}
+
+export interface EncounterRow {
+  id: string
+  game: string
+  data: EncounterState
+  created: string
+  updated: string
+}
+
+export interface EncounterMonsterRow {
+  id: string
+  game: string
+  data: EncounterMonster
+  created: string
+  updated: string
+}
+
+export interface EncounterHitRow {
+  id: string
+  game: string
+  data: EncounterHit
+  created: string
 }

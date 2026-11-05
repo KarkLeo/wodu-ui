@@ -97,7 +97,7 @@ class MockResponseError extends Error {
   }
 }
 
-const LIBRARY = new Set(['monsters', 'items'])
+const LIBRARY = new Set(['monsters', 'items', 'encounters', 'encounter_monsters', 'encounter_hits'])
 
 // One object per collection name, so stories can spy on its methods.
 const collections = new Map<string, ReturnType<typeof makeCollection>>()
@@ -139,7 +139,8 @@ function makeCollection(name: string) {
       if (!LIBRARY.has(name)) return []
       const game = /^game = (".*")$/.exec(options.filter ?? '')
       const id = game ? JSON.parse(game[1]!) as string : null
-      return [...recordsOf(name).values()].filter(r => r.game === id).map(r => structuredClone(r))
+      // Through JSON, as a server would: a stored body can hold the store's reactive proxies, which structuredClone refuses.
+      return [...recordsOf(name).values()].filter(r => r.game === id).map(r => JSON.parse(JSON.stringify(r)) as typeof r)
     },
     // Answers only the invite lookup (findGameByCode): records whose invite_code equals `query.code`.
     getList: async (_page?: number, _perPage?: number, options: { query?: Record<string, unknown> } = {}) => {

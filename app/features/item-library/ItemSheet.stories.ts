@@ -2,12 +2,14 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import ItemSheet from './ItemSheet.vue'
 import { ITEMS } from '@/stories/fixtures'
+import { modalDocs } from '@/stories/docs'
 
 const byId = (id: string) => ITEMS.find(i => i.id === id)!
 const sword = byId('story-item-sword')
 
 const meta = {
   title: 'Library/ItemSheet',
+  parameters: { docs: modalDocs },
   component: ItemSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, mode: 'add', source: null, saving: false, failed: false, 'onUpdate:open': fn(), onSave: fn() },

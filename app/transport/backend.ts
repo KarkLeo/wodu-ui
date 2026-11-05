@@ -1,6 +1,6 @@
 import { pb } from '@/transport/pb'
 import { mode } from './mode'
-import { characterCreateBody, eventCreateBody } from './rows'
+import { characterCreateBody, eventCreateBody, monsterRollBody } from './rows'
 import { isNetworkError, reportNetworkProblem } from './connection'
 import { useChangeLogStore } from '@/stores/changeLog'
 import { useCharactersStore } from '@/stores/characters'
@@ -13,7 +13,7 @@ export interface Backend {
   updateCharacter(c: Character): Promise<void>
   deleteCharacter(id: string): Promise<void>
   addChanges(entries: ChangeEntry[]): Promise<void>
-  addRoll(r: RollRecord): Promise<void>
+  addRoll(r: RollRecord, game?: string): Promise<void>
 }
 
 export async function guard<T>(op: () => Promise<T>): Promise<T> {
@@ -49,8 +49,10 @@ export const pbBackend: Backend = {
     guarded(() => Promise.all(entries.map(entry =>
       pb.collection('change_events').create(eventCreateBody(entry, gameOf(entry.characterId))),
     ))),
-  addRoll: r =>
-    guarded(() => pb.collection('roll_events').create(eventCreateBody(r, gameOf(r.characterId)))),
+  addRoll: (r, game) =>
+    guarded(() => pb.collection('roll_events').create(
+      r.monster ? monsterRollBody(r, game ?? '') : eventCreateBody(r, gameOf(r.characterId)),
+    )),
 }
 
 export const localBackend: Backend = {

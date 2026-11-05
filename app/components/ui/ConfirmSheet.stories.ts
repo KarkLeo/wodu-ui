@@ -3,6 +3,7 @@ import { fn } from 'storybook/test'
 import { ref, watch } from 'vue'
 import ConfirmSheet from './ConfirmSheet.vue'
 import Button from './Button.vue'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'UI/ConfirmSheet',
@@ -36,6 +37,7 @@ const meta = {
   }),
   parameters: {
     docs: {
+      ...modalDocs,
       description: {
         component: 'Design prototype: `materials/design-vtt/design/components/magic.html` (§6 overdose dialog); shared sheet tokens in `materials/design-vtt/design/palette.html`',
       },

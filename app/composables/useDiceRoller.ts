@@ -6,7 +6,7 @@ import { reportWriteFailure } from '@/transport/writeFailure'
 import { markRollPlayedLocally } from '@/transport/bootstrap'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { refuseReadOnly, useCharactersStore } from '@/stores/characters'
-import { parseDamageNotation } from '@/utils/derived'
+import { damageRollParts } from '@/utils/derived'
 import type { RollMode, RollPurpose, RollRecord } from '@/types/dice'
 import type { StatKey } from '@/types/character'
 import { createLogger } from '@/utils/logger'
@@ -16,14 +16,14 @@ const log = createLogger('dice')
 
 export const isRolling = isAnimating
 
-function persistRoll(record: RollRecord): void {
+function persistRoll(record: RollRecord, game?: string): void {
   markRollPlayedLocally(record.id)
   useRollHistoryStore().addLocal(record)
   const dice = record.discardedDice ? [...record.dice, ...record.discardedDice] : record.dice
   void enqueueDice(dice, record.notation)
   const session = modeSession()
   void backend()
-    .addRoll(record)
+    .addRoll(record, game)
     .catch((err: unknown) => {
       log.error('persistRoll: write failed', { id: record.id, err })
       reportWriteFailure(err, t('errors.rollSyncFailed'), session)
@@ -45,6 +45,7 @@ export function useDiceRoller() {
     purpose: RollPurpose
     characterId: string
     characterName?: string
+    monster?: { id: string; n: number }
     minTotal?: number
     rollMode?: RollMode
   }): RollRecord {
@@ -69,6 +70,7 @@ export function useDiceRoller() {
       characterId: params.characterId,
       characterName: params.characterName,
     }
+    if (params.monster) record.monster = params.monster
     if (mode !== 'normal') {
       record.rollMode = mode
       if (outcome.discardedDice) record.discardedDice = outcome.discardedDice
@@ -86,13 +88,16 @@ export function useDiceRoller() {
     purpose: RollPurpose
     characterId: string
     characterName?: string
+    monster?: { id: string; n: number }
+    gameId?: string
     minTotal?: number
     rollMode?: RollMode
   }): RollRecord | null {
-    if (!mayRoll(params.characterId)) return null
+    // Monsters have no character record for mayRoll to check; useMonsterRolls guards the master instead.
+    if (!params.monster && !mayRoll(params.characterId)) return null
     log.debug('roll', { notation: params.notation, label: params.label, purpose: params.purpose.kind, characterId: params.characterId })
     const record = buildRecord(params)
-    persistRoll(record)
+    persistRoll(record, params.gameId)
     return record
   }
 
@@ -117,37 +122,14 @@ export function useDiceRoller() {
     flatBonus: number = 0,
     weaponTemplateId?: string,
   ) {
-    const cleanDamage = parseDamageNotation(baseDamage)
-    const weaponFull = damageBonusDice > 0 ? `${cleanDamage}+${damageBonusDice}d6` : cleanDamage
-    const diceCounts = new Map<number, number>()
-    let fixedMod = 0
-    for (const raw of weaponFull.split(/(?=[+\-])/)) {
-      const term = raw.trim()
-      if (!term) continue
-      const m = term.match(/^([+\-]?)(\d*)d(\d+)$/i)
-      if (m) {
-        const sign = m[1] === '-' ? -1 : 1
-        const count = (m[2] ? Number(m[2]) : 1) * sign
-        const sides = Number(m[3])
-        diceCounts.set(sides, (diceCounts.get(sides) ?? 0) + count)
-      } else {
-        fixedMod += Number(term)
-      }
-    }
-    const diceTerms: string[] = []
-    for (const [sides, count] of diceCounts) {
-      if (count === 0) continue
-      diceTerms.push(`${count}d${sides}`)
-    }
-    const notation = diceTerms.join('+').replace(/\+\-/g, '-')
-    const modifier = fixedMod + flatBonus
-    const modStr = modifier > 0 ? `+${modifier}` : modifier < 0 ? String(modifier) : ''
+    const { notation, modifier, formula } = damageRollParts(baseDamage, damageBonusDice, flatBonus)
+    const modStr = formula.slice(notation.length)
     const label = `${weaponName}: ${notation}${modStr}`
     return roll({
       notation,
       modifier,
       label,
-      purpose: { kind: 'damage', weaponName, weaponTemplateId, formula: `${notation}${modStr}` },
+      purpose: { kind: 'damage', weaponName, weaponTemplateId, formula },
       characterId,
       characterName,
       minTotal: 0,

@@ -5,9 +5,11 @@ import { brann, crookhollow, draftGear, mirel, oda, PARTY, sage, wren, CROOKHOLL
 import { withGameTable } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
 import { pb } from '../../../.storybook/mocks/pb'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'Layout/BringCharacterSheet',
+  parameters: { docs: modalDocs },
   component: BringCharacterSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { gameId: crookhollow.id, open: true, 'onUpdate:open': fn(), onBrought: fn() },

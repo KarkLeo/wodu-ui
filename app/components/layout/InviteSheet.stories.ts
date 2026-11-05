@@ -5,9 +5,11 @@ import InviteSheet from './InviteSheet.vue'
 import { crookhollow, olden, PARTY, CROOKHOLLOW_META, OLDEN_META } from '@/stories/fixtures'
 import { withGameTable } from '@/stories/state'
 import { useGamesStore } from '@/stores/games'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'Layout/InviteSheet',
+  parameters: { docs: modalDocs },
   component: InviteSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { game: crookhollow, open: true, 'onUpdate:open': fn() },

@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useCharactersStore } from '@/stores/characters'
+import { useEncounterStore } from '@/stores/encounter'
+import { useApplyHit } from '@/composables/useApplyHit'
+import { useMonsterRolls } from '@/composables/useMonsterRolls'
+import { useTableSelection } from '@/composables/useTableSelection'
+import { monsterLabel } from '@/domain/encounter'
+import ApplyHitPopover from '@/features/encounter/ApplyHitPopover.vue'
+import HitRow from '@/features/encounter/HitRow.vue'
+import DiceRollRow from './DiceRollRow.vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
 import type { RollMode, RollRecord } from '@/types/dice'
 import type { ChangeEntry, ChangeKind } from '@/types/changeLog'
-import { t, currentLocale } from '@/locales'
-import { statShort, gearName } from '@/locales/content'
+import { t } from '@/locales'
+import { logTime, rollClasses } from '@/utils/rollDisplay'
 import { formatChangeLabel, formatChangeDelta, isCoinSpend } from '@/utils/changeFormat'
 import { createLogger } from '@/utils/logger'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -23,20 +31,28 @@ import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { useGameLayout } from '@/components/layout/gameLayoutContext'
 
+const log = createLogger('dice-drawer')
+
+const charStore = useCharactersStore()
+const encounter = useEncounterStore()
+const { rollFree } = useDiceRoller()
+const { rollFreeAs } = useMonsterRolls()
+const unified = useUnifiedLog()
+const applyHit = useApplyHit()
+const { selection } = useTableSelection()
+const layout = useGameLayout()
+
 const filterOptions = computed<Array<{ value: LogFilter; label: string }>>(() => [
   { value: 'rolls', label: t('diceDrawer.filter.rolls') },
   { value: 'changes', label: t('diceDrawer.filter.changes') },
   { value: 'all', label: t('diceDrawer.filter.all') },
+  ...(applyHit.enabled.value ? [{ value: 'hits' as const, label: t('encounter.log.hits') }] : []),
 ])
 
-const log = createLogger('dice-drawer')
-
-const charStore = useCharactersStore()
-const { rollFree } = useDiceRoller()
-const unified = useUnifiedLog()
-const layout = useGameLayout()
-
 const filter = ref<LogFilter>('all')
+watch(() => applyHit.enabled.value, (on) => {
+  if (!on && filter.value === 'hits') filter.value = 'all'
+})
 const notation = ref('2d6')
 const notationError = ref('')
 const recentId = ref<string | null>(null)
@@ -46,11 +62,11 @@ function toggleMode(mode: Exclude<RollMode, 'normal'>) {
   pendingMode.value = pendingMode.value === mode ? 'normal' : mode
 }
 
-// Rolls go to the active character, only one at the open table, and only one the user can edit (not a
-// teammate's read-only sheet).
+// Rolls go to the selected character: at the open table, with an open sheet, and only one the user can edit (not
+// a teammate's read-only sheet).
 const scopedActive = computed(() => {
-  const c = charStore.active
-  return c && charStore.inScope(c.id) ? c : undefined
+  const sel = selection.value
+  return sel?.kind === 'character' ? charStore.getById(sel.id) : undefined
 })
 const activeChar = computed(() => {
   const c = scopedActive.value
@@ -59,6 +75,47 @@ const activeChar = computed(() => {
 const readOnlyActive = computed(() => (activeChar.value ? undefined : scopedActive.value))
 
 const items = computed(() => unified.filtered(filter.value))
+const listed = computed(() => (filter.value === 'hits' ? applyHit.hits.value.length : items.value.length))
+
+// A selected monster rolls in place of the active character; only the master has one. While its encounter is not
+// ready the bar stays shut: the roll goes out to everyone, so it never falls through to the character.
+const rollingMonster = computed(() => {
+  const sel = selection.value
+  return sel?.kind === 'monster' ? encounter.monsterById(sel.id) : undefined
+})
+const canRoll = computed(() => (rollingMonster.value ? applyHit.enabled.value : !!activeChar.value))
+
+const applicableIds = computed(() => new Set(
+  items.value.filter(i => i.kind === 'roll' && applyHit.applicable(i.payload)).map(i => i.id),
+))
+const hitLines = computed(() => new Map(
+  items.value.filter(i => i.kind === 'roll').map(i => [i.id, applyHit.hitsOf(i.id)]),
+))
+
+const logEl = ref<HTMLElement | null>(null)
+const popup = ref<{ roll: RollRecord; el: HTMLElement } | null>(null)
+const popupOpen = computed({
+  get: () => popup.value !== null,
+  set: (open) => { if (!open) popup.value = null },
+})
+
+function openApply(roll: RollRecord, el: HTMLElement) {
+  popup.value = popup.value?.roll.id === roll.id ? null : { roll, el }
+}
+
+function onApply(amount: number) {
+  const open = popup.value
+  if (open) void applyHit.apply(open.roll, amount)
+}
+
+// The popup belongs to one roll and one target: when the target goes or changes, or the roll can no longer go there, it closes.
+watch(() => {
+  const tg = applyHit.target.value
+  return tg ? `${tg.kind}:${tg.id}` : null
+}, () => { popup.value = null })
+watch(() => !!popup.value && !applyHit.applicable(popup.value.roll), (gone) => {
+  if (gone) popup.value = null
+})
 
 const railHistory = computed<RollRecord[]>(() =>
   unified.filtered('rolls')
@@ -80,7 +137,7 @@ function isValidNotation(n: string): boolean {
 }
 
 async function doRoll(notationStr: string) {
-  if (!activeChar.value) return
+  if (!canRoll.value) return
   const norm = normalize(notationStr)
   if (!isValidNotation(notationStr)) {
     notationError.value = t('diceDrawer.input.error')
@@ -89,7 +146,9 @@ async function doRoll(notationStr: string) {
   notationError.value = ''
   const mode = pendingMode.value
   try {
-    await rollFree(activeChar.value.id, activeChar.value.name, norm, mode)
+    const monster = rollingMonster.value
+    if (monster) rollFreeAs(monster, norm, mode)
+    else if (activeChar.value) await rollFree(activeChar.value.id, activeChar.value.name, norm, mode)
   } catch (e) {
     log.error('roll failed', e)
   } finally {
@@ -105,53 +164,10 @@ async function onSubmit() {
 
 function onInput() { if (notationError.value) notationError.value = '' }
 
-function formatTime(ts: number) {
-  return new Date(ts).toLocaleTimeString(currentLocale.value, { hour: '2-digit', minute: '2-digit' })
-}
-
 function authorFor(charId: string, charName?: string): string {
   if (charName) return charName
   const live = charStore.list.find(c => c.id === charId)
   return live?.name ?? '—'
-}
-
-function rollMetaLabel(r: RollRecord): string {
-  if (r.purpose.kind === 'stat') return statShort(r.purpose.statKey)
-  if (r.purpose.kind === 'damage') return t('diceDrawer.meta.damage')
-  if (r.purpose.kind === 'hit-dice') return t('diceDrawer.rollMeta.hitDice')
-  if (r.purpose.kind === 'hp-init') return t('diceDrawer.rollMeta.hpInit')
-  if (r.rollMode === 'advantage') return t('diceDrawer.mode.advantage')
-  if (r.rollMode === 'disadvantage') return t('diceDrawer.mode.disadvantage')
-  return t('diceDrawer.meta.manual')
-}
-
-function rollMetaSecondary(r: RollRecord): string | null {
-  if (r.purpose.kind === 'damage') return gearName(r.purpose.weaponTemplateId, r.purpose.weaponName)
-  return null
-}
-
-function rollClasses(r: RollRecord) {
-  const isStat = r.purpose.kind === 'stat'
-  const isD20 = r.notation.toLowerCase() === 'd20' || r.notation.toLowerCase() === '1d20'
-  const crit =
-    (isStat && r.total >= 12) ||
-    (isD20 && r.diceTotal === 20)
-  const success = isStat && !crit && r.total >= 10 && r.total <= 11
-  const fail = isStat && !crit && r.total <= 6
-  return {
-    'is-crit': crit,
-    'is-success': success,
-    'is-fail': fail,
-    'is-damage': r.purpose.kind === 'damage',
-    'is-advantage': r.rollMode === 'advantage',
-    'is-disadvantage': r.rollMode === 'disadvantage',
-    'is-fresh': r.id === recentId.value,
-  }
-}
-
-function rollExpr(r: RollRecord): string {
-  const mod = r.modifier ? (r.modifier > 0 ? `+${r.modifier}` : String(r.modifier)) : ''
-  return `${r.notation}${mod}`
 }
 
 const LOG_CLASS_MAP: Record<ChangeKind, string> = {
@@ -238,7 +254,7 @@ function logDelta(e: ChangeEntry): string | undefined {
       type="button"
       class="btn-rail-roll"
       :aria-label="t('diceDrawer.rail.rollFree')"
-      :disabled="!activeChar || isRolling"
+      :disabled="!canRoll || isRolling"
       @click="doRoll('2d6')"
     >
       <IconDice :size="18" />
@@ -273,70 +289,52 @@ function logDelta(e: ChangeEntry): string | undefined {
       <SegmentedFilter v-model="filter" :options="filterOptions" variant="pill" full-width />
     </div>
 
-    <div class="drawer-log">
-      <div v-if="!items.length" class="drawer-empty">
-        <EmptyState variant="plain" :title="t('diceDrawer.empty.title')" :hint="t('diceDrawer.empty.hint')">
+    <div ref="logEl" class="drawer-log" tabindex="-1">
+      <div v-if="!listed" class="drawer-empty">
+        <EmptyState
+          variant="plain"
+          :title="filter === 'hits' ? t('encounter.log.hitsEmpty') : t('diceDrawer.empty.title')"
+          :hint="filter === 'hits' ? undefined : t('diceDrawer.empty.hint')"
+        >
           <template #icon><IconDice /></template>
         </EmptyState>
       </div>
 
-      <template v-for="item in items" :key="item.id">
-        <div
-          v-if="item.kind === 'roll'"
-          class="dice-row"
-          :class="rollClasses(item.payload)"
-        >
-          <span class="dice-row-glyph" aria-hidden="true">
-            <svg v-if="item.payload.purpose.kind === 'damage'" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 1.5 C8 1.5 3 6.5 3 10 C3 12.761 5.239 15 8 15 C10.761 15 13 12.761 13 10 C13 6.5 8 1.5 8 1.5 Z"/>
-            </svg>
-            <svg v-else viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-              <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
-              <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
-            </svg>
-          </span>
-          <div class="dice-row-body">
-            <div class="dice-row-meta">
-              <b>{{ rollMetaLabel(item.payload) }}</b>
-              <template v-if="rollMetaSecondary(item.payload)">
-                <span class="dot"></span><span class="dice-row-meta-secondary">{{ rollMetaSecondary(item.payload) }}</span>
-              </template>
-              <span class="dot"></span><span class="dice-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span class="dice-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
-            </div>
-            <div class="dice-row-formula">
-              <span class="f-expr">{{ rollExpr(item.payload) }}</span>
-              <span v-if="item.payload.dice.length" class="f-rolls">
-                ·&nbsp;
-                <template v-for="(d, i) in item.payload.dice" :key="i">
-                  <em>{{ d.value }}</em><template v-if="i < item.payload.dice.length - 1"> + </template>
-                </template>
-              </span>
-              <span v-if="item.payload.discardedTotal !== undefined" class="f-alt">
-                · {{ t('diceDrawer.mode.alt') }} {{ item.payload.discardedTotal }}
-              </span>
-            </div>
-          </div>
-          <div class="dice-row-result">{{ item.payload.total }}</div>
-        </div>
+      <template v-if="filter === 'hits'">
+        <HitRow v-for="hit in applyHit.hits.value" :key="hit.id" :hit="hit" />
+      </template>
 
-        <div v-else class="log-row" :class="logClass(item.payload)">
-          <span class="log-row-glyph" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
-              <circle cx="8" cy="8" r="6"/>
-              <path d="M8 5 v6 M6 7 h4" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <div class="log-row-body">
-            <div class="log-row-meta">
-              <b>{{ logMeta(item.payload) }}</b>
-              <span class="dot"></span><span class="log-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span class="log-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
+      <template v-else>
+        <template v-for="item in items" :key="item.id">
+          <DiceRollRow
+            v-if="item.kind === 'roll'"
+            :roll="item.payload"
+            :author="authorFor(item.payload.characterId, item.payload.characterName)"
+            :fresh="item.id === recentId"
+            :apply-to="applicableIds.has(item.id) ? applyHit.target.value?.name : undefined"
+            :expanded="popup?.roll.id === item.id"
+            :hits="hitLines.get(item.id)"
+            @open="el => openApply(item.payload, el)"
+          />
+
+          <div v-else class="log-row" :class="logClass(item.payload)">
+            <span class="log-row-glyph" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M8 5 v6 M6 7 h4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta">
+                <b>{{ logMeta(item.payload) }}</b>
+                <span class="dot"></span><span class="log-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
+                <span class="dot"></span><span class="log-row-meta-time">{{ logTime(item.payload.timestamp) }}</span>
+              </div>
+              <div class="log-row-label">{{ logLabel(item.payload) }}</div>
             </div>
-            <div class="log-row-label">{{ logLabel(item.payload) }}</div>
+            <div v-if="logDelta(item.payload)" class="log-row-delta"><span class="log-row-delta-text">{{ logDelta(item.payload) }}</span></div>
           </div>
-          <div v-if="logDelta(item.payload)" class="log-row-delta"><span class="log-row-delta-text">{{ logDelta(item.payload) }}</span></div>
-        </div>
+        </template>
       </template>
     </div>
 
@@ -347,7 +345,7 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="button"
           class="mode-chip"
           :class="{ 'is-armed': pendingMode === 'advantage' }"
-          :disabled="isRolling || !activeChar"
+          :disabled="isRolling || !canRoll"
           :aria-pressed="pendingMode === 'advantage'"
           @click="toggleMode('advantage')"
         >
@@ -360,7 +358,7 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="button"
           class="mode-chip"
           :class="{ 'is-armed': pendingMode === 'disadvantage' }"
-          :disabled="isRolling || !activeChar"
+          :disabled="isRolling || !canRoll"
           :aria-pressed="pendingMode === 'disadvantage'"
           @click="toggleMode('disadvantage')"
         >
@@ -378,7 +376,7 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="button"
           class="qr-chip"
           :class="{ 'is-highlight': n === '2d6' }"
-          :disabled="isRolling || !activeChar"
+          :disabled="isRolling || !canRoll"
           @click="doRoll(n)"
         >{{ n }}</button>
       </div>
@@ -390,23 +388,34 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="text"
           v-model="notation"
           :placeholder="t('diceDrawer.input.placeholder')"
-          :disabled="!activeChar || isRolling"
+          :disabled="!canRoll || isRolling"
           @keyup.enter="onSubmit"
           @input="onInput"
         />
         <Button
           variant="hero"
           :icon-left="IconDiceOutline"
-          :disabled="!activeChar || isRolling || !notation.trim()"
+          :disabled="!canRoll || isRolling || !notation.trim()"
           @click="onSubmit"
         >{{ t('diceDrawer.input.submit') }}</Button>
       </div>
-      <div v-if="notationError || readOnlyActive || !activeChar" class="drawer-input-note">
+      <div v-if="notationError || rollingMonster || readOnlyActive || !activeChar" class="drawer-input-note">
         <FormError v-if="notationError">{{ notationError }}</FormError>
+        <StateNote v-else-if="rollingMonster" inline align="start" size="xs">{{ t('encounter.log.rollingAs', { name: monsterLabel(rollingMonster) }) }}</StateNote>
         <StateNote v-else-if="readOnlyActive" inline align="start" size="xs">{{ t('diceDrawer.input.readOnly', { name: readOnlyActive.name }) }}</StateNote>
         <StateNote v-else inline align="start" size="xs">{{ t('diceDrawer.input.hint') }}</StateNote>
       </div>
     </div>
+
+    <ApplyHitPopover
+      v-if="popup && applyHit.target.value"
+      v-model:open="popupOpen"
+      :roll="popup.roll"
+      :target="applyHit.target.value"
+      :anchor="popup.el"
+      :fallback="logEl"
+      @apply="onApply"
+    />
   </aside>
 </template>
 
@@ -442,6 +451,7 @@ function logDelta(e: ChangeEntry): string | undefined {
   flex-direction: column-reverse;
   gap: 6px;
 }
+.drawer-log:focus { outline: none; }
 .drawer-log::-webkit-scrollbar { width: 4px; }
 .drawer-log::-webkit-scrollbar-thumb {
   background: var(--vtt-border-strong);
@@ -450,117 +460,6 @@ function logDelta(e: ChangeEntry): string | undefined {
 .drawer-log::-webkit-scrollbar-track { background: transparent; }
 
 .drawer-empty { flex: 1; min-height: 200px; display: flex; align-items: center; }
-
-/* Dice row */
-.dice-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  column-gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  background: var(--vtt-elevated-a55);
-  border-radius: var(--r-md);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  transition: background var(--t-fast) var(--ease);
-}
-.dice-row:hover { background: var(--vtt-elevated-a72); }
-.dice-row-glyph {
-  width: 24px; height: 24px;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--vtt-text-muted);
-  flex-shrink: 0;
-}
-.dice-row-glyph svg { width: 16px; height: 16px; }
-.dice-row-body { min-width: 0; }
-.dice-row-meta {
-  display: flex; gap: 8px; align-items: center;
-  font-family: var(--font-mono); font-size: 10px;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--vtt-text-muted);
-  margin-bottom: 2px;
-  min-width: 0;
-  white-space: nowrap;
-}
-.dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
-.dice-row-meta-secondary {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  flex-shrink: 1;
-}
-.dice-row-meta-author {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  flex-shrink: 1;
-}
-.dice-row-meta-time { flex-shrink: 0; white-space: nowrap; }
-.dice-row-meta .dot {
-  width: 3px; height: 3px; border-radius: var(--r-pill);
-  background: var(--vtt-text-muted); opacity: 0.6;
-  flex-shrink: 0;
-}
-.dice-row-formula {
-  font-family: var(--font-serif);
-  font-size: 14px;
-  color: var(--vtt-text-secondary);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.dice-row-formula .f-expr { color: var(--vtt-text-primary); font-weight: 500; }
-.dice-row-formula .f-rolls { color: var(--vtt-text-muted); font-style: italic; margin: 0 4px; }
-.dice-row-formula .f-rolls em { color: var(--vtt-text-secondary); font-style: normal; }
-.dice-row-formula .f-alt {
-  color: var(--vtt-text-muted);
-  font-style: italic;
-  margin-left: 4px;
-  font-size: 12px;
-}
-.dice-row-result {
-  min-width: 40px;
-  height: 40px; padding: 0 8px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--vtt-sunken-a45);
-  border-radius: var(--r-md);
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--vtt-accent-soft);
-  line-height: 1;
-  flex-shrink: 0;
-}
-.dice-row.is-crit {
-  background: linear-gradient(to right, var(--vtt-gold-a20), var(--vtt-elevated-a55) 60%);
-  box-shadow: inset 0 0 0 1px var(--vtt-accent-a25);
-}
-.dice-row.is-crit .dice-row-result {
-  background: var(--vtt-accent);
-  color: var(--vtt-bg-base);
-  box-shadow: 0 0 14px var(--vtt-accent-a35);
-}
-.dice-row.is-crit .dice-row-glyph { color: var(--vtt-accent); }
-.dice-row.is-success {
-  outline: 1px solid var(--vtt-accent-a25);
-  outline-offset: -1px;
-}
-.dice-row.is-success .dice-row-result {
-  color: var(--vtt-accent);
-}
-.dice-row.is-success .dice-row-glyph { color: var(--vtt-accent); opacity: 0.85; }
-.dice-row.is-fail { background: var(--vtt-danger-a18); }
-.dice-row.is-fail .dice-row-result {
-  color: var(--vtt-danger-bright);
-  background: var(--vtt-danger-a18);
-}
-.dice-row.is-fail .dice-row-glyph { color: var(--vtt-danger-bright); opacity: 0.75; }
-.dice-row.is-damage .dice-row-glyph { color: var(--vtt-danger-bright); }
-.dice-row.is-advantage .dice-row-glyph { color: var(--vtt-accent); }
-.dice-row.is-advantage .dice-row-meta b { color: var(--vtt-accent); }
-.dice-row.is-disadvantage .dice-row-glyph { color: var(--vtt-warning, var(--vtt-danger-bright)); }
-.dice-row.is-disadvantage .dice-row-meta b { color: var(--vtt-warning, var(--vtt-danger-bright)); }
-.dice-row.is-fresh { animation: dice-row-fresh 1600ms var(--ease); }
 
 /* Log row */
 .log-row {

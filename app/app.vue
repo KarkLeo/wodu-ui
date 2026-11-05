@@ -14,6 +14,7 @@ import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
+import { useEncounterSession } from '@/composables/useEncounterSession'
 import { useTable } from '@/composables/useTable'
 import { currentUser, signedIn } from '@/transport/auth'
 import { authGate } from '@/transport/authHelpers'
@@ -39,6 +40,8 @@ const shell = computed(() => route.meta.shell ?? 'table')
 // The open table follows the route; online loading (events, the game's characters) follows the table.
 const { tableScope } = useTable()
 watch(tableScope, setScope, { immediate: true })
+
+useEncounterSession()
 
 // An invite link opened while signed out shows the game's name above the sign-in form.
 const inviteGameName = ref<string | undefined>()

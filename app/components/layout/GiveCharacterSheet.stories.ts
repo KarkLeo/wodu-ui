@@ -5,9 +5,11 @@ import { brann, crookhollow, MEMBERS, PARTY, CROOKHOLLOW_META } from '@/stories/
 import { withGameTable } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
 import { pb } from '../../../.storybook/mocks/pb'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'Layout/GiveCharacterSheet',
+  parameters: { docs: modalDocs },
   component: GiveCharacterSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { characterId: brann.id, gameId: crookhollow.id, open: true, 'onUpdate:open': fn(), onGiven: fn() },

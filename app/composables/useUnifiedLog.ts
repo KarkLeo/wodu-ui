@@ -8,7 +8,8 @@ export type LogItem =
   | { kind: 'roll'; id: string; timestamp: number; payload: RollRecord }
   | { kind: 'change'; id: string; timestamp: number; payload: ChangeEntry }
 
-export type LogFilter = 'all' | 'rolls' | 'changes'
+/** `hits` is the master's list of applied damage; it has no items here, the drawer lists hits from the encounter. */
+export type LogFilter = 'all' | 'rolls' | 'changes' | 'hits'
 
 export function useUnifiedLog() {
   const rolls = useRollHistoryStore()
@@ -23,6 +24,7 @@ export function useUnifiedLog() {
   function filtered(filter: LogFilter): LogItem[] {
     if (filter === 'rolls') return items.value.filter(i => i.kind === 'roll')
     if (filter === 'changes') return items.value.filter(i => i.kind === 'change')
+    if (filter === 'hits') return []
     return items.value
   }
 
