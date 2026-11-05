@@ -17,6 +17,7 @@ import InviteSheet from './InviteSheet.vue'
 import MembersSheet from './MembersSheet.vue'
 import BringCharacterSheet from './BringCharacterSheet.vue'
 import { useEncounterStore } from '@/stores/encounter'
+import { useGameLayout } from './gameLayoutContext'
 import { useGameAction } from '@/composables/useGameAction'
 import { exitGameQuietly } from '@/composables/useRouteRecheck'
 import { currentUser } from '@/transport/auth'
@@ -31,6 +32,12 @@ const props = defineProps<{ game: Game }>()
 const router = useRouter()
 const { busy, run } = useGameAction()
 const encounter = useEncounterStore()
+const layout = useGameLayout()
+
+function toggleEncounter() {
+  encounter.togglePanel()
+  layout?.closeMobileOverlays()
+}
 
 const master = computed(() => isMaster(props.game, currentUser.value?.id ?? null))
 
@@ -78,7 +85,7 @@ function goHome() {
           <DropdownMenuItem class="gm-item" @select="openSettings">{{ t('games.menu.settings') }}</DropdownMenuItem>
           <DropdownMenuItem class="gm-item" @select="openMonsters">{{ t('games.menu.monsters') }}</DropdownMenuItem>
           <DropdownMenuItem class="gm-item" @select="openItems">{{ t('games.menu.items') }}</DropdownMenuItem>
-          <DropdownMenuItem class="gm-item" @select="encounter.togglePanel()">{{ t('games.menu.encounter') }}</DropdownMenuItem>
+          <DropdownMenuItem class="gm-item" @select="toggleEncounter">{{ t('games.menu.encounter') }}</DropdownMenuItem>
         </template>
         <template v-else>
           <DropdownMenuItem class="gm-item" @select="inviteOpen = true">{{ t('games.menu.invite') }}</DropdownMenuItem>

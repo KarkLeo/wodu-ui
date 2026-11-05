@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import GameLayout from './GameLayout.vue'
 import PlayersPanel from './PlayersPanel.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
 import PartyView from '@/features/in-game/PartyView.vue'
 import { brann, wren, sage, PARTY, ROLLS, CHANGES, crookhollow, CROOKHOLLOW_META } from '@/stories/fixtures'
+import { useEncounterStore } from '@/stores/encounter'
 import { atRoute, DESKTOP_VIEWPORT, withGameTable, withStores } from '@/stories/state'
 
 const PHONE = { viewport: { value: 'phone', isRotated: false } }
@@ -117,6 +118,23 @@ export const PhoneGamePlayers: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
   play: async ({ canvasElement }) => {
     await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Players' }))
+  },
+}
+
+/** Opening the encounter panel from the phone's players drawer closes the drawer, so the panel shows at once. */
+export const PhoneEncounterRowClosesDrawer: Story = {
+  globals: PHONE,
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  play: async ({ canvasElement }) => {
+    const encounter = useEncounterStore()
+    encounter.clearAll()
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Players' }))
+    const drawer = canvasElement.querySelector('aside.mob-side') as HTMLElement
+    await expect(drawer).toBeTruthy()
+    await userEvent.click(await within(drawer).findByRole('button', { name: 'Encounter' }))
+    await expect(encounter.panelOpen).toBe(true)
+    await waitFor(() => expect(canvasElement.querySelector('aside.mob-side')).toBeNull())
   },
 }
 

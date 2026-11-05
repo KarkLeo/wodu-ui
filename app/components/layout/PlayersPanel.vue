@@ -102,6 +102,12 @@ function toggleCharacter(id: string) {
   selectCharacter(id)
 }
 
+// The panel opens without a route change, so the phone's drawer would stay over it.
+function toggleEncounter() {
+  encounter.togglePanel()
+  layout?.closeMobileOverlays()
+}
+
 // Inside a game the draft is created in it (createDraft follows the scope) and the wizard stays there.
 async function startNew() {
   creation.reset()
@@ -166,7 +172,7 @@ async function startNew() {
         :title="t('encounter.title')"
         :selected="encounter.panelOpen"
         :pressed="encounter.panelOpen"
-        @click="encounter.togglePanel()"
+        @click="toggleEncounter"
       />
 
       <ListRow

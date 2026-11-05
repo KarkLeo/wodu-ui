@@ -6,6 +6,8 @@ export interface GameLayoutContext {
   leftCollapsed: Ref<boolean>
   rightCollapsed: Ref<boolean>
   toggleCollapsed: (side: Side) => void
+  /** Closes the phone's side drawers: an action that changes the page without a route change calls it. */
+  closeMobileOverlays: () => void
 }
 
 export const GameLayoutContextKey: InjectionKey<GameLayoutContext> = Symbol('GameLayoutContext')

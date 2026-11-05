@@ -123,6 +123,7 @@ export function inLayout(collapsed: Partial<Record<Side, boolean>> = {}): Decora
           const target = side === 'left' ? leftCollapsed : rightCollapsed
           target.value = !target.value
         },
+        closeMobileOverlays: () => {},
       })
     },
     template: '<story />',
