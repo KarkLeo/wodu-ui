@@ -6,6 +6,7 @@ import { crookhollow, itemRows, ITEMS, olden, PARTY, sage, CROOKHOLLOW_META, OLD
 import { atRoute, DESKTOP_VIEWPORT, withGameTable } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
+import { GEAR_CATALOG } from '@/data/gear'
 import { useGamesStore } from '@/stores/games'
 import { useCharactersStore } from '@/stores/characters'
 import { useLibraryStore } from '@/stores/library'
@@ -111,7 +112,8 @@ export const KindFilter: Story = {
     await userEvent.click(within(filter).getByRole('radio', { name: 'Other' }))
     await expect(names(canvasElement)).toEqual(['Smuggler map'])
     await userEvent.click(within(filter).getByRole('radio', { name: 'Tools' }))
-    await expect(canvas.getByRole('status')).toHaveTextContent('Nothing of this kind matches.')
+    await expect(canvas.queryByRole('list', { name: 'Item library' })).toBeNull()
+    await expect(canvas.getByRole('list', { name: 'From the rulebook' })).toBeVisible()
     await userEvent.click(within(filter).getByRole('radio', { name: 'All' }))
     await expect(names(canvasElement)).toEqual(ALL)
   },
@@ -154,14 +156,59 @@ export const NoMatches: Story = {
   },
 }
 
-/** A new game's library: what to do next, and the button to do it. */
-export const Empty: Story = {
+const rulebook = (canvasElement: HTMLElement) => within(canvasElement).findByRole('list', { name: 'From the rulebook' }).then(l => within(l))
+
+/** A new game's library is usable at once: the rulebook's equipment is there, read-only, with a way to add more. */
+export const NewGame: Story = {
   decorators: [withLibrary([])],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText('No items yet.')).toBeVisible()
+    const book = await rulebook(canvasElement)
+    await expect(canvas.getByText(/None of your own yet/)).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'New item' })).toBeVisible()
-    await expect(canvas.queryByRole('list')).toBeNull()
+    await expect(canvas.queryByRole('list', { name: 'Item library' })).toBeNull()
+    await expect(book.getAllByRole('listitem')).toHaveLength(GEAR_CATALOG.length)
+    await expect(canvas.getByRole('radio', { name: 'Weapons' })).toBeVisible()
+  },
+}
+
+/** Giving a rulebook item hands out the catalog item itself, in two taps. */
+export const GiveRulebookItem: Story = {
+  tags: ['no-visual'],
+  decorators: [withLibrary([])],
+  play: async ({ canvasElement }) => {
+    const book = await rulebook(canvasElement)
+    const item = book.getByRole('listitem', { name: 'Shield' })
+    await userEvent.click(within(item).getAllByRole('button')[0]!)
+    await expect(within(item).queryByRole('button', { name: 'Edit' })).toBeNull()
+    await expect(within(item).queryByRole('button', { name: 'Delete' })).toBeNull()
+    await userEvent.click(within(item).getByRole('button', { name: 'Give' }))
+    const pick = await sheet(canvasElement, 'Give “Shield”')
+    await userEvent.click(pick.getByRole('button', { name: /Wren Ashfoot/ }))
+    await waitFor(() => expect(toastTexts()).toContain('Wren Ashfoot got Shield.'))
+    const given = useCharactersStore().getById('story-wren')!.inventory.find(i => i.templateId === 'shield')
+    await expect(given).toMatchObject({ name: '', descriptor: { kind: 'shield' }, price: 10 })
+  },
+}
+
+/** Copying a rulebook item saves an ordinary entry of the game's own, with no tie to the catalog. */
+export const CopyRulebookItem: Story = {
+  tags: ['no-visual'],
+  decorators: [withLibrary([])],
+  play: async ({ canvasElement }) => {
+    const create = spyOn(pb.collection('items'), 'create')
+    const book = await rulebook(canvasElement)
+    const item = book.getByRole('listitem', { name: 'Shield' })
+    await userEvent.click(within(item).getAllByRole('button')[0]!)
+    await userEvent.click(within(item).getByRole('button', { name: 'Copy' }))
+    const form = await sheet(canvasElement, 'New copy')
+    await expect(form.getByLabelText('Name')).toHaveValue('Shield (copy)')
+    await userEvent.click(form.getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    const sent = create.mock.calls[0]![0] as { id: string; data: LibraryItem }
+    await expect(sent.data).toEqual({ id: sent.id, name: 'Shield (copy)', descriptor: { kind: 'shield' }, price: 10, notes: '+1 armor.' })
+    await waitFor(() => expect(names(canvasElement)).toEqual(['Shield (copy)']))
   },
 }
 

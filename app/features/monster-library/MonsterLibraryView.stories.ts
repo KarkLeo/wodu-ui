@@ -6,6 +6,7 @@ import { crookhollow, monsterRows, MONSTERS, olden, PARTY, sage, CROOKHOLLOW_MET
 import { atRoute, DESKTOP_VIEWPORT, withGameTable } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
+import { STARTER_MONSTERS } from '@/data/starterMonsters'
 import { useGamesStore } from '@/stores/games'
 import { useLibraryStore } from '@/stores/library'
 import { useToastsStore } from '@/stores/toasts'
@@ -103,8 +104,8 @@ export const Search: Story = {
     await userEvent.type(search, ' road')
     await expect(names(canvasElement)).toEqual(['Wolf'])
     await userEvent.clear(search)
-    await userEvent.type(search, 'dragon')
-    await expect(canvas.getByRole('status')).toHaveTextContent('Nothing matches “dragon”.')
+    await userEvent.type(search, 'zzz')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Nothing matches “zzz”.')
     await userEvent.clear(search)
     await expect(names(canvasElement)).toHaveLength(4)
   },
@@ -114,18 +115,61 @@ export const NoMatches: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await loaded(canvasElement)
-    await userEvent.type(canvas.getByRole('searchbox', { name: 'Search monsters' }), 'dragon')
+    await userEvent.type(canvas.getByRole('searchbox', { name: 'Search monsters' }), 'zzz')
   },
 }
 
-/** A new game's library: what to do next, and the button to do it. */
-export const Empty: Story = {
+const starter = (canvasElement: HTMLElement) => within(canvasElement).findByRole('list', { name: 'Starter set' }).then(l => within(l))
+
+/** A new game's library is usable at once: the starter set is there, read-only, with a way to add more. */
+export const NewGame: Story = {
   decorators: [withLibrary([])],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText('No monsters yet.')).toBeVisible()
+    const set = await starter(canvasElement)
+    await expect(canvas.getByText(/None of your own yet/)).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'New monster' })).toBeVisible()
-    await expect(canvas.queryByRole('list')).toBeNull()
+    await expect(canvas.queryByRole('list', { name: 'Monster library' })).toBeNull()
+    await expect(set.getAllByRole('listitem')).toHaveLength(STARTER_MONSTERS.length)
+    await expect(set.getByRole('button', { name: /Ogre.*18 HP.*armor 1.*1d6\+2/ })).toBeVisible()
+  },
+}
+
+/** The search covers the starter set too. */
+export const SearchStarterSet: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await loaded(canvasElement)
+    await userEvent.type(canvas.getByRole('searchbox', { name: 'Search monsters' }), 'dragon')
+    const set = await starter(canvasElement)
+    await expect(set.getAllByRole('listitem')).toHaveLength(1)
+    await expect(canvas.queryByRole('list', { name: 'Monster library' })).toBeNull()
+  },
+}
+
+/** A starter monster cannot be changed; copying it opens the form and saves an entry of the game's own. */
+export const CopyStarterMonster: Story = {
+  tags: ['no-visual'],
+  decorators: [withLibrary([])],
+  play: async ({ canvasElement }) => {
+    const create = spyOn(pb.collection('monsters'), 'create')
+    const set = await starter(canvasElement)
+    const dragon = set.getByRole('listitem', { name: 'Dragon' })
+    await userEvent.click(within(dragon).getAllByRole('button')[0]!)
+    await expect(within(dragon).queryByRole('button', { name: 'Edit' })).toBeNull()
+    await expect(within(dragon).queryByRole('button', { name: 'Delete' })).toBeNull()
+    await userEvent.click(within(dragon).getByRole('button', { name: 'Duplicate' }))
+    const form = await sheet(canvasElement, 'New variant')
+    await expect(form.getByLabelText('Name')).toHaveValue('Dragon (copy)')
+    await userEvent.click(form.getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    const sent = create.mock.calls[0]![0] as { id: string; data: LibraryMonster }
+    await expect(sent.id).not.toBe('starter-dragon')
+    await expect(sent.data).toMatchObject({ id: sent.id, name: 'Dragon (copy)', hp: 60, armor: 3, damage: '2d6+2' })
+    await waitFor(() => expect(names(canvasElement)).toEqual(['Dragon (copy)']))
+    await expect((await starter(canvasElement)).getAllByRole('listitem')).toHaveLength(STARTER_MONSTERS.length)
   },
 }
 

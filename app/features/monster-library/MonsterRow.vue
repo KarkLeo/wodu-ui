@@ -9,7 +9,11 @@ import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import type { LibraryMonster } from '@/types/library'
 import { t } from '@/locales'
 
-const props = defineProps<{ monster: LibraryMonster }>()
+const props = defineProps<{
+  monster: LibraryMonster
+  /** A starter entry: it can only be copied. */
+  readonly?: boolean
+}>()
 const emit = defineEmits<{
   (e: 'edit'): void
   (e: 'duplicate'): void
@@ -33,9 +37,9 @@ const details = computed(() => [
       <ItemStatChip variant="damage">{{ monster.damage }}</ItemStatChip>
     </template>
     <template #actions>
-      <Button variant="ghost" size="sm" :icon-left="IconEdit" @click="emit('edit')">{{ t('library.monsters.edit') }}</Button>
+      <Button v-if="!readonly" variant="ghost" size="sm" :icon-left="IconEdit" @click="emit('edit')">{{ t('library.monsters.edit') }}</Button>
       <Button variant="ghost" size="sm" :icon-left="IconPlus" @click="emit('duplicate')">{{ t('library.monsters.duplicate') }}</Button>
-      <Button variant="danger-ghost" size="sm" :icon-left="IconTrash" class="mr-delete" @click="emit('delete')">
+      <Button v-if="!readonly" variant="danger-ghost" size="sm" :icon-left="IconTrash" class="mr-delete" @click="emit('delete')">
         {{ t('library.monsters.delete') }}
       </Button>
     </template>

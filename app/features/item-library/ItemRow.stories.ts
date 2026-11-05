@@ -62,6 +62,19 @@ export const Expanded: Story = {
   },
 }
 
+/** A starter entry: it can be given and copied, not edited or deleted. */
+export const ReadOnly: Story = {
+  args: { expanded: true, readonly: true },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getAllByRole('button').slice(1).map(b => b.textContent?.trim())).toEqual(['Give', 'Copy'])
+    await userEvent.click(canvas.getByRole('button', { name: 'Give' }))
+    await expect(args.onGive).toHaveBeenCalledOnce()
+    await userEvent.click(canvas.getByRole('button', { name: 'Copy' }))
+    await expect(args.onDuplicate).toHaveBeenCalledOnce()
+  },
+}
+
 /** Open, without notes: just the actions. */
 export const NoNotes: Story = {
   args: { item: sword, expanded: true },

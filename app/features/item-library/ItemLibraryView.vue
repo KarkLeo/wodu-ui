@@ -6,9 +6,9 @@ import ScreenHeader from '@/components/layout/ScreenHeader.vue'
 import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import SearchField from '@/components/ui/SearchField.vue'
+import SectionHeader from '@/components/ui/SectionHeader.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import GiveItemSheet from './GiveItemSheet.vue'
 import ItemKindTabs from './ItemKindTabs.vue'
@@ -18,6 +18,7 @@ import { useGameAction } from '@/composables/useGameAction'
 import { isGameMaster } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
 import { searchItems } from '@/domain/library'
+import { starterItems } from '@/domain/starterLibrary'
 import { useLibraryStore } from '@/stores/library'
 import { connection } from '@/transport/connection'
 import { createItem, deleteItem, loadItems, updateItem } from '@/transport/library'
@@ -52,6 +53,7 @@ const loading = computed(() => !hasList.value && !failed.value)
 const query = ref('')
 const kind = ref<ItemKindFilter>('all')
 const shown = computed(() => searchItems(hasList.value ? library.items : [], query.value, kind.value))
+const starterShown = computed(() => searchItems(starterItems(), query.value, kind.value))
 const expandedId = ref<string | null>(null)
 
 // ── Add / edit / duplicate ──
@@ -159,27 +161,48 @@ function backToTable() {
         <Button variant="primary" size="sm" :icon-left="IconPlus" @click="openSheet('add')">{{ t('library.items.add') }}</Button>
       </div>
 
-      <ItemKindTabs v-if="library.items.length > 0" v-model="kind" />
+      <ItemKindTabs v-model="kind" />
 
-      <EmptyState v-if="library.items.length === 0" :title="t('library.items.empty')" :hint="t('library.items.emptyHint')" />
+      <StateNote v-if="library.items.length === 0 && !query.trim() && kind === 'all'" inline align="start" size="sm">
+        {{ t('library.items.empty') }}
+      </StateNote>
 
-      <StateNote v-else-if="shown.length === 0" role="status">
+      <StateNote v-if="shown.length === 0 && starterShown.length === 0" role="status">
         {{ query.trim() ? t('library.items.noMatches', { query: query.trim() }) : t('library.items.noMatchesKind') }}
       </StateNote>
 
-      <ul v-else class="il-list" :aria-label="t('library.items.title')">
-        <ItemRow
-          v-for="i in shown"
-          :key="i.id"
-          :item="i"
-          :expanded="expandedId === i.id"
-          @update:expanded="v => expandedId = v ? i.id : null"
-          @give="openGive(i)"
-          @edit="openSheet('edit', i)"
-          @duplicate="openSheet('duplicate', i)"
-          @delete="deleting = i"
-        />
-      </ul>
+      <section v-if="shown.length > 0" class="il-section">
+        <SectionHeader as="h2" :title="t('library.items.own')" :count="shown.length" />
+        <ul class="il-list" :aria-label="t('library.items.title')">
+          <ItemRow
+            v-for="i in shown"
+            :key="i.id"
+            :item="i"
+            :expanded="expandedId === i.id"
+            @update:expanded="v => expandedId = v ? i.id : null"
+            @give="openGive(i)"
+            @edit="openSheet('edit', i)"
+            @duplicate="openSheet('duplicate', i)"
+            @delete="deleting = i"
+          />
+        </ul>
+      </section>
+
+      <section v-if="starterShown.length > 0" class="il-section">
+        <SectionHeader as="h2" :title="t('library.items.starter.title')" :count="starterShown.length" :hint="t('library.items.starter.hint')" />
+        <ul class="il-list" :aria-label="t('library.items.starter.title')">
+          <ItemRow
+            v-for="i in starterShown"
+            :key="i.id"
+            :item="i"
+            readonly
+            :expanded="expandedId === i.id"
+            @update:expanded="v => expandedId = v ? i.id : null"
+            @give="openGive(i)"
+            @duplicate="openSheet('duplicate', i)"
+          />
+        </ul>
+      </section>
     </template>
 
     <ItemSheet
@@ -206,5 +229,6 @@ function backToTable() {
 <style scoped>
 .il-toolbar { display: flex; align-items: center; gap: 10px; }
 .il-search { flex: 1; }
+.il-section { display: flex; flex-direction: column; gap: 8px; }
 .il-list { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 </style>

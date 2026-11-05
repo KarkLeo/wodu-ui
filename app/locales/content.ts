@@ -2,6 +2,7 @@ import { t, DICTIONARIES, LOCALES } from './index'
 import type { Messages } from './en'
 import type { AbilityId, ClassId, SkillId, StatKey } from '@/types/character'
 import type { GearCategoryId, GearTemplateId } from '@/data/gear'
+import type { StarterMonsterId } from '@/data/starterMonsters'
 import { SPHERE_PRESET_IDS, type SpherePresetId } from '@/data/spheres'
 import { CANTRIP_IDS, type CantripId } from '@/data/abilities'
 
@@ -57,6 +58,14 @@ export function gearCategoryName(id: GearCategoryId): string {
   return t(`content.gearCategories.${id}` as never)
 }
 
+export function starterMonsterName(id: StarterMonsterId): string {
+  return t(`content.starterMonsters.${id}.name` as never)
+}
+
+export function starterMonsterSpecial(id: StarterMonsterId): string {
+  return t(`content.starterMonsters.${id}.special` as never)
+}
+
 export function spherePresetName(id: SpherePresetId): string {
   return t(`content.spherePresets.${id}` as never)
 }
@@ -95,6 +104,10 @@ type _GearCategoriesComplete =
   Messages['content']['gearCategories'] extends Record<GearCategoryId, string> ? true : never
 type _SpheresComplete =
   Messages['content']['spherePresets'] extends Record<SpherePresetId, string> ? true : never
+type _StarterMonstersComplete =
+  Messages['content']['starterMonsters'] extends Record<StarterMonsterId, { name: string; special: string }>
+    ? true
+    : never
 
 const _guards: [
   _SkillsComplete,
@@ -105,5 +118,6 @@ const _guards: [
   _GearComplete,
   _GearCategoriesComplete,
   _SpheresComplete,
-] = [true, true, true, true, true, true, true, true]
+  _StarterMonstersComplete,
+] = [true, true, true, true, true, true, true, true, true]
 void _guards

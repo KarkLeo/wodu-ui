@@ -60,6 +60,18 @@ export const Expanded: Story = {
   },
 }
 
+/** A starter entry: only a copy can be made, there is nothing to edit or delete. */
+export const ReadOnly: Story = {
+  args: { expanded: true, readonly: true },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByRole('button', { name: 'Edit' })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: 'Delete' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Duplicate' }))
+    await expect(args.onDuplicate).toHaveBeenCalledOnce()
+  },
+}
+
 /** Open, with only notes. */
 export const NotesOnly: Story = {
   args: { monster: wolf!, expanded: true },
