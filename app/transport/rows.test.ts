@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { characterCreateBody, eventCreateBody } from './rows'
+import { characterCreateBody, eventCreateBody, monsterRollBody } from './rows'
 import type { Character } from '@/types/character'
 import type { RollRecord } from '@/types/dice'
 import type { ChangeEntry } from '@/types/changeLog'
@@ -42,5 +42,14 @@ describe('game field', () => {
     expect(characterCreateBody(c, 'u1', 'G').game).toBe('G')
     const roll = { id: 'r1', characterId: 'c1' } as RollRecord
     expect(eventCreateBody(roll, 'G').game).toBe('G')
+  })
+})
+
+describe('monsterRollBody', () => {
+  it('has an empty character and the instance id as character_id', () => {
+    const roll = { id: 'r1', characterId: 'm1', monster: { id: 'm1', n: 2 } } as RollRecord
+    expect(monsterRollBody(roll, 'g')).toEqual({
+      id: 'r1', data: roll, character_id: 'm1', character: '', game: 'g',
+    })
   })
 })

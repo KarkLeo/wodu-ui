@@ -136,6 +136,39 @@ export function parseDamageNotation(formula: string): string {
   return head.replace(/^d/i, '1d')
 }
 
+export function damageRollParts(
+  baseDamage: string,
+  bonusDice: number,
+  flatBonus: number,
+): { notation: string; modifier: number; formula: string } {
+  const cleanDamage = parseDamageNotation(baseDamage)
+  const weaponFull = bonusDice > 0 ? `${cleanDamage}+${bonusDice}d6` : cleanDamage
+  const diceCounts = new Map<number, number>()
+  let fixedMod = 0
+  for (const raw of weaponFull.split(/(?=[+\-])/)) {
+    const term = raw.trim()
+    if (!term) continue
+    const m = term.match(/^([+\-]?)(\d*)d(\d+)$/i)
+    if (m) {
+      const sign = m[1] === '-' ? -1 : 1
+      const count = (m[2] ? Number(m[2]) : 1) * sign
+      const sides = Number(m[3])
+      diceCounts.set(sides, (diceCounts.get(sides) ?? 0) + count)
+    } else {
+      fixedMod += Number(term)
+    }
+  }
+  const diceTerms: string[] = []
+  for (const [sides, count] of diceCounts) {
+    if (count === 0) continue
+    diceTerms.push(`${count}d${sides}`)
+  }
+  const notation = diceTerms.join('+').replace(/\+\-/g, '-')
+  const modifier = fixedMod + flatBonus
+  const modStr = modifier > 0 ? `+${modifier}` : modifier < 0 ? String(modifier) : ''
+  return { notation, modifier, formula: `${notation}${modStr}` }
+}
+
 export function sturdinessBonus(abilityIds: AbilityId[]): number {
   return abilityIds.includes('sturdy') ? 6 : 0
 }

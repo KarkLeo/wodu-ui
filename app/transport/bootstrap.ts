@@ -19,6 +19,7 @@ import { scope } from './scope'
 import { forgetGame, healStuckCharacters, loadGame, toGame, toMember } from './games'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
+import { useEncounterStore } from '@/stores/encounter'
 import { useLibraryStore } from '@/stores/library'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
@@ -425,6 +426,7 @@ export function stopOnline(): void {
   closeRealtime()
   useGamesStore().clearAll()
   useLibraryStore().clearAll()
+  useEncounterStore().clearAll()
   stopConnectionMonitor()
   playedLocally.clear()
   bootstrapStatus.value = 'loading'

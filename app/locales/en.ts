@@ -862,6 +862,8 @@ export const messages = {
     addFailed: 'Failed to create the character. Check your connection.',
     removeFailed: 'Failed to delete the character. Check your connection.',
     rollSyncFailed: 'Roll made, but not synced.',
+    encounterSaveFailed: 'Failed to save the monster. Check your connection.',
+    encounterHitFailed: 'Couldn’t record the hit. Check your connection.',
     readOnly: 'You can’t change this character.',
     characterGone: 'This character is no longer at your table.',
   },

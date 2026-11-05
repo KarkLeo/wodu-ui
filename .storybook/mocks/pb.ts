@@ -97,7 +97,7 @@ class MockResponseError extends Error {
   }
 }
 
-const LIBRARY = new Set(['monsters', 'items'])
+const LIBRARY = new Set(['monsters', 'items', 'encounters', 'encounter_monsters', 'encounter_hits'])
 
 // One object per collection name, so stories can spy on its methods.
 const collections = new Map<string, ReturnType<typeof makeCollection>>()

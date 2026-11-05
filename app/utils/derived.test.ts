@@ -14,6 +14,7 @@ import {
   parseDamageNotation,
   sturdinessBonus,
   hpBreakdownLines,
+  damageRollParts,
 } from './derived'
 import {
   makeCharacter,
@@ -380,5 +381,17 @@ describe('hpBreakdownLines', () => {
       { value: '5', label: { key: 'derived.hpRoll', params: { level: 2 } } },
       { value: '6', label: { key: 'derived.hpRoll', params: { level: 3 } } },
     ])
+  })
+})
+
+describe('damageRollParts', () => {
+  it('keeps what rollDamage produced', () => {
+    expect(damageRollParts('1d6+2', 1, 0)).toEqual({ notation: '2d6', modifier: 2, formula: '2d6+2' })
+    expect(damageRollParts('d6', 0, -1).formula).toBe('1d6-1')
+  })
+
+  it('omits a zero modifier and adds the flat bonus', () => {
+    expect(damageRollParts('1d6', 0, 0)).toEqual({ notation: '1d6', modifier: 0, formula: '1d6' })
+    expect(damageRollParts('1d6', 0, 3).formula).toBe('1d6+3')
   })
 })
