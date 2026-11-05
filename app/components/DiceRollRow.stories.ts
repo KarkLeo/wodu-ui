@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import DiceRollRow from './DiceRollRow.vue'
 import { STORY_NOW } from '@/stories/fixtures'
 import type { RollRecord } from '@/types/dice'
@@ -178,5 +178,103 @@ export const LongAuthorKeepsNumber: Story = {
     const text = row(canvasElement).querySelector<HTMLElement>('.numbered-name-text')!
     await expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
     await expect(number.getBoundingClientRect().right).toBeLessThanOrEqual(row(canvasElement).getBoundingClientRect().right)
+  },
+}
+
+const bodyOf = (el: HTMLElement) => row(el).querySelector<HTMLElement>('.dice-row-body')!
+const tooltipIn = (el: HTMLElement) => within(el.ownerDocument.body)
+const pause = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+function tap(el: HTMLElement) {
+  for (const type of ['pointerenter', 'pointerdown', 'pointerup', 'pointerleave']) {
+    el.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', bubbles: type !== 'pointerenter' && type !== 'pointerleave' }))
+  }
+  el.click()
+}
+
+/** The weapon is out of the way at the log's width, so the pointer brings it back, with the whole row's text. */
+export const TooltipNamesTheWeapon: Story = {
+  tags: ['no-visual'],
+  args: { roll: damage },
+  play: async ({ canvasElement }) => {
+    await userEvent.hover(bodyOf(canvasElement))
+    const tip = await tooltipIn(canvasElement).findByRole('tooltip')
+    await expect(tip).toHaveTextContent('Martial weapon')
+    await expect(tip).toHaveTextContent('Brann Ironhide')
+    await expect(tip).toHaveTextContent('1d6+1')
+    await userEvent.unhover(bodyOf(canvasElement))
+  },
+}
+
+/** A name cut short shows in full, in one tooltip and with no second one from the name itself. */
+export const TooltipShowsTheWholeName: Story = {
+  tags: ['no-visual'],
+  args: { author: `${'Gargantuan '.repeat(7)}Beast #${NUMBER}`, roll: damage },
+  play: async ({ canvasElement, args }) => {
+    await userEvent.hover(row(canvasElement).querySelector<HTMLElement>('.numbered-name-text')!)
+    await expect(await tooltipIn(canvasElement).findByRole('tooltip')).toHaveTextContent(args.author)
+    await expect(canvasElement.ownerDocument.querySelectorAll('.ui-tooltip')).toHaveLength(1)
+    await userEvent.unhover(bodyOf(canvasElement))
+  },
+}
+
+/** Everything fits: a tooltip would only repeat the row. */
+export const NoTooltipWhenAllFits: Story = {
+  tags: ['no-visual'],
+  render: (args) => ({
+    components: { DiceRollRow },
+    setup: () => ({ args }),
+    template: '<div style="width: 560px"><DiceRollRow v-bind="args" /></div>',
+  }),
+  play: async ({ canvasElement }) => {
+    await userEvent.hover(bodyOf(canvasElement))
+    await pause(450)
+    await expect(tooltipIn(canvasElement).queryByRole('tooltip')).toBeNull()
+    await userEvent.unhover(bodyOf(canvasElement))
+  },
+}
+
+/** A phone has no hover: a tap on the row shows it. */
+export const TapShowsTooltip: Story = {
+  tags: ['no-visual'],
+  args: { roll: damage },
+  play: async ({ canvasElement }) => {
+    tap(bodyOf(canvasElement))
+    await expect(await tooltipIn(canvasElement).findByRole('tooltip')).toHaveTextContent('Martial weapon')
+    tap(bodyOf(canvasElement))
+    await waitFor(() => expect(tooltipIn(canvasElement).queryByRole('tooltip')).toBeNull())
+  },
+}
+
+/** On an applicable row a tap opens the popup, which names the weapon; no tooltip over it. */
+export const TapOnApplicableOpensOnlyThePopup: Story = {
+  tags: ['no-visual'],
+  args: { roll: damage, applyTo: 'Goblin #1', onOpen: fn() },
+  play: async ({ canvasElement, args }) => {
+    // Vue drops a click on an outer listener attached no earlier than the click, and the stories' clock stands still.
+    const { now } = Date
+    Date.now = () => STORY_NOW + 1000
+    try {
+      tap(bodyOf(canvasElement))
+    } finally {
+      Date.now = now
+    }
+    await expect(args.onOpen).toHaveBeenCalledOnce()
+    await pause(450)
+    await expect(tooltipIn(canvasElement).queryByRole('tooltip')).toBeNull()
+  },
+}
+
+/** A target's name cut short in a line under the row has its own tooltip. */
+export const HitNameTooltip: Story = {
+  tags: ['no-visual'],
+  args: {
+    roll: damage,
+    hits: [{ ...hits[0]!, target: { kind: 'monster', id: 'g2', name: `${'Gargantuan '.repeat(7)}Beast #${NUMBER}` } }],
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.hover(row(canvasElement).querySelector<HTMLElement>('.dice-row-hit .numbered-name-text')!)
+    await expect(await tooltipIn(canvasElement).findByRole('tooltip')).toHaveTextContent(`Beast #${NUMBER}`)
+    await userEvent.unhover(row(canvasElement).querySelector<HTMLElement>('.dice-row-hit .numbered-name-text')!)
   },
 }

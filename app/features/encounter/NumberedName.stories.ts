@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, within } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 import NumberedName from './NumberedName.vue'
 
 // Built in code: a literal `#` followed by digits reads as a hex colour to tokens.test.ts.
@@ -21,7 +21,44 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByTitle('Goblin #2')).toHaveTextContent('Goblin #2')
+    await expect(canvasElement.querySelector('.numbered-name')).toHaveTextContent('Goblin #2')
+  },
+}
+
+/** A name cut short shows in full under the pointer. */
+export const CutNameHasTooltip: Story = {
+  tags: ['no-visual'],
+  args: { label: `${'Gargantuan '.repeat(7)}Beast #${NUMBER}` },
+  play: async ({ canvasElement, args }) => {
+    const name = canvasElement.querySelector<HTMLElement>('.numbered-name-parts')!
+    await userEvent.hover(name)
+    await expect(await within(canvasElement.ownerDocument.body).findByRole('tooltip')).toHaveTextContent(args.label)
+    await userEvent.unhover(name)
+  },
+}
+
+/** A whole name has nothing to add. */
+export const WholeNameHasNoTooltip: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const name = canvasElement.querySelector<HTMLElement>('.numbered-name-parts')!
+    await userEvent.hover(name)
+    await new Promise(r => setTimeout(r, 450))
+    await expect(within(canvasElement.ownerDocument.body).queryByRole('tooltip')).toBeNull()
+    await userEvent.unhover(name)
+  },
+}
+
+/** `plain`: whatever is around the name says it, so no second tooltip. */
+export const PlainHasNoTooltip: Story = {
+  tags: ['no-visual'],
+  args: { label: `${'Gargantuan '.repeat(7)}Beast #${NUMBER}`, plain: true },
+  play: async ({ canvasElement }) => {
+    const name = canvasElement.querySelector<HTMLElement>('.numbered-name-parts')!
+    await userEvent.hover(name)
+    await new Promise(r => setTimeout(r, 450))
+    await expect(within(canvasElement.ownerDocument.body).queryByRole('tooltip')).toBeNull()
+    await userEvent.unhover(name)
   },
 }
 

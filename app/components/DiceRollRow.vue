@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import Tooltip from '@/components/ui/Tooltip.vue'
 import NumberedName from '@/features/encounter/NumberedName.vue'
 import { t } from '@/locales'
 import type { RollRecord } from '@/types/dice'
@@ -21,6 +22,23 @@ const emit = defineEmits<{ (e: 'open', row: HTMLElement): void }>()
 
 const applicable = computed(() => props.applyTo !== undefined)
 const weapon = computed(() => rollWeaponLabel(props.roll))
+
+// The two lines in full, for when the row cannot show them.
+const fullText = computed(() => {
+  const { roll } = props
+  const meta = [rollKindLabel(roll), weapon.value, props.author].filter(Boolean).join(' · ')
+  const formula = [
+    rollExpr(roll),
+    roll.dice.map(d => d.value).join(' + '),
+    roll.discardedTotal !== undefined ? `${t('diceDrawer.mode.alt')} ${roll.discardedTotal}` : '',
+  ].filter(Boolean).join(' · ')
+  return `${meta}\n${formula}`
+})
+
+function isCut(body: HTMLElement) {
+  return [...body.querySelectorAll('.dice-row-meta-weapon, .numbered-name-text, .dice-row-formula')]
+    .some(el => el.scrollWidth > el.clientWidth)
+}
 
 function open(e: Event) {
   if (applicable.value) emit('open', e.currentTarget as HTMLElement)
@@ -55,26 +73,28 @@ function onKeydown(e: KeyboardEvent) {
         <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
       </svg>
     </span>
-    <div class="dice-row-body">
-      <div class="dice-row-meta">
-        <b>{{ rollKindLabel(roll) }}</b>
-        <span v-if="weapon" class="dice-row-meta-secondary"><span class="dot"></span><span class="dice-row-meta-weapon">{{ weapon }}</span></span>
-        <span class="dot"></span><NumberedName class="dice-row-meta-author" :label="author" />
-        <span class="dot"></span><span class="dice-row-meta-time">{{ logTime(roll.timestamp) }}</span>
+    <Tooltip :text="fullText" :check="isCut" :tap="!applicable">
+      <div class="dice-row-body">
+        <div class="dice-row-meta">
+          <b>{{ rollKindLabel(roll) }}</b>
+          <span v-if="weapon" class="dice-row-meta-secondary"><span class="dot"></span><span class="dice-row-meta-weapon">{{ weapon }}</span></span>
+          <span class="dot"></span><NumberedName class="dice-row-meta-author" :label="author" plain />
+          <span class="dot"></span><span class="dice-row-meta-time">{{ logTime(roll.timestamp) }}</span>
+        </div>
+        <div class="dice-row-formula">
+          <span class="f-expr">{{ rollExpr(roll) }}</span>
+          <span v-if="roll.dice.length" class="f-rolls">
+            ·&nbsp;
+            <template v-for="(d, i) in roll.dice" :key="i">
+              <em>{{ d.value }}</em><template v-if="i < roll.dice.length - 1"> + </template>
+            </template>
+          </span>
+          <span v-if="roll.discardedTotal !== undefined" class="f-alt">
+            · {{ t('diceDrawer.mode.alt') }} {{ roll.discardedTotal }}
+          </span>
+        </div>
       </div>
-      <div class="dice-row-formula">
-        <span class="f-expr">{{ rollExpr(roll) }}</span>
-        <span v-if="roll.dice.length" class="f-rolls">
-          ·&nbsp;
-          <template v-for="(d, i) in roll.dice" :key="i">
-            <em>{{ d.value }}</em><template v-if="i < roll.dice.length - 1"> + </template>
-          </template>
-        </span>
-        <span v-if="roll.discardedTotal !== undefined" class="f-alt">
-          · {{ t('diceDrawer.mode.alt') }} {{ roll.discardedTotal }}
-        </span>
-      </div>
-    </div>
+    </Tooltip>
     <div class="dice-row-result">{{ roll.total }}</div>
     <div v-if="applyTo" class="dice-row-go">→ <NumberedName :label="applyTo" /></div>
     <div v-if="hits?.length" class="dice-row-hits">
@@ -115,7 +135,7 @@ function onKeydown(e: KeyboardEvent) {
   white-space: nowrap;
 }
 .dice-row-meta b { color: var(--vtt-accent-deep); font-weight: 500; flex-shrink: 0; }
-/* The weapon gives way first, its dot with it: who rolled is what the row is read for, and the popup names the weapon. */
+/* The weapon gives way first, its dot with it: who rolled is what the row is read for, and the tooltip names the weapon. */
 .dice-row-meta-secondary {
   display: inline-flex;
   align-items: center;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useId, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import HpBar from '@/components/ui/HpBar.vue'
 import IconButton from '@/components/ui/IconButton.vue'
@@ -43,18 +43,28 @@ const uid = useId()
 const dead = computed(() => props.monster.diedAt !== undefined)
 const label = computed(() => monsterLabel(props.monster))
 
-// Disabling a focused button drops the focus: a keyboard user gets it back when the roll ends.
+// Disabling a focused button drops the focus: a keyboard user gets it back when the roll ends, unless a press
+// elsewhere during the roll has put the focus where they wanted it (on the page itself, for a blank area).
 const attackRef = ref<{ $el: HTMLElement } | null>(null)
 let attackHadFocus = false
+function forgetAttackFocus() {
+  attackHadFocus = false
+}
+function stopWatchingPresses() {
+  document.removeEventListener('pointerdown', forgetAttackFocus, true)
+}
 watch(isRolling, (rolling) => {
   const el = attackRef.value?.$el
   if (rolling) {
     attackHadFocus = !!el?.matches(':focus-visible')
+    if (attackHadFocus) document.addEventListener('pointerdown', forgetAttackFocus, true)
     return
   }
+  stopWatchingPresses()
   if (attackHadFocus) void nextTick(() => { if (document.activeElement === document.body) el?.focus() })
   attackHadFocus = false
 })
+onBeforeUnmount(stopWatchingPresses)
 
 function onGripKeydown(e: KeyboardEvent) {
   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return

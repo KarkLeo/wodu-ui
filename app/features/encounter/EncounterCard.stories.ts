@@ -156,3 +156,24 @@ export const AttackGetsFocusBack: Story = {
     await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(attack))
   },
 }
+
+/** A press on a blank area during the roll is where the focus was meant to go: the button does not take it back. */
+export const AttackLeavesFocusAfterAPress: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const attack = within(canvasElement).getByRole('button', { name: 'Attack' })
+    attack.focus()
+    animatingMock.value = true
+    try {
+      await waitFor(() => expect(attack).toBeDisabled())
+      await waitFor(() => expect(doc.activeElement).not.toBe(attack))
+      doc.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    } finally {
+      animatingMock.value = false
+    }
+    await waitFor(() => expect(attack).toBeEnabled())
+    await new Promise(r => setTimeout(r, 50))
+    await expect(doc.activeElement).toBe(doc.body)
+  },
+}

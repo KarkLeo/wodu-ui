@@ -112,6 +112,19 @@ const stackRef = ref<HTMLElement | null>(null)
 watch(target, () => {
   if (focusedId.value !== null && !stackRef.value?.contains(document.activeElement)) focusedId.value = null
 }, { flush: 'post' })
+// Esc on a popup or a sheet gives the focus back to a card wherever the pointer is, and that hold has no end of its
+// own: the first pointer move outside the list ends it.
+function onPointerMoveOutside(e: PointerEvent) {
+  if (!stackRef.value?.contains(e.target as Node)) focusedId.value = null
+}
+function stopWatchingPointer() {
+  document.removeEventListener('pointermove', onPointerMoveOutside)
+}
+watch(focusedId, (id) => {
+  if (id === null) stopWatchingPointer()
+  else document.addEventListener('pointermove', onPointerMoveOutside, { passive: true })
+})
+onBeforeUnmount(stopWatchingPointer)
 
 const listRef = ref<{ $el: HTMLElement } | null>(null)
 const listEl = computed(() => listRef.value?.$el ?? null)
@@ -268,7 +281,7 @@ async function confirmRemove() {
       @focusout="onFocusOut"
     >
       <StateNote v-if="store.status === 'loading' && !store.monsters.length" size="sm" role="status">{{ t('encounter.loading') }}</StateNote>
-      <StateNote v-else-if="store.status === 'failed' && !store.monsters.length" size="sm" role="alert">
+      <StateNote v-else-if="(store.status === 'failed' || store.refreshFailed) && !store.monsters.length" size="sm" role="alert">
         {{ t('encounter.loadFailed') }}
         <template #action>
           <Button variant="ghost" size="sm" @click="retryEncounter">{{ t('encounter.retry') }}</Button>
@@ -277,12 +290,6 @@ async function confirmRemove() {
       <EmptyState v-else-if="!store.monsters.length" :hint="t('encounter.empty')" />
 
       <template v-else>
-        <AlertBanner v-if="store.refreshFailed">
-          {{ t('encounter.loadFailed') }}
-          <template #action>
-            <Button variant="ghost" size="sm" @click="retryEncounter">{{ t('encounter.retry') }}</Button>
-          </template>
-        </AlertBanner>
         <TransitionGroup ref="listRef" tag="div" name="ep-move" class="ep-alive">
           <EncounterCard
             v-for="m in shownAlive"
@@ -325,6 +332,14 @@ async function confirmRemove() {
         </div>
       </template>
     </div>
+
+    <!-- Under the list, not over it: a notice arriving on its own must not move the cards under the pointer. -->
+    <AlertBanner v-if="store.refreshFailed && store.monsters.length" class="ep-notice">
+      {{ t('encounter.loadFailed') }}
+      <template #action>
+        <Button variant="ghost" size="sm" @click="retryEncounter">{{ t('encounter.retry') }}</Button>
+      </template>
+    </AlertBanner>
 
     <EncounterPickSheet v-model:open="pickOpen" :game-id="store.gameId" />
     <MonsterSheet v-model:open="editOpen" mode="edit" :source="editSource" @save="onSave" />
@@ -376,6 +391,7 @@ async function confirmRemove() {
   flex-direction: column;
   gap: 8px;
 }
+.ep-notice { flex-shrink: 0; margin: 0 10px 10px; }
 .ep-alive, .ep-dead-list { display: flex; flex-direction: column; gap: 8px; }
 .ep-move-move { transition: transform var(--t-med) var(--ease); }
 @media (prefers-reduced-motion: reduce) {

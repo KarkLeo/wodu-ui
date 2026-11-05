@@ -425,6 +425,34 @@ export const RefreshFailedKeepsList: Story = {
   },
 }
 
+/** The refresh's notice comes on its own, maybe under the pointer: every card stays exactly where it was. */
+export const RefreshNoticeMovesNoCard: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const tops = () => within(canvasElement).getAllByRole('article').map(a => a.getBoundingClientRect().top)
+    const before = tops()
+    spyOn(pb.collection('encounter_monsters'), 'getFullList').mockRejectedValueOnce(refused())
+    await openEncounter(crookhollow.id)
+    await expect(canvas.getByRole('alert')).toBeVisible()
+    await expect(tops()).toEqual(before)
+  },
+}
+
+/** A refused refresh with nothing on screen says so, rather than "no monsters". */
+export const RefreshFailedOnEmptyList: Story = {
+  decorators: [withEncounter([])],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    spyOn(pb.collection('encounter_monsters'), 'getFullList').mockRejectedValueOnce(refused())
+    await openEncounter(crookhollow.id)
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Couldn’t load the encounter.')
+    await expect(canvas.queryByText('No monsters yet')).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(canvas.queryByRole('alert')).toBeNull())
+  },
+}
+
 /** Killed on another device: no longer selected here, and a revive does not select it again. */
 export const KilledElsewhereDeselects: Story = {
   tags: ['no-visual'],
@@ -534,6 +562,25 @@ export const KeyboardKeepsFocus: Story = {
     await expect(canvasElement.ownerDocument.activeElement).toBe(other)
 
     canvas.getByRole('button', { name: 'Monster' }).focus()
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2']))
+  },
+}
+
+/** A focus given back to a card (by Esc, say) holds the list only until the pointer moves outside it. */
+export const PointerMoveOutsideEndsFocusHold: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const lower = cardOf(canvasElement, 'Ogre #1').getByRole('button', { name: LOWER })
+    lower.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(monsterIn('story-enc-ogre-1').hp).toBe(17)
+
+    // Inside the list it still holds.
+    lower.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await pause(150)
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+
+    canvasElement.querySelector('.ep-head')!.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2']))
   },
 }
