@@ -6,9 +6,9 @@ import StateNote from '@/components/ui/StateNote.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import NumberedName from './NumberedName.vue'
 import { damageAfterArmor, previewHit } from '@/domain/encounter'
-import { gearName } from '@/locales/content'
 import type { ApplyTarget } from '@/composables/useApplyHit'
 import type { RollRecord } from '@/types/dice'
+import { rollWeaponLabel } from '@/utils/rollDisplay'
 import { t } from '@/locales'
 
 const props = defineProps<{
@@ -25,10 +25,7 @@ const sent = ref(false)
 
 const preview = computed(() => previewHit(amount.value, props.target.hp, props.target.tempHp))
 const dies = computed(() => props.target.kind === 'monster' && preview.value.hpAfter === 0)
-const weapon = computed(() => {
-  const p = props.roll.purpose
-  return p.kind === 'damage' && p.weaponName ? gearName(p.weaponTemplateId, p.weaponName) : ''
-})
+const weapon = computed(() => rollWeaponLabel(props.roll))
 
 function submit() {
   if (sent.value) return
