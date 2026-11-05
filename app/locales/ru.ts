@@ -646,6 +646,7 @@ export const messages: Messages = {
       settings: 'Настройки игры',
       monsters: 'Библиотека монстров',
       items: 'Библиотека предметов',
+      encounter: 'Энкаунтер',
       home: 'На главную',
     },
     members: {
@@ -860,6 +861,7 @@ export const messages: Messages = {
     },
   },
   encounter: {
+    close: 'Закрыть энкаунтер',
     title: 'Энкаунтер',
     loading: 'Загрузка…',
     loadFailed: 'Не удалось загрузить энкаунтер.',

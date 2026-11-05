@@ -644,6 +644,7 @@ export const messages = {
       settings: 'Game settings',
       monsters: 'Monster library',
       items: 'Item library',
+      encounter: 'Encounter',
       home: 'Home',
     },
     members: {
@@ -858,6 +859,7 @@ export const messages = {
     },
   },
   encounter: {
+    close: 'Close encounter',
     title: 'Encounter',
     loading: 'Loading…',
     loadFailed: 'Couldn’t load the encounter.',

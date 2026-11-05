@@ -6,6 +6,8 @@ import { useCharactersStore } from '@/stores/characters'
 import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useTable } from '@/composables/useTable'
+import { useTableSelection } from '@/composables/useTableSelection'
+import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
 import { mode } from '@/transport/mode'
@@ -35,6 +37,8 @@ const creation = useCreationStore()
 const { createDraft } = useCharacterCreation()
 const layout = useGameLayout()
 const games = useGamesStore()
+const encounter = useEncounterStore()
+const { selectCharacter } = useTableSelection()
 const { tableScope, gameId, game, partyRoute, newCharacterRoute } = useTable()
 
 const me = computed(() => currentUser.value?.id ?? null)
@@ -46,6 +50,8 @@ const activeCharacters = computed(() => {
     : store.list
   return list.filter(c => c.status === 'active')
 })
+
+const isGameMaster = computed(() => !!game.value && isMaster(game.value, me.value))
 
 const role = computed(() => {
   if (!game.value || !game.value.master) return null
@@ -93,7 +99,7 @@ function toggleCharacter(id: string) {
     return
   }
   router.replace(partyRoute([...openIds.value, id]))
-  store.setActive(id)
+  selectCharacter(id)
 }
 
 // Inside a game the draft is created in it (createDraft follows the scope) and the wizard stays there.
@@ -153,6 +159,16 @@ async function startNew() {
     <MasterlessNotice v-if="game && !game.master" :game="game" />
 
     <div class="gl-panel-list">
+      <ListRow
+        v-if="isGameMaster"
+        as="button"
+        class="player-row"
+        :title="t('encounter.title')"
+        :selected="encounter.panelOpen"
+        :pressed="encounter.panelOpen"
+        @click="encounter.togglePanel()"
+      />
+
       <ListRow
         v-for="c in activeCharacters"
         :key="c.id"

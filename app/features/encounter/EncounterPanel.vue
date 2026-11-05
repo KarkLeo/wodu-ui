@@ -8,6 +8,7 @@ import StateNote from '@/components/ui/StateNote.vue'
 import MonsterSheet, { type MonsterDraft } from '@/features/monster-library/MonsterSheet.vue'
 import EncounterCard from './EncounterCard.vue'
 import { useMonsterRolls } from '@/composables/useMonsterRolls'
+import { useTableSelection } from '@/composables/useTableSelection'
 import {
   applyInstanceEdit,
   changeHp,
@@ -30,6 +31,7 @@ const log = createLogger('encounter-panel')
 const store = useEncounterStore()
 const toasts = useToastsStore()
 const { rollAttack } = useMonsterRolls()
+const { selectMonster } = useTableSelection()
 
 const order = computed(() => orderMonsters(store.monsters, store.state ?? emptyEncounter(store.gameId)))
 const sortMode = computed(() => store.state?.sortMode ?? 'auto')
@@ -44,7 +46,7 @@ function setExpanded(id: string, open: boolean) {
 
 function select(m: EncounterMonster) {
   if (m.diedAt !== undefined) return
-  store.selectMonster(store.selectedMonsterId === m.id ? null : m.id)
+  selectMonster(m.id)
 }
 
 // Always from the store's copy, so a second click builds on the first one's result.

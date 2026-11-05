@@ -12,7 +12,8 @@ import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useToastsStore } from '@/stores/toasts'
 import { mode } from '@/transport/mode'
-import { pb, signInMock } from '../../../.storybook/mocks/pb'
+import { useEncounterStore } from '@/stores/encounter'
+import { clearPbRequests, pb, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
 
 // Same width GameLayout gives the left column; collapse and rail only exist above 960px.
 const desktopColumn: Decorator = (story) => ({
@@ -312,5 +313,55 @@ export const GameRail: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id}`)],
   play: async ({ canvasElement }) => {
     await expect(await within(canvasElement).findByText('Players · 3')).toBeInTheDocument()
+  },
+}
+
+/** The master's opener row toggles the encounter panel and shows it pressed. */
+export const MasterSeesEncounterRow: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const encounter = useEncounterStore()
+    encounter.clearAll()
+    const open = await within(canvasElement).findByRole('button', { name: 'Encounter' })
+    await expect(open).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(open)
+    await expect(encounter.panelOpen).toBe(true)
+    await expect(open).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(open)
+    await expect(encounter.panelOpen).toBe(false)
+    await expect(open).toHaveAttribute('aria-pressed', 'false')
+  },
+}
+
+/** Opening a sheet from the panel selects that character and drops the selected monster. */
+export const OpeningSheetClearsMonster: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const encounter = useEncounterStore()
+    encounter.selectMonster('some-monster')
+    await userEvent.click(await row(canvasElement, brann.name))
+    await expect(encounter.selectedMonsterId).toBeNull()
+    await expect(useCharactersStore().activeId).toBe(brann.id)
+  },
+}
+
+/** A player never sees the encounter: no row, no menu item, and nothing is requested for it. */
+export const PlayerSeesNoEncounter: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}`)],
+  play: async ({ canvasElement }) => {
+    clearPbRequests()
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(olden.name)).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: 'Encounter' })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Game menu' }))
+    const menu = within(await within(canvasElement.ownerDocument.body).findByRole('menu'))
+    await expect(menu.queryByRole('menuitem', { name: 'Encounter' })).toBeNull()
+    await expect(pbRequests().filter(r => r.includes('encounter'))).toEqual([])
   },
 }
