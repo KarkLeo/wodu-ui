@@ -84,7 +84,7 @@ const LONG = 'Chieftain of the Hollow Hills, Warden of the Seven Drowned Gates a
 /** A name this long is cut with an ellipsis; the number and the buttons stay inside the card. */
 export const LongName: Story = {
   args: { monster: { ...goblin, name: LONG, n: NUMBER } },
-  decorators: [(story) => ({ components: { story }, template: '<div style="width: 340px"><story /></div>' })],
+  decorators: [(story) => ({ components: { story }, template: '<div style="width: 340px; max-width: 100%"><story /></div>' })],
   play: async ({ canvasElement }) => {
     await expect(LONG).toHaveLength(80)
     const root = card(canvasElement, `${LONG} #${NUMBER}`)

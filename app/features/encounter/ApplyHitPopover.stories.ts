@@ -28,8 +28,9 @@ const meta = {
       onMounted(() => { anchor.value = row.value })
       return { args, row, anchor, open }
     },
-    template: `<div style="padding: 160px 0 0 520px; width: 340px">
-      <div ref="row" style="padding: 10px 12px; border-radius: 12px; background: var(--vtt-elevated-a72); box-shadow: inset 0 0 0 1px var(--vtt-accent-a45); color: var(--vtt-text-primary)">Brann Ironhide · 6</div>
+    // Room on the left for the popup on a wide screen; on a phone the row just fits.
+    template: `<div style="padding: 160px 24px 0 clamp(24px, 100vw - 340px, 360px)">
+      <div ref="row" style="width: min(316px, 100%); padding: 10px 12px; border-radius: 12px; background: var(--vtt-elevated-a72); box-shadow: inset 0 0 0 1px var(--vtt-accent-a45); color: var(--vtt-text-primary)">Brann Ironhide · 6</div>
       <ApplyHitPopover v-bind="args" v-model:open="open" :anchor="anchor" />
     </div>`,
   }),

@@ -2,11 +2,13 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import MonsterSheet from './MonsterSheet.vue'
 import { MONSTERS } from '@/stories/fixtures'
+import { modalDocs } from '@/stories/docs'
 
 const goblin = MONSTERS[1]!
 
 const meta = {
   title: 'Library/MonsterSheet',
+  parameters: { docs: modalDocs },
   component: MonsterSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, mode: 'add', source: null, saving: false, failed: false, 'onUpdate:open': fn(), onSave: fn() },

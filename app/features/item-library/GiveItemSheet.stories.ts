@@ -4,11 +4,13 @@ import GiveItemSheet from './GiveItemSheet.vue'
 import { crookhollow, CROOKHOLLOW_META, draftIdentity, inGame, ITEMS, PARTY, sage } from '@/stories/fixtures'
 import { withGameTable } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
+import { modalDocs } from '@/stories/docs'
 
 const sword = ITEMS.find(i => i.id === 'story-item-sword')!
 
 const meta = {
   title: 'Library/GiveItemSheet',
+  parameters: { docs: modalDocs },
   component: GiveItemSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, item: sword, gameId: crookhollow.id, 'onUpdate:open': fn() },

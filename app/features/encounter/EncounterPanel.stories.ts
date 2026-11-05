@@ -31,7 +31,7 @@ function withEncounter(monsters: EncounterMonster[] = ENCOUNTER_MONSTERS): Decor
       store.setAll(crookhollow.id, emptyEncounter(crookhollow.id), structuredClone(monsters), [])
       useToastsStore().clearAll()
     },
-    template: '<div style="width: 440px; height: 640px"><story /></div>',
+    template: '<div style="width: min(440px, 100vw - 32px); height: 640px"><story /></div>',
   })
 }
 

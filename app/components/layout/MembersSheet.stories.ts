@@ -3,11 +3,13 @@ import { expect, fn, within } from 'storybook/test'
 import MembersSheet from './MembersSheet.vue'
 import { crookhollow, olden, PARTY, CROOKHOLLOW_META, OLDEN_META } from '@/stories/fixtures'
 import { withGameTable } from '@/stories/state'
+import { modalDocs } from '@/stories/docs'
 
 // The sheet players open from the game menu; the master manages members on the settings screen.
 // Behaviour (remove, make master): MembersList stories.
 const meta = {
   title: 'Layout/MembersSheet',
+  parameters: { docs: modalDocs },
   component: MembersSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { game: olden, open: true, 'onUpdate:open': fn() },

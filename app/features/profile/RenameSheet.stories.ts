@@ -3,9 +3,11 @@ import { expect, fn, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import { ClientResponseError } from 'pocketbase'
 import RenameSheet from './RenameSheet.vue'
 import { pb, signInMock } from '../../../.storybook/mocks/pb'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'Screens/Profile/RenameSheet',
+  parameters: { docs: modalDocs },
   component: RenameSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { name: 'Anna', open: true, 'onUpdate:open': fn() },

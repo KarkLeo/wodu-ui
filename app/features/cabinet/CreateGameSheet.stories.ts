@@ -4,9 +4,11 @@ import { expect, fn, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import CreateGameSheet from './CreateGameSheet.vue'
 import { withStores } from '@/stories/state'
 import { pb } from '../../../.storybook/mocks/pb'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'Screens/Cabinet/CreateGameSheet',
+  parameters: { docs: modalDocs },
   component: CreateGameSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   decorators: [withStores({ characters: [] })],

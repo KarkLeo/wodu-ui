@@ -10,6 +10,7 @@ import { useLibraryStore } from '@/stores/library'
 import { useToastsStore } from '@/stores/toasts'
 import type { EncounterMonster } from '@/types/encounter'
 import { pb, resetRecords } from '../../../.storybook/mocks/pb'
+import { modalDocs } from '@/stories/docs'
 
 /** An empty open encounter and the game's monsters on the (mock) server; the library store starts empty. */
 const withEncounter: Decorator = (story) => ({
@@ -28,6 +29,7 @@ const withEncounter: Decorator = (story) => ({
 
 const meta = {
   title: 'Encounter/EncounterPickSheet',
+  parameters: { docs: modalDocs },
   component: EncounterPickSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, gameId: crookhollow.id, 'onUpdate:open': fn() },

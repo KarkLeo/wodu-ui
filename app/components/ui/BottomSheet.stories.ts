@@ -3,6 +3,7 @@ import { expect, fn, within } from 'storybook/test'
 import { ref, watch } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import Button from './Button.vue'
+import { modalDocs } from '@/stories/docs'
 
 const catalog = [
   { name: 'Light weapon', notes: 'Daggers, short swords, hand axes', price: 10 },
@@ -60,6 +61,7 @@ const meta = {
   }),
   parameters: {
     docs: {
+      ...modalDocs,
       description: {
         component: 'Design prototype: `materials/design-vtt/design/components/inventory.html` (catalog bottom sheet, §5)',
       },

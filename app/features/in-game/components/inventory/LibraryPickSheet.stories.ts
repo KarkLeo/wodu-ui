@@ -9,6 +9,7 @@ import { useCharactersStore } from '@/stores/characters'
 import { useLibraryStore } from '@/stores/library'
 import { useToastsStore } from '@/stores/toasts'
 import { clearPbRequests, pb, pbRequests, resetRecords } from '../../../../../.storybook/mocks/pb'
+import { modalDocs } from '@/stories/docs'
 
 /** The game's items on the (mock) server; the store starts empty, as before the library screen was ever opened. */
 function withLibrary(items = ITEMS): Decorator {
@@ -25,6 +26,7 @@ function withLibrary(items = ITEMS): Decorator {
 
 const meta = {
   title: 'Panels/InventoryPanel/LibraryPickSheet',
+  parameters: { docs: modalDocs },
   component: LibraryPickSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, gameId: crookhollow.id, characterId: 'story-wren', 'onUpdate:open': fn() },

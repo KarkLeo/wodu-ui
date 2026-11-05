@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import JoinByCodeSheet from './JoinByCodeSheet.vue'
+import { modalDocs } from '@/stories/docs'
 
 const meta = {
   title: 'Screens/Cabinet/JoinByCodeSheet',
+  parameters: { docs: modalDocs },
   component: JoinByCodeSheet,
   globals: { viewport: { value: 'phone', isRotated: false } },
   args: { open: true, 'onUpdate:open': fn(), onSubmit: fn() },
