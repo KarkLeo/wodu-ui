@@ -54,7 +54,8 @@ function serialWriter<T>(opts: {
   async function pump(key: string, chain: Chain<T>) {
     const current = staysCurrent()
     const session = modeSession()
-    while (chain.hasPending) {
+    // A mode switch or sign-out leaves what waits unsent: no request reaches PocketBase offline.
+    while (chain.hasPending && current()) {
       const value = chain.pending as T
       chain.pending = undefined
       chain.hasPending = false
@@ -214,7 +215,10 @@ async function loadAll(gameId: string) {
 }
 
 function unsubscribeOwn() {
-  for (const name of COLLECTIONS) void pb.collection(name).unsubscribe('*')
+  // Fails whenever the network has just dropped, which is a normal way to get here.
+  for (const name of COLLECTIONS) {
+    pb.collection(name).unsubscribe('*').catch((err: unknown) => log.debug('unsubscribe failed', { name, err }))
+  }
 }
 
 /**
@@ -283,9 +287,11 @@ async function addOne(gameId: string, entry: LibraryMonster): Promise<EncounterM
   // Recorded even if the table has moved on, or the number could be handed out again. The state may have
   // changed while the monster was being written (a sort switch), so merge into the latest.
   const latest = here && store.state ? store.state : state
+  // Removed instances leave here, or the order would grow until the row hits the server's size limit.
+  const kept = here ? latest.manualOrder.filter(id => store.monsterById(id)) : latest.manualOrder
   stateWriter.submit(gameId, latest, {
     ...latest,
-    manualOrder: [monster.id, ...latest.manualOrder],
+    manualOrder: [monster.id, ...kept.filter(id => id !== monster.id)],
     counters: { ...latest.counters, [entry.id]: Math.max(latest.counters[entry.id] ?? 0, monster.n) },
   })
   return monster

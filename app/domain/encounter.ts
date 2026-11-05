@@ -49,13 +49,19 @@ export function addInstance(
   }
 }
 
+// Always later than what it replaces, whatever this device's clock says: a device whose clock runs behind would
+// otherwise have its changes dropped as stale on one whose clock runs ahead.
+function touchTime(m: EncounterMonster, now: number): number {
+  return Math.max(now, m.touchedAt + 1)
+}
+
 export function touch(m: EncounterMonster, now: number): EncounterMonster {
-  return { ...m, touchedAt: now }
+  return { ...m, touchedAt: touchTime(m, now) }
 }
 
 export function setHp(m: EncounterMonster, hp: number, now: number): EncounterMonster {
   const next = Math.min(m.maxHp, Math.max(0, hp))
-  const out: EncounterMonster = { ...m, hp: next, touchedAt: now }
+  const out: EncounterMonster = { ...m, hp: next, touchedAt: touchTime(m, now) }
   if (next === 0) out.diedAt = m.diedAt ?? now
   else delete out.diedAt
   return out
@@ -75,7 +81,7 @@ export function reviveMonster(m: EncounterMonster, now: number): EncounterMonste
 
 export function toggleCondition(m: EncounterMonster, id: ConditionId, now: number): EncounterMonster {
   const conditions = m.conditions.includes(id) ? m.conditions.filter(c => c !== id) : [...m.conditions, id]
-  return { ...m, conditions, touchedAt: now }
+  return { ...m, conditions, touchedAt: touchTime(m, now) }
 }
 
 export function applyInstanceEdit(

@@ -8,6 +8,8 @@ export const useEncounterStore = defineStore('encounter', {
   state: () => ({
     gameId: '',
     status: 'idle' as LibraryStatus,
+    /** A reload of a loaded encounter failed: the list stays usable, with a notice and Try again. */
+    refreshFailed: false,
     state: null as EncounterState | null,
     monsters: [] as EncounterMonster[],
     hits: [] as EncounterHit[],
@@ -19,11 +21,12 @@ export const useEncounterStore = defineStore('encounter', {
     monsterById: (state) => (id: string) => state.monsters.find(m => m.id === id),
   },
   actions: {
-    // Reloading the same game keeps its panel on screen; another game starts empty.
+    // Reloading the same game is a refresh in place, so what depends on `ready` (apply, the log's Damage filter,
+    // an open popup) lives through every dropped connection; another game starts empty.
     startLoading(gameId: string) {
       if (this.gameId !== gameId) this.clearAll()
       this.gameId = gameId
-      this.status = 'loading'
+      if (this.status !== 'ready') this.status = 'loading'
     },
     // A local copy newer than the server's survives a reload that overtook one of its writes.
     setAll(gameId: string, state: EncounterState, monsters: EncounterMonster[], hits: EncounterHit[]) {
@@ -38,22 +41,27 @@ export const useEncounterStore = defineStore('encounter', {
       const loaded = new Set(hits.map(h => h.id))
       this.hits = [...hits, ...(sameGame ? this.hits : []).filter(h => !loaded.has(h.id))]
       this.status = 'ready'
+      this.refreshFailed = false
       this.pruneSelection()
     },
     setFailed(gameId: string) {
-      if (this.gameId === gameId) this.status = 'failed'
+      if (this.gameId !== gameId) return
+      if (this.status === 'ready') this.refreshFailed = true
+      else this.status = 'failed'
     },
     // For rows that come from the server: an echo of an earlier write must not roll the screen back.
     upsertMonster(monster: EncounterMonster) {
       const idx = this.monsters.findIndex(m => m.id === monster.id)
       if (idx === -1) this.monsters.push(monster)
       else if (!isStaleMonster(monster, this.monsters[idx]!)) this.monsters[idx] = monster
+      this.pruneSelection()
     },
     // For this device's own edits and rollbacks, which are never stale.
     putMonster(monster: EncounterMonster) {
       const idx = this.monsters.findIndex(m => m.id === monster.id)
       if (idx === -1) this.monsters.push(monster)
       else this.monsters[idx] = monster
+      this.pruneSelection()
     },
     removeMonster(id: string) {
       this.monsters = this.monsters.filter(m => m.id !== id)
@@ -72,6 +80,7 @@ export const useEncounterStore = defineStore('encounter', {
     clearAll() {
       this.gameId = ''
       this.status = 'idle'
+      this.refreshFailed = false
       this.state = null
       this.monsters = []
       this.hits = []
@@ -86,9 +95,13 @@ export const useEncounterStore = defineStore('encounter', {
     selectMonster(id: string | null) {
       this.selectedMonsterId = id
     },
+    // A selected monster that is gone or dead stops being selected, on whichever device it happened, so a revive never reselects it.
     pruneSelection() {
       const ids = new Set(this.monsters.map(m => m.id))
-      if (this.selectedMonsterId && !ids.has(this.selectedMonsterId)) this.selectedMonsterId = null
+      if (this.selectedMonsterId) {
+        const selected = this.monsters.find(m => m.id === this.selectedMonsterId)
+        if (!selected || selected.diedAt !== undefined) this.selectedMonsterId = null
+      }
       for (const id of this.expanded) if (!ids.has(id)) this.expanded.delete(id)
     },
   },

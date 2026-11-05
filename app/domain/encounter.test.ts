@@ -82,6 +82,29 @@ it('toggles a condition and touches', () => {
   expect(toggleCondition(on, 'prone', 5).conditions).toEqual([])
 })
 
+describe('touchedAt with a clock behind', () => {
+  // The other device's clock ran ahead, so the row is newer than this device's now.
+  const ahead = mon({ touchedAt: 1000 })
+
+  it('every change is later than what it replaces', () => {
+    expect(touch(ahead, 5).touchedAt).toBe(1001)
+    expect(setHp(ahead, 2, 5).touchedAt).toBe(1001)
+    expect(changeHp(ahead, -1, 5).touchedAt).toBe(1001)
+    expect(killMonster(ahead, 5).touchedAt).toBe(1001)
+    expect(reviveMonster(mon({ hp: 0, diedAt: 900, touchedAt: 1000 }), 5).touchedAt).toBe(1001)
+    expect(toggleCondition(ahead, 'prone', 5).touchedAt).toBe(1001)
+    expect(applyInstanceEdit(ahead, { name: 'X', hp: 4, armor: 0, damage: '1d6' }, 5).touchedAt).toBe(1001)
+  })
+
+  it('is not stale on the device whose clock runs ahead', () => {
+    expect(isStaleMonster(changeHp(ahead, -1, 5), ahead)).toBe(false)
+  })
+
+  it('a normal clock keeps its own time', () => {
+    expect(touch(ahead, 2000).touchedAt).toBe(2000)
+  })
+})
+
 it('touch only bumps touchedAt', () => {
   expect(touch(mon(), 7)).toEqual({ ...mon(), touchedAt: 7 })
 })

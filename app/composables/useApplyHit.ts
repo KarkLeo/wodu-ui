@@ -118,7 +118,6 @@ export function useApplyHit() {
         if (dealt > 0) {
           const next = setHp(current, current.hp - dealt, Date.now())
           saveMonster(next)
-          if (next.diedAt !== undefined) encounter.selectMonster(null)
         }
       } else if (dealt > 0) {
         if (!characters.getById(tg.id)) return
