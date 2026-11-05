@@ -11,6 +11,8 @@ const props = defineProps<{
   target: ApplyTarget
   /** The log row the popup hangs from; a press on it is not an outside press. */
   anchor: HTMLElement | null
+  /** Where focus goes when the row cannot take it back (an applied roll stops being a button). */
+  fallback?: HTMLElement | null
 }>()
 const emit = defineEmits<{ (e: 'apply', amount: number): void }>()
 const open = defineModel<boolean>('open', { required: true })
@@ -22,6 +24,17 @@ function onInteractOutside(e: Event) {
   if (props.anchor && target instanceof Node && props.anchor.contains(target)) e.preventDefault()
 }
 
+// There is no trigger element, so Reka would leave focus on <body>: hand it back to the row. An applied
+// row has just lost its tabindex, so wait for the re-render and pick the fallback if it is no longer a stop.
+function onCloseAutoFocus(e: Event) {
+  e.preventDefault()
+  requestAnimationFrame(() => {
+    const row = props.anchor
+    const stop = row && row.isConnected && row.getAttribute('tabindex') !== null ? row : props.fallback
+    stop?.focus({ preventScroll: true })
+  })
+}
+
 function onApply(amount: number) {
   emit('apply', amount)
   open.value = false
@@ -29,7 +42,7 @@ function onApply(amount: number) {
 </script>
 
 <template>
-  <BottomSheet v-if="isMobile" v-model:open="open" :title="target.name">
+  <BottomSheet v-if="isMobile" v-model:open="open" :title="target.name" @close-auto-focus="onCloseAutoFocus">
     <ApplyHitForm :key="`${roll.id}:${target.id}`" :roll="roll" :target="target" @apply="onApply" @cancel="open = false" />
   </BottomSheet>
 
@@ -45,6 +58,7 @@ function onApply(amount: number) {
         :avoid-collisions="true"
         :collision-padding="12"
         @interact-outside="onInteractOutside"
+        @close-auto-focus="onCloseAutoFocus"
       >
         <ApplyHitForm :key="`${roll.id}:${target.id}`" :roll="roll" :target="target" @apply="onApply" @cancel="open = false" />
       </PopoverContent>

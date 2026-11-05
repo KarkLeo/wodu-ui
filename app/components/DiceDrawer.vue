@@ -92,6 +92,7 @@ const hitLines = computed(() => new Map(
   items.value.filter(i => i.kind === 'roll').map(i => [i.id, applyHit.hitsOf(i.id)]),
 ))
 
+const logEl = ref<HTMLElement | null>(null)
 const popup = ref<{ roll: RollRecord; el: HTMLElement } | null>(null)
 const popupOpen = computed({
   get: () => popup.value !== null,
@@ -337,7 +338,7 @@ function logDelta(e: ChangeEntry): string | undefined {
       <SegmentedFilter v-model="filter" :options="filterOptions" variant="pill" full-width />
     </div>
 
-    <div class="drawer-log">
+    <div ref="logEl" class="drawer-log" tabindex="-1">
       <div v-if="!listed" class="drawer-empty">
         <EmptyState
           variant="plain"
@@ -500,6 +501,7 @@ function logDelta(e: ChangeEntry): string | undefined {
       :roll="popup.roll"
       :target="applyHit.target.value"
       :anchor="popup.el"
+      :fallback="logEl"
       @apply="onApply"
     />
   </aside>
@@ -537,6 +539,7 @@ function logDelta(e: ChangeEntry): string | undefined {
   flex-direction: column-reverse;
   gap: 6px;
 }
+.drawer-log:focus { outline: none; }
 .drawer-log::-webkit-scrollbar { width: 4px; }
 .drawer-log::-webkit-scrollbar-thumb {
   background: var(--vtt-border-strong);

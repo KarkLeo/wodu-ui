@@ -652,3 +652,38 @@ export const FreeRollFromMonster: Story = {
     await waitFor(() => expect(store.monsterById(GOBLIN_1)!.touchedAt).toBeGreaterThan(before))
   },
 }
+
+/** Keyboard: Enter on a row opens the popup, Escape closes it and focus is back on that row. */
+export const KeyboardOpensAndEscapeReturnsFocus: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(OGRE), withEncounter(), desktopColumn, masterTable()],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(rowOf(canvasElement, 'roll-2')).toHaveAttribute('role', 'button'))
+    const row = rowOf(canvasElement, 'roll-2')
+    row.focus()
+    await userEvent.keyboard('{Enter}')
+    await dialogOf(canvasElement, 'Ogre #1')
+    await expect(row).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(row))
+  },
+}
+
+/** After Apply the row is no longer a button; focus lands on the log instead of dropping to the page. */
+export const ApplyReturnsFocusToLog: Story = {
+  ...masterStory,
+  decorators: [asActive(brann.id), selecting(OGRE), withEncounter(), desktopColumn, masterTable()],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(rowOf(canvasElement, 'roll-2')).toHaveAttribute('role', 'button'))
+    const row = rowOf(canvasElement, 'roll-2')
+    row.focus()
+    await userEvent.keyboard('{Enter}')
+    const apply = within(await dialogOf(canvasElement, 'Ogre #1')).getByRole('button', { name: 'Apply' })
+    apply.focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(hpOf(OGRE)).toBe(13))
+    await waitFor(() => expect(row).not.toHaveAttribute('role'))
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(canvasElement.querySelector('.drawer-log')))
+  },
+}
