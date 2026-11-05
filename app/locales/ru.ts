@@ -875,6 +875,11 @@ export const messages: Messages = {
     loadFailed: 'Не удалось загрузить энкаунтер.',
     empty: 'Монстров пока нет.',
     defeated: 'Повержены',
+    sort: {
+      label: 'Порядок',
+      auto: 'Авто',
+      manual: 'Вручную',
+    },
     card: {
       hpDown: 'Уменьшить HP на 1',
       hpUp: 'Увеличить HP на 1',
@@ -889,6 +894,7 @@ export const messages: Messages = {
       conditions: 'Состояния',
       edit: 'Редактировать',
       remove: 'Убрать',
+      grip: 'Переместить (стрелки или перетаскивание)',
     },
     remove: {
       title: 'Убрать «{name}»?',

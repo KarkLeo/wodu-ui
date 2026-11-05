@@ -873,6 +873,11 @@ export const messages = {
     loadFailed: 'Couldn’t load the encounter.',
     empty: 'No monsters yet.',
     defeated: 'Defeated',
+    sort: {
+      label: 'Order',
+      auto: 'Auto',
+      manual: 'Manual',
+    },
     card: {
       hpDown: 'Lower HP by 1',
       hpUp: 'Raise HP by 1',
@@ -887,6 +892,7 @@ export const messages = {
       conditions: 'Conditions',
       edit: 'Edit',
       remove: 'Remove',
+      grip: 'Reorder (arrows or drag)',
     },
     remove: {
       title: 'Remove {name}?',

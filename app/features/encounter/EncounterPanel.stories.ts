@@ -277,3 +277,148 @@ export const AddsFromThePanel: Story = {
     await expect(body(canvasElement).getByRole('dialog', { name: 'Add a monster' })).toBeVisible()
   },
 }
+
+const aliveNames = (el: HTMLElement) => [...el.querySelectorAll('.ep-alive article')].map(a => a.getAttribute('aria-label'))
+const gripOf = (el: HTMLElement, name: string) => cardOf(el, name).queryByRole('button', { name: /^Reorder/ })
+const switchTo = (el: HTMLElement, mode: 'Auto' | 'Manual') => userEvent.click(within(el).getByRole('radio', { name: mode }))
+const updatesOf = (spy: { mock: { calls: unknown[][] } }) =>
+  spy.mock.calls.map(c => (c[1] as { data: { manualOrder: string[]; sortMode: string } }).data)
+
+/** The anti-goal: a click must land on the card the pointer is over, so the list waits until the pointer leaves. */
+export const AutoHoldsUnderPointer: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const ogre = within(canvasElement).getByRole('article', { name: 'Ogre #1' })
+    await userEvent.hover(ogre)
+    await userEvent.click(within(ogre).getByRole('button', { name: 'Lower HP by 1' }))
+    await expect(monsterIn('story-enc-ogre-1').hp).toBe(17)
+    await new Promise(r => setTimeout(r, 150))
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+    await userEvent.click(within(ogre).getByRole('button', { name: 'Lower HP by 1' }))
+    await expect(monsterIn('story-enc-ogre-1').hp).toBe(16)
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+
+    await userEvent.unhover(ogre)
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2']))
+  },
+}
+
+/** On touch there is no leave: the hold ends about 2 seconds after the last touch. */
+export const TouchHoldsForTwoSeconds: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const ogre = within(canvasElement).getByRole('article', { name: 'Ogre #1' })
+    ogre.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true }))
+    await userEvent.click(within(ogre).getByRole('button', { name: 'Lower HP by 1' }))
+    await new Promise(r => setTimeout(r, 600))
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2']), { timeout: 4000 })
+  },
+}
+
+export const ManualCopiesAuto: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const store = useEncounterStore()
+    await expect(gripOf(canvasElement, 'Goblin #1')).toBeNull()
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
+    await expect(store.state?.manualOrder).toEqual(['story-enc-goblin-1', 'story-enc-goblin-2', 'story-enc-ogre-1'])
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+    await expect(gripOf(canvasElement, 'Goblin #1')).toBeVisible()
+
+    // Touching a card reorders nothing by hand...
+    await userEvent.click(cardOf(canvasElement, 'Ogre #1').getByRole('button', { name: 'Lower HP by 1' }))
+    await userEvent.unhover(within(canvasElement).getByRole('article', { name: 'Ogre #1' }))
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+
+    // ...but going back to Auto and again to Manual copies the new auto order.
+    await switchTo(canvasElement, 'Auto')
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2']))
+    await expect(gripOf(canvasElement, 'Ogre #1')).toBeNull()
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.manualOrder).toEqual(['story-enc-ogre-1', 'story-enc-goblin-1', 'story-enc-goblin-2']))
+    await expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2'])
+  },
+}
+
+export const ManualKeyboardMove: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const update = spyOn(pb.collection('encounters'), 'update')
+    const store = useEncounterStore()
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
+    update.mockClear()
+
+    gripOf(canvasElement, 'Ogre #1')!.focus()
+    await userEvent.keyboard('{ArrowUp}')
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Ogre #1', 'Goblin #2']))
+    await expect(store.state?.manualOrder).toEqual(['story-enc-goblin-1', 'story-enc-ogre-1', 'story-enc-goblin-2'])
+    await waitFor(() => expect(update).toHaveBeenCalled())
+    await expect(updatesOf(update).at(-1)?.manualOrder).toEqual(['story-enc-goblin-1', 'story-enc-ogre-1', 'story-enc-goblin-2'])
+    // The grip keeps the focus, so the keys can be repeated.
+    await waitFor(() => expect(document.activeElement).toBe(gripOf(canvasElement, 'Ogre #1')))
+    await userEvent.keyboard('{ArrowUp}')
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2']))
+    await userEvent.keyboard('{ArrowUp}')
+    await expect(aliveNames(canvasElement)).toEqual(['Ogre #1', 'Goblin #1', 'Goblin #2'])
+
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1']))
+    await waitFor(() => expect(store.state?.manualOrder).toEqual(['story-enc-goblin-1', 'story-enc-goblin-2', 'story-enc-ogre-1']))
+  },
+}
+
+export const ManualNewOnTop: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const store = useEncounterStore()
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Monster' }))
+    const sheet = await body(canvasElement).findByRole('dialog', { name: 'Add a monster' })
+    const starter = await within(sheet).findByRole('list', { name: 'Starter set' })
+    const dragon = within(starter).getAllByRole('listitem').find(li => li.textContent?.startsWith('Dragon'))!
+    await userEvent.click(within(dragon).getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(aliveNames(canvasElement)[0]).toBe('Dragon #1'))
+    await waitFor(() => expect(store.state?.manualOrder[0]).toBe(store.monsters.find(m => m.name === 'Dragon')!.id))
+    await expect(aliveNames(canvasElement).slice(1)).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1'])
+  },
+}
+
+export const ManualReviveOnTop: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const store = useEncounterStore()
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
+    await userEvent.click(cardOf(canvasElement, 'Wolf #1').getByRole('button', { name: 'Revive (1 HP)' }))
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Wolf #1', 'Goblin #1', 'Goblin #2', 'Ogre #1']))
+    await waitFor(() => expect(store.state?.manualOrder[0]).toBe('story-enc-wolf-1'))
+  },
+}
+
+export const DeadAlwaysBelow: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const deadNames = () => [...canvasElement.querySelectorAll('.ep-dead-list article')].map(a => a.getAttribute('aria-label'))
+    const store = useEncounterStore()
+    await userEvent.click(cardOf(canvasElement, 'Ogre #1').getByRole('button', { name: 'Kill' }))
+    await waitFor(() => expect(deadNames()).toEqual(['Ogre #1', 'Wolf #1']))
+    await userEvent.click(cardOf(canvasElement, 'Goblin #2').getByRole('button', { name: 'Kill' }))
+    await waitFor(() => expect(deadNames()).toEqual(['Goblin #2', 'Ogre #1', 'Wolf #1']))
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual(['Goblin #1']))
+
+    await switchTo(canvasElement, 'Manual')
+    await waitFor(() => expect(store.state?.sortMode).toBe('manual'))
+    await expect(deadNames()).toEqual(['Goblin #2', 'Ogre #1', 'Wolf #1'])
+    await expect(aliveNames(canvasElement)).toEqual(['Goblin #1'])
+    await expect(gripOf(canvasElement, 'Goblin #1')).toBeVisible()
+    for (const name of ['Goblin #2', 'Ogre #1', 'Wolf #1']) await expect(gripOf(canvasElement, name)).toBeNull()
+
+    await userEvent.click(cardOf(canvasElement, 'Goblin #1').getByRole('button', { name: 'Kill' }))
+    await waitFor(() => expect(deadNames()).toEqual(['Goblin #1', 'Goblin #2', 'Ogre #1', 'Wolf #1']))
+    await waitFor(() => expect(aliveNames(canvasElement)).toEqual([]))
+  },
+}

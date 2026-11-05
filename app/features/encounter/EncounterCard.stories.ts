@@ -111,6 +111,10 @@ export const ManualGrip: Story = {
   args: { sortMode: 'manual' },
   tags: ['no-visual'],
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('.ec-grip')).not.toBeNull()
+    const grip = within(card(canvasElement, 'Goblin #1')).getByRole('button', { name: /^Reorder/ })
+    await expect(grip).toBeVisible()
+    // The grip is not the card: a click on it selects nothing.
+    await userEvent.click(grip)
+    await expect(card(canvasElement, 'Goblin #1').querySelector('.ec-title')).toHaveAttribute('aria-pressed', 'false')
   },
 }

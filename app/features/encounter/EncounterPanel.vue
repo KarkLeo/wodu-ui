@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
+import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import MonsterSheet, { type MonsterDraft } from '@/features/monster-library/MonsterSheet.vue'
 import EncounterCard from './EncounterCard.vue'
 import EncounterPickSheet from './EncounterPickSheet.vue'
+import { useDeferredOrder } from '@/composables/useDeferredOrder'
 import { useMonsterRolls } from '@/composables/useMonsterRolls'
+import { useSortableList } from '@/composables/useSortableList'
 import { useTableSelection } from '@/composables/useTableSelection'
 import {
   applyInstanceEdit,
@@ -17,14 +20,16 @@ import {
   emptyEncounter,
   killMonster,
   monsterLabel,
+  moveInOrder,
   orderMonsters,
   reviveMonster,
+  switchSortMode,
   toggleCondition,
 } from '@/domain/encounter'
 import { useEncounterStore } from '@/stores/encounter'
 import { useToastsStore } from '@/stores/toasts'
-import { removeMonsterInstance, saveMonster } from '@/transport/encounter'
-import type { ConditionId, EncounterMonster } from '@/types/encounter'
+import { removeMonsterInstance, saveEncounterState, saveMonster } from '@/transport/encounter'
+import type { ConditionId, EncounterMonster, SortMode } from '@/types/encounter'
 import type { LibraryMonster } from '@/types/library'
 import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
@@ -37,6 +42,73 @@ const { selectMonster } = useTableSelection()
 
 const order = computed(() => orderMonsters(store.monsters, store.state ?? emptyEncounter(store.gameId)))
 const sortMode = computed(() => store.state?.sortMode ?? 'auto')
+const currentState = () => store.state ?? emptyEncounter(store.gameId)
+
+const sortModel = computed<SortMode>({
+  get: () => sortMode.value,
+  set: (mode) => {
+    if (mode !== sortMode.value) saveEncounterState(switchSortMode(currentState(), mode, store.monsters))
+  },
+})
+const sortOptions = computed(() => [
+  { value: 'auto' as const, label: t('encounter.sort.auto') },
+  { value: 'manual' as const, label: t('encounter.sort.manual') },
+])
+
+// The list must not move under the pointer: while a card is held the others keep their places.
+const HOLD_TOUCH_MS = 2000
+const holdingId = ref<string | null>(null)
+let holdTimer: ReturnType<typeof setTimeout> | undefined
+const target = computed(() => order.value.alive.map(m => m.id))
+const shownIds = useDeferredOrder(target, holdingId)
+const shownAlive = computed(() => {
+  const byId = new Map(order.value.alive.map(m => [m.id, m]))
+  return shownIds.value.flatMap(id => byId.get(id) ?? [])
+})
+
+function release() {
+  clearTimeout(holdTimer)
+  holdingId.value = null
+}
+function holdByTouch(id: string) {
+  holdingId.value = id
+  clearTimeout(holdTimer)
+  holdTimer = setTimeout(() => { holdingId.value = null }, HOLD_TOUCH_MS)
+}
+function onPointerEnter(id: string, e: PointerEvent) {
+  if (e.pointerType === 'touch') holdByTouch(id)
+  else holdingId.value = id
+}
+function onPointerLeave(id: string, e: PointerEvent) {
+  if (e.pointerType !== 'touch' && holdingId.value === id) holdingId.value = null
+}
+function onPointerDown(id: string, e: PointerEvent) {
+  if (e.pointerType === 'touch') holdByTouch(id)
+}
+// A card that died or was removed under the pointer never sends a leave.
+watch(target, (ids) => { if (holdingId.value !== null && !ids.includes(holdingId.value)) release() })
+onBeforeUnmount(() => clearTimeout(holdTimer))
+
+const listRef = ref<{ $el: HTMLElement } | null>(null)
+const listEl = computed(() => listRef.value?.$el ?? null)
+
+// The dropped order is the one on screen, which a hold may have kept from the stored one.
+function moveCard(id: string, beforeId: string | null) {
+  const state = currentState()
+  saveEncounterState({ ...state, manualOrder: moveInOrder(shownIds.value, id, beforeId) })
+  release()
+}
+useSortableList(listEl, { enabled: computed(() => sortMode.value === 'manual'), handle: '.ec-grip', onMove: moveCard })
+
+async function onKeyMove(id: string, direction: -1 | 1) {
+  const ids = shownIds.value
+  const at = ids.indexOf(id)
+  if (at === -1 || at + direction < 0 || at + direction >= ids.length) return
+  moveCard(id, direction === -1 ? ids[at - 1]! : (ids[at + 2] ?? null))
+  await nextTick()
+  // Vue moves the node, which drops its focus.
+  listEl.value?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"] .ec-grip`)?.focus()
+}
 
 function expandedOf(id: string) {
   return store.expanded.has(id)
@@ -70,6 +142,10 @@ function onKillOrRevive(id: string) {
   if (!m) return
   const dead = m.diedAt !== undefined
   saveMonster(dead ? reviveMonster(m, Date.now()) : killMonster(m, Date.now()))
+  if (dead && sortMode.value === 'manual') {
+    const state = currentState()
+    saveEncounterState({ ...state, manualOrder: [id, ...state.manualOrder.filter(x => x !== id)] })
+  }
   if (!dead && store.selectedMonsterId === id) store.selectMonster(null)
 }
 
@@ -139,6 +215,7 @@ async function confirmRemove() {
   <section class="ep" :aria-label="t('encounter.title')">
     <header class="ep-head">
       <h2 class="ep-title">{{ t('encounter.title') }}</h2>
+      <SegmentedFilter v-model="sortModel" :options="sortOptions" variant="pill" :aria-label="t('encounter.sort.label')" />
       <Button variant="dashed" size="sm" :icon-left="IconPlus" @click="pickOpen = true">{{ t('encounter.addMonster') }}</Button>
     </header>
 
@@ -148,38 +225,47 @@ async function confirmRemove() {
       <EmptyState v-else-if="!store.monsters.length" :hint="t('encounter.empty')" />
 
       <template v-else>
-        <EncounterCard
-          v-for="m in order.alive"
-          :key="m.id"
-          :monster="m"
-          :selected="store.selectedMonsterId === m.id"
-          :expanded="expandedOf(m.id)"
-          :sort-mode="sortMode"
-          @update:expanded="v => setExpanded(m.id, v)"
-          @select="select(m)"
-          @attack="onAttack(m.id)"
-          @kill-or-revive="onKillOrRevive(m.id)"
-          @change-hp="d => onChangeHp(m.id, d)"
-          @toggle-condition="c => onToggleCondition(m.id, c)"
-          @edit="editingId = m.id"
-          @remove="removingId = m.id"
-        />
+        <TransitionGroup ref="listRef" tag="div" name="ep-move" class="ep-alive">
+          <EncounterCard
+            v-for="m in shownAlive"
+            :key="m.id"
+            :data-id="m.id"
+            :monster="m"
+            :selected="store.selectedMonsterId === m.id"
+            :expanded="expandedOf(m.id)"
+            :sort-mode="sortMode"
+            @pointerenter="onPointerEnter(m.id, $event)"
+            @pointerleave="onPointerLeave(m.id, $event)"
+            @pointerdown="onPointerDown(m.id, $event)"
+            @update:expanded="v => setExpanded(m.id, v)"
+            @select="select(m)"
+            @attack="onAttack(m.id)"
+            @kill-or-revive="onKillOrRevive(m.id)"
+            @change-hp="d => onChangeHp(m.id, d)"
+            @toggle-condition="c => onToggleCondition(m.id, c)"
+            @move="d => onKeyMove(m.id, d)"
+            @edit="editingId = m.id"
+            @remove="removingId = m.id"
+          />
+        </TransitionGroup>
         <SectionLabel v-if="order.dead.length" as="h3" tone="neutral" class="ep-dead">{{ t('encounter.defeated') }}</SectionLabel>
-        <EncounterCard
-          v-for="m in order.dead"
-          :key="m.id"
-          :monster="m"
-          :selected="false"
-          :expanded="expandedOf(m.id)"
-          :sort-mode="sortMode"
-          @update:expanded="v => setExpanded(m.id, v)"
-          @attack="onAttack(m.id)"
-          @kill-or-revive="onKillOrRevive(m.id)"
-          @change-hp="d => onChangeHp(m.id, d)"
-          @toggle-condition="c => onToggleCondition(m.id, c)"
-          @edit="editingId = m.id"
-          @remove="removingId = m.id"
-        />
+        <div v-if="order.dead.length" class="ep-dead-list">
+          <EncounterCard
+            v-for="m in order.dead"
+            :key="m.id"
+            :monster="m"
+            :selected="false"
+            :expanded="expandedOf(m.id)"
+            :sort-mode="sortMode"
+            @update:expanded="v => setExpanded(m.id, v)"
+            @attack="onAttack(m.id)"
+            @kill-or-revive="onKillOrRevive(m.id)"
+            @change-hp="d => onChangeHp(m.id, d)"
+            @toggle-condition="c => onToggleCondition(m.id, c)"
+            @edit="editingId = m.id"
+            @remove="removingId = m.id"
+          />
+        </div>
       </template>
     </div>
 
@@ -210,6 +296,7 @@ async function confirmRemove() {
 .ep-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   /* Room on the right for the column's close button. */
   padding: 12px 40px 10px 14px;
@@ -217,7 +304,7 @@ async function confirmRemove() {
 }
 .ep-title {
   margin: 0;
-  flex: 1;
+  flex: 1 1 auto;
   font-family: var(--font-serif);
   font-weight: 500;
   font-size: 20px;
@@ -231,6 +318,11 @@ async function confirmRemove() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.ep-alive, .ep-dead-list { display: flex; flex-direction: column; gap: 8px; }
+.ep-move-move { transition: transform var(--t-med) var(--ease); }
+@media (prefers-reduced-motion: reduce) {
+  .ep-move-move { transition: none; }
 }
 .ep-dead { display: flex; align-items: center; gap: 8px; margin: 6px 2px 0; }
 .ep-dead::after { content: ''; flex: 1; height: 1px; background: var(--vtt-border-subtle); }

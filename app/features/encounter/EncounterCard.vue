@@ -34,12 +34,19 @@ const emit = defineEmits<{
   (e: 'toggle-condition', id: ConditionId): void
   (e: 'edit'): void
   (e: 'remove'): void
+  (e: 'move', direction: -1 | 1): void
 }>()
 const expanded = defineModel<boolean>('expanded', { default: false })
 
 const uid = useId()
 const dead = computed(() => props.monster.diedAt !== undefined)
 const label = computed(() => monsterLabel(props.monster))
+
+function onGripKeydown(e: KeyboardEvent) {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+  e.preventDefault()
+  emit('move', e.key === 'ArrowUp' ? -1 : 1)
+}
 
 // A click on empty space in the head selects too; the buttons inside act on their own.
 function onHeadClick(e: MouseEvent) {
@@ -54,7 +61,16 @@ function onHeadClick(e: MouseEvent) {
     :class="['ec-card', { 'is-selected': selected, 'is-dead': dead }]"
   >
     <div class="ec-top" @click="onHeadClick">
-      <span v-if="sortMode === 'manual' && !dead" class="ec-grip"><IconGrip :size="14" /></span>
+      <button
+        v-if="sortMode === 'manual' && !dead"
+        type="button"
+        class="ec-grip"
+        :aria-label="t('encounter.card.grip')"
+        @click.stop
+        @keydown="onGripKeydown"
+      >
+        <IconGrip :size="14" />
+      </button>
       <button
         type="button"
         class="ec-title"
@@ -142,6 +158,8 @@ function onHeadClick(e: MouseEvent) {
   background: var(--vtt-elevated-a96);
   box-shadow: inset 0 0 0 1px var(--vtt-accent), 0 0 16px var(--vtt-accent-a35);
 }
+.ec-card.is-drag-ghost { opacity: 0.35; }
+.ec-card.sortable-fallback { box-shadow: var(--shadow-2), inset 0 0 0 1px var(--vtt-accent); }
 .ec-card.is-dead { opacity: 0.55; background: var(--vtt-surface-a70); }
 .ec-card.is-dead .ec-name {
   text-decoration: line-through;
@@ -156,7 +174,24 @@ function onHeadClick(e: MouseEvent) {
   cursor: pointer;
 }
 .ec-card.is-dead .ec-top { cursor: default; }
-.ec-grip { display: inline-flex; flex: none; color: var(--vtt-text-muted); cursor: grab; }
+.ec-grip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 32px;
+  margin: -4px 0 -4px -6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--vtt-text-muted);
+  cursor: grab;
+  /* A drag from the grip must not scroll the list. */
+  touch-action: none;
+}
+.ec-grip:hover { color: var(--vtt-accent-soft); }
 
 /* The number sits outside the truncating name, so a long name never pushes it out. */
 .ec-title {
