@@ -28,6 +28,7 @@ export interface RollRecord {
   purpose: RollPurpose
   characterId: string
   characterName?: string
+  monster?: { id: string; n: number }
   rollMode?: RollMode
   discardedDice?: DieResult[]
   discardedTotal?: number
