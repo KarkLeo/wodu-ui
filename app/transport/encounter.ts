@@ -320,7 +320,8 @@ export function saveEncounterState(next: EncounterState): void {
 
 /**
  * Master: records an applied roll. The mark is kept locally first, so a failed write still blocks a second
- * application; the error is rethrown for the caller to retry and report.
+ * application; the error is rethrown for the caller to retry and report. A create refused because the row
+ * already exists counts as written, so a retry after a lost answer is safe.
  */
 export async function recordHit(gameId: string, hit: EncounterHit): Promise<void> {
   requireOnlineUser()
@@ -332,7 +333,18 @@ export async function recordHit(gameId: string, hit: EncounterHit): Promise<void
   try {
     await call(() => pb.collection('encounter_hits').create({ id: data.id, game: gameId, data }))
   } catch (err) {
+    // A retry of a create that had landed after all answers 400 for the taken id: the hit is there.
+    if (statusOf(err) === 400 && await hitExists(data.id)) return
     if (current()) log.error('recordHit failed', { id: data.id, err })
     throw err
+  }
+}
+
+async function hitExists(id: string): Promise<boolean> {
+  try {
+    await call(() => pb.collection('encounter_hits').getOne(id))
+    return true
+  } catch {
+    return false
   }
 }

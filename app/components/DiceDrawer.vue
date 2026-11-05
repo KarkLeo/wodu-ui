@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useCharactersStore } from '@/stores/characters'
+import { useEncounterStore } from '@/stores/encounter'
+import { useApplyHit } from '@/composables/useApplyHit'
+import { useMonsterRolls } from '@/composables/useMonsterRolls'
+import { useTableSelection } from '@/composables/useTableSelection'
+import { monsterLabel } from '@/domain/encounter'
+import ApplyHitPopover from '@/features/encounter/ApplyHitPopover.vue'
+import HitRow from '@/features/encounter/HitRow.vue'
+import NumberedName from '@/features/encounter/NumberedName.vue'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useUnifiedLog, type LogFilter } from '@/composables/useUnifiedLog'
 import type { RollMode, RollRecord } from '@/types/dice'
@@ -23,20 +31,28 @@ import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { useGameLayout } from '@/components/layout/gameLayoutContext'
 
+const log = createLogger('dice-drawer')
+
+const charStore = useCharactersStore()
+const encounter = useEncounterStore()
+const { rollFree } = useDiceRoller()
+const { rollFreeAs } = useMonsterRolls()
+const unified = useUnifiedLog()
+const applyHit = useApplyHit()
+const { selection } = useTableSelection()
+const layout = useGameLayout()
+
 const filterOptions = computed<Array<{ value: LogFilter; label: string }>>(() => [
   { value: 'rolls', label: t('diceDrawer.filter.rolls') },
   { value: 'changes', label: t('diceDrawer.filter.changes') },
   { value: 'all', label: t('diceDrawer.filter.all') },
+  ...(applyHit.enabled.value ? [{ value: 'hits' as const, label: t('encounter.log.hits') }] : []),
 ])
 
-const log = createLogger('dice-drawer')
-
-const charStore = useCharactersStore()
-const { rollFree } = useDiceRoller()
-const unified = useUnifiedLog()
-const layout = useGameLayout()
-
 const filter = ref<LogFilter>('all')
+watch(() => applyHit.enabled.value, (on) => {
+  if (!on && filter.value === 'hits') filter.value = 'all'
+})
 const notation = ref('2d6')
 const notationError = ref('')
 const recentId = ref<string | null>(null)
@@ -59,6 +75,52 @@ const activeChar = computed(() => {
 const readOnlyActive = computed(() => (activeChar.value ? undefined : scopedActive.value))
 
 const items = computed(() => unified.filtered(filter.value))
+const listed = computed(() => (filter.value === 'hits' ? applyHit.hits.value.length : items.value.length))
+
+// A selected monster rolls in place of the active character; only the master has one.
+const rollingMonster = computed(() => {
+  const sel = selection.value
+  if (!applyHit.enabled.value || sel?.kind !== 'monster') return undefined
+  return encounter.monsterById(sel.id)
+})
+const canRoll = computed(() => !!rollingMonster.value || !!activeChar.value)
+
+const applicableIds = computed(() => new Set(
+  items.value.filter(i => i.kind === 'roll' && applyHit.applicable(i.payload)).map(i => i.id),
+))
+const hitLines = computed(() => new Map(
+  items.value.filter(i => i.kind === 'roll').map(i => [i.id, applyHit.hitsOf(i.id)]),
+))
+
+const popup = ref<{ roll: RollRecord; el: HTMLElement } | null>(null)
+const popupOpen = computed({
+  get: () => popup.value !== null,
+  set: (open) => { if (!open) popup.value = null },
+})
+
+function openApply(roll: RollRecord, el: HTMLElement) {
+  popup.value = popup.value?.roll.id === roll.id ? null : { roll, el }
+}
+
+function onRowKeydown(e: KeyboardEvent, roll: RollRecord) {
+  if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
+  e.preventDefault()
+  openApply(roll, e.currentTarget as HTMLElement)
+}
+
+function onApply(amount: number) {
+  const open = popup.value
+  if (open) void applyHit.apply(open.roll, amount)
+}
+
+// The popup belongs to one roll and one target: when the target goes or changes, or the roll can no longer go there, it closes.
+watch(() => {
+  const tg = applyHit.target.value
+  return tg ? `${tg.kind}:${tg.id}` : null
+}, () => { popup.value = null })
+watch(() => !!popup.value && !applyHit.applicable(popup.value.roll), (gone) => {
+  if (gone) popup.value = null
+})
 
 const railHistory = computed<RollRecord[]>(() =>
   unified.filtered('rolls')
@@ -80,7 +142,7 @@ function isValidNotation(n: string): boolean {
 }
 
 async function doRoll(notationStr: string) {
-  if (!activeChar.value) return
+  if (!canRoll.value) return
   const norm = normalize(notationStr)
   if (!isValidNotation(notationStr)) {
     notationError.value = t('diceDrawer.input.error')
@@ -89,7 +151,9 @@ async function doRoll(notationStr: string) {
   notationError.value = ''
   const mode = pendingMode.value
   try {
-    await rollFree(activeChar.value.id, activeChar.value.name, norm, mode)
+    const monster = rollingMonster.value
+    if (monster) rollFreeAs(monster, norm, mode)
+    else if (activeChar.value) await rollFree(activeChar.value.id, activeChar.value.name, norm, mode)
   } catch (e) {
     log.error('roll failed', e)
   } finally {
@@ -126,7 +190,7 @@ function rollMetaLabel(r: RollRecord): string {
 }
 
 function rollMetaSecondary(r: RollRecord): string | null {
-  if (r.purpose.kind === 'damage') return gearName(r.purpose.weaponTemplateId, r.purpose.weaponName)
+  if (r.purpose.kind === 'damage' && r.purpose.weaponName) return gearName(r.purpose.weaponTemplateId, r.purpose.weaponName)
   return null
 }
 
@@ -238,7 +302,7 @@ function logDelta(e: ChangeEntry): string | undefined {
       type="button"
       class="btn-rail-roll"
       :aria-label="t('diceDrawer.rail.rollFree')"
-      :disabled="!activeChar || isRolling"
+      :disabled="!canRoll || isRolling"
       @click="doRoll('2d6')"
     >
       <IconDice :size="18" />
@@ -274,69 +338,90 @@ function logDelta(e: ChangeEntry): string | undefined {
     </div>
 
     <div class="drawer-log">
-      <div v-if="!items.length" class="drawer-empty">
-        <EmptyState variant="plain" :title="t('diceDrawer.empty.title')" :hint="t('diceDrawer.empty.hint')">
+      <div v-if="!listed" class="drawer-empty">
+        <EmptyState
+          variant="plain"
+          :title="filter === 'hits' ? t('encounter.log.hitsEmpty') : t('diceDrawer.empty.title')"
+          :hint="filter === 'hits' ? undefined : t('diceDrawer.empty.hint')"
+        >
           <template #icon><IconDice /></template>
         </EmptyState>
       </div>
 
-      <template v-for="item in items" :key="item.id">
-        <div
-          v-if="item.kind === 'roll'"
-          class="dice-row"
-          :class="rollClasses(item.payload)"
-        >
-          <span class="dice-row-glyph" aria-hidden="true">
-            <svg v-if="item.payload.purpose.kind === 'damage'" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 1.5 C8 1.5 3 6.5 3 10 C3 12.761 5.239 15 8 15 C10.761 15 13 12.761 13 10 C13 6.5 8 1.5 8 1.5 Z"/>
-            </svg>
-            <svg v-else viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-              <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
-              <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
-            </svg>
-          </span>
-          <div class="dice-row-body">
-            <div class="dice-row-meta">
-              <b>{{ rollMetaLabel(item.payload) }}</b>
-              <template v-if="rollMetaSecondary(item.payload)">
-                <span class="dot"></span><span class="dice-row-meta-secondary">{{ rollMetaSecondary(item.payload) }}</span>
-              </template>
-              <span class="dot"></span><span class="dice-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span class="dice-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
-            </div>
-            <div class="dice-row-formula">
-              <span class="f-expr">{{ rollExpr(item.payload) }}</span>
-              <span v-if="item.payload.dice.length" class="f-rolls">
-                ·&nbsp;
-                <template v-for="(d, i) in item.payload.dice" :key="i">
-                  <em>{{ d.value }}</em><template v-if="i < item.payload.dice.length - 1"> + </template>
-                </template>
-              </span>
-              <span v-if="item.payload.discardedTotal !== undefined" class="f-alt">
-                · {{ t('diceDrawer.mode.alt') }} {{ item.payload.discardedTotal }}
-              </span>
-            </div>
-          </div>
-          <div class="dice-row-result">{{ item.payload.total }}</div>
-        </div>
+      <template v-if="filter === 'hits'">
+        <HitRow v-for="hit in applyHit.hits.value" :key="hit.id" :hit="hit" />
+      </template>
 
-        <div v-else class="log-row" :class="logClass(item.payload)">
-          <span class="log-row-glyph" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
-              <circle cx="8" cy="8" r="6"/>
-              <path d="M8 5 v6 M6 7 h4" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <div class="log-row-body">
-            <div class="log-row-meta">
-              <b>{{ logMeta(item.payload) }}</b>
-              <span class="dot"></span><span class="log-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
-              <span class="dot"></span><span class="log-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
+      <template v-else>
+        <template v-for="item in items" :key="item.id">
+          <div
+            v-if="item.kind === 'roll'"
+            class="dice-row"
+            :class="[rollClasses(item.payload), { 'is-applicable': applicableIds.has(item.id) }]"
+            :data-roll="item.id"
+            :role="applicableIds.has(item.id) ? 'button' : undefined"
+            :tabindex="applicableIds.has(item.id) ? 0 : undefined"
+            :aria-haspopup="applicableIds.has(item.id) ? 'dialog' : undefined"
+            :aria-expanded="applicableIds.has(item.id) ? popup?.roll.id === item.id : undefined"
+            @click="applicableIds.has(item.id) && openApply(item.payload, $event.currentTarget as HTMLElement)"
+            @keydown="applicableIds.has(item.id) && onRowKeydown($event, item.payload)"
+          >
+            <span class="dice-row-glyph" aria-hidden="true">
+              <svg v-if="item.payload.purpose.kind === 'damage'" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1.5 C8 1.5 3 6.5 3 10 C3 12.761 5.239 15 8 15 C10.761 15 13 12.761 13 10 C13 6.5 8 1.5 8 1.5 Z"/>
+              </svg>
+              <svg v-else viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z"/>
+                <path d="M8 1.5 L8 8 M2 5 L8 8 M14 5 L8 8"/>
+              </svg>
+            </span>
+            <div class="dice-row-body">
+              <div class="dice-row-meta">
+                <b>{{ rollMetaLabel(item.payload) }}</b>
+                <template v-if="rollMetaSecondary(item.payload)">
+                  <span class="dot"></span><span class="dice-row-meta-secondary">{{ rollMetaSecondary(item.payload) }}</span>
+                </template>
+                <span class="dot"></span><NumberedName class="dice-row-meta-author" :label="authorFor(item.payload.characterId, item.payload.characterName)" />
+                <span class="dot"></span><span class="dice-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
+              </div>
+              <div class="dice-row-formula">
+                <span class="f-expr">{{ rollExpr(item.payload) }}</span>
+                <span v-if="item.payload.dice.length" class="f-rolls">
+                  ·&nbsp;
+                  <template v-for="(d, i) in item.payload.dice" :key="i">
+                    <em>{{ d.value }}</em><template v-if="i < item.payload.dice.length - 1"> + </template>
+                  </template>
+                </span>
+                <span v-if="item.payload.discardedTotal !== undefined" class="f-alt">
+                  · {{ t('diceDrawer.mode.alt') }} {{ item.payload.discardedTotal }}
+                </span>
+              </div>
             </div>
-            <div class="log-row-label">{{ logLabel(item.payload) }}</div>
+            <div class="dice-row-result">{{ item.payload.total }}</div>
+            <div v-if="applicableIds.has(item.id) && applyHit.target.value" class="dice-row-go">→ <NumberedName :label="applyHit.target.value.name" /></div>
+            <div v-if="hitLines.get(item.id)?.length" class="dice-row-hits">
+              <span v-for="hit in hitLines.get(item.id)" :key="hit.id" class="dice-row-hit">→ <NumberedName :label="hit.target.name" /> <em>−{{ hit.amount }}</em></span>
+            </div>
           </div>
-          <div v-if="logDelta(item.payload)" class="log-row-delta"><span class="log-row-delta-text">{{ logDelta(item.payload) }}</span></div>
-        </div>
+
+          <div v-else class="log-row" :class="logClass(item.payload)">
+            <span class="log-row-glyph" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M8 5 v6 M6 7 h4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div class="log-row-body">
+              <div class="log-row-meta">
+                <b>{{ logMeta(item.payload) }}</b>
+                <span class="dot"></span><span class="log-row-meta-author">{{ authorFor(item.payload.characterId, item.payload.characterName) }}</span>
+                <span class="dot"></span><span class="log-row-meta-time">{{ formatTime(item.payload.timestamp) }}</span>
+              </div>
+              <div class="log-row-label">{{ logLabel(item.payload) }}</div>
+            </div>
+            <div v-if="logDelta(item.payload)" class="log-row-delta"><span class="log-row-delta-text">{{ logDelta(item.payload) }}</span></div>
+          </div>
+        </template>
       </template>
     </div>
 
@@ -347,7 +432,7 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="button"
           class="mode-chip"
           :class="{ 'is-armed': pendingMode === 'advantage' }"
-          :disabled="isRolling || !activeChar"
+          :disabled="isRolling || !canRoll"
           :aria-pressed="pendingMode === 'advantage'"
           @click="toggleMode('advantage')"
         >
@@ -360,7 +445,7 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="button"
           class="mode-chip"
           :class="{ 'is-armed': pendingMode === 'disadvantage' }"
-          :disabled="isRolling || !activeChar"
+          :disabled="isRolling || !canRoll"
           :aria-pressed="pendingMode === 'disadvantage'"
           @click="toggleMode('disadvantage')"
         >
@@ -378,7 +463,7 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="button"
           class="qr-chip"
           :class="{ 'is-highlight': n === '2d6' }"
-          :disabled="isRolling || !activeChar"
+          :disabled="isRolling || !canRoll"
           @click="doRoll(n)"
         >{{ n }}</button>
       </div>
@@ -390,23 +475,33 @@ function logDelta(e: ChangeEntry): string | undefined {
           type="text"
           v-model="notation"
           :placeholder="t('diceDrawer.input.placeholder')"
-          :disabled="!activeChar || isRolling"
+          :disabled="!canRoll || isRolling"
           @keyup.enter="onSubmit"
           @input="onInput"
         />
         <Button
           variant="hero"
           :icon-left="IconDiceOutline"
-          :disabled="!activeChar || isRolling || !notation.trim()"
+          :disabled="!canRoll || isRolling || !notation.trim()"
           @click="onSubmit"
         >{{ t('diceDrawer.input.submit') }}</Button>
       </div>
-      <div v-if="notationError || readOnlyActive || !activeChar" class="drawer-input-note">
+      <div v-if="notationError || rollingMonster || readOnlyActive || !activeChar" class="drawer-input-note">
         <FormError v-if="notationError">{{ notationError }}</FormError>
+        <StateNote v-else-if="rollingMonster" inline align="start" size="xs">{{ t('encounter.log.rollingAs', { name: monsterLabel(rollingMonster) }) }}</StateNote>
         <StateNote v-else-if="readOnlyActive" inline align="start" size="xs">{{ t('diceDrawer.input.readOnly', { name: readOnlyActive.name }) }}</StateNote>
         <StateNote v-else inline align="start" size="xs">{{ t('diceDrawer.input.hint') }}</StateNote>
       </div>
     </div>
+
+    <ApplyHitPopover
+      v-if="popup && applyHit.target.value"
+      v-model:open="popupOpen"
+      :roll="popup.roll"
+      :target="applyHit.target.value"
+      :anchor="popup.el"
+      @apply="onApply"
+    />
   </aside>
 </template>
 
@@ -561,6 +656,44 @@ function logDelta(e: ChangeEntry): string | undefined {
 .dice-row.is-disadvantage .dice-row-glyph { color: var(--vtt-warning, var(--vtt-danger-bright)); }
 .dice-row.is-disadvantage .dice-row-meta b { color: var(--vtt-warning, var(--vtt-danger-bright)); }
 .dice-row.is-fresh { animation: dice-row-fresh 1600ms var(--ease); }
+.dice-row.is-applicable {
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--vtt-accent-a45);
+}
+.dice-row.is-applicable:hover { background: var(--vtt-accent-a18); }
+.dice-row.is-applicable:focus-visible { outline: 2px solid var(--vtt-accent); outline-offset: 2px; }
+.dice-row-go {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--vtt-accent);
+}
+.dice-row-hits {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--vtt-border-strong);
+}
+.dice-row-hit {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--vtt-text-secondary);
+}
+.dice-row-hit em {
+  flex-shrink: 0;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--vtt-danger-bright);
+}
 
 /* Log row */
 .log-row {

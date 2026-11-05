@@ -901,6 +901,26 @@ export const messages: Messages = {
       body: 'Монстр насовсем исчезнет из панели. Его броски и удары останутся в журнале.',
       confirm: 'Убрать',
     },
+    apply: {
+      armor: 'Броня',
+      tempHp: 'Временные HP',
+      tempHpUsed: '−{used} из {total}',
+      damage: 'Урон',
+      lower: 'Уменьшить урон',
+      raise: 'Увеличить урон',
+      hp: 'HP {before} → {after}',
+      willDie: 'Цель будет повержена.',
+      apply: 'Применить',
+      cancel: 'Отмена',
+    },
+    hit: {
+      roll: 'Бросок {total} − броня {armor}',
+    },
+    log: {
+      hits: 'Урон',
+      hitsEmpty: 'Пока ничего не применено',
+      rollingAs: 'Бросок от: {name}',
+    },
   },
   errors: {
     dispatchFailed: 'Не удалось сохранить изменение. Проверь подключение.',

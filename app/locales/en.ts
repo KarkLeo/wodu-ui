@@ -899,6 +899,26 @@ export const messages = {
       body: 'It leaves the panel for good. Its rolls and hits stay in the log.',
       confirm: 'Remove',
     },
+    apply: {
+      armor: 'Armor',
+      tempHp: 'Temp HP',
+      tempHpUsed: '−{used} of {total}',
+      damage: 'Damage',
+      lower: 'Lower damage',
+      raise: 'Raise damage',
+      hp: 'HP {before} → {after}',
+      willDie: 'It will be defeated.',
+      apply: 'Apply',
+      cancel: 'Cancel',
+    },
+    hit: {
+      roll: 'Roll {total} − armor {armor}',
+    },
+    log: {
+      hits: 'Damage',
+      hitsEmpty: 'Nothing applied yet',
+      rollingAs: 'Rolling as {name}',
+    },
   },
   errors: {
     dispatchFailed: 'Failed to save the change. Check your connection.',

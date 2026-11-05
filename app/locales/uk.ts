@@ -901,6 +901,26 @@ export const messages: Messages = {
       body: 'Монстр назавжди зникне з панелі. Його кидки та удари залишаться в журналі.',
       confirm: 'Прибрати',
     },
+    apply: {
+      armor: 'Броня',
+      tempHp: 'Тимчасові HP',
+      tempHpUsed: '−{used} з {total}',
+      damage: 'Шкода',
+      lower: 'Зменшити шкоду',
+      raise: 'Збільшити шкоду',
+      hp: 'HP {before} → {after}',
+      willDie: 'Ціль буде переможено.',
+      apply: 'Застосувати',
+      cancel: 'Скасувати',
+    },
+    hit: {
+      roll: 'Кидок {total} − броня {armor}',
+    },
+    log: {
+      hits: 'Шкода',
+      hitsEmpty: 'Поки що нічого не застосовано',
+      rollingAs: 'Кидок від: {name}',
+    },
   },
   errors: {
     dispatchFailed: 'Не вдалося зберегти зміну. Перевір підключення.',
