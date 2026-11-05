@@ -734,7 +734,7 @@ export const messages: Messages = {
       special: 'Особенность',
       notes: 'Заметки',
       edit: 'Изменить',
-      toEncounter: 'В схватку',
+      toEncounter: 'В энкаунтер',
       duplicate: 'Копия',
       delete: 'Удалить',
       copyName: '{name} (копия)',
@@ -864,7 +864,7 @@ export const messages: Messages = {
   encounter: {
     close: 'Закрыть энкаунтер',
     addMonster: 'Монстр',
-    added: '{name} №{n} добавлен в схватку',
+    added: 'Добавлено в энкаунтер: {name} #{n}',
     pick: {
       title: 'Добавить монстра',
       add: 'Добавить',
@@ -873,6 +873,7 @@ export const messages: Messages = {
     title: 'Энкаунтер',
     loading: 'Загрузка…',
     loadFailed: 'Не удалось загрузить энкаунтер.',
+    retry: 'Попробовать ещё раз',
     empty: 'Монстров пока нет.',
     defeated: 'Повержены',
     sort: {
@@ -929,7 +930,7 @@ export const messages: Messages = {
     rollSyncFailed: 'Бросок сделан, но не синхронизирован.',
     encounterSaveFailed: 'Не удалось сохранить монстра. Проверь подключение.',
     encounterRemoveFailed: 'Не удалось убрать монстра. Проверь подключение.',
-    encounterHitFailed: 'Не удалось записать попадание. Проверь подключение.',
+    encounterHitFailed: 'Не удалось записать удар. Проверь подключение.',
     readOnly: 'Этого персонажа менять нельзя.',
     characterGone: 'Этого персонажа больше нет за вашим столом.',
   },

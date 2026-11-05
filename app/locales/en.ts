@@ -871,6 +871,7 @@ export const messages = {
     title: 'Encounter',
     loading: 'Loading…',
     loadFailed: 'Couldn’t load the encounter.',
+    retry: 'Try again',
     empty: 'No monsters yet.',
     defeated: 'Defeated',
     sort: {

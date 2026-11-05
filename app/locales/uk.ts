@@ -734,7 +734,7 @@ export const messages: Messages = {
       special: 'Особливість',
       notes: 'Нотатки',
       edit: 'Змінити',
-      toEncounter: 'До сутички',
+      toEncounter: 'До енкаунтера',
       duplicate: 'Копія',
       delete: 'Видалити',
       copyName: '{name} (копія)',
@@ -864,7 +864,7 @@ export const messages: Messages = {
   encounter: {
     close: 'Закрити енкаунтер',
     addMonster: 'Монстр',
-    added: '{name} №{n} додано до сутички',
+    added: 'Додано до енкаунтера: {name} #{n}',
     pick: {
       title: 'Додати монстра',
       add: 'Додати',
@@ -873,6 +873,7 @@ export const messages: Messages = {
     title: 'Енкаунтер',
     loading: 'Завантаження…',
     loadFailed: 'Не вдалося завантажити енкаунтер.',
+    retry: 'Спробувати ще раз',
     empty: 'Монстрів поки немає.',
     defeated: 'Переможені',
     sort: {
@@ -885,7 +886,7 @@ export const messages: Messages = {
       hpUp: 'Збільшити HP на 1',
       armor: 'броня {armor}',
       attack: 'Атака',
-      kill: 'Убити',
+      kill: 'Вбити',
       revive: 'Воскресити (1 HP)',
       expand: 'Показати подробиці',
       collapse: 'Сховати подробиці',
@@ -929,7 +930,7 @@ export const messages: Messages = {
     rollSyncFailed: 'Кидок зроблено, але не синхронізовано.',
     encounterSaveFailed: 'Не вдалося зберегти монстра. Перевір підключення.',
     encounterRemoveFailed: 'Не вдалося прибрати монстра. Перевір підключення.',
-    encounterHitFailed: 'Не вдалося записати влучання. Перевір підключення.',
+    encounterHitFailed: 'Не вдалося записати удар. Перевір підключення.',
     readOnly: 'Цього персонажа змінювати не можна.',
     characterGone: 'Цього персонажа більше немає за вашим столом.',
   },
