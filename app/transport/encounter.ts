@@ -108,10 +108,16 @@ const monsterWriter = serialWriter<EncounterMonster>({
   message: () => t('errors.encounterSaveFailed'),
 })
 
-const STATE_KEY = 'state'
+// Keyed by the state's own id (= game id): a write that outlives a table switch must not touch the next game's state.
 const stateWriter = serialWriter<EncounterState>({
-  show: s => useEncounterStore().setState(s),
-  restore: (_key, s) => useEncounterStore().setState(s),
+  show: (s) => {
+    const store = useEncounterStore()
+    if (store.gameId === s.id) store.setState(s)
+  },
+  restore: (_key, s) => {
+    const store = useEncounterStore()
+    if (store.gameId === s.id) store.setState(s)
+  },
   send: (_key, s) => pb.collection('encounters').update(s.id, { data: s }),
   message: () => t('errors.encounterSaveFailed'),
 })
@@ -137,7 +143,7 @@ function subscribeAll(gen: number, gameId: string) {
       const state = checkEncounterState(row.data)
       if (!state || state.id !== row.id || row.id !== gameId || !mine(row)) return
       // Our own write is about to land last; its older echo must not undo it.
-      onEvent(gen, () => { if (!stateWriter.busy(STATE_KEY)) store.setState(state) })
+      onEvent(gen, () => { if (!stateWriter.busy(gameId)) store.setState(state) })
     }),
     pb.collection('encounter_monsters').subscribe<EncounterMonsterRow>('*', (e) => {
       const row = e.record
@@ -255,19 +261,29 @@ function mayWrite(gameId: string): EncounterState {
   return store.state
 }
 
+// Adds run one after another, so each takes its number from the counters the previous one left.
+let addQueue: Promise<unknown> = Promise.resolve()
+
 /** Master: adds an instance of a library monster. The monster is written first, then the counter. */
-export async function addMonster(gameId: string, entry: LibraryMonster): Promise<void> {
+export function addMonster(gameId: string, entry: LibraryMonster): Promise<void> {
+  const run = addQueue.catch(() => undefined).then(() => addOne(gameId, entry))
+  addQueue = run
+  return run
+}
+
+async function addOne(gameId: string, entry: LibraryMonster): Promise<void> {
   const state = mayWrite(gameId)
   const current = staysCurrent()
   const { monster } = addInstance(state, entry, crypto.randomUUID(), Date.now())
   await call(() => pb.collection('encounter_monsters').create({ id: monster.id, game: gameId, data: monster }))
   if (!current()) return
   const store = useEncounterStore()
-  if (store.gameId !== gameId) return
-  store.putMonster(monster)
-  // The state may have changed while the monster was being written (a sort switch), so merge into the latest.
-  const latest = store.state ?? state
-  stateWriter.submit(STATE_KEY, latest, {
+  const here = store.gameId === gameId
+  if (here) store.putMonster(monster)
+  // Recorded even if the table has moved on, or the number could be handed out again. The state may have
+  // changed while the monster was being written (a sort switch), so merge into the latest.
+  const latest = here && store.state ? store.state : state
+  stateWriter.submit(gameId, latest, {
     ...latest,
     manualOrder: [monster.id, ...latest.manualOrder],
     counters: { ...latest.counters, [entry.id]: Math.max(latest.counters[entry.id] ?? 0, monster.n) },
@@ -297,7 +313,8 @@ export async function removeMonsterInstance(id: string): Promise<void> {
 /** Master: sort mode and manual order, written like a monster edit. */
 export function saveEncounterState(next: EncounterState): void {
   requireOnlineUser()
-  stateWriter.submit(STATE_KEY, useEncounterStore().state ?? undefined, next)
+  const store = useEncounterStore()
+  stateWriter.submit(next.id, store.state?.id === next.id ? store.state : undefined, next)
 }
 
 /**

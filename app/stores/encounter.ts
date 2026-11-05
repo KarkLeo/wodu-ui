@@ -27,13 +27,16 @@ export const useEncounterStore = defineStore('encounter', {
     },
     // A local copy newer than the server's survives a reload that overtook one of its writes.
     setAll(gameId: string, state: EncounterState, monsters: EncounterMonster[], hits: EncounterHit[]) {
+      const sameGame = this.gameId === gameId
       this.gameId = gameId
       this.state = state
       this.monsters = monsters.map((incoming) => {
-        const local = this.monsters.find(m => m.id === incoming.id)
+        const local = sameGame ? this.monsters.find(m => m.id === incoming.id) : undefined
         return local && isStaleMonster(incoming, local) ? local : incoming
       })
-      this.hits = hits
+      // Hits are append-only: one recorded here whose write has not landed yet must outlive a reload.
+      const loaded = new Set(hits.map(h => h.id))
+      this.hits = [...hits, ...(sameGame ? this.hits : []).filter(h => !loaded.has(h.id))]
       this.status = 'ready'
       this.pruneSelection()
     },
