@@ -20,7 +20,9 @@ export const useToastsStore = defineStore('toasts', {
       const id = crypto.randomUUID()
       const expiresAt = Date.now() + ttlMs
       this.items.push({ id, kind, text, expiresAt })
-      window.setTimeout(() => this.dismiss(id), ttlMs)
+      // Not `this.dismiss(id)`: calling an action makes this store's pinia the active one, and a timer that
+      // outlives its app (a story's) would hand that stale pinia to whatever runs next.
+      window.setTimeout(() => { this.items = this.items.filter(t => t.id !== id) }, ttlMs)
     },
     dismiss(id: string) {
       this.items = this.items.filter(t => t.id !== id)
