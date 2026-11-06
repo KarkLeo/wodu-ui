@@ -1,5 +1,17 @@
 import type { Character, InventoryItem, ItemDescriptor } from '@/types/character'
-import { findGearTemplate } from '@/data/gear'
+import { findGearTemplate, type GearTemplate } from '@/data/gear'
+
+/** An inventory item made from the catalog. Whatever acts on the item later reads the item, not the catalog. */
+export function catalogItem(tpl: GearTemplate): Omit<InventoryItem, 'id'> {
+  return {
+    templateId: tpl.templateId,
+    name: '',
+    descriptor: tpl.descriptor,
+    damage: tpl.damage,
+    price: tpl.price,
+    useEffect: tpl.useEffect,
+  }
+}
 
 export function isConsumable(item: { descriptor: ItemDescriptor }): boolean {
   const d = item.descriptor
@@ -35,14 +47,7 @@ export function buyItem(char: Character, templateId: string): Character {
       return { ...stacked, coins: Math.max(0, char.coins - cost) }
     }
   }
-  const item: InventoryItem = {
-    id: crypto.randomUUID(),
-    templateId: tpl.templateId,
-    name: '',
-    descriptor: tpl.descriptor,
-    damage: tpl.damage,
-    price: tpl.price,
-  }
+  const item: InventoryItem = { ...catalogItem(tpl), id: crypto.randomUUID() }
   return {
     ...char,
     inventory: [...char.inventory, item],
@@ -83,8 +88,7 @@ export function useItem(char: Character, itemId: string): Character {
       ),
     }
   }
-  const tpl = item.templateId ? findGearTemplate(item.templateId) : undefined
-  if (tpl?.useEffect === 'quicksilver') {
+  if (item.useEffect === 'quicksilver') {
     return { ...updated, quicksilverCount: (char.quicksilverCount ?? 0) + 1 }
   }
   return updated

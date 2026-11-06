@@ -6,9 +6,18 @@ import { withStores } from '@/stories/state'
 import { applyCommand } from '@/domain/reducer'
 import { useActiveCharacter } from '@/composables/useActiveCharacter'
 import { asTeammate, expectNoEditControls, sheetFor } from '@/stories/readonly'
+import type { InventoryItem } from '@/types/character'
 
 // Mirel with one more dose in the backpack, so she can drink past the daily limit.
 const mirelStocked = applyCommand(mirel, { type: 'BUY_ITEM', templateId: 'mercury' }).character
+const moonWine: InventoryItem = {
+  id: 'story-moon-wine',
+  libraryItemId: 'story-item-moon-wine',
+  name: 'Moon wine',
+  descriptor: { kind: 'custom', consumable: true },
+  quantity: 1,
+  useEffect: 'quicksilver',
+}
 
 const meta = {
   title: 'Panels/MagicPanel',
@@ -53,6 +62,18 @@ export const OverdoseConfirm: Story = {
   decorators: [withStores({ characters: [mirelStocked] })],
   play: async ({ canvasElement }) => {
     await drink('Drink quicksilver')(canvasElement)
+    await drink('Drink anyway')(canvasElement)
+    await expect(await within(document.body).findByRole('button', { name: 'Roll CON and drink' })).toBeVisible()
+  },
+}
+
+/** An item the master marked shares the limit with quicksilver: with the last dose gone, it is what the button drinks. */
+export const MarkedItemSharesTheLimit: Story = {
+  render,
+  decorators: [withStores({ characters: [{ ...mirel, inventory: [...mirel.inventory, moonWine] }] })],
+  play: async ({ canvasElement }) => {
+    await drink('Drink quicksilver')(canvasElement)
+    await expect(await within(canvasElement).findByText('Next dose requires a CON roll.')).toBeVisible()
     await drink('Drink anyway')(canvasElement)
     await expect(await within(document.body).findByRole('button', { name: 'Roll CON and drink' })).toBeVisible()
   },

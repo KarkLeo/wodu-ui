@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import { ref, watch } from 'vue'
 import FormCheckbox from './FormCheckbox.vue'
 
@@ -46,4 +46,17 @@ export const WithoutLabel: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true },
+}
+
+/** A note beside the box, read out with it through `describedby`. */
+export const Described: Story = {
+  render: () => ({
+    components: { FormCheckbox },
+    setup: () => ({ value: ref(false) }),
+    template: `<FormCheckbox v-model="value" describedby="note">Consumable</FormCheckbox>
+      <p id="note">Removed after a single use.</p>`,
+  }),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByLabelText('Consumable')).toHaveAccessibleDescription('Removed after a single use.')
+  },
 }

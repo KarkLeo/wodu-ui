@@ -52,6 +52,29 @@ export const Quicksilver: Story = {
   render: forCharacter(mirel.id),
 }
 
+/** An item the master marked as quicksilver asks for the roll past the limit, like the real thing. */
+export const MarkedAsQuicksilver: Story = {
+  render: forCharacter(mirel.id),
+  decorators: [withStores({
+    characters: [{
+      ...mirel,
+      inventory: [{
+        id: 'story-moon-wine',
+        libraryItemId: 'story-item-moon-wine',
+        name: 'Moon wine',
+        descriptor: { kind: 'custom', consumable: true },
+        useEffect: 'quicksilver',
+      }],
+      quicksilverCount: mirel.level,
+    }],
+  })],
+  play: async ({ canvasElement }) => {
+    const wine = (await within(canvasElement).findByText('Moon wine')).closest<HTMLElement>('.inv-item')!
+    await userEvent.click(within(wine).getByRole('button', { name: 'Use' }))
+    await expect(await body().findByRole('dialog', { name: 'Quicksilver overdose' })).toBeVisible()
+  },
+}
+
 export const MultipleWeapons: Story = {
   render: forCharacter(wren.id),
   play: async ({ canvasElement }) => {

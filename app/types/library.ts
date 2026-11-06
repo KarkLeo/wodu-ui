@@ -1,4 +1,4 @@
-import type { ItemDescriptor } from '@/types/character'
+import type { ItemDescriptor, ItemUseEffect } from '@/types/character'
 
 export interface LibraryMonster {
   id: string
@@ -19,6 +19,7 @@ export interface LibraryItem {
   // shown to the player once handed out (monster notes stay master-only)
   notes?: string
   quantity?: number
+  useEffect?: ItemUseEffect
   // starter entries only (domain/starterLibrary.ts): the catalog template they stand for; never stored
   templateId?: string
 }

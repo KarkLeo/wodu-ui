@@ -5,6 +5,7 @@ import { useInventory } from '@/composables/useInventory'
 import { useDiceRoller, isRolling } from '@/composables/useDiceRoller'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { findGearTemplate } from '@/data/gear'
+import { catalogItem } from '@/domain/inventory'
 import { gearName, abilityName } from '@/locales/content'
 import { hitDiceCount, sturdinessBonus } from '@/utils/derived'
 import CoinBar from '@/features/in-game/components/inventory/CoinBar.vue'
@@ -75,13 +76,7 @@ function onRequestGm(templateId: string) { gmPendingId.value = templateId }
 function gmApprove() {
   const tpl = gmPending.value
   if (!tpl) return
-  inv.receive({
-    templateId: tpl.templateId,
-    name: '',
-    descriptor: tpl.descriptor,
-    damage: tpl.damage,
-    price: tpl.price,
-  })
+  inv.receive(catalogItem(tpl))
   gmPendingId.value = null
 }
 function gmCancel() { gmPendingId.value = null }

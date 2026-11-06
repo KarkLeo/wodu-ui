@@ -842,6 +842,8 @@ export const messages: Messages = {
         price: 'Цена',
         pricePlaceholder: 'серебра',
         consumable: 'Расходуемый',
+        quicksilver: 'Считается ртутью',
+        quicksilverHint: 'Идёт в дневной лимит ртути, равный уровню персонажа. Сверх лимита — бросок ТЕЛ.',
         quantity: 'Количество',
         notes: 'Заметки',
         notesPlaceholder: 'Игрок увидит их, когда предмет окажется у него',

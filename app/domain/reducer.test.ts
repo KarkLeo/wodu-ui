@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { applyCommand } from './reducer'
 import { libraryItemToInventory } from './library'
+import { catalogItem } from './inventory'
+import { findGearTemplate } from '@/data/gear'
 import { totalArmor } from '@/utils/derived'
 import type { LevelUpPatch } from './commands'
 import type { InventoryItem, Magic } from '@/types/character'
@@ -83,13 +85,13 @@ describe('applyCommand: USE_ITEM', () => {
     expect(character.inventory).toEqual([])
     expect(changes[0].payload).toMatchObject({ kind: 'inventory-use', itemName: 'Potion', quantityBefore: 1 })
   })
-  it('mercury — increments quicksilverCount (undefined → 1)', () => {
+  it('the quicksilver effect — increments quicksilverCount (undefined → 1)', () => {
     const mercury: InventoryItem = {
       id: 'mercury-1',
-      templateId: 'mercury',
-      name: 'Mercury (dose)',
-      descriptor: { kind: 'occult', consumable: true },
+      name: 'Moon wine',
+      descriptor: { kind: 'custom', consumable: true },
       quantity: 2,
+      useEffect: 'quicksilver',
     }
     const char = makeCharacter({ inventory: [mercury] })
     expect(char.quicksilverCount).toBeUndefined()
@@ -97,18 +99,51 @@ describe('applyCommand: USE_ITEM', () => {
     expect(character.quicksilverCount).toBe(1)
     expect(character.inventory[0].quantity).toBe(1)
   })
-  it('mercury — increments cumulatively from an existing count', () => {
+  it('the quicksilver effect — increments cumulatively from an existing count', () => {
     const mercury: InventoryItem = {
       id: 'mercury-2',
-      templateId: 'mercury',
-      name: 'Mercury (dose)',
-      descriptor: { kind: 'occult', consumable: true },
+      name: 'Moon wine',
+      descriptor: { kind: 'custom', consumable: true },
       quantity: 1,
+      useEffect: 'quicksilver',
     }
     const char = makeCharacter({ inventory: [mercury], quicksilverCount: 2 })
     const { character } = applyCommand(char, { type: 'USE_ITEM', itemId: mercury.id })
     expect(character.quicksilverCount).toBe(3)
     expect(character.inventory).toEqual([])
+  })
+  it('a catalog id alone counts for nothing: the effect is on the item', () => {
+    const item: InventoryItem = {
+      id: 'mercury-3',
+      templateId: 'mercury',
+      name: '',
+      descriptor: { kind: 'occult', consumable: true },
+    }
+    const char = makeCharacter({ inventory: [item], quicksilverCount: 1 })
+    const { character } = applyCommand(char, { type: 'USE_ITEM', itemId: item.id })
+    expect(character.quicksilverCount).toBe(1)
+  })
+  it('bought quicksilver carries the effect and counts when used', () => {
+    const char = makeCharacter({ coins: 50 })
+    const bought = applyCommand(char, { type: 'BUY_ITEM', templateId: 'mercury' }).character
+    const { character } = applyCommand(bought, { type: 'USE_ITEM', itemId: bought.inventory[0].id })
+    expect(character.quicksilverCount).toBe(1)
+  })
+  it('other catalog consumables carry no effect', () => {
+    const char = makeCharacter({ coins: 50 })
+    const bought = applyCommand(char, { type: 'BUY_ITEM', templateId: 'holywater' }).character
+    const { character } = applyCommand(bought, { type: 'USE_ITEM', itemId: bought.inventory[0].id })
+    expect(character.quicksilverCount).toBeUndefined()
+  })
+})
+
+describe('catalogItem', () => {
+  it('an item asked of the GM keeps the use-effect of the catalog', () => {
+    const char = makeCharacter()
+    const item = catalogItem(findGearTemplate('mercury')!)
+    const received = applyCommand(char, { type: 'RECEIVE_ITEM', item }).character
+    const { character } = applyCommand(received, { type: 'USE_ITEM', itemId: received.inventory[0].id })
+    expect(character.quicksilverCount).toBe(1)
   })
 })
 

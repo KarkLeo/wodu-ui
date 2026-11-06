@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button.vue'
 import FormCheckbox from '@/components/ui/FormCheckbox.vue'
 import FormError from '@/components/ui/FormError.vue'
 import SelectField from '@/components/ui/SelectField.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import TextareaField from '@/components/ui/TextareaField.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { checkItem, copyName, type LibraryProblem } from '@/domain/library'
@@ -40,6 +41,7 @@ const form = reactive({
   price: '',
   consumable: false,
   quantity: '',
+  quicksilver: false,
   notes: '',
 })
 // Field errors wait for the first save attempt, then follow the typing.
@@ -70,6 +72,7 @@ function reset() {
   form.price = s?.price !== undefined ? String(s.price) : ''
   form.consumable = !!d && 'consumable' in d && d.consumable === true
   form.quantity = s?.quantity !== undefined ? String(s.quantity) : ''
+  form.quicksilver = s?.useEffect === 'quicksilver'
   form.notes = s?.notes ?? ''
   tried.value = false
 }
@@ -101,6 +104,7 @@ const check = computed(() => checkItem({
   price: toInt(form.price),
   notes: form.notes,
   quantity: canConsume.value && form.consumable ? toInt(form.quantity) : undefined,
+  useEffect: form.quicksilver ? 'quicksilver' : undefined,
 }))
 
 function problemText(p: LibraryProblem): string {
@@ -199,6 +203,11 @@ function submit() {
         />
       </div>
 
+      <div v-if="canConsume && form.consumable" class="its-quicksilver">
+        <FormCheckbox v-model="form.quicksilver" :describedby="`${uid}-quicksilver`">{{ t('library.items.form.quicksilver') }}</FormCheckbox>
+        <StateNote :id="`${uid}-quicksilver`" inline align="start" size="xs">{{ t('library.items.form.quicksilverHint') }}</StateNote>
+      </div>
+
       <TextareaField
         v-model="form.notes"
         :label="t('library.items.form.notes')"
@@ -223,4 +232,5 @@ function submit() {
 .its-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
 /* Level with the bottom of the quantity input (label row, gap, input), also while an error shows under it. */
 .its-beside { margin-top: calc(var(--s-6) + var(--s-2)); }
+.its-quicksilver { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 </style>

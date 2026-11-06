@@ -169,6 +169,32 @@ describe('libraryItemToInventory', () => {
     expect(libraryItemToInventory(base).quantity).toBe(1)
     expect(libraryItemToInventory({ ...base, quantity: 3 }).quantity).toBe(3)
   })
+  it('hands a use-effect over with the item', () => {
+    const out = libraryItemToInventory({
+      id: 'i-4',
+      name: 'Moon wine',
+      descriptor: { kind: 'custom', consumable: true },
+      useEffect: 'quicksilver',
+    })
+    expect(out.useEffect).toBe('quicksilver')
+    expect('useEffect' in libraryItemToInventory({ id: 'i-5', name: 'Torch', descriptor: { kind: 'gear', consumable: true } })).toBe(false)
+  })
+})
+
+describe('checkItem: use-effect', () => {
+  const potion = { id: 'i-1234567890abcd', name: 'Moon wine', descriptor: { kind: 'custom', consumable: true } }
+
+  it('keeps the effect of a consumable', () => {
+    expect(checkItem({ ...potion, useEffect: 'quicksilver' })).toMatchObject({ ok: true, value: { useEffect: 'quicksilver' } })
+  })
+  it('drops it from an item that cannot be used', () => {
+    const r = checkItem({ ...potion, descriptor: { kind: 'custom' }, useEffect: 'quicksilver' })
+    expect(r.ok && 'useEffect' in r.value).toBe(false)
+  })
+  it('drops a value it does not know', () => {
+    const r = checkItem({ ...potion, useEffect: 'levitation' })
+    expect(r.ok && 'useEffect' in r.value).toBe(false)
+  })
 })
 
 describe('searchMonsters', () => {

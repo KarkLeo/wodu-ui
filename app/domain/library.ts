@@ -164,12 +164,14 @@ export function checkItem(value: unknown): LibraryCheck<LibraryItem> {
   if (price !== undefined) out.price = price
   if (notes) out.notes = notes
   if (quantity !== undefined) out.quantity = quantity
+  // Only a consumable has a "use" to carry an effect.
+  if (isConsumable({ descriptor }) && value.useEffect === 'quicksilver') out.useEffect = value.useEffect
   return { ok: true, value: out }
 }
 
 export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, 'id'> {
-  // A starter entry hands out the catalog item itself: its name follows each viewer's language, it
-  // stacks with bought ones, and use-effects such as quicksilver keep working.
+  // A starter entry hands out the catalog item itself: its name follows each viewer's language and it
+  // stacks with bought ones.
   if (item.templateId) {
     const out: Omit<InventoryItem, 'id'> = {
       templateId: item.templateId,
@@ -178,6 +180,7 @@ export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, '
     }
     if (item.damage !== undefined) out.damage = item.damage
     if (item.price !== undefined) out.price = item.price
+    if (item.useEffect) out.useEffect = item.useEffect
     return out
   }
   const out: Omit<InventoryItem, 'id'> = {
@@ -189,6 +192,7 @@ export function libraryItemToInventory(item: LibraryItem): Omit<InventoryItem, '
   if (item.price !== undefined) out.price = item.price
   if (item.notes !== undefined) out.notes = item.notes
   if (isConsumable(item)) out.quantity = item.quantity ?? 1
+  if (item.useEffect) out.useEffect = item.useEffect
   return out
 }
 

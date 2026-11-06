@@ -70,4 +70,14 @@ describe('giving a starter item', () => {
     const used = useItem(given, given.inventory[0]!.id)
     expect(used.quicksilverCount).toBe(1)
   })
+
+  // WODU-52: a stored copy goes through the shape check and has no tie to the catalog.
+  it('a stored copy of quicksilver behaves like the original', () => {
+    const checked = checkItem(starter('mercury'))
+    if (!checked.ok) throw new Error(JSON.stringify(checked.problems))
+    const given = receiveItem(char, libraryItemToInventory(checked.value))
+    expect(given.inventory[0]!.templateId).toBeUndefined()
+    const used = useItem(given, given.inventory[0]!.id)
+    expect(used.quicksilverCount).toBe(1)
+  })
 })

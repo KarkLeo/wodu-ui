@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import ItemSheet from './ItemSheet.vue'
+import { starterItems } from '@/domain/starterLibrary'
 import { ITEMS } from '@/stories/fixtures'
 import { modalDocs } from '@/stories/docs'
 
@@ -121,6 +122,54 @@ export const KindChangeDropsConsumable: Story = {
     await userEvent.type(sheet.getByLabelText('Name'), 'Crowbar')
     await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
     await expect(args.onSave).toHaveBeenCalledWith({ name: 'Crowbar', descriptor: { kind: 'tool' } })
+  },
+}
+
+/** Any consumable can count as quicksilver; its note says what that does. */
+export const AddCountsAsQuicksilver: Story = {
+  play: async ({ canvasElement, args }) => {
+    const sheet = await dialog(canvasElement, 'New item')
+    await userEvent.selectOptions(sheet.getByLabelText('Kind'), 'custom')
+    await expect(sheet.queryByLabelText('Counts as quicksilver')).toBeNull()
+    await userEvent.click(sheet.getByText('Consumable'))
+    await expect(sheet.getByLabelText('Counts as quicksilver')).toHaveAccessibleDescription(
+      "Goes towards the daily quicksilver limit, equal to the character's level. Past it, drinking takes a CON roll.",
+    )
+    await userEvent.click(sheet.getByText('Counts as quicksilver'))
+    await userEvent.type(sheet.getByLabelText('Name'), 'Moon wine')
+    await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
+    await expect(args.onSave).toHaveBeenCalledWith({
+      name: 'Moon wine', descriptor: { kind: 'custom', consumable: true }, useEffect: 'quicksilver',
+    })
+  },
+}
+
+/** Without the consumable box there is no "use", so the effect goes with it. */
+export const NotConsumableDropsQuicksilver: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement, args }) => {
+    const sheet = await dialog(canvasElement, 'New item')
+    await userEvent.selectOptions(sheet.getByLabelText('Kind'), 'occult')
+    await userEvent.click(sheet.getByText('Consumable'))
+    await userEvent.click(sheet.getByText('Counts as quicksilver'))
+    await userEvent.click(sheet.getByText('Consumable'))
+    await userEvent.type(sheet.getByLabelText('Name'), 'Bone dust')
+    await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
+    await expect(args.onSave).toHaveBeenCalledWith({ name: 'Bone dust', descriptor: { kind: 'occult' } })
+  },
+}
+
+/** WODU-52: a copy of the rulebook's quicksilver still counts as quicksilver. */
+export const DuplicateQuicksilver: Story = {
+  tags: ['no-visual'],
+  args: { mode: 'duplicate', source: starterItems().find(i => i.templateId === 'mercury')! },
+  play: async ({ canvasElement, args }) => {
+    const sheet = await dialog(canvasElement, 'New copy')
+    await expect(sheet.getByLabelText('Counts as quicksilver')).toBeChecked()
+    await userEvent.click(sheet.getByRole('button', { name: 'Add' }))
+    await expect(args.onSave).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Quicksilver (dose) (copy)', useEffect: 'quicksilver',
+    }))
   },
 }
 

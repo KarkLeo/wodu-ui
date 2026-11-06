@@ -31,6 +31,8 @@ export type ItemDescriptor =
   | { kind: 'occult'; consumable?: boolean }
   | { kind: 'custom'; consumable?: boolean }
 
+export type ItemUseEffect = 'quicksilver'
+
 export interface InventoryItem {
   id: string
   templateId?: string
@@ -42,6 +44,7 @@ export interface InventoryItem {
   notes?: string
   equipped?: boolean
   quantity?: number
+  useEffect?: ItemUseEffect
 }
 
 export interface Spirit {

@@ -3,6 +3,8 @@ import IconCheckBold from './icons/IconCheckBold.vue'
 
 defineProps<{
   ariaLabel?: string
+  /** The id of a note about this box, read out with it. */
+  describedby?: string
   disabled?: boolean
 }>()
 
@@ -15,6 +17,7 @@ const model = defineModel<boolean>({ required: true })
       type="checkbox"
       class="form-check-input"
       :aria-label="ariaLabel"
+      :aria-describedby="describedby"
       :disabled="disabled"
       :checked="model"
       @change="model = ($event.target as HTMLInputElement).checked"

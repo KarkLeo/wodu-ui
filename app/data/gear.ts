@@ -3,12 +3,9 @@ import type { InventoryItem } from '@/types/character'
 export const GEAR_CATEGORY_IDS = ['weapon', 'armor', 'gear', 'tool', 'occult', 'rare', 'fire'] as const
 export type GearCategoryId = (typeof GEAR_CATEGORY_IDS)[number]
 
-export type GearUseEffect = 'quicksilver'
-
 export type GearTemplate = Omit<InventoryItem, 'id' | 'name' | 'notes'> & {
   templateId: string
   category: GearCategoryId
-  useEffect?: GearUseEffect
 }
 
 export const GEAR_CATALOG = [
