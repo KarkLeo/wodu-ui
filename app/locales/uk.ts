@@ -842,6 +842,8 @@ export const messages: Messages = {
         price: 'Ціна',
         pricePlaceholder: 'срібла',
         consumable: 'Витратний',
+        quicksilver: 'Вважається ртуттю',
+        quicksilverHint: 'Іде в денний ліміт ртуті, що дорівнює рівню персонажа. Понад ліміт — кидок ТІЛ.',
         quantity: 'Кількість',
         notes: 'Нотатки',
         notesPlaceholder: 'Гравець побачить їх, коли предмет опиниться в нього',

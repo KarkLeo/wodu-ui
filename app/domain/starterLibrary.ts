@@ -28,6 +28,7 @@ export function starterItems(): LibraryItem[] {
     if (g.price !== undefined) item.price = g.price
     const notes = gearNotes(g.templateId)
     if (notes) item.notes = notes
+    if (g.useEffect) item.useEffect = g.useEffect
     return item
   })
 }

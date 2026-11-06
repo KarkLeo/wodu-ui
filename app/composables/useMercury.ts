@@ -4,7 +4,6 @@ import type { CharacterCommand } from '@/domain/commands'
 import { useInventory } from './useInventory'
 import { useDiceRoller } from './useDiceRoller'
 import { isQuicksilverOverdose, effectiveStat } from '@/utils/derived'
-import { findGearTemplate } from '@/data/gear'
 import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
 
@@ -21,11 +20,7 @@ export function useMercury(getChar: () => Character, dispatch: Dispatcher) {
   const isOverdose = computed(() => isQuicksilverOverdose(getChar()))
 
   const mercuryItem = computed<InventoryItem | null>(() =>
-    getChar().inventory.find(i => {
-      if ((i.quantity ?? 1) <= 0) return false
-      const tpl = i.templateId ? findGearTemplate(i.templateId) : undefined
-      return tpl?.useEffect === 'quicksilver'
-    }) ?? null,
+    getChar().inventory.find(i => (i.quantity ?? 1) > 0 && i.useEffect === 'quicksilver') ?? null,
   )
 
   const pendingItemId = ref<string | null>(null)

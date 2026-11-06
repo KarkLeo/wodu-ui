@@ -7,6 +7,7 @@ import { useMercury } from '@/composables/useMercury'
 import { isRolling } from '@/composables/useDiceRoller'
 import { useSheetReadonly } from '@/composables/useSheetReadonly'
 import { findGearTemplate } from '@/data/gear'
+import { catalogItem } from '@/domain/inventory'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
@@ -98,8 +99,7 @@ function onToggleEquip(item: InventoryItem) {
 }
 
 function onUse(item: InventoryItem) {
-  const tpl = item.templateId ? findGearTemplate(item.templateId) : undefined
-  if (tpl?.useEffect === 'quicksilver') {
+  if (item.useEffect === 'quicksilver') {
     drinkQuicksilver(item.id)
     return
   }
@@ -121,13 +121,7 @@ function onRequestGm(templateId: string) {
 function gmApprove() {
   const tpl = gmPending.value
   if (!tpl) return
-  inv.receive({
-    templateId: tpl.templateId,
-    name: '',
-    descriptor: tpl.descriptor,
-    damage: tpl.damage,
-    price: tpl.price,
-  })
+  inv.receive(catalogItem(tpl))
   gmPendingId.value = null
 }
 function gmCancel() { gmPendingId.value = null }

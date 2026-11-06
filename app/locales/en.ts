@@ -840,6 +840,8 @@ export const messages = {
         price: 'Price',
         pricePlaceholder: 'silver',
         consumable: 'Consumable',
+        quicksilver: 'Counts as quicksilver',
+        quicksilverHint: "Goes towards the daily quicksilver limit, equal to the character's level. Past it, drinking takes a CON roll.",
         quantity: 'Quantity',
         notes: 'Notes',
         notesPlaceholder: 'The player sees these once the item is handed out',
