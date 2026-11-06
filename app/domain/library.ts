@@ -1,6 +1,7 @@
 import type { InventoryItem, ItemDescriptor } from '@/types/character'
 import { LIBRARY_LIMITS, type ItemKindFilter, type LibraryItem, type LibraryMonster } from '@/types/library'
 import { isConsumable } from '@/domain/inventory'
+import { cutText } from '@/utils/text'
 
 export type LibraryProblemKey =
   | 'notObject'
@@ -199,7 +200,7 @@ export function copyName(name: string, wrap: (name: string) => string, max: numb
   const full = wrap(name)
   const over = full.length - max
   if (over <= 0) return full
-  return wrap(name.slice(0, Math.max(1, name.length - over)).trimEnd())
+  return wrap(cutText(name, Math.max(1, name.length - over)).trimEnd())
 }
 
 function matchesWords(text: string, query: string): boolean {

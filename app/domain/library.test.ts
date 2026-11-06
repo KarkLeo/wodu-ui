@@ -251,6 +251,11 @@ describe('copyName', () => {
     expect(copyName('Old wolf', wrap, 11)).toBe('Old (copy)')
   })
 
+  it('does not split an emoji at the cut', () => {
+    const name = `${'x'.repeat(72)}😀yyyy`
+    expect(copyName(name, wrap)).toBe(`${'x'.repeat(72)} (copy)`)
+  })
+
   it('keeps at least one character of the original', () => {
     expect(copyName('Goblin', wrap, 3)).toBe('G (copy)')
   })

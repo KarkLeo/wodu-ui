@@ -578,6 +578,20 @@ describe('applyCommand: guards against an unknown itemId', () => {
   })
 })
 
+describe('applyCommand: ADD_STAT_MODIFIER', () => {
+  const add = (label: string) =>
+    applyCommand(makeCharacter(), { type: 'ADD_STAT_MODIFIER', statKey: 'str', amount: 1, label })
+      .character.modifiers?.[0]?.label
+
+  it('cuts a long label to 32 characters', () => {
+    expect(add('x'.repeat(40))).toBe('x'.repeat(32))
+  })
+
+  it('does not split an emoji at the cut', () => {
+    expect(add(`${'x'.repeat(31)}😀`)).toBe('x'.repeat(31))
+  })
+})
+
 describe('applyCommand: BUY_ITEM — non-consumable does not stack', () => {
   it('buying the same weapon twice → two separate items', () => {
     const char0 = makeCharacter({ coins: 100, inventory: [] })

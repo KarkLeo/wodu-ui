@@ -271,4 +271,5 @@ Reference materials live outside this repo, in the workspace folder next to it (
 - No decorative chrome — every UI element must serve a functional purpose
 - Offline data survives page refresh and browser restarts (localStorage); online data lives on the server and is reloaded on start
 - Domain command dispatch is the only path for gameplay mutations
+- Text a person typed is cut with `cutText` (`utils/text.ts`), not `slice`: half an emoji makes PocketBase refuse the whole write
 - Bump `version` in `package.json` (patch by default) whenever you change code — the in-app footer surfaces it via `__APP_VERSION__`, so a stale version means stale UI for users

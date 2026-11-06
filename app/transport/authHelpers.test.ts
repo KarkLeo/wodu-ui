@@ -42,6 +42,10 @@ describe('defaultDisplayName', () => {
     expect(defaultDisplayName('anna.k@mail.com')).toBe('anna.k')
     expect(defaultDisplayName(`${'x'.repeat(60)}@mail.com`)).toHaveLength(40)
   })
+
+  it('does not split an emoji at the cut', () => {
+    expect(defaultDisplayName(`${'x'.repeat(39)}😀@mail.com`)).toBe('x'.repeat(39))
+  })
 })
 
 describe('server errors', () => {

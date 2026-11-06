@@ -2,6 +2,7 @@ import { ClientResponseError } from 'pocketbase'
 import { LOCALES, type Locale } from '@/locales'
 import type { AppMode } from './mode'
 import { modeForPath } from '@/utils/routeMode'
+import { cutText } from '@/utils/text'
 import { isNetworkError } from './connection'
 
 export const OTP_LENGTH = 8
@@ -24,7 +25,7 @@ export function sanitizeCode(raw: string): string {
 }
 
 export function defaultDisplayName(email: string): string {
-  return email.split('@')[0]!.trim().slice(0, NAME_MAX)
+  return cutText(email.split('@')[0]!.trim(), NAME_MAX)
 }
 
 export function isNotUniqueEmailError(err: unknown): boolean {

@@ -1,4 +1,5 @@
 import type { Character, StatKey, StatModifier } from '@/types/character'
+import { cutText } from '@/utils/text'
 
 const MAX_LABEL_LENGTH = 32
 
@@ -10,7 +11,7 @@ export function addModifier(
 ): Character {
   const cleanAmount = Math.trunc(amount)
   if (cleanAmount === 0) return char
-  const cleanLabel = label.trim().slice(0, MAX_LABEL_LENGTH)
+  const cleanLabel = cutText(label.trim(), MAX_LABEL_LENGTH)
   if (!cleanLabel) return char
   const mod: StatModifier = {
     id: crypto.randomUUID(),
