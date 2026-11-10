@@ -133,10 +133,11 @@ const armorChip = computed(() => {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--vtt-accent);
-  padding: 1px 5px;
-  border: 1px solid var(--vtt-accent-deep);
-  border-radius: var(--r-xs);
-  background: var(--vtt-gold-a08);
+  padding: 1px 7px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--vtt-bg-elevated);
+  background: color-mix(in srgb, var(--vtt-accent-deep) 18%, transparent);
   line-height: 1.2;
   flex-shrink: 0;
 }
