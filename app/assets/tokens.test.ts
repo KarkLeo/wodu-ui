@@ -57,40 +57,59 @@ function fillOver(declaration: string, bg: string): string {
   return tokens[plain[1]]
 }
 
-describe('Pill tones', () => {
-  const pillCss = readFileSync(resolve(__dirname, '../components/ui/Pill.vue'), 'utf8')
-  const block = (selector: string) => {
-    const body = pillCss.match(new RegExp(`\\n${selector.replace('.', '\\.')} \\{([^}]*)\\}`))?.[1] ?? ''
-    const values = (prop: string) => [...body.matchAll(new RegExp(`(?:^|[;\\s])${prop}:\\s*([^;]+);`, 'g'))].map((m) => m[1].trim())
-    return { color: values('color'), background: values('background') }
-  }
-  const base = block('.pill')
-  const toneNames = [...pillCss.matchAll(/\n\.is-([a-z]+) \{/g)].map((m) => m[1])
-  const tones = {
-    neutral: base,
-    ...Object.fromEntries(toneNames.map((name) => [name, { ...base, ...pick(block(`.is-${name}`)) }])),
-  }
-  function pick(b: { color: string[]; background: string[] }) {
-    return Object.fromEntries(Object.entries(b).filter(([, v]) => v.length))
-  }
+/** The `color` and `background` declarations of one rule in a component, matched at the start of a line. */
+function ruleIn(file: string, selector: string) {
+  const css = readFileSync(resolve(__dirname, file), 'utf8')
+  const body = css.match(new RegExp(`\\n${selector.replaceAll('.', '\\.')} \\{([^}]*)\\}`))?.[1] ?? ''
+  const values = (prop: string) => [...body.matchAll(new RegExp(`(?:^|[;\\s])${prop}:\\s*([^;]+);`, 'g'))].map((m) => m[1].trim())
+  return { color: values('color'), background: values('background') }
+}
 
-  // Every background declaration counts: the plain-token fallback is what older Safari draws.
-  const cases = Object.entries(tones).flatMap(([tone, { color, background }]) =>
-    background.flatMap((fill) => BACKGROUNDS.map((bg) => [tone, color.at(-1)!, fill, bg])),
-  )
+type ChipRule = ReturnType<typeof ruleIn>
 
-  it('reads every tone from Pill.vue', () => {
-    expect(toneNames).toEqual(expect.arrayContaining(['accent', 'danger']))
-    for (const { color, background } of Object.values(tones)) {
-      expect(color.length).toBeGreaterThan(0)
-      expect(background.length).toBeGreaterThan(0)
+/** A tone keeps what it does not set from the base rule. */
+function withBase(base: ChipRule, tone: ChipRule): ChipRule {
+  return { color: tone.color.length ? tone.color : base.color, background: tone.background.length ? tone.background : base.background }
+}
+
+/**
+ * Filled chips: text on a `color-mix` fill over each of the four backgrounds.
+ * Every background declaration counts: the plain-token fallback is what older Safari draws.
+ */
+function describeFilledChips(name: string, file: string, base: string, toneSelector: (tone: string) => string, extra: Record<string, ChipRule> = {}) {
+  describe(`${name} tones`, () => {
+    const css = readFileSync(resolve(__dirname, file), 'utf8')
+    const baseRule = ruleIn(file, base)
+    const toneNames = [...css.matchAll(new RegExp(`\\n${toneSelector('([a-z]+)').replaceAll('.', '\\.')} \\{`, 'g'))].map((m) => m[1])
+    const tones: Record<string, ChipRule> = {
+      neutral: baseRule,
+      ...Object.fromEntries(toneNames.map((tone) => [tone, withBase(baseRule, ruleIn(file, toneSelector(tone)))])),
+      ...extra,
     }
-  })
+    const cases = Object.entries(tones).flatMap(([tone, { color, background }]) =>
+      background.flatMap((fill) => BACKGROUNDS.map((bg) => [tone, color.at(-1)!, fill, bg])),
+    )
 
-  it.each(cases)('%s text (%s) on %s over %s meets WCAG AA', (_tone, color, fill, bg) => {
-    const text = tokens[color.match(/^var\(--vtt-([a-z-]+)\)$/)![1]]
-    expect(contrast(text, fillOver(fill, bg))).toBeGreaterThanOrEqual(4.5)
+    it(`reads every tone from ${file.split('/').at(-1)}`, () => {
+      expect(toneNames.length).toBeGreaterThan(1)
+      for (const { color, background } of Object.values(tones)) {
+        expect(color.length).toBeGreaterThan(0)
+        expect(background.length).toBeGreaterThan(0)
+      }
+    })
+
+    it.each(cases)('%s text (%s) on %s over %s meets WCAG AA', (_tone, color, fill, bg) => {
+      const text = tokens[color.match(/^var\(--vtt-([a-z-]+)\)$/)![1]]
+      expect(contrast(text, fillOver(fill, bg))).toBeGreaterThanOrEqual(4.5)
+    })
   })
+}
+
+describeFilledChips('Pill', '../components/ui/Pill.vue', '.pill', (tone) => `.is-${tone}`)
+
+const INVENTORY = '../features/in-game/components/inventory'
+describeFilledChips('ItemStatChip', `${INVENTORY}/ItemStatChip.vue`, '.item-stat-chip', (tone) => `.item-stat-chip.is-${tone}`, {
+  'equipped mark': ruleIn(`${INVENTORY}/InvItem.vue`, '.equipped-mark'),
 })
 
 const BUTTON_FACE_TOKENS =['hero-face', 'hero-face-hover', 'hero-ink', 'primary-hover']
@@ -292,9 +311,7 @@ const TINT_ROWS: TintRow[] = [
   { on: '.status-chip .sc-mod.is-debuff', fills: ['danger-soft-a90', SHEET], over: 'page', artwork: true, text: ['danger-bright'] },
   { on: '.hp-effect-chip', fills: ['surface-a70', SHEET], over: 'page', artwork: true, text: ['text-muted', 'danger-bright'] },
   { on: '.inv-item.is-equipped', fills: [EQUIPPED, SHEET], over: 'page', artwork: true, text: ['text-primary', 'text-muted'] },
-  { on: '.equipped-mark, .item-stat-chip.is-price', fills: ['gold-a08', EQUIPPED, SHEET], over: 'page', artwork: true, text: ['accent'] },
   { on: '.inv-use:hover', fills: ['gold-a15'], over: 'bg-surface', text: ['text-primary'] },
-  { on: '.item-stat-chip.is-price, unequipped', fills: ['gold-a08'], over: 'bg-surface', text: ['accent'] },
   { on: '.stat-chip .sc-mod', fills: ['surface-a55'], over: 'bg-surface', text: ['text-primary'] },
   { on: '.stat-chip .sc-mod.is-buff', fills: ['success-glow-a15'], over: 'bg-surface', text: ['success'] },
   { on: '.stat-chip .sc-mod.is-debuff', fills: ['danger-soft-a55'], over: 'bg-surface', text: ['danger-bright'] },

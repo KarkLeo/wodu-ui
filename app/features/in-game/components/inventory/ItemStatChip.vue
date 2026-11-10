@@ -11,13 +11,16 @@ defineProps<{
 </template>
 
 <style scoped>
+/* Filled, not outlined, as Pill: an outlined capsule reads as a button. */
 .item-stat-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border: 1px solid var(--vtt-border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--r-pill);
+  background: var(--vtt-bg-elevated);
+  background: color-mix(in srgb, var(--vtt-text-secondary) 12%, transparent);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -26,25 +29,24 @@ defineProps<{
   flex-shrink: 0;
 }
 .item-stat-chip.is-damage {
+  background: var(--vtt-bg-elevated);
+  background: color-mix(in srgb, var(--vtt-accent-deep) 18%, transparent);
   color: var(--vtt-accent-soft);
-  border-color: var(--vtt-accent-deep);
-}
-.item-stat-chip.is-armor {
-  color: var(--vtt-info);
-  border-color: var(--vtt-info-glow-a45);
-}
-.item-stat-chip.is-qty {
-  color: var(--vtt-text-muted);
-  border-color: var(--vtt-border-subtle);
-  border-style: dashed;
-}
-.item-stat-chip.is-hp {
-  color: var(--vtt-danger-bright);
-  border-color: var(--vtt-danger-glow-a35);
 }
 .item-stat-chip.is-price {
+  background: var(--vtt-bg-elevated);
+  background: color-mix(in srgb, var(--vtt-accent-deep) 18%, transparent);
   color: var(--vtt-accent);
-  border-color: var(--vtt-accent-deep);
-  background: var(--vtt-gold-a08);
+}
+/* info and danger-bright fall under AA on any light tint of a card; a fill darker than the card keeps them above it. */
+.item-stat-chip.is-armor {
+  background: var(--vtt-bg-base);
+  background: color-mix(in srgb, var(--vtt-info) 12%, var(--vtt-bg-base));
+  color: var(--vtt-info);
+}
+.item-stat-chip.is-hp {
+  background: var(--vtt-bg-base);
+  background: color-mix(in srgb, var(--vtt-danger) 15%, var(--vtt-bg-base));
+  color: var(--vtt-danger-bright);
 }
 </style>
