@@ -1,14 +1,20 @@
 import type { SceneAudioDeps, Track } from './SceneAudio'
 
+export const READY_FALLBACK_SECONDS = 6
+
 // Gain nodes, not element.volume: iOS ignores the latter.
+const isRunning = (context: AudioContext) => context.state === 'running'
+
 export function webAudioDeps(): SceneAudioDeps {
   let context: AudioContext | null = null
   let master: GainNode | null = null
+  let masterLevel = 1
 
   function graph() {
     if (!context || !master) {
       context = new AudioContext()
       master = context.createGain()
+      master.gain.value = masterLevel
       master.connect(context.destination)
     }
     return { context, master }
@@ -26,8 +32,10 @@ export function webAudioDeps(): SceneAudioDeps {
     gain.connect(master)
 
     const ready = new Promise<void>((resolve, reject) => {
-      element.addEventListener('canplaythrough', () => resolve(), { once: true })
-      element.addEventListener('error', () => reject(new Error(`Cannot load ${src}`)), { once: true })
+      // iPhones ignore preload and may never fire canplaythrough before play().
+      const timer = setTimeout(resolve, READY_FALLBACK_SECONDS * 1000)
+      element.addEventListener('canplaythrough', () => { clearTimeout(timer); resolve() }, { once: true })
+      element.addEventListener('error', () => { clearTimeout(timer); reject(new Error(`Cannot load ${src}`)) }, { once: true })
     })
     ready.catch(() => {})
     element.src = src
@@ -35,7 +43,13 @@ export function webAudioDeps(): SceneAudioDeps {
 
     return {
       ready,
-      play: () => element.play(),
+      async play() {
+        if (!isRunning(context)) {
+          try { await context.resume() } catch { /* handled below */ }
+          if (!isRunning(context)) throw new DOMException('Audio context is suspended', 'NotAllowedError')
+        }
+        await element.play()
+      },
       pause: () => element.pause(),
       fadeTo(level, seconds) {
         const now = context.currentTime
@@ -57,7 +71,8 @@ export function webAudioDeps(): SceneAudioDeps {
     createTrack,
     wait: seconds => new Promise(resolve => setTimeout(resolve, seconds * 1000)),
     setMasterVolume(level) {
-      graph().master.gain.value = level
+      masterLevel = level
+      if (master) master.gain.value = level
     },
     async unlock() {
       const { context } = graph()

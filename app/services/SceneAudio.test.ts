@@ -214,6 +214,40 @@ describe('SceneAudio', () => {
     expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
   })
 
+  it('unlock() before the replacement is ready only records the gesture; the replacement then plays exactly once', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    audio.setScene('b.mp3'); await flush()
+    expect(track('a').calls).toEqual(['play', 'dispose'])
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('b').calls).toEqual([])
+    track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(waits).toHaveLength(0)
+  })
+
+  it('unlock() after the replacement is ready and refused plays it exactly once, never fading it out', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    audio.setScene('b.mp3'); track('b').refusePlay(); track('b').resolveReady(); await flush()
+    expect(audio.blocked.value).toBe(true)
+    await audio.unlock()
+    await audio.unlock()
+    expect(track('b').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+    expect(waits).toHaveLength(0)
+  })
+
+  it('setting the current src while another scene is loading drops the loading one and leaves the current untouched', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    audio.setScene('b.mp3'); await flush()
+    audio.setScene('a.mp3'); await flush()
+    expect(tracks).toHaveLength(2)
+    expect(track('b').calls).toEqual(['dispose'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual(['dispose'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+  })
+
   it('unlock() with nothing blocked starts nothing', async () => {
     audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
     await audio.unlock()

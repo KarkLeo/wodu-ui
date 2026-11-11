@@ -45,6 +45,7 @@ function createChannel(deps: SceneAudioDeps, loop: boolean, blocked: Ref<boolean
   let current: Track | null = null
   let currentSrc: string | null = null
   let incoming: Track | null = null
+  let incomingReady = false
   let requested: string | null = null
 
   function fadeOut(track: Track) {
@@ -58,6 +59,7 @@ function createChannel(deps: SceneAudioDeps, loop: boolean, blocked: Ref<boolean
   function dropIncoming() {
     incoming?.dispose()
     incoming = null
+    incomingReady = false
   }
 
   function fail() {
@@ -77,12 +79,13 @@ function createChannel(deps: SceneAudioDeps, loop: boolean, blocked: Ref<boolean
       fail()
       return
     }
-    if (gen !== generation) return
+    if (gen !== generation || track === current) return
     blocked.value = false
     const previous = current
     current = track
     currentSrc = src
     incoming = null
+    incomingReady = false
     track.fadeTo(1, SCENE_FADE_SECONDS)
     if (previous) fadeOut(previous)
   }
@@ -93,6 +96,7 @@ function createChannel(deps: SceneAudioDeps, loop: boolean, blocked: Ref<boolean
       requested = src
       const gen = ++generation
       dropIncoming()
+      if (src !== null && src === currentSrc) return
       if (src === null) {
         blocked.value = false
         if (current) fadeOut(current)
@@ -103,12 +107,16 @@ function createChannel(deps: SceneAudioDeps, loop: boolean, blocked: Ref<boolean
       const track = deps.createTrack(src, loop)
       incoming = track
       track.ready.then(
-        () => { if (gen === generation) return start(track, src, gen) },
+        () => {
+          if (gen !== generation) return
+          incomingReady = true
+          return start(track, src, gen)
+        },
         () => { if (gen === generation) fail() },
       )
     },
     resume() {
-      if (incoming && requested) void start(incoming, requested, generation)
+      if (incoming && incomingReady && requested) void start(incoming, requested, generation)
     },
     stop() {
       generation++
