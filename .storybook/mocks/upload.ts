@@ -33,7 +33,10 @@ export function holdUploads(): () => void {
   }
 }
 
-/** Makes uploads fail with this HTTP status until called with null. */
+/**
+ * Makes uploads fail with this HTTP status until called with null. Module-level state: a story that sets it
+ * relies on `withScenes` (app/stories/scenes.ts) resetting it for the next one.
+ */
 export function failUploadsWith(status: number | null): void {
   failure = status
 }

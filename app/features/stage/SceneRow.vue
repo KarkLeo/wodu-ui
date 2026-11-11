@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Pill from '@/components/ui/Pill.vue'
@@ -30,6 +30,7 @@ function toggle() {
   else emit('turn-on')
 }
 
+const nameId = useId()
 const broken = ref(false)
 watch(() => props.scene.image, () => { broken.value = false })
 const thumb = computed(() => (broken.value ? null : sceneThumbUrl(props.scene)))
@@ -50,6 +51,8 @@ watch(() => props.busy, async (busy) => {
   await nextTick()
   if (target && (!document.activeElement || document.activeElement === document.body)) target.$el.focus()
 })
+
+defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
 </script>
 
 <template>
@@ -60,7 +63,7 @@ watch(() => props.busy, async (busy) => {
         <IconImage v-else :size="16" />
       </div>
       <div class="sr-text">
-        <span class="sr-name">{{ scene.name }}</span>
+        <span :id="nameId" class="sr-name">{{ scene.name }}</span>
         <span v-if="active || scene.sound" class="sr-meta">
           <Pill v-if="active" tone="accent" size="sm" dot>{{ t('stage.scenes.row.on') }}</Pill>
           <span v-if="scene.sound" class="sr-sound" role="img" :aria-label="t('stage.scenes.row.hasSound')">
@@ -74,6 +77,7 @@ watch(() => props.busy, async (busy) => {
           :variant="active ? 'ghost' : 'primary'"
           size="sm"
           :disabled="busy"
+          :aria-describedby="nameId"
           @click="toggle"
         >
           {{ active ? t('stage.scenes.row.turnOff') : t('stage.scenes.row.turnOn') }}

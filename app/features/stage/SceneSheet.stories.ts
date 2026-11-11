@@ -49,13 +49,16 @@ export const Add: Story = {
     await expect(await sheet.findByRole('dialog', { name: 'New scene' })).toBeVisible()
     const add = sheet.getByRole('button', { name: 'Add' })
     await expect(add).toBeDisabled()
+    await expect(add).toHaveAccessibleDescription('Give the scene a name. Add a picture, a sound, or both.')
     await expect(sheet.getByText(/up to 2 MB/)).toBeVisible()
     await expect(sheet.getByText(/larger picture is reduced automatically/)).toBeVisible()
     await expect(sheet.getByText(/up to 20 MB/)).toBeVisible()
     await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Tavern')
     await expect(add).toBeDisabled()
+    await expect(add).toHaveAccessibleDescription('Add a picture, a sound, or both.')
     await user.upload(soundInput(canvasElement), soundFile())
     await expect(add).toBeEnabled()
+    await expect(sheet.queryByText('Add a picture, a sound, or both.')).toBeNull()
   },
 }
 
@@ -189,18 +192,19 @@ export const RemovingOneFile: Story = {
   },
 }
 
-/** Picking a file in place of a stored one, then taking it back, keeps the stored one. */
-export const UnpickingKeepsTheStoredFile: Story = {
+/** Picking a file over a stored one, then taking it back, shows the stored one again. */
+export const TakingBackAPickKeepsTheStoredFile: Story = {
   tags: ['no-visual'],
   args: { scene: TAVERN },
   play: async ({ canvasElement }) => {
     const sheet = body(canvasElement)
     await sheet.findByRole('dialog', { name: 'Edit scene' })
-    await user.click(sheet.getByRole('button', { name: 'Remove file: Picture' }))
     await user.upload(imageInput(canvasElement), pictureFile('cellar.png'))
     await expect(await sheet.findByText('cellar.png')).toBeVisible()
+    await expect(sheet.queryByText('Picture attached')).toBeNull()
     await user.click(sheet.getByRole('button', { name: 'Remove file: Picture' }))
-    await expect(sheet.getByRole('button', { name: 'Choose a file: Picture' })).toBeVisible()
+    await expect(await sheet.findByText('Picture attached')).toBeVisible()
+    await expect(sheet.queryByText('cellar.png')).toBeNull()
   },
 }
 
@@ -300,8 +304,9 @@ export const SessionEndsMidUpload: Story = {
     const release = holdUploads()
     const sheet = body(canvasElement)
     await sheet.findByRole('dialog', { name: 'Edit scene' })
+    await user.upload(imageInput(canvasElement), pictureFile('cellar.png'))
     await user.click(sheet.getByRole('button', { name: 'Save' }))
-    await waitFor(() => expect(sheet.getAllByRole('progressbar')).toHaveLength(2))
+    await waitFor(() => expect(sheet.getAllByRole('progressbar')).toHaveLength(1))
     closeMedia()
     release()
     await waitFor(() => expect(sheet.queryByRole('progressbar')).toBeNull())

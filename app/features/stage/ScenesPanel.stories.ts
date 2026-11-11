@@ -13,7 +13,7 @@ import { useStageStore } from '@/stores/stage'
 import { useToastsStore } from '@/stores/toasts'
 import { useToolPanelsStore } from '@/stores/toolPanels'
 import { closeMedia } from '@/transport/media'
-import { clearPbRequests, pb, pbRequests, resetRecords, storedRecords } from '../../../.storybook/mocks/pb'
+import { clearPbRequests, pb, pbRequests, resetRecords, seedRecords, storedRecords } from '../../../.storybook/mocks/pb'
 import { sentForms } from '../../../.storybook/mocks/upload'
 
 const [, FOREST] = SCENES as [typeof TAVERN, typeof TAVERN, typeof TAVERN]
@@ -46,6 +46,7 @@ const rowOf = (el: HTMLElement, name: string) => {
 const names = (el: HTMLElement) => within(el).getAllByRole('listitem').map(li => li.querySelector('.sr-name')?.textContent)
 const stageScene = () => (storedRecords('stages')[0]?.data as { scene: { id: string; image: { name: string } | null; sound: { name: string } | null } | null } | undefined)?.scene
 const toastTexts = () => useToastsStore().items.map(t => t.text)
+const STAGE_TOAST = 'Could not change what is shown at the table. Try again.'
 const closed = (el: HTMLElement) => waitFor(() => expect(body(el).queryByRole('dialog')).toBeNull())
 
 /** Three scenes, one of them on at the table, with the count and the add button. */
@@ -209,7 +210,7 @@ export const BusyRowOnly: Story = {
   },
 }
 
-/** A refused turn-on says so with a toast of its own, and the row is usable again. */
+/** A refused turn-on gets the one message the stage writer shows, and the row is usable again. */
 export const TurnOnFailed: Story = {
   tags: ['no-visual'],
   decorators: [withScenes(), asMaster],
@@ -217,8 +218,10 @@ export const TurnOnFailed: Story = {
   play: async ({ canvasElement }) => {
     spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
     await user.click(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Turn on' }))
-    await waitFor(() => expect(toastTexts()).toContain('Couldn’t turn the scene on. Check your connection.'))
+    await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
     await waitFor(() => expect(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Turn on' })).toBeEnabled())
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(toastTexts()).toEqual([STAGE_TOAST])
   },
 }
 
@@ -230,7 +233,7 @@ export const TurnOffFailed: Story = {
     spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
     spyOn(pb.collection('stages'), 'create').mockRejectedValue(new ClientResponseError({ status: 500 }))
     await user.click(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Turn off' }))
-    await waitFor(() => expect(toastTexts()).toContain('Couldn’t turn the scene off. Check your connection.'))
+    await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
     await waitFor(() => expect(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Turn off' })).toBeEnabled())
   },
 }
@@ -289,6 +292,109 @@ export const DeleteFailed: Story = {
     await closed(canvasElement)
     await expect(names(canvasElement)).toContain('Rain')
     await expect(rowOf(canvasElement, 'Rain').getByRole('button', { name: 'Delete Rain' })).toBeEnabled()
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(rowOf(canvasElement, 'Rain').getByRole('button', { name: 'Delete Rain' })))
+    await expect(toastTexts()).toEqual(['Couldn’t delete the scene. Check your connection.'])
+  },
+}
+
+/** A live scene whose take-off is refused stays, with the stage writer's message alone. */
+export const DeleteOfLiveSceneRefusedByTheStage: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenes({ live: TAVERN.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    await user.click(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Delete Tavern' }))
+    await user.click(within(await body(canvasElement).findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
+    await closed(canvasElement)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(toastTexts()).toEqual([STAGE_TOAST])
+    await expect(pbRequests()).not.toContain('scenes.delete')
+    await expect(names(canvasElement)).toContain('Tavern')
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Delete Tavern' })))
+  },
+}
+
+/** Deleting after the mastership went elsewhere says so in its own words. */
+export const DeleteNotMaster: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenes(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    seedRecords('games', [{ id: crookhollow.id, name: crookhollow.name, master: 'user-seva', invite_code: crookhollow.inviteCode }])
+    spyOn(pb.collection('scenes'), 'delete').mockRejectedValue(new ClientResponseError({ status: 404 }))
+    await user.click(rowOf(canvasElement, 'Rain').getByRole('button', { name: 'Delete Rain' }))
+    await user.click(within(await body(canvasElement).findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(toastTexts()).toEqual(['You are not the master of this game any more.']))
+  },
+}
+
+/** Three quick switches with a slow server: the table ends on the last one, two writes go out, every row works again. */
+export const FastSwitchingWritesTwice: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenes(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const release: Array<() => void> = []
+    const update = spyOn(pb.collection('stages'), 'update').mockImplementation(() => new Promise((resolve) => {
+      release.push(() => resolve({ id: crookhollow.id, updated: '' }))
+    }))
+    const buttons = ['Tavern', 'Night forest', 'Rain'].map(n => rowOf(canvasElement, n).getByRole('button', { name: 'Turn on' }))
+    for (const b of buttons) b.click()
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+    await expect(useStageStore().stageOf(crookhollow.id).scene?.id).toBe('story-scene-rain')
+    release[0]!()
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(2))
+    release[1]!()
+    await waitFor(() => expect(rowOf(canvasElement, 'Rain').getByRole('button', { name: 'Turn off' })).toBeEnabled())
+    const sent = update.mock.calls.map(c => (c[1] as { data: { scene: { id: string } } }).data.scene.id)
+    await expect(sent).toEqual(['story-scene-tavern', 'story-scene-rain'])
+    for (const li of within(canvasElement).getAllByRole('listitem')) {
+      for (const button of within(li).getAllByRole('button')) await expect(button).toBeEnabled()
+    }
+    await expect(within(canvasElement).getAllByRole('button', { name: 'Turn off' })).toHaveLength(1)
+    await expect(toastTexts()).toEqual([])
+  },
+}
+
+/** The same with a refused write: one message, the highlight back on the last confirmed scene. */
+export const FastSwitchingFailsOnce: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenes({ live: TAVERN.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    const forest = rowOf(canvasElement, 'Night forest').getByRole('button', { name: 'Turn on' })
+    const rain = rowOf(canvasElement, 'Rain').getByRole('button', { name: 'Turn on' })
+    forest.click()
+    rain.click()
+    await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
+    await waitFor(() => expect(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Turn off' })).toBeEnabled())
+    await expect(useStageStore().stageOf(crookhollow.id).scene?.id).toBe(TAVERN.id)
+    for (const name of ['Night forest', 'Rain']) await expect(rowOf(canvasElement, name).getByRole('button', { name: 'Turn on' })).toBeEnabled()
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(toastTexts()).toEqual([STAGE_TOAST])
+  },
+}
+
+/** Renaming the scene that is on changes no file, so the table is not written to. */
+export const RenamingTheLiveSceneLeavesTheStage: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenes({ live: TAVERN.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await user.click(rowOf(canvasElement, 'Tavern').getByRole('button', { name: 'Edit Tavern' }))
+    await sheet.findByRole('dialog', { name: 'Edit scene' })
+    const name = sheet.getByRole('textbox', { name: 'Name' })
+    await user.clear(name)
+    await user.type(name, 'Inn')
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await closed(canvasElement)
+    await waitFor(() => expect(names(canvasElement)).toContain('Inn'))
+    await expect(pbRequests().filter(r => r.startsWith('stages.'))).toEqual([])
+    await expect(rowOf(canvasElement, 'Inn').getByRole('button', { name: 'Turn off' })).toBeVisible()
   },
 }
 
@@ -435,7 +541,6 @@ export const PlayerRequestsNothing: Story = {
   loaders: [atRoute(`/games/${olden.id}`)],
   play: async ({ canvasElement }) => {
     resetRecords('scenes', [sceneRow(TAVERN, olden.id)])
-    clearPbRequests()
     await new Promise(resolve => setTimeout(resolve, 200))
     await expect(within(canvasElement).getByText('player table')).toBeVisible()
     await expect(within(canvasElement).queryByRole('region', { name: 'Scenes' })).toBeNull()

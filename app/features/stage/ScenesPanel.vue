@@ -13,8 +13,7 @@ import { useTable } from '@/composables/useTable'
 import { MEDIA_LIMITS } from '@/domain/stage'
 import { useMediaStore } from '@/stores/media'
 import { useToastsStore } from '@/stores/toasts'
-import { deleteScene } from '@/transport/media'
-import { WriteDropped } from '@/transport/stage'
+import { deleteScene, SceneWriteError } from '@/transport/media'
 import type { Scene } from '@/types/stage'
 import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
@@ -31,23 +30,33 @@ const atLimit = computed(() => scenes.value.length >= MEDIA_LIMITS.scenes)
 // A scene's own change (turn on or off, delete) is on its way: its row waits, the others do not.
 const busy = reactive(new Set<string>())
 
-async function change(scene: Scene, run: () => Promise<void>, failed: string) {
-  if (busy.has(scene.id)) return
+// `failed` turns an error into the toast to show, or null for one that needs none.
+async function change(scene: Scene, run: () => Promise<void>, failed: (err: unknown) => string | null): Promise<boolean> {
+  if (busy.has(scene.id)) return true
   busy.add(scene.id)
   try {
     await run()
+    return true
   } catch (err) {
-    // The session ended under the write: it is not a failure to show.
-    if (err instanceof WriteDropped) return
     log.error('scene change failed', { id: scene.id, err })
-    toasts.push(failed, 'error')
+    const text = failed(err)
+    if (text) toasts.push(text, 'error')
+    return false
   } finally {
     busy.delete(scene.id)
   }
 }
 
-const turnOn = (scene: Scene) => change(scene, () => turnOnScene(scene), t('errors.sceneTurnOnFailed'))
-const turnOff = (scene: Scene) => change(scene, turnOffScene, t('errors.sceneTurnOffFailed'))
+// The stage writer says by itself when a switch did not reach the table, once however many rows waited for
+// it, and the highlight follows the store, so the panel adds nothing of its own.
+const turnOn = (scene: Scene) => change(scene, () => turnOnScene(scene), () => null)
+const turnOff = (scene: Scene) => change(scene, turnOffScene, () => null)
+
+const rows = new Map<string, { focusDelete: () => void }>()
+function setRow(id: string, row: unknown) {
+  if (row) rows.set(id, row as { focusDelete: () => void })
+  else rows.delete(id)
+}
 
 const addRef = ref<{ $el: HTMLElement } | null>(null)
 
@@ -83,12 +92,24 @@ async function confirmDelete() {
   const game = gameId.value
   if (!scene || !game || busy.has(scene.id)) return
   deleting.value = null
-  await change(scene, () => deleteScene(game, scene.id), t('errors.sceneDeleteFailed'))
-  // The row went with the scene, and with it the button the focus came from.
-  if (!media.scenes.list.some(s => s.id === scene.id)) {
-    await nextTick()
-    addRef.value?.$el.focus()
+  const wasLive = activeSceneId.value === scene.id
+  const done = await change(scene, () => deleteScene(game, scene.id), (err) => {
+    // The session ended under the write: nobody is left to tell.
+    if (err instanceof SceneWriteError) {
+      if (err.kind === 'aborted') return null
+      if (err.kind === 'notMaster') return t('errors.sceneNotMaster')
+    }
+    // A live scene is taken off the table first; if that failed it is still live, and the stage writer has said so.
+    if (wasLive && activeSceneId.value === scene.id) return null
+    return t('errors.sceneDeleteFailed')
+  })
+  await nextTick()
+  if (!done) {
+    rows.get(scene.id)?.focusDelete()
+    return
   }
+  // The row went with the scene, and with it the button the focus came from.
+  if (!media.scenes.list.some(s => s.id === scene.id)) addRef.value?.$el.focus()
 }
 </script>
 
@@ -128,6 +149,7 @@ async function confirmDelete() {
           <SceneRow
             v-for="scene in scenes"
             :key="scene.id"
+            :ref="el => setRow(scene.id, el)"
             :scene="scene"
             :active="activeSceneId === scene.id"
             :busy="busy.has(scene.id)"

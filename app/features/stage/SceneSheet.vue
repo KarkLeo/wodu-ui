@@ -4,6 +4,7 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import Button from '@/components/ui/Button.vue'
 import FileField from '@/components/ui/FileField.vue'
 import FormError from '@/components/ui/FormError.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import TextField from '@/components/ui/TextField.vue'
 import {
   AUDIO_MAX_BYTES, AUDIO_TYPES, IMAGE_MAX_BYTES, IMAGE_TYPES, MEDIA_LIMITS, SCENE_NAME_MAX,
@@ -77,7 +78,15 @@ const sheetOpen = computed({
 
 const hasImage = computed(() => image.value !== null || (!!props.scene?.image && !removeImage.value))
 const hasSound = computed(() => sound.value !== null || (!!props.scene?.sound && !removeSound.value))
-const canSave = computed(() => !saving.value && checkSceneDraft({ name: name.value, hasImage: hasImage.value, hasSound: hasSound.value }).length === 0)
+const problems = computed(() => checkSceneDraft({ name: name.value, hasImage: hasImage.value, hasSound: hasSound.value }))
+const canSave = computed(() => !saving.value && problems.value.length === 0)
+const missing = computed(() => {
+  const out: string[] = []
+  if (problems.value.some(p => p === 'nameRequired' || p === 'nameTooLong')) out.push(t('stage.scenes.form.needName'))
+  if (problems.value.includes('noFiles')) out.push(t('stage.scenes.form.needFile'))
+  return out.join(' ')
+})
+const missingId = `${uid}-missing`
 
 const storedImage = computed(() => (props.scene?.image && !removeImage.value && !image.value ? t('stage.scenes.form.imageAttached') : undefined))
 const storedSound = computed(() => (props.scene?.sound && !removeSound.value && !sound.value ? t('stage.scenes.form.soundAttached') : undefined))
@@ -214,7 +223,7 @@ async function retryPublish() {
           :accept="[...IMAGE_TYPES]"
           :hint="t('stage.scenes.form.imageHint', { mb: IMAGE_MAX_BYTES / MB })"
           :error="imageError || undefined"
-          :progress="saving ? progress : null"
+          :progress="saving && image ? progress : null"
           :current-name="storedImage"
           :current-thumb="storedThumb"
           @update:model-value="pickImage"
@@ -226,12 +235,14 @@ async function retryPublish() {
           :accept="[...AUDIO_TYPES]"
           :hint="t('stage.scenes.form.soundHint', { mb: AUDIO_MAX_BYTES / MB })"
           :error="soundError || undefined"
-          :progress="saving ? progress : null"
+          :progress="saving && sound ? progress : null"
           :current-name="storedSound"
           @update:model-value="pickSound"
           @clear="clearSound"
         />
       </fieldset>
+
+      <StateNote v-if="missing && !saving && !savedScene" :id="missingId" size="sm" inline align="start">{{ missing }}</StateNote>
 
       <div v-if="failure" class="ss-failure">
         <FormError role="alert">{{ failureText }}</FormError>
@@ -247,7 +258,7 @@ async function retryPublish() {
       </template>
       <template v-else>
         <Button variant="ghost" :disabled="saving" @click="open = false">{{ t('common.cancel') }}</Button>
-        <Button variant="hero" type="submit" :form="`${uid}-form`" :disabled="!canSave">
+        <Button variant="hero" type="submit" :form="`${uid}-form`" :disabled="!canSave" :aria-describedby="missing ? missingId : undefined">
           {{ scene ? t('common.save') : t('stage.scenes.form.add') }}
         </Button>
       </template>
