@@ -91,3 +91,17 @@ export interface EncounterHitRow {
   data: EncounterHit
   created: string
 }
+
+export interface StageRow {
+  id: string
+  game: string
+  data: unknown
+}
+
+export interface SceneRow {
+  id: string
+  game: string
+  data: unknown
+  image: string
+  sound: string
+}

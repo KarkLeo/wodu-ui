@@ -1,4 +1,4 @@
-// In-memory stand-in for app/transport/pb.ts: writes succeed, lists return nothing (except a game's library),
+// In-memory stand-in for app/transport/pb.ts: writes succeed, lists return nothing (except a game's library and the stages),
 // realtime is silent.
 // Records written (or seeded with seedRecords) are kept per collection, so getOne after a create or an
 // update answers like the server would. Auth is in memory too: any code signs in except WRONG_CODE, and
@@ -59,6 +59,11 @@ export function seedRecords(name: string, rows: MockRecord[]) {
   for (const row of rows) r.set(row.id, { ...row })
 }
 
+/** What is stored in a mock collection now (a copy), e.g. to check what a story wrote to `stages`. */
+export function storedRecords(name: string): MockRecord[] {
+  return [...recordsOf(name).values()].map(r => JSON.parse(JSON.stringify(r)) as MockRecord)
+}
+
 /** Replaces everything in a mock collection, so a story starts from its own rows whatever ran before it. */
 export function resetRecords(name: string, rows: MockRecord[] = []) {
   recordsOf(name).clear()
@@ -117,6 +122,8 @@ function makeCollection(name: string) {
     },
     update: async <T extends Record<string, unknown>>(id: string, body: T) => {
       if (name === 'users' && authStore.record?.id === id) authStore.save(authStore.token, { ...authStore.record, ...body })
+      // A stage row exists only after the master's first publish; the client creates it on this 404.
+      if (name === 'stages' && !recordsOf(name).has(id)) throw new MockResponseError(404)
       const row = { ...recordsOf(name).get(id), id, ...body, updated: stamp() }
       recordsOf(name).set(id, row)
       return row
@@ -136,6 +143,8 @@ function makeCollection(name: string) {
     },
     // Lists only the library collections, by the `game = "<id>"` filter they are loaded with.
     getFullList: async (options: { filter?: string } = {}) => {
+      // The stages are loaded unfiltered: the server lists a member only their own games' rows.
+      if (name === 'stages') return [...recordsOf(name).values()].map(r => JSON.parse(JSON.stringify(r)) as typeof r)
       if (!LIBRARY.has(name)) return []
       const game = /^game = (".*")$/.exec(options.filter ?? '')
       const id = game ? JSON.parse(game[1]!) as string : null

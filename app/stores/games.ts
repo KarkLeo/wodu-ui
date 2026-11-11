@@ -3,6 +3,7 @@ import type { Game, GameMember } from '@/types/game'
 import { scope } from '@/transport/scope'
 import { useEncounterStore } from './encounter'
 import { useLibraryStore } from './library'
+import { useStageStore } from './stage'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('store:games')
@@ -47,6 +48,7 @@ export const useGamesStore = defineStore('games', {
       dropMasterDataOnChange(id, this.byId(id), undefined)
       this.games = this.games.filter(g => g.id !== id)
       this.members = this.members.filter(m => m.game !== id)
+      useStageStore().remove(id)
     },
     upsertMember(member: GameMember) {
       const idx = this.members.findIndex(m => m.id === member.id)
