@@ -7,6 +7,7 @@ const creates: Array<Record<string, unknown>> = []
 let updateImpl: (id: string, body: { data: Stage }) => Promise<unknown>
 let createImpl: (body: Record<string, unknown>) => Promise<unknown>
 let stays = true
+let reportThrows = false
 const failures: Array<{ err: unknown; message: string }> = []
 
 vi.mock('@/transport/pb', () => ({
@@ -30,7 +31,10 @@ vi.mock('./onlineOps', () => ({
 }))
 vi.mock('./mode', () => ({ modeSession: () => 1 }))
 vi.mock('./writeFailure', () => ({
-  reportWriteFailure: (err: unknown, message: string) => failures.push({ err, message }),
+  reportWriteFailure: (err: unknown, message: string) => {
+    if (reportThrows) throw new Error('report failed')
+    failures.push({ err, message })
+  },
 }))
 
 const GAME = 'game-1'
@@ -71,6 +75,7 @@ beforeEach(() => {
   creates.length = 0
   failures.length = 0
   stays = true
+  reportThrows = false
   updateImpl = async () => ({})
   createImpl = async () => ({})
 })
@@ -135,11 +140,22 @@ describe('publishStage', () => {
     expect(store.stageOf(GAME).sound).toBeNull()
   })
 
-  it('rejects when the session ends before the write is sent', async () => {
+  it('rejects with WriteDropped when the session ends before the write is sent', async () => {
     stays = false
-    const { publishStage } = await load()
-    await expect(publishStage(stage('s1'))).rejects.toBeTruthy()
+    const { publishStage, WriteDropped } = await load()
+    await expect(publishStage(stage('s1'))).rejects.toBeInstanceOf(WriteDropped)
     expect(updates).toHaveLength(0)
+  })
+})
+
+describe('a failing cleanup', () => {
+  it('still frees the key and settles the caller when the failure report throws', async () => {
+    updateImpl = async () => { throw httpError(500) }
+    reportThrows = true
+    const { publishStage, receiveStage, store } = await load()
+    await expect(publishStage(stage('s1'))).rejects.toMatchObject({ status: 500 })
+    receiveStage('update', { id: GAME, game: GAME, data: stage('s9') })
+    expect(store.stageOf(GAME).sound?.id).toBe('s9')
   })
 })
 
@@ -168,6 +184,22 @@ describe('realtime echo', () => {
     receiveStage('update', { id: GAME, game: GAME, data: { id: 'wrong' } })
     expect(store.stageOf(GAME).sound?.id).toBe('s1')
     receiveStage('delete', row(stage(null)))
+    expect(store.stageOf(GAME).sound).toBeNull()
+  })
+
+  it('ignores events and snapshot rows for a game that is not in the store', async () => {
+    const { receiveStage, applyStages, store } = await load()
+    receiveStage('update', row(stage('s1', 'gone')))
+    applyStages([row(stage('s1', 'gone'))])
+    expect(store.byGame.gone).toBeUndefined()
+  })
+
+  it('a malformed row in a snapshot keeps the stage, an absent row removes it', async () => {
+    const { applyStages, store } = await load()
+    store.set(stage('s1'))
+    applyStages([{ id: GAME, game: GAME, data: { id: 'wrong' } }])
+    expect(store.stageOf(GAME).sound?.id).toBe('s1')
+    applyStages([])
     expect(store.stageOf(GAME).sound).toBeNull()
   })
 

@@ -34,6 +34,8 @@ import { createLogger } from '@/utils/logger'
 const log = createLogger('transport:pb')
 const sseLog = createLogger('transport:sse')
 
+const STAGES_TIMEOUT_MS = 4000
+
 const COLLECTIONS = ['games', 'game_members', 'characters', 'roll_events', 'change_events', 'stages'] as const
 
 export type BootstrapStatus = 'loading' | 'ready' | 'failed'
@@ -127,6 +129,17 @@ async function fetchEvents(target: Scope) {
 
 type EventRows = Awaited<ReturnType<typeof fetchEvents>>
 
+// The stage is decoration: a missing collection or a refused list must not fail the start. A genuinely
+// unreachable server fails the other requests too, which report it.
+async function fetchStages(): Promise<StageRow[] | null> {
+  try {
+    return await withTimeout(pb.collection('stages').getFullList<StageRow>(), STAGES_TIMEOUT_MS)
+  } catch (err) {
+    log.warn('loading the stages failed, carrying on without them', { err })
+    return null
+  }
+}
+
 async function fetchInitialState() {
   log.info('loadInitialState: starting')
   const events = eventsGen
@@ -134,7 +147,7 @@ async function fetchInitialState() {
     pb.collection('games').getFullList<GameRow>(),
     pb.collection('game_members').getFullList<GameMemberRow>({ expand: 'user' }),
     pb.collection('characters').getFullList<CharacterRow>(),
-    pb.collection('stages').getFullList<StageRow>(),
+    fetchStages(),
     fetchEvents(scope.value),
   ])
   return { games, members, chars, stages, rolls, changes, events }
@@ -165,7 +178,8 @@ function applyInitialState(state: InitialState) {
     validCharRows.map(r => r.data),
     validCharRows.map(r => ({ id: r.id, updated: r.updated, owner: r.owner, game: r.game })),
   )
-  applyStages(state.stages)
+  // After the games are in the store; a failed list leaves the stages as they are.
+  if (state.stages) applyStages(state.stages)
   // The player switched tables while this was loading; that switch loads its own events.
   const events = state.events === eventsGen ? applyEvents(state) : 'skipped'
 
@@ -217,11 +231,12 @@ async function subscribeAll(gen: number) {
       }
     }, { expand: 'user' }),
 
+    // Not essential: a server without the collection must not fail the whole subscription set-up.
     pb.collection('stages').subscribe<StageRow>('*', (e) => {
       sseLog.debug('stages', { action: e.action, id: e.record.id })
       const { action, record } = e
       onRealtime(() => receiveStage(action, record))
-    }),
+    }).catch((err: unknown) => sseLog.warn('subscribing to stages failed, carrying on without them', { err })),
 
     pb.collection('characters').subscribe<CharacterRow>('*', (e) => {
       sseLog.debug('characters', { action: e.action, id: e.record.id })

@@ -1,6 +1,7 @@
 import { pb, type StageRow } from '@/transport/pb'
 import { requireOnlineUser } from './onlineOps'
-import { serialWriter } from './serialWriter'
+import { serialWriter, WriteDropped } from './serialWriter'
+export { WriteDropped }
 import { checkStage } from '@/domain/stage'
 import { useStageStore } from '@/stores/stage'
 import { useGamesStore } from '@/stores/games'
@@ -60,7 +61,11 @@ const writer = serialWriter<Stage>({
   },
 })
 
-/** Master: makes `next` live. Optimistic; writes run one after another per game and only the newest waits; a failure restores the last confirmed stage and rethrows. */
+/**
+ * Master: makes `next` live. Optimistic; writes run one after another per game and only the newest waits; a
+ * failure restores the last confirmed stage and rethrows. Rejects with `WriteDropped` (not a failure: the
+ * server may have accepted it) when the mode or the user changed before the write finished. Swallows nothing.
+ */
 export async function publishStage(next: Stage): Promise<void> {
   requireOnlineUser()
   const prior = useStageStore().stageOf(next.id)
@@ -75,7 +80,7 @@ export async function publishStage(next: Stage): Promise<void> {
 // While my own publish for a game is pending, an older echo of it must not undo the newer optimistic value.
 export function receiveStage(action: string, row: StageRow): void {
   const store = useStageStore()
-  if (writer.busy(row.id)) return
+  if (writer.busy(row.id) || !useGamesStore().byId(row.id)) return
   if (action === 'delete') {
     store.remove(row.id)
     return
@@ -84,16 +89,20 @@ export function receiveStage(action: string, row: StageRow): void {
   if (stage) store.set(stage)
 }
 
-/** A fresh snapshot of every readable row: games without a row show nothing, and a game being published to keeps its optimistic value. */
+/**
+ * A fresh snapshot of every readable row, applied after the games are in the store: games with no row show
+ * nothing, a malformed row leaves what is there (as in realtime), and a game being published to keeps its
+ * optimistic value.
+ */
 export function applyStages(rows: StageRow[]): void {
   const store = useStageStore()
+  const games = useGamesStore()
   const seen = new Set<string>()
   for (const row of rows) {
     seen.add(row.id)
-    if (writer.busy(row.id)) continue
+    if (writer.busy(row.id) || !games.byId(row.id)) continue
     const stage = stageFromRow(row)
     if (stage) store.set(stage)
-    else store.remove(row.id)
   }
   for (const id of Object.keys(store.byGame)) {
     if (!seen.has(id) && !writer.busy(id)) store.remove(id)

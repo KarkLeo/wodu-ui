@@ -5,6 +5,14 @@ import { createLogger } from '@/utils/logger'
 
 const log = createLogger('transport:writer')
 
+/** A write that was never sent, or whose outcome is moot, because the mode or the user changed meanwhile: not a server failure, and the server may even have accepted it. */
+export class WriteDropped extends Error {
+  constructor() {
+    super('write dropped: the session ended')
+    this.name = 'WriteDropped'
+  }
+}
+
 export interface Writer<T> {
   /** Shows `next` at once and sends it; `prior` is what the screen held, the rollback target if nothing is confirmed yet. */
   submit(key: string, prior: T | undefined, next: T): void
@@ -26,8 +34,8 @@ interface Chain<T> {
  * unless a newer change is waiting, which is about to overwrite it anyway.
  *
  * `settled` is told when a key's writes are over: `null` once the newest value is confirmed, the error
- * when the newest failed (after the rollback), or an `Error` when what waited was dropped by a mode
- * switch or a sign-out.
+ * when the newest failed (after the rollback), or a `WriteDropped` when what waited was left unsent, or
+ * a failure no longer matters, because of a mode switch or a sign-out. Cleanup and `settled` always run.
  */
 export function serialWriter<T>(opts: {
   show: (value: T) => void
@@ -42,29 +50,45 @@ export function serialWriter<T>(opts: {
     const current = staysCurrent()
     const session = modeSession()
     let outcome: unknown | null = null
-    // A mode switch or sign-out leaves what waits unsent: no request reaches PocketBase offline.
-    while (chain.hasPending && current()) {
-      const value = chain.pending as T
-      chain.pending = undefined
+    try {
+      // A mode switch or sign-out leaves what waits unsent: no request reaches PocketBase offline.
+      while (chain.hasPending && current()) {
+        const value = chain.pending as T
+        chain.pending = undefined
+        chain.hasPending = false
+        try {
+          await call(() => opts.send(key, value))
+          chain.confirmed = value
+          outcome = null
+        } catch (err) {
+          log.error('write failed', { key, err })
+          outcome = err
+          if (!current()) break
+          if (chain.hasPending) continue
+          if (chain.confirmed !== undefined) opts.restore(key, chain.confirmed)
+          reportWriteFailure(err, opts.message(), session)
+        }
+      }
+    } catch (err) {
+      log.error('write cleanup failed', { key, err })
+      outcome ??= err
+    } finally {
+      const leftover = chain.hasPending
       chain.hasPending = false
+      chain.pending = undefined
+      if (chains.get(key) === chain) chains.delete(key)
+      let result: unknown | null = outcome
+      if (outcome !== null) {
+        if (!current()) result = new WriteDropped()
+      } else if (leftover) {
+        result = new WriteDropped()
+      }
       try {
-        await call(() => opts.send(key, value))
-        chain.confirmed = value
-        outcome = null
+        opts.settled?.(key, result)
       } catch (err) {
-        log.error('write failed', { key, err })
-        outcome = err
-        if (!current()) break
-        if (chain.hasPending) continue
-        if (chain.confirmed !== undefined) opts.restore(key, chain.confirmed)
-        reportWriteFailure(err, opts.message(), session)
+        log.error('settled failed', { key, err })
       }
     }
-    const dropped = chain.hasPending || !current()
-    chain.hasPending = false
-    chain.pending = undefined
-    if (chains.get(key) === chain) chains.delete(key)
-    opts.settled?.(key, dropped && outcome === null ? new Error('write dropped') : outcome)
   }
 
   return {
