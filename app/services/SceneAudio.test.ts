@@ -248,6 +248,22 @@ describe('SceneAudio', () => {
     expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
   })
 
+  it('blocked clears when the kept refused track is replaced by one that then fails to load', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(audio.blocked.value).toBe(true)
+    audio.setScene('b.mp3'); track('b').rejectReady(); await flush()
+    expect(audio.blocked.value).toBe(false)
+  })
+
+  it('blocked clears when the current src is set again while a refused track is kept', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    audio.setScene('b.mp3'); track('b').refusePlay(); track('b').resolveReady(); await flush()
+    expect(audio.blocked.value).toBe(true)
+    audio.setScene('a.mp3'); await flush()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('b').calls).toEqual(['play', 'dispose'])
+  })
+
   it('unlock() with nothing blocked starts nothing', async () => {
     audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
     await audio.unlock()

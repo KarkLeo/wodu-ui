@@ -1,9 +1,22 @@
 import type { SceneAudioDeps, Track } from './SceneAudio'
 
 export const READY_FALLBACK_SECONDS = 6
+export const RESUME_GRACE_MS = 250
 
 // Gain nodes, not element.volume: iOS ignores the latter.
 const isRunning = (context: AudioContext) => context.state === 'running'
+
+// Without a user gesture some browsers leave resume() pending forever, so never wait on it open-endedly.
+async function resumeBounded(context: AudioContext): Promise<boolean> {
+  if (isRunning(context)) return true
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const attempt = Promise.resolve(context.resume()).catch(() => {})
+    await Promise.race([attempt, new Promise<void>(resolve => { timer = setTimeout(resolve, RESUME_GRACE_MS) })])
+  } catch { /* resume() threw synchronously */ }
+  clearTimeout(timer)
+  return isRunning(context)
+}
 
 export function webAudioDeps(): SceneAudioDeps {
   let context: AudioContext | null = null
@@ -31,9 +44,10 @@ export function webAudioDeps(): SceneAudioDeps {
     context.createMediaElementSource(element).connect(gain)
     gain.connect(master)
 
+    let timer: ReturnType<typeof setTimeout> | undefined
     const ready = new Promise<void>((resolve, reject) => {
       // iPhones ignore preload and may never fire canplaythrough before play().
-      const timer = setTimeout(resolve, READY_FALLBACK_SECONDS * 1000)
+      timer = setTimeout(resolve, READY_FALLBACK_SECONDS * 1000)
       element.addEventListener('canplaythrough', () => { clearTimeout(timer); resolve() }, { once: true })
       element.addEventListener('error', () => { clearTimeout(timer); reject(new Error(`Cannot load ${src}`)) }, { once: true })
     })
@@ -44,10 +58,7 @@ export function webAudioDeps(): SceneAudioDeps {
     return {
       ready,
       async play() {
-        if (!isRunning(context)) {
-          try { await context.resume() } catch { /* handled below */ }
-          if (!isRunning(context)) throw new DOMException('Audio context is suspended', 'NotAllowedError')
-        }
+        if (!await resumeBounded(context)) throw new DOMException('Audio context is suspended', 'NotAllowedError')
         await element.play()
       },
       pause: () => element.pause(),
@@ -59,6 +70,7 @@ export function webAudioDeps(): SceneAudioDeps {
         gain.gain.linearRampToValueAtTime(level, now + seconds)
       },
       dispose() {
+        clearTimeout(timer)
         element.pause()
         element.removeAttribute('src')
         element.load()
@@ -76,12 +88,7 @@ export function webAudioDeps(): SceneAudioDeps {
     },
     async unlock() {
       const { context } = graph()
-      try {
-        if (context.state !== 'running') await context.resume()
-      } catch {
-        return false
-      }
-      return context.state === 'running'
+      return resumeBounded(context)
     },
   }
 }

@@ -57,6 +57,7 @@ function createChannel(deps: SceneAudioDeps, loop: boolean, blocked: Ref<boolean
   }
 
   function dropIncoming() {
+    if (incoming) blocked.value = false
     incoming?.dispose()
     incoming = null
     incomingReady = false
