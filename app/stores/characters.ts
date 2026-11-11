@@ -13,7 +13,7 @@ import { reportWriteFailure } from '@/transport/writeFailure'
 import { currentUser } from '@/transport/auth'
 import { useToastsStore } from '@/stores/toasts'
 import { useGamesStore } from '@/stores/games'
-import { canEdit } from '@/utils/permissions'
+import { canEdit, canSeeTrueName } from '@/utils/permissions'
 import { charactersInScope, freeIfGameUnknown } from '@/utils/scope'
 import { scope } from '@/transport/scope'
 import type { CharacterMeta } from '@/types/game'
@@ -69,6 +69,12 @@ export const useCharactersStore = defineStore('characters', {
       const games = useGamesStore()
       const game = meta?.game ? games.byId(meta.game) : undefined
       return canEdit(meta, currentUser.value?.id ?? null, game, game ? games.membersOf(game.id) : [])
+    },
+    canSeeTrueName: (state) => (id: string): boolean => {
+      if (mode.value === 'offline') return true
+      const meta = state.meta[id]
+      const game = meta?.game ? useGamesStore().byId(meta.game) : undefined
+      return canSeeTrueName(meta, currentUser.value?.id ?? null, game)
     },
   },
   actions: {

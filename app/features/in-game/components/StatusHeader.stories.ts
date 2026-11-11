@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import StatusHeader from './StatusHeader.vue'
-import { brann, wren, oda, PARTY } from '@/stories/fixtures'
-import { DESKTOP_VIEWPORT, withStores } from '@/stories/state'
+import { brann, wren, oda, PARTY, crookhollow, olden, CROOKHOLLOW_META } from '@/stories/fixtures'
+import { DESKTOP_VIEWPORT, withGameTable, withOfflineMode, withStores } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
 import { asTeammate, expectNoEditControls, sheetFor, TEAMMATE_NAME } from '@/stories/readonly'
 import { clearPbRequests, pbRequests } from '../../../../.storybook/mocks/pb'
@@ -35,6 +35,55 @@ export const ReadyToLevelUp: Story = {
 
 export const Compact: Story = {
   args: { id: brann.id, compact: true },
+}
+
+const TRUE_NAME = 'Ashen Wolf'
+const withTrueName = <T extends { trueName?: string }>(c: T): T => ({ ...c, trueName: TRUE_NAME })
+
+/** My own character: the true name sits masked under the name until I click it. */
+export const TrueNameMasked: Story = {
+  args: { id: brann.id },
+  decorators: [withStores({ characters: [withTrueName(brann)] })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const row = canvas.getByRole('button', { name: 'True name' })
+    await expect(canvas.queryByText(TRUE_NAME)).toBeNull()
+    await userEvent.click(row)
+    await expect(canvas.getByText(TRUE_NAME)).toBeVisible()
+  },
+}
+
+/** The master sees a player's true name too, masked the same way. */
+export const TrueNameForMaster: Story = {
+  args: { id: wren.id },
+  decorators: [sheetFor(wren.id), withGameTable(crookhollow, [withTrueName(wren)], CROOKHOLLOW_META)],
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button', { name: 'True name' })).toBeVisible()
+  },
+}
+
+/** Another player at the table never sees the row, not even masked. */
+export const TrueNameHiddenFromPlayers: Story = {
+  args: { id: wren.id },
+  decorators: [
+    sheetFor(wren.id),
+    withGameTable(olden, [withTrueName(wren)], { [wren.id]: { owner: 'user-kostya', game: olden.id } }),
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(wren.name)).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /True name/ })).toBeNull()
+    await expect(canvas.queryByText(TRUE_NAME)).toBeNull()
+  },
+}
+
+/** Offline the device is shared by the table: everyone sees the row, masked. */
+export const TrueNameOffline: Story = {
+  args: { id: oda.id },
+  decorators: [withOfflineMode, withStores({ characters: [withTrueName(oda)] })],
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button', { name: 'True name' })).toBeVisible()
+  },
 }
 
 /** Seva's character: whose it is, values and breakdowns only — no HP/XP/coin controls, no level-up, no dice. */

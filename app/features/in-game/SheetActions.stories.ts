@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import SheetActions from './SheetActions.vue'
-import { brann, crookhollow, mirel, oda, olden, PARTY, sage, wren, CROOKHOLLOW_META, OLDEN_META } from '@/stories/fixtures'
-import { withGameTable, withStores } from '@/stories/state'
+import { brann, crookhollow, mirel, oda, olden, PARTY, sage, wren, CROOKHOLLOW_META, MEMBERS, OLDEN_META } from '@/stories/fixtures'
+import { withGameTable, withOfflineMode, withStores } from '@/stories/state'
 import { useCharactersStore } from '@/stores/characters'
 import { pb } from '../../../.storybook/mocks/pb'
 
@@ -29,27 +29,37 @@ async function openMenu(canvasElement: HTMLElement, name: string) {
 
 const itemNames = (menu: ReturnType<typeof within>) => menu.getAllByRole('menuitem').map((i: HTMLElement) => i.textContent?.trim())
 
-/** The master's own character: give it to a player, or take it out. */
+/** The master's own character: rename it, give it to a player, or take it out. */
 export const MasterOwnCharacter: Story = {
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement, brann.name)
-    await expect(itemNames(menu)).toEqual(['Give to a player', 'Take out of the game'])
+    await expect(itemNames(menu)).toEqual(['Rename', 'Give to a player', 'Take out of the game'])
   },
 }
 
-/** A player's own character: only take it out (giving is the master's). */
+/** A player's own character: rename it or take it out (giving is the master's). */
 export const PlayerOwnCharacter: Story = {
   args: { characterId: wren.id },
   decorators: [withGameTable(olden, [...PARTY, sage], OLDEN_META)],
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement, wren.name)
-    await expect(itemNames(menu)).toEqual(['Take out of the game'])
+    await expect(itemNames(menu)).toEqual(['Rename', 'Take out of the game'])
   },
 }
 
-/** A teammate's character, even for the master: no actions at all. */
+/** A player's character for the master: only rename it, the game actions stay the owner's. */
 export const TeammateCharacter: Story = {
   args: { characterId: mirel.id },
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement, mirel.name)
+    await expect(itemNames(menu)).toEqual(['Rename'])
+  },
+}
+
+/** Once its owner has left the game, the master cannot change the character: no actions at all. */
+export const OwnerLeftCharacter: Story = {
+  args: { characterId: mirel.id },
+  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META, MEMBERS.filter(m => m.user !== 'user-yana'))],
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('button')).toBeNull()
   },
@@ -64,12 +74,31 @@ export const MastersCharacterForPlayer: Story = {
   },
 }
 
-/** A free character has no game actions. */
+/** A free character has no game actions, only rename. */
 export const FreeCharacter: Story = {
   args: { characterId: sage.id },
   decorators: [withStores({ characters: [sage] })],
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).queryByRole('button')).toBeNull()
+    const menu = await openMenu(canvasElement, sage.name)
+    await expect(itemNames(menu)).toEqual(['Rename'])
+  },
+}
+
+/** Offline anyone at the device may rename any character. */
+export const OfflineCharacter: Story = {
+  args: { characterId: sage.id },
+  decorators: [withOfflineMode, withStores({ characters: [sage] })],
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement, sage.name)
+    await expect(itemNames(menu)).toEqual(['Rename'])
+  },
+}
+
+export const OpensRename: Story = {
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement, brann.name)
+    await userEvent.click(menu.getByRole('menuitem', { name: 'Rename' }))
+    await expect(await body(canvasElement).findByRole('dialog', { name: `Rename ${brann.name}` })).toBeVisible()
   },
 }
 
@@ -84,8 +113,9 @@ export const TakeOutConfirm: Story = {
     await userEvent.click(confirm.getByRole('button', { name: 'Take out' }))
     await waitFor(() => expect(update).toHaveBeenCalledWith(brann.id, { game: '' }))
     await expect(useCharactersStore().metaOf(brann.id)).toEqual({ owner: 'user-mock', game: '' })
-    // Free now, so the menu is gone.
-    await waitFor(() => expect(within(canvasElement).queryByRole('button')).toBeNull())
+    // Free now, so only rename is left.
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+    await expect(itemNames(await openMenu(canvasElement, brann.name))).toEqual(['Rename'])
   },
 }
 

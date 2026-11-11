@@ -29,6 +29,7 @@ import StatusChipTrio from '@/components/ui/StatusChipTrio.vue'
 import StatusChip from '@/components/ui/StatusChip.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import StateNote from '@/components/ui/StateNote.vue'
+import TrueNameRow from './TrueNameRow.vue'
 import Stepper from '@/components/ui/Stepper.vue'
 import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconWeapon from '@/components/ui/icons/IconWeapon.vue'
@@ -48,6 +49,7 @@ const { id: charId, char, dispatch } = useActiveCharacter(() => props.id)
 const { rollDamage } = useDiceRoller()
 const readonly = useSheetReadonly()
 const characters = useCharactersStore()
+const showTrueName = computed(() => characters.canSeeTrueName(charId.value))
 const games = useGamesStore()
 
 const ownerMarker = computed(() => {
@@ -182,15 +184,7 @@ async function handleRollDamage() {
             <template v-else> · {{ t('inGame.statusHeader.levelLabel') }} {{ char.level }}</template>
           </span>
         </div>
-        <span v-if="char.trueName && !compact" class="sh-truename">
-          <span class="sh-truename-glyph" aria-hidden="true">
-            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3">
-              <path d="M6 1.5 C3 1.5 1 4 1 6 C1 8 3 10.5 6 10.5 C9 10.5 11 8 11 6 C11 4 9 1.5 6 1.5 Z" />
-              <circle cx="6" cy="6" r="1.6" fill="currentColor" />
-            </svg>
-          </span>
-          {{ char.trueName }}
-        </span>
+        <TrueNameRow v-if="char.trueName && !compact && showTrueName" :key="charId" :name="char.trueName" class="sh-truename" />
         <span v-if="readonly && !compact" class="sh-owner">{{ ownerMarker }}</span>
       </div>
     </div>
@@ -428,18 +422,7 @@ async function handleRollDamage() {
 }
 .sh-meta b { color: var(--vtt-text-secondary); font-weight: 600; }
 
-.sh-truename {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-  line-height: 1.1;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.sh-truename-glyph { width: 10px; height: 10px; color: var(--vtt-accent-deep); }
-.sh-truename-glyph svg { width: 100%; height: 100%; display: block; }
+.sh-truename { align-self: flex-start; }
 
 .sh-owner {
   font-family: var(--font-mono);

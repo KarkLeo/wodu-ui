@@ -11,6 +11,9 @@ export const messages: Messages = {
     bottomSheet: {
       dialogTitle: 'Диалог',
     },
+    textField: {
+      show: 'Показать текст',
+    },
     searchField: {
       clear: 'Очистить поиск',
     },
@@ -83,7 +86,7 @@ export const messages: Messages = {
       trueNameLabel: 'Истинное имя',
       trueNameOpt: '— опционально',
       trueNamePlaceholder: 'Имя, дающее силу',
-      trueNameHint: 'Скрыто от других. Даёт бонус, если враг его не узнал.',
+      trueNameHint: 'Его видите только вы и мастер. Даёт бонус, если враг его не узнал.',
       nameFallback: 'Новый персонаж',
       attrsLabel: 'Характеристики',
       attrsHint: 'по 2d6 на каждую · модификатор 0…+3',
@@ -303,6 +306,16 @@ export const messages: Messages = {
     readonly: {
       owner: 'Персонаж игрока {name}',
       ownerUnknown: 'Чужой персонаж',
+    },
+    trueName: {
+      label: 'Истинное имя',
+    },
+    rename: {
+      title: 'Переименовать: {name}',
+      nameLabel: 'Имя',
+      trueNameLabel: 'Истинное имя',
+      trueNameOpt: '— необязательно',
+      trueNameHint: 'Его видите только вы и мастер.',
     },
     statusHeader: {
       back: 'Назад',
@@ -696,6 +709,7 @@ export const messages: Messages = {
       failed: 'Не удалось удалить игру. Попробуйте ещё раз.',
     },
     sheet: {
+      rename: 'Переименовать',
       actions: 'Действия: {name}',
       takeOut: 'Вывести из игры',
       takeOutTitle: 'Вывести {name} из игры?',

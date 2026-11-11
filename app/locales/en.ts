@@ -9,6 +9,9 @@ export const messages = {
     bottomSheet: {
       dialogTitle: 'Dialog',
     },
+    textField: {
+      show: 'Show text',
+    },
     searchField: {
       clear: 'Clear search',
     },
@@ -81,7 +84,7 @@ export const messages = {
       trueNameLabel: 'True name',
       trueNameOpt: '— optional',
       trueNamePlaceholder: 'A name that grants power',
-      trueNameHint: 'Hidden from others. Grants a bonus if the enemy doesn’t know it.',
+      trueNameHint: 'Only you and the master see it. Grants a bonus if the enemy doesn’t know it.',
       nameFallback: 'New character',
       attrsLabel: 'Attributes',
       attrsHint: '2d6 each · modifier 0…+3',
@@ -301,6 +304,16 @@ export const messages = {
     readonly: {
       owner: '{name}’s character',
       ownerUnknown: 'Someone else’s character',
+    },
+    trueName: {
+      label: 'True name',
+    },
+    rename: {
+      title: 'Rename {name}',
+      nameLabel: 'Name',
+      trueNameLabel: 'True name',
+      trueNameOpt: '— optional',
+      trueNameHint: 'Only you and the master see it.',
     },
     statusHeader: {
       back: 'Back',
@@ -694,6 +707,7 @@ export const messages = {
       failed: 'Couldn’t delete the game. Try again.',
     },
     sheet: {
+      rename: 'Rename',
       actions: 'Actions for {name}',
       takeOut: 'Take out of the game',
       takeOutTitle: 'Take {name} out of the game?',
