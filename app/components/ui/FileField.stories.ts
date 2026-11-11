@@ -114,3 +114,63 @@ export const Disabled: Story = {
     await expect(within(canvasElement).getByLabelText('Scene image', { selector: 'input' })).toBeDisabled()
   },
 }
+
+export const FocusAfterPick: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.upload(canvas.getByLabelText('Scene image', { selector: 'input' }), new File(['x'], 'tavern.png', { type: 'image/png' }))
+    await expect(canvas.getByRole('button', { name: /remove file/i })).toHaveFocus()
+    await userEvent.click(canvas.getByRole('button', { name: /remove file/i }))
+    await expect(canvas.getByRole('button', { name: /choose a file/i })).toHaveFocus()
+  },
+}
+
+/** The parent keeps the stored file: focus stays on the clear button. */
+export const FocusAfterClearKept: Story = {
+  args: { currentName: 'cellar.webp' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: /remove file/i }))
+    await expect(canvas.getByRole('button', { name: /remove file/i })).toHaveFocus()
+  },
+}
+
+/** The parent drops the stored file on `clear`: focus moves to the choose button. */
+export const FocusAfterClearRemoved: Story = {
+  render: () => ({
+    components: { FileField },
+    setup: () => ({ value: ref<File | null>(null), name: ref<string | undefined>('cellar.webp') }),
+    template: `<FileField v-model="value" label="Scene image" :accept="['image/png']" :current-name="name" @clear="name = undefined" />`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: /remove file/i }))
+    await expect(canvas.getByRole('button', { name: /choose a file/i })).toHaveFocus()
+  },
+}
+
+export const KeyboardTargetName: Story = {
+  args: { error: 'The file is too large' },
+  play: async ({ canvasElement }) => {
+    const choose = within(canvasElement).getByRole('button', { name: /choose a file/i })
+    await expect(choose).toHaveAccessibleName(/Scene image/)
+    await expect(choose).toBeInvalid()
+    await expect(choose).toHaveAccessibleDescription('The file is too large')
+  },
+}
+
+export const TwoFields: Story = {
+  render: () => ({
+    components: { FileField },
+    setup: () => ({ a: ref(null), b: ref(null) }),
+    template: `<div>
+      <FileField v-model="a" label="Image" :accept="['image/png']" current-name="a.png" />
+      <FileField v-model="b" label="Sound" :accept="['audio/mpeg']" current-name="b.mp3" />
+    </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: /remove file.*image/i })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: /remove file.*sound/i })).toBeInTheDocument()
+  },
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import FormField from './FormField.vue'
 import IconClose from './icons/IconClose.vue'
 import { t } from '@/locales'
@@ -23,6 +23,8 @@ const model = defineModel<File | null>({ required: true })
 const emit = defineEmits<{ clear: [] }>()
 
 const input = ref<HTMLInputElement | null>(null)
+const chooseButton = ref<HTMLButtonElement | null>(null)
+const removeButton = ref<HTMLButtonElement | null>(null)
 
 const uploading = computed(() => typeof props.progress === 'number')
 const percent = computed(() => Math.round(Math.min(1, Math.max(0, props.progress ?? 0)) * 100))
@@ -33,8 +35,30 @@ function onPick(event: Event) {
   const file = el.files?.[0] ?? null
   // Cleared so that picking the same file again after removing it still fires `change`.
   el.value = ''
-  if (file) model.value = file
+  if (!file) return
+  model.value = file
+  void focusAfterRender()
 }
+
+function unpick() {
+  model.value = null
+  void focusAfterRender()
+}
+
+function clearStored() {
+  emit('clear')
+  void focusAfterRender()
+}
+
+// The control that had focus leaves the DOM when the state changes; focus goes to whichever one the field shows then.
+async function focusAfterRender() {
+  await nextTick()
+  const target = removeButton.value ?? chooseButton.value
+  target?.focus()
+}
+
+const removeName = computed(() => `${t('ui.fileField.remove')}: ${props.label}`)
+const chooseName = computed(() => `${t('ui.fileField.choose')}: ${props.label}`)
 
 function formatSize(bytes: number): string {
   const round = (n: number) => Number(n.toFixed(1))
@@ -68,9 +92,10 @@ function formatSize(bytes: number): string {
           <button
             type="button"
             class="file-remove"
-            :aria-label="t('ui.fileField.remove')"
+            ref="removeButton"
+            :aria-label="removeName"
             :disabled="locked"
-            @click="model = null"
+            @click="unpick"
           >
             <IconClose :size="12" />
           </button>
@@ -83,9 +108,10 @@ function formatSize(bytes: number): string {
           <button
             type="button"
             class="file-remove"
-            :aria-label="t('ui.fileField.remove')"
+            ref="removeButton"
+            :aria-label="removeName"
             :disabled="locked"
-            @click="emit('clear')"
+            @click="clearStored"
           >
             <IconClose :size="12" />
           </button>
@@ -93,7 +119,10 @@ function formatSize(bytes: number): string {
         <button
           v-else
           type="button"
+          ref="chooseButton"
           class="file-choose"
+          :aria-label="chooseName"
+          :aria-invalid="invalid"
           :disabled="locked"
           :aria-describedby="describedBy"
           @click="input?.click()"
@@ -117,7 +146,7 @@ function formatSize(bytes: number): string {
 </template>
 
 <style scoped>
-.file-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.file-field { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .file-input {
   position: absolute;
   width: 1px;
