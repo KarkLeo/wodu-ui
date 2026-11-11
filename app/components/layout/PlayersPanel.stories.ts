@@ -4,7 +4,7 @@ import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import PlayersPanel from './PlayersPanel.vue'
 import {
   brann, wren, mirel, oda, sage, draftGear, PARTY,
-  crookhollow, olden, MEMBERS, CROOKHOLLOW_META, OLDEN_META,
+  crookhollow, olden, MEMBERS, CROOKHOLLOW_META, OLDEN_META, inGame,
 } from '@/stories/fixtures'
 import { atRoute, DESKTOP_VIEWPORT, inLayout, withGameTable, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
@@ -382,5 +382,97 @@ export const PlayerSeesNoEncounter: Story = {
     const menu = within(await within(canvasElement.ownerDocument.body).findByRole('menu'))
     await expect(menu.queryByRole('menuitem', { name: 'Encounter' })).toBeNull()
     await expect(pbRequests().filter(r => r.includes('encounter'))).toEqual([])
+  },
+}
+
+// ── The master's tool rows ──────────────────────────────────────────────────
+
+/** The master gets the tool group under the list: after the last character, before "New character". */
+export const MasterSeesToolRows: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const group = await canvas.findByRole('group', { name: 'Master' })
+    await expect(within(group).getByRole('button', { name: 'Encounter' })).toBeVisible()
+    const last = await row(canvasElement, mirel.name)
+    const fresh = canvas.getByRole('button', { name: 'New character' })
+    await expect(last.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await expect(group.compareDocumentPosition(fresh) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  },
+}
+
+export const PlayerSeesNoTools: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(olden.name)).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+  },
+}
+
+export const MasterlessSeesNoTools: Story = {
+  tags: ['no-visual'],
+  decorators: [masterlessTable],
+  loaders: [atRoute(`/games/${olden.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText('This game has no master')).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+  },
+}
+
+export const OfflineSeesNoTools: Story = {
+  tags: ['no-visual'],
+  decorators: [offlineMode, withStores({ characters: [sage] })],
+  loaders: [atRoute('/offline')],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await row(canvasElement, sage.name)).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+  },
+}
+
+const crowd = Array.from({ length: 12 }, (_, i) => ({ ...brann, id: `story-crowd-${i}`, name: `Crowd member ${i + 1}` }))
+const crowdMeta = Object.fromEntries(crowd.map(c => [c.id, inGame(crookhollow)]))
+const smallPhone: Decorator = (story) => ({
+  components: { story },
+  template: '<div data-small-phone style="width: 375px; height: 568px; display: flex; flex-direction: column"><story /></div>',
+})
+
+/** Many characters: the list scrolls and the tool group stays in view above the footer. */
+export const ToolsStayVisibleWithManyCharacters: Story = {
+  tags: ['no-visual'],
+  decorators: [withGameTable(crookhollow, crowd, crowdMeta), smallPhone],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const group = await canvas.findByRole('group', { name: 'Master' })
+    const frame = canvasElement.querySelector('[data-small-phone]')!.getBoundingClientRect()
+    const box = group.getBoundingClientRect()
+    await expect(box.top).toBeGreaterThanOrEqual(frame.top)
+    await expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
+    const list = canvasElement.querySelector('.gl-panel-list') as HTMLElement
+    await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
+    await expect(list.clientHeight).toBeGreaterThanOrEqual(40)
+  },
+}
+
+/** The tools follow the master: another master takes the game and the group goes, getting it back returns it. */
+export const ToolsFollowTheMaster: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const games = useGamesStore()
+    await expect(await canvas.findByRole('group', { name: 'Master' })).toBeVisible()
+    games.upsertGame({ ...crookhollow, master: 'user-kostya' })
+    await waitFor(() => expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull())
+    games.upsertGame(crookhollow)
+    await expect(await canvas.findByRole('group', { name: 'Master' })).toBeVisible()
   },
 }

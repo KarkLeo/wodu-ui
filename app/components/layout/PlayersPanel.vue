@@ -7,8 +7,6 @@ import { useCreationStore } from '@/stores/creation'
 import { useCharacterCreation } from '@/composables/useCharacterCreation'
 import { useTable } from '@/composables/useTable'
 import { useTableSelection } from '@/composables/useTableSelection'
-import { useEncounterPanel } from '@/composables/useEncounterPanel'
-import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
 import { mode } from '@/transport/mode'
@@ -23,6 +21,7 @@ import StateNote from '@/components/ui/StateNote.vue'
 import GameMenu from './GameMenu.vue'
 import PanelFooter from './PanelFooter.vue'
 import MasterlessNotice from './MasterlessNotice.vue'
+import MasterTools from './MasterTools.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -38,8 +37,6 @@ const creation = useCreationStore()
 const { createDraft } = useCharacterCreation()
 const layout = useGameLayout()
 const games = useGamesStore()
-const encounter = useEncounterStore()
-const { toggle: toggleEncounter } = useEncounterPanel()
 const { selectCharacter } = useTableSelection()
 const { tableScope, gameId, game, partyRoute, newCharacterRoute } = useTable()
 
@@ -162,16 +159,6 @@ async function startNew() {
 
     <div class="gl-panel-list">
       <ListRow
-        v-if="isGameMaster"
-        as="button"
-        class="player-row"
-        :title="t('encounter.title')"
-        :selected="encounter.panelOpen"
-        :pressed="encounter.panelOpen"
-        @click="toggleEncounter"
-      />
-
-      <ListRow
         v-for="c in activeCharacters"
         :key="c.id"
         as="button"
@@ -196,6 +183,10 @@ async function startNew() {
       <div v-if="mode === 'offline'" class="players-offline-hint">
         <StateNote inline align="start" size="xs">{{ t('mode.offlineHint') }}</StateNote>
       </div>
+    </div>
+
+    <div v-if="isGameMaster && game" class="gl-panel-tools">
+      <MasterTools :game="game" />
     </div>
 
     <div class="gl-panel-foot">
@@ -316,6 +307,11 @@ async function startNew() {
 }
 
 .players-offline-hint { margin-top: var(--s-1); padding: 0 10px; }
+
+.gl-panel-tools {
+  flex: none;
+  padding: 0 var(--s-3) var(--s-2);
+}
 
 .gl-panel-foot {
   padding: var(--s-3) var(--s-4);
