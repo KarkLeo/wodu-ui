@@ -5,6 +5,7 @@ import { useEncounterStore } from './encounter'
 import { useLibraryStore } from './library'
 import { useMediaStore } from './media'
 import { useStageStore } from './stage'
+import { useToolPanelsStore } from './toolPanels'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('store:games')
@@ -16,6 +17,7 @@ function dropMasterDataOnChange(gameId: string, before: Game | undefined, after:
   useLibraryStore().clearGame(gameId)
   useEncounterStore().clearGame(gameId)
   useMediaStore().clearGame(gameId)
+  useToolPanelsStore().clearAll()
 }
 
 export const useGamesStore = defineStore('games', {

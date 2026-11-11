@@ -7,6 +7,10 @@ import { crookhollow, CROOKHOLLOW_META, ENCOUNTER_MONSTERS, PARTY, sage } from '
 import { atRoute, withGameTable } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useEncounterStore } from '@/stores/encounter'
+import { useMediaStore } from '@/stores/media'
+import { useStageStore } from '@/stores/stage'
+import { useToolPanelsStore } from '@/stores/toolPanels'
+import { emptyStage, withScene } from '@/domain/stage'
 import { clearPbRequests, signInMock } from '../../../.storybook/mocks/pb'
 
 const meta = {
@@ -32,13 +36,13 @@ type Story = StoryObj<typeof meta>
 const names = (group: HTMLElement) =>
   within(group).getAllByRole('button').map(b => b.getAttribute('aria-label') ?? b.textContent?.trim())
 
-/** The three rows of the master's tools, none of them active at the table. */
+/** The four rows of the master's tools, none of them active at the table. */
 export const Default: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const group = await canvas.findByRole('group', { name: 'Master' })
-    await expect(names(group)).toEqual(['Encounter', 'Monsters', 'Items'])
+    await expect(names(group)).toEqual(['Encounter', 'Monsters', 'Items', 'Scenes'])
   },
 }
 
@@ -198,7 +202,7 @@ const manyMonsters: Decorator = (story) => ({
 const longLabels = async (canvasElement: HTMLElement, groupName: string) => {
   const group = await within(canvasElement).findByRole('group', { name: groupName })
   const rows = within(group).getAllByRole('button')
-  await expect(rows).toHaveLength(3)
+  await expect(rows).toHaveLength(4)
   await expect(within(group).getByText('99')).toBeVisible()
   const heights = rows.map(r => r.getBoundingClientRect().height)
   for (const row of rows) {
@@ -221,4 +225,75 @@ export const LongLabelsRu: Story = {
   decorators: [manyMonsters],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: ({ canvasElement }) => longLabels(canvasElement, 'Мастер'),
+}
+
+const scene = { id: 'story-scene-cellar', name: 'The flooded cellar and the long stair down to the drowned crypt below', image: null, sound: null }
+const sceneOn: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const media = useMediaStore()
+    media.clearAll()
+    media.startLoading(crookhollow.id)
+    media.setScenes(crookhollow.id, [scene])
+    useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
+  },
+  template: '<story />',
+})
+
+const scenesCardClosed: Decorator = (story) => ({
+  components: { story },
+  setup() { useToolPanelsStore().clearAll() },
+  template: '<story />',
+})
+
+/** The Scenes row after Items, not pressed while its card is closed and no scene is on. */
+export const ScenesRowOff: Story = {
+  decorators: [scenesCardClosed],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: 'Scenes' })
+    await expect(row).toHaveAttribute('aria-pressed', 'false')
+    await expect(row.querySelector('.lr-subtitle')).toBeNull()
+  },
+}
+
+/** A scene is on: its name is the row's sub line (truncated, never squeezing the title) and the name says so. */
+export const ScenesRowShowsTheActiveScene: Story = {
+  decorators: [scenesCardClosed, sceneOn],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: `Scenes, ${scene.name} is on` })
+    const title = row.querySelector('.lr-title') as HTMLElement
+    await expect(title).toHaveTextContent('Scenes')
+    await expect(title.clientWidth).toBeGreaterThan(40)
+    await expect(row.querySelector('.lr-subtitle')).toHaveTextContent(scene.name)
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+  },
+}
+
+/** The row toggles the Scenes card on the table. */
+export const ScenesRowToggles: Story = {
+  tags: ['no-visual'],
+  decorators: [scenesCardClosed],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: 'Scenes' })
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'true'))
+    await expect(useToolPanelsStore().open.scenes).toBe(true)
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'false'))
+  },
+}
+
+/** From a library screen the card would not show, so the row opens it and goes to the table. */
+export const ScenesRowFromMonstersGoesToTheTable: Story = {
+  tags: ['no-visual'],
+  decorators: [scenesCardClosed],
+  loaders: [atRoute(`/games/${crookhollow.id}/monsters`)],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Scenes' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
+    await expect(useToolPanelsStore().open.scenes).toBe(true)
+  },
 }

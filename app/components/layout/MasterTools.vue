@@ -5,24 +5,48 @@ import ListRow from '@/components/ui/ListRow.vue'
 import Pill from '@/components/ui/Pill.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { useGameLayout } from './gameLayoutContext'
-import { useEncounterPanel } from '@/composables/useEncounterPanel'
+import { useToolPanel } from '@/composables/useToolPanel'
+import { useStageControl } from '@/composables/useStageControl'
 import { useTable } from '@/composables/useTable'
 import { useEncounterStore } from '@/stores/encounter'
+import { useMediaStore } from '@/stores/media'
 import type { Game } from '@/types/game'
 import { t } from '@/locales'
 
 const props = defineProps<{ game: Game }>()
 
+interface ToolRow {
+  key: string
+  label: string
+  ariaLabel?: string
+  /** `toggle` opens a card of the tray and is pressed while it is open; `link` opens a screen and is the current page there. */
+  kind: 'toggle' | 'link'
+  on: boolean
+  /** A count in the trailing slot, shown while above zero. */
+  count?: number
+  /** Live text under the title, truncated; never the trailing slot, which would squeeze the title. */
+  status?: string
+  onClick: () => void
+}
+
 const route = useRoute()
 const router = useRouter()
 const encounter = useEncounterStore()
-const { toggle: toggleEncounter } = useEncounterPanel()
+const media = useMediaStore()
+const encounterPanel = useToolPanel('encounter')
+const scenesPanel = useToolPanel('scenes')
+const { activeSceneId } = useStageControl()
 const { tableRoute } = useTable()
 const layout = useGameLayout()
 
 const living = computed(() => {
   if (encounter.gameId !== props.game.id || encounter.status !== 'ready') return 0
   return encounter.monsters.filter(m => m.diedAt === undefined).length
+})
+
+const activeSceneName = computed(() => {
+  if (!activeSceneId.value || media.gameId !== props.game.id) return ''
+  return media.scenes.list.find(s => s.id === activeSceneId.value)?.name ?? ''
 })
 
 // A library row on its own screen goes back to the table; elsewhere it opens its library.
@@ -32,58 +56,64 @@ function openLibrary(name: 'game-monsters' | 'game-items') {
   layout?.closeMobileOverlays()
 }
 
-const rows = computed(() => [
+function libraryRow(key: 'monsters' | 'items'): ToolRow {
+  const name = key === 'monsters' ? 'game-monsters' as const : 'game-items' as const
+  return { key, label: t(`games.tools.${key}`), kind: 'link', on: route.name === name, onClick: () => openLibrary(name) }
+}
+
+const rows = computed<ToolRow[]>(() => [
   {
     key: 'encounter',
     label: t('games.tools.encounter'),
     ariaLabel: living.value > 0 ? t('games.tools.encounterCount', { count: living.value }) : undefined,
-    active: encounter.panelOpen,
-    current: undefined,
-    pressed: encounter.panelOpen,
+    kind: 'toggle',
+    on: encounterPanel.open.value,
     count: living.value,
-    onClick: toggleEncounter,
+    onClick: encounterPanel.toggle,
   },
-  ...(['monsters', 'items'] as const).map((key) => {
-    const name = key === 'monsters' ? 'game-monsters' as const : 'game-items' as const
-    const here = route.name === name
-    return {
-      key,
-      label: t(`games.tools.${key}`),
-      ariaLabel: undefined,
-      active: here,
-      current: here ? 'page' as const : undefined,
-      pressed: undefined,
-      count: 0,
-      onClick: () => openLibrary(name),
-    }
-  }),
+  libraryRow('monsters'),
+  libraryRow('items'),
+  {
+    key: 'scenes',
+    label: t('stage.scenes.title'),
+    ariaLabel: activeSceneName.value ? t('games.tools.scenesOn', { name: activeSceneName.value }) : undefined,
+    kind: 'toggle',
+    on: scenesPanel.open.value,
+    status: activeSceneName.value || undefined,
+    onClick: scenesPanel.toggle,
+  },
 ])
 </script>
 
 <template>
   <div role="group" :aria-label="t('games.tools.title')" class="master-tools">
     <SectionLabel class="mt-label" size="md" aria-hidden="true">{{ t('games.tools.title') }}</SectionLabel>
-    <ListRow
-      v-for="row in rows"
-      :key="row.key"
-      class="mt-row"
-      as="button"
-      :title="row.label"
-      :aria-label="row.ariaLabel"
-      :aria-current="row.current"
-      :selected="row.active"
-      :pressed="row.pressed"
-      @click="row.onClick"
-    >
-      <template v-if="row.count > 0" #trailing>
-        <Pill tone="accent" size="sm">{{ row.count }}</Pill>
-      </template>
-    </ListRow>
+    <div class="mt-rows">
+      <ListRow
+        v-for="row in rows"
+        :key="row.key"
+        class="mt-row"
+        as="button"
+        :title="row.label"
+        :subtitle="row.status"
+        :aria-label="row.ariaLabel"
+        :aria-current="row.kind === 'link' && row.on ? 'page' : undefined"
+        :selected="row.on"
+        :pressed="row.kind === 'toggle' ? row.on : undefined"
+        @click="row.onClick"
+      >
+        <template v-if="row.count" #trailing>
+          <Pill tone="accent" size="sm">{{ row.count }}</Pill>
+        </template>
+      </ListRow>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.master-tools { display: flex; flex-direction: column; gap: 2px; }
+.master-tools { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+/* With more rows the block scrolls inside itself rather than squeezing the character list. */
+.mt-rows { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; }
 .mt-label { padding: 0 10px 4px; }
 /* The same gold side bar as a selected player row: a tool that is on reads as selected. */
 .mt-row.is-selected::before {

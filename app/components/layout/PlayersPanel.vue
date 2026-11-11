@@ -246,8 +246,9 @@ async function startNew() {
 .pr-offline-badge { margin-left: auto; }
 
 .gl-panel-list {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0;
+  /* One character row always stays visible; the tools give way first. */
+  min-height: 64px;
   overflow-y: auto;
   padding: 0 var(--s-3) var(--s-3);
   display: flex;
@@ -309,7 +310,11 @@ async function startNew() {
 .players-offline-hint { margin-top: var(--s-1); padding: 0 10px; }
 
 .gl-panel-tools {
-  flex: none;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 45%;
+  display: flex;
+  flex-direction: column;
   padding: 0 var(--s-3) var(--s-2);
 }
 

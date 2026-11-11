@@ -22,6 +22,7 @@ import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useEncounterStore } from '@/stores/encounter'
 import { useMediaStore } from '@/stores/media'
+import { useToolPanelsStore } from '@/stores/toolPanels'
 import { useStageStore } from '@/stores/stage'
 import { useLibraryStore } from '@/stores/library'
 import { useRollHistoryStore } from '@/stores/rollHistory'
@@ -454,6 +455,7 @@ export function stopOnline(): void {
   useLibraryStore().clearAll()
   useEncounterStore().clearAll()
   useMediaStore().clearAll()
+  useToolPanelsStore().clearAll()
   useStageStore().clearAll()
   stopConnectionMonitor()
   playedLocally.clear()

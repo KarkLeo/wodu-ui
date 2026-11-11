@@ -673,6 +673,8 @@ export const messages: Messages = {
       encounterCount: 'Энкаунтер, в бою: {count}',
       monsters: 'Монстры',
       items: 'Предметы',
+      scenes: 'Сцены',
+      scenesOn: 'Сцены, включена: {name}',
     },
     members: {
       title: 'Участники',
@@ -887,6 +889,12 @@ export const messages: Messages = {
         confirm: 'Удалить',
         failed: 'Не удалось удалить предмет. Попробуйте ещё раз.',
       },
+    },
+  },
+  stage: {
+    scenes: {
+      title: 'Сцены',
+      close: 'Закрыть сцены',
     },
   },
   encounter: {

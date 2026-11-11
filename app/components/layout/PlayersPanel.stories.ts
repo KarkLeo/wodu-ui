@@ -169,6 +169,19 @@ export const GameAsPlayer: Story = {
   },
 }
 
+/** A player has no master tools, so no Scenes row either; neither has a masterless game. */
+export const PlayerHasNoScenesRow: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}/party/${oda.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await row(canvasElement, oda.name)).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Scenes/ })).toBeNull()
+  },
+}
+
 /** Opening and closing sheets stays on the game's own party route. */
 export const GameOpenAndClose: Story = {
   tags: ['no-visual'],
@@ -443,23 +456,49 @@ const smallPhone: Decorator = (story) => ({
   template: '<div data-small-phone style="width: 375px; height: 568px; display: flex; flex-direction: column"><story /></div>',
 })
 
+const landscapePhone: Decorator = (story) => ({
+  components: { story },
+  template: '<div data-small-phone style="width: 667px; height: 375px; display: flex; flex-direction: column"><story /></div>',
+})
+
+/** At least one full character row stays visible and every tool row can be scrolled to. */
+const budgetKept = async (canvasElement: HTMLElement) => {
+  const canvas = within(canvasElement)
+  const group = await canvas.findByRole('group', { name: 'Master' })
+  const frame = canvasElement.querySelector('[data-small-phone]')!.getBoundingClientRect()
+  const box = group.getBoundingClientRect()
+  await expect(box.top).toBeGreaterThanOrEqual(frame.top)
+  await expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
+  const list = canvasElement.querySelector('.gl-panel-list') as HTMLElement
+  await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
+  const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
+  await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
+  const rows = canvas.getAllByRole('button').filter(b => ['Encounter', 'Monsters', 'Items', 'Scenes'].includes(b.textContent?.trim() ?? ''))
+  await expect(rows).toHaveLength(4)
+  const scroller = group.querySelector('.mt-rows') as HTMLElement
+  for (const r of rows) {
+    r.scrollIntoView({ block: 'nearest' })
+    const rb = r.getBoundingClientRect()
+    const sb = scroller.getBoundingClientRect()
+    await expect(rb.top).toBeGreaterThanOrEqual(sb.top - 1)
+    await expect(rb.bottom).toBeLessThanOrEqual(sb.bottom + 1)
+  }
+}
+
 /** Many characters: the list scrolls and the tool group stays in view above the footer. */
 export const ToolsStayVisibleWithManyCharacters: Story = {
   tags: ['no-visual'],
   decorators: [withGameTable(crookhollow, crowd, crowdMeta), smallPhone],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const group = await canvas.findByRole('group', { name: 'Master' })
-    const frame = canvasElement.querySelector('[data-small-phone]')!.getBoundingClientRect()
-    const box = group.getBoundingClientRect()
-    await expect(box.top).toBeGreaterThanOrEqual(frame.top)
-    await expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
-    const list = canvasElement.querySelector('.gl-panel-list') as HTMLElement
-    await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
-    const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
-    await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
-  },
+  play: ({ canvasElement }) => budgetKept(canvasElement),
+}
+
+/** A landscape phone is too short for four rows, the list and the footer: the tools scroll inside themselves. */
+export const ToolsStayVisibleOnALandscapePhone: Story = {
+  tags: ['no-visual'],
+  decorators: [withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: ({ canvasElement }) => budgetKept(canvasElement),
 }
 
 /** The tools follow the master: another master takes the game and the group goes, getting it back returns it. */

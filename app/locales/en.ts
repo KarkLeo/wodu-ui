@@ -671,6 +671,8 @@ export const messages = {
       encounterCount: 'Encounter, {count} in the fight',
       monsters: 'Monsters',
       items: 'Items',
+      scenes: 'Scenes',
+      scenesOn: 'Scenes, {name} is on',
     },
     members: {
       title: 'Members',
@@ -885,6 +887,12 @@ export const messages = {
         confirm: 'Delete',
         failed: 'Couldn’t delete the item. Try again.',
       },
+    },
+  },
+  stage: {
+    scenes: {
+      title: 'Scenes',
+      close: 'Close scenes',
     },
   },
   encounter: {

@@ -6,6 +6,8 @@ import { brann, wren, mirel, PARTY, crookhollow, CROOKHOLLOW_META, ENCOUNTER_MON
 import type { Decorator } from '@storybook/vue3-vite'
 import { emptyEncounter } from '@/domain/encounter'
 import { useEncounterPanelShown } from '@/composables/useTableSelection'
+import { useTrayCards } from '@/composables/useTrayCards'
+import { useToolPanelsStore } from '@/stores/toolPanels'
 import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { atRoute, withGameTable, withStores } from '@/stories/state'
@@ -332,5 +334,76 @@ export const MasterLosesGameWhilePanelShows: Story = {
     await expect(encounter.monsters).toEqual([])
     await expect(canvasElement.querySelector('.party-center')).toBeNull()
     await expect(await canvas.findByText(t('characterList.pickFromSidebar'))).toBeVisible()
+  },
+}
+
+const withScenesOpen: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const panels = useToolPanelsStore()
+    panels.clearAll()
+    panels.toggle('scenes')
+  },
+  template: '<story />',
+})
+
+/** The master's cards come in the order of their rows, ahead of the sheets; each is a card of the carousel. */
+export const MasterCardsInOrder: Story = {
+  decorators: [withScenesOpen, withOpenPanel, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(columns(canvasElement)).toHaveLength(3))
+    await expect(within(columns(canvasElement)[0] as HTMLElement).getByRole('region', { name: 'Encounter' })).toBeVisible()
+    await expect(within(columns(canvasElement)[1] as HTMLElement).getByRole('heading', { name: 'Scenes' })).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.party-dot')).toHaveLength(3)
+    await expect(canvas.getAllByRole('button', { name: 'Close sheet' })).toHaveLength(1)
+  },
+}
+
+/** A card's own button closes it and leaves the others. */
+export const ClosingAMasterCard: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesOpen, withOpenPanel, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Close scenes' }))
+    await expect(useToolPanelsStore().open.scenes).toBe(false)
+    await waitFor(() => expect(columns(canvasElement)).toHaveLength(2))
+    await expect(canvas.getByRole('region', { name: 'Encounter' })).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.party-dot')).toHaveLength(2)
+  },
+}
+
+/** The game page's gate: the Scenes card alone shows the tray, with no sheet and no encounter. */
+export const ScenesCardAloneShowsTheTray: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesOpen, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  render: () => ({
+    components: { PartyView, CharacterListView },
+    setup: () => ({ shown: useTrayCards().shown }),
+    template: '<PartyView v-if="shown" /><CharacterListView v-else />',
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('heading', { name: 'Scenes' })).toBeVisible()
+    await expect(columns(canvasElement)).toHaveLength(1)
+    await expect(canvasElement.querySelector('.party-dots')).toBeNull()
+  },
+}
+
+/** Losing the game closes the master's cards with the rest, so a former master keeps none open. */
+export const MasterCardsGoWithTheMaster: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesOpen, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  render: ScenesCardAloneShowsTheTray.render,
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findByRole('heading', { name: 'Scenes' })).toBeVisible()
+    useGamesStore().upsertGame({ ...crookhollow, master: 'someone-else' })
+    await waitFor(() => expect(within(canvasElement).queryByRole('heading', { name: 'Scenes' })).toBeNull())
+    await expect(useToolPanelsStore().open.scenes).toBe(false)
   },
 }
