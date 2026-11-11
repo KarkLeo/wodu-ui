@@ -663,6 +663,13 @@ export const messages: Messages = {
       encounter: 'Енкаунтер',
       home: 'На головну',
     },
+    tools: {
+      title: 'Майстер',
+      encounter: 'Енкаунтер',
+      encounterCount: 'Енкаунтер, у бою: {count}',
+      monsters: 'Монстри',
+      items: 'Предмети',
+    },
     members: {
       title: 'Учасники',
       master: 'майстер',

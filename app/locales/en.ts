@@ -661,6 +661,13 @@ export const messages = {
       encounter: 'Encounter',
       home: 'Home',
     },
+    tools: {
+      title: 'Master',
+      encounter: 'Encounter',
+      encounterCount: 'Encounter, {count} in the fight',
+      monsters: 'Monsters',
+      items: 'Items',
+    },
     members: {
       title: 'Members',
       master: 'master',
