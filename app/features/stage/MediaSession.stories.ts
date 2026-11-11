@@ -2,14 +2,15 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { defineComponent, onUnmounted } from 'vue'
 import { crookhollow, CROOKHOLLOW_META, olden, PARTY } from '@/stories/fixtures'
-import { atRoute, withGameTable } from '@/stories/state'
+import { atRoute, withGameTable, withStores } from '@/stories/state'
+import { loadGame } from '@/transport/games'
 import { useGamesStore } from '@/stores/games'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
 import { closeMedia } from '@/transport/media'
 import { useMediaSession } from '@/composables/useMediaSession'
 import { useStageControl } from '@/composables/useStageControl'
-import { clearPbRequests, pbRequests, resetRecords, storedRecords } from '../../../.storybook/mocks/pb'
+import { clearPbRequests, pbRequests, resetRecords, seedRecords, storedRecords } from '../../../.storybook/mocks/pb'
 
 // Story-only harness: the session and the master's two switches have no screen yet.
 const Harness = defineComponent({
@@ -124,5 +125,39 @@ export const TurnOnAndOff: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Off' }))
     await waitFor(() => expect((storedRecords('stages')[0]!.data as { scene: unknown }).scene).toBeNull())
     await expect(canvas.getByTestId('active')).toHaveTextContent('none')
+  },
+}
+
+/** A game joined during the session shows its stage at once, without a reload. */
+export const JoinedGameShowsItsStage: Story = {
+  decorators: [withStores({})],
+  loaders: [seed, atRoute('/')],
+  play: async () => {
+    seedRecords('games', [{ id: olden.id, name: olden.name, master: olden.master, invite_code: olden.inviteCode }])
+    seedRecords('stages', [{
+      id: olden.id,
+      game: olden.id,
+      data: {
+        id: olden.id,
+        scene: { id: 'story-scene-other', image: { collection: 'scenes', record: 'story-scene-other', name: 'image.png' }, sound: null },
+        image: null,
+        sound: null,
+      },
+    }])
+    await expect(useStageStore().stageOf(olden.id).scene).toBeNull()
+    await loadGame(olden.id)
+    await expect(useStageStore().stageOf(olden.id).scene?.id).toBe('story-scene-other')
+  },
+}
+
+/** No stage row yet (the master never published): joining still works and shows nothing. */
+export const JoinedGameWithoutStage: Story = {
+  decorators: [withStores({})],
+  loaders: [seed, atRoute('/')],
+  play: async () => {
+    seedRecords('games', [{ id: olden.id, name: olden.name, master: olden.master, invite_code: olden.inviteCode }])
+    await loadGame(olden.id)
+    await expect(useGamesStore().byId(olden.id)).toBeTruthy()
+    await expect(useStageStore().stageOf(olden.id).scene).toBeNull()
   },
 }

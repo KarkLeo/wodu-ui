@@ -1,9 +1,11 @@
 import { ClientResponseError } from 'pocketbase'
-import { pb, type CharacterRow, type GameMemberRow, type GameRow } from '@/transport/pb'
+import { pb, type CharacterRow, type GameMemberRow, type GameRow, type StageRow } from '@/transport/pb'
 import { currentUser } from './auth'
 import { mode } from './mode'
 import { call, requireOnlineUser as me, staysCurrent } from './onlineOps'
 import { scope } from './scope'
+import { withTimeout } from './connection'
+import { receiveStage } from './stage'
 import { isCharacterShape } from './shapes'
 import { useGamesStore } from '@/stores/games'
 import { useCharactersStore } from '@/stores/characters'
@@ -17,6 +19,7 @@ import { createLogger } from '@/utils/logger'
 const log = createLogger('transport:games')
 
 const CODE_ATTEMPTS = 5
+const STAGE_TIMEOUT_MS = 4000
 
 /** Thrown by claimMaster() when another member became master first. */
 export class MasterTakenError extends Error {
@@ -133,6 +136,18 @@ export async function loadGame(gameId: string): Promise<void> {
   for (const row of charRows) {
     if (!isCharacterShape(row.data)) continue
     characters.upsertLocal(row.data, row.updated, { owner: row.owner, game: row.game })
+  }
+  await loadStage(gameId, current)
+}
+
+// Stages load at bootstrap, so a game joined later needs its own. The stage is decoration: no row yet, a
+// refused request or a timeout simply means nothing is shown.
+async function loadStage(gameId: string, current: () => boolean): Promise<void> {
+  try {
+    const row = await withTimeout(pb.collection('stages').getOne<StageRow>(gameId), STAGE_TIMEOUT_MS)
+    if (current()) receiveStage('update', row)
+  } catch (err) {
+    log.debug('no stage for the joined game', { gameId, err })
   }
 }
 

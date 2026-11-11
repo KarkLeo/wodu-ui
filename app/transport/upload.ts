@@ -8,26 +8,34 @@ import { BOOTSTRAP_TIMEOUT_MS } from './connection'
  * failure), or `Error('timeout')`, which the connection watcher counts as a network failure too.
  * The timeout is a silence limit: it restarts on every progress event while the body goes up, and
  * runs from the end of the upload for the server's answer, so a long upload on a slow line stays alive.
+ * An aborted `signal` cancels the request and rejects with `isAbort` set, which is not a network failure.
  */
 export function sendForm<T>(
   method: 'POST' | 'PATCH',
   path: string,
   form: FormData,
   onProgress?: (fraction: number) => void,
+  signal?: AbortSignal,
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new ClientResponseError({ url: path, status: 0, response: {}, isAbort: true }))
+      return
+    }
     const url = pb.baseURL.replace(/\/+$/, '') + path
     const xhr = new XMLHttpRequest()
     let timer: ReturnType<typeof setTimeout> | undefined
     const settle = (fn: () => void) => {
       clearTimeout(timer)
+      signal?.removeEventListener('abort', onAbort)
       fn()
     }
+    const onAbort = () => xhr.abort()
     const arm = () => {
       clearTimeout(timer)
       timer = setTimeout(() => {
-        xhr.abort()
         reject(new Error('timeout'))
+        xhr.abort()
       }, BOOTSTRAP_TIMEOUT_MS)
     }
     const failure = (status: number, response: unknown, isAbort = false) =>
@@ -56,6 +64,7 @@ export function sendForm<T>(
     })
     xhr.onerror = () => settle(() => reject(failure(0, {})))
     xhr.onabort = () => settle(() => reject(failure(0, {}, true)))
+    signal?.addEventListener('abort', onAbort, { once: true })
     arm()
     xhr.send(form)
   })

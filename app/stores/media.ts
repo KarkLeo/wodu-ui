@@ -24,12 +24,15 @@ export const useMediaStore = defineStore('media', {
       if (this.gameId !== gameId) return
       if (this.scenes.status !== 'ready') this.scenes.status = 'failed'
     },
-    putScene(scene: Scene) {
+    // A late answer for a game that is no longer the open one must not touch the list.
+    putScene(gameId: string, scene: Scene) {
+      if (this.gameId !== gameId) return
       const idx = this.scenes.list.findIndex(s => s.id === scene.id)
       if (idx === -1) this.scenes.list.push(scene)
       else this.scenes.list[idx] = scene
     },
-    removeScene(id: string) {
+    removeScene(gameId: string, id: string) {
+      if (this.gameId !== gameId) return
       this.scenes.list = this.scenes.list.filter(s => s.id !== id)
     },
     clearGame(gameId: string) {

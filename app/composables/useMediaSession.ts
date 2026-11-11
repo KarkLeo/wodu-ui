@@ -1,4 +1,4 @@
-import { computed, watch } from 'vue'
+import { computed, watch, type ComputedRef } from 'vue'
 import { useTable } from '@/composables/useTable'
 import { useMediaStore } from '@/stores/media'
 import { isGameMaster } from '@/composables/useRouteRecheck'
@@ -11,10 +11,13 @@ import { createLogger } from '@/utils/logger'
 
 const log = createLogger('media-session')
 
+let sessionTarget: ComputedRef<string | null> | null = null
+
 /** Try again after a load the server refused; with the connection itself in trouble the session reopens on its own. */
 export function retryMedia() {
-  const id = useMediaStore().gameId
-  if (!id || connection.value !== 'ok') return
+  // The session's own target, so a game I do not master (any more) is never opened.
+  const id = sessionTarget?.value
+  if (!id || useMediaStore().scenes.status === 'loading') return
   openMedia(id).catch((err: unknown) => log.warn('retry failed', { err }))
 }
 
@@ -30,6 +33,7 @@ export function useMediaSession() {
     if (!onlineDataReady.value || connection.value !== 'ok') return null
     return isGameMaster(id) ? id : null
   })
+  sessionTarget = target
   watch(target, (id) => {
     if (!id) {
       closeMedia()

@@ -1,7 +1,7 @@
 import { pb, type GameRow, type SceneRow } from '@/transport/pb'
 import { guard } from './backend'
 import { call, requireOnlineUser, staysCurrent } from './onlineOps'
-import { publishStage } from './stage'
+import { publishStage, WriteDropped } from './stage'
 import { toGame } from './games'
 import { sendForm } from '@/transport/upload'
 import {
@@ -11,7 +11,7 @@ import {
 import { useGamesStore } from '@/stores/games'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
-import type { Scene } from '@/types/stage'
+import type { Scene, Stage } from '@/types/stage'
 import { fitImage } from '@/utils/fitImage'
 import { createLogger } from '@/utils/logger'
 
@@ -20,13 +20,18 @@ const log = createLogger('transport:media')
 /** A file for each of the scene's two slots: a `File` replaces, `null` removes, `undefined` keeps. */
 export interface SceneFiles { image?: File | null; sound?: File | null }
 
+export type SceneWriteKind = 'limitReached' | 'limitMayHaveChanged' | 'notMaster' | 'stagePublishFailed' | 'aborted'
+
 /**
- * The two failures the form words differently; any other failure is thrown as it came.
+ * The failures the form words differently; any other failure is thrown as it came.
+ * `limitReached`: the local list is full, nothing was sent.
  * `limitMayHaveChanged`: a create was refused while this device counted fewer scenes than the limit.
  * `notMaster`: the game's master is someone else now.
+ * `stagePublishFailed`: the scene is saved (`scene`) but the table was not updated; `republishScene` retries that alone.
+ * `aborted`: the upload was cancelled because the session or the game closed; the form can ignore it.
  */
 export class SceneWriteError extends Error {
-  constructor(public kind: 'limitMayHaveChanged' | 'notMaster', public override cause?: unknown) {
+  constructor(public kind: SceneWriteKind, public override cause?: unknown, public scene?: Scene) {
     super(kind)
     this.name = 'SceneWriteError'
   }
@@ -71,12 +76,32 @@ function unsubscribeOwn() {
  * Master: subscribes to the game's scenes, then loads them. Events that arrive during the load are held and
  * replayed on top of it. A failure leaves the store `failed` and is not rethrown.
  */
-export async function openMedia(gameId: string): Promise<void> {
+export function openMedia(gameId: string): Promise<void> {
+  if (inflight?.gameId === gameId) return inflight.promise
+  const promise = run(gameId).finally(() => {
+    if (inflight?.promise === promise) inflight = null
+  })
+  inflight = { gameId, promise }
+  return promise
+}
+
+// A second open of the same game while its load runs shares that load instead of listing and subscribing again.
+let inflight: { gameId: string; promise: Promise<void> } | null = null
+
+// One request in flight per upload: closing the session or moving to another game cancels them.
+const uploads = new Set<{ gameId: string; controller: AbortController }>()
+
+function abortUploads(except?: string) {
+  for (const u of uploads) if (u.gameId !== except) u.controller.abort()
+}
+
+async function run(gameId: string): Promise<void> {
   requireOnlineUser()
   const current = staysCurrent()
   const gen = ++openGen
   const store = useMediaStore()
   const open = () => gen === openGen && current() && store.gameId === gameId
+  abortUploads(gameId)
   unsubscribeOwn()
   store.startLoading(gameId)
   held = []
@@ -85,11 +110,11 @@ export async function openMedia(gameId: string): Promise<void> {
     await call(() => pb.collection('scenes').subscribe<SceneRow>('*', (e) => {
       if (e.record.game !== gameId || store.gameId !== gameId) return
       if (e.action === 'delete') {
-        onEvent(gen, () => store.removeScene(e.record.id))
+        onEvent(gen, () => store.removeScene(gameId, e.record.id))
         return
       }
       const scene = sceneFromRow(e.record)
-      if (scene) onEvent(gen, () => store.putScene(scene))
+      if (scene) onEvent(gen, () => store.putScene(gameId, scene))
     }))
     if (!open()) return
     const rows = await call(() => pb.collection('scenes').getFullList<SceneRow>({
@@ -103,7 +128,11 @@ export async function openMedia(gameId: string): Promise<void> {
     for (const apply of events) apply()
   } catch (err) {
     log.warn('open failed', { gameId, err })
-    if (open()) store.setFailed(gameId)
+    // The list did not load, so nothing is listened to until a retry replaces it.
+    if (open()) {
+      store.setFailed(gameId)
+      unsubscribeOwn()
+    }
   } finally {
     if (gen === openGen) held = null
   }
@@ -113,6 +142,8 @@ export async function openMedia(gameId: string): Promise<void> {
 export function closeMedia(): void {
   openGen += 1
   held = null
+  inflight = null
+  abortUploads()
   unsubscribeOwn()
 }
 
@@ -146,6 +177,25 @@ function savedScene(row: SceneRow): Scene {
   return scene
 }
 
+async function upload(
+  gameId: string,
+  method: 'POST' | 'PATCH',
+  path: string,
+  form: FormData,
+  onProgress?: (fraction: number) => void,
+): Promise<SceneRow> {
+  const entry = { gameId, controller: new AbortController() }
+  uploads.add(entry)
+  try {
+    return await guard(() => sendForm<SceneRow>(method, path, form, onProgress, entry.controller.signal))
+  } catch (err) {
+    if (entry.controller.signal.aborted) throw new SceneWriteError('aborted', err)
+    throw err
+  } finally {
+    uploads.delete(entry)
+  }
+}
+
 /** Master: adds a scene. Files go up under neutral names; the image is shrunk to fit first. */
 export async function createScene(
   gameId: string,
@@ -156,6 +206,7 @@ export async function createScene(
   requireOnlineUser()
   const current = staysCurrent()
   const store = useMediaStore()
+  if (store.scenes.list.length >= MEDIA_LIMITS.scenes) throw new SceneWriteError('limitReached')
   const data = checkedName(draft.name, draft.id, !!files.image, !!files.sound)
   const ready = await checkedFiles(files)
   const form = new FormData()
@@ -165,13 +216,13 @@ export async function createScene(
   addFiles(form, ready)
   let row: SceneRow
   try {
-    row = await guard(() => sendForm<SceneRow>('POST', ROWS, form, onProgress))
+    row = await upload(gameId, 'POST', ROWS, form, onProgress)
   } catch (err) {
     if (statusOf(err) === 400 && store.scenes.list.length < MEDIA_LIMITS.scenes) throw new SceneWriteError('limitMayHaveChanged', err)
     throw err
   }
   const scene = savedScene(row)
-  if (current()) store.putScene(scene)
+  if (current()) store.putScene(gameId, scene)
   return scene
 }
 
@@ -187,7 +238,20 @@ async function stillMaster(gameId: string, me: string, current: () => boolean, e
   throw new SceneWriteError('notMaster', err)
 }
 
-/** Master: renames a scene and changes its files. When it is the scene shown at the table, the table gets the new files. */
+// A write that outlives its game or session must not publish or edit anything for it.
+function holds(gameId: string, current: () => boolean): boolean {
+  return current() && useMediaStore().gameId === gameId
+}
+
+function pointsAt(stage: Stage, scene: Scene): boolean {
+  return (stage.scene?.image?.name ?? null) === scene.image && (stage.scene?.sound?.name ?? null) === scene.sound
+}
+
+/**
+ * Master: renames a scene and changes its files. When it is the scene shown at the table and its stored files
+ * changed, the table gets the new ones; if that publish fails the scene is still saved, and the error is a
+ * `SceneWriteError('stagePublishFailed')` carrying it.
+ */
 export async function updateScene(
   gameId: string,
   scene: { id: string; name: string },
@@ -206,16 +270,38 @@ export async function updateScene(
   addFiles(form, ready)
   let row: SceneRow
   try {
-    row = await guard(() => sendForm<SceneRow>('PATCH', `${ROWS}/${encodeURIComponent(data.id)}`, form, onProgress))
+    row = await upload(gameId, 'PATCH', `${ROWS}/${encodeURIComponent(data.id)}`, form, onProgress)
   } catch (err) {
     if (statusOf(err) === 404) await stillMaster(gameId, me, current, err)
     throw err
   }
   const saved = savedScene(row)
-  if (current()) store.putScene(saved)
+  if (!holds(gameId, current)) return saved
+  store.putScene(gameId, saved)
   const stage = useStageStore().stageOf(gameId)
-  if (stage.scene?.id === saved.id) await publishStage(withScene(stage, saved))
+  if (stage.scene?.id === saved.id && !pointsAt(stage, saved)) await publishLive(gameId, saved, current)
   return saved
+}
+
+async function publishLive(gameId: string, scene: Scene, current: () => boolean): Promise<void> {
+  const stage = useStageStore().stageOf(gameId)
+  if (stage.scene?.id !== scene.id) return
+  try {
+    await publishStage(withScene(stage, scene))
+  } catch (err) {
+    // The mode or the user changed first: nothing to report to a form that is gone.
+    if (err instanceof WriteDropped || !current()) return
+    throw new SceneWriteError('stagePublishFailed', err, scene)
+  }
+}
+
+/** Master: retries the table's update alone after `stagePublishFailed`; does nothing once the scene is no longer the live one. */
+export async function republishScene(gameId: string, scene: Scene): Promise<void> {
+  requireOnlineUser()
+  const current = staysCurrent()
+  const stage = useStageStore().stageOf(gameId)
+  if (stage.scene?.id !== scene.id) return
+  await publishLive(gameId, scene, current)
 }
 
 /** Master: deletes a scene. A scene shown at the table is taken off first, and kept if that fails. */
@@ -223,12 +309,21 @@ export async function deleteScene(gameId: string, id: string): Promise<void> {
   const me = requireOnlineUser()
   const current = staysCurrent()
   const stage = useStageStore().stageOf(gameId)
-  if (stage.scene?.id === id) await publishStage(withoutScene(stage))
+  if (stage.scene?.id === id) {
+    if (!holds(gameId, current)) throw new SceneWriteError('aborted')
+    try {
+      await publishStage(withoutScene(stage))
+    } catch (err) {
+      if (err instanceof WriteDropped) throw new SceneWriteError('aborted', err)
+      throw err
+    }
+    if (!holds(gameId, current)) throw new SceneWriteError('aborted')
+  }
   try {
     await call(() => pb.collection('scenes').delete(id))
   } catch (err) {
     if (statusOf(err) !== 404) throw err
     await stillMaster(gameId, me, current, err)
   }
-  if (current()) useMediaStore().removeScene(id)
+  if (current()) useMediaStore().removeScene(gameId, id)
 }
