@@ -656,9 +656,6 @@ export const messages = {
       leave: 'Leave game',
       delete: 'Delete game',
       settings: 'Game settings',
-      monsters: 'Monster library',
-      items: 'Item library',
-      encounter: 'Encounter',
       home: 'Home',
     },
     tools: {

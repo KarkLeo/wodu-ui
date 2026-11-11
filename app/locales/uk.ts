@@ -658,9 +658,6 @@ export const messages: Messages = {
       leave: 'Покинути гру',
       delete: 'Видалити гру',
       settings: 'Налаштування гри',
-      monsters: 'Бібліотека монстрів',
-      items: 'Бібліотека предметів',
-      encounter: 'Енкаунтер',
       home: 'На головну',
     },
     tools: {

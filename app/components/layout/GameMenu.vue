@@ -16,7 +16,6 @@ import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import InviteSheet from './InviteSheet.vue'
 import MembersSheet from './MembersSheet.vue'
 import BringCharacterSheet from './BringCharacterSheet.vue'
-import { useEncounterPanel } from '@/composables/useEncounterPanel'
 import { useGameAction } from '@/composables/useGameAction'
 import { exitGameQuietly } from '@/composables/useRouteRecheck'
 import { currentUser } from '@/transport/auth'
@@ -30,7 +29,6 @@ const props = defineProps<{ game: Game }>()
 
 const router = useRouter()
 const { busy, run } = useGameAction()
-const { toggle: toggleEncounter } = useEncounterPanel()
 
 const master = computed(() => isMaster(props.game, currentUser.value?.id ?? null))
 
@@ -52,14 +50,6 @@ function openSettings() {
   void router.push({ name: 'game-settings', params: { gameId: props.game.id } })
 }
 
-function openMonsters() {
-  void router.push({ name: 'game-monsters', params: { gameId: props.game.id } })
-}
-
-function openItems() {
-  void router.push({ name: 'game-items', params: { gameId: props.game.id } })
-}
-
 function goHome() {
   void router.push({ name: 'games' })
 }
@@ -76,9 +66,6 @@ function goHome() {
         <!-- The master manages the game on its settings screen; players see the invite and members read-only. -->
         <template v-if="master">
           <DropdownMenuItem class="gm-item" @select="openSettings">{{ t('games.menu.settings') }}</DropdownMenuItem>
-          <DropdownMenuItem class="gm-item" @select="openMonsters">{{ t('games.menu.monsters') }}</DropdownMenuItem>
-          <DropdownMenuItem class="gm-item" @select="openItems">{{ t('games.menu.items') }}</DropdownMenuItem>
-          <DropdownMenuItem class="gm-item" @select="toggleEncounter">{{ t('games.menu.encounter') }}</DropdownMenuItem>
         </template>
         <template v-else>
           <DropdownMenuItem class="gm-item" @select="inviteOpen = true">{{ t('games.menu.invite') }}</DropdownMenuItem>

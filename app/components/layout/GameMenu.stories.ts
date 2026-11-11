@@ -7,7 +7,6 @@ import { atRoute, withGameTable, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
 import { useCharactersStore } from '@/stores/characters'
-import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { useToastsStore } from '@/stores/toasts'
 import { pb } from '../../../.storybook/mocks/pb'
@@ -57,7 +56,7 @@ export const AsMaster: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: async ({ canvasElement }) => {
     const menu = await openMenu(canvasElement)
-    await expect(items(menu)).toEqual(['Game settings', 'Monster library', 'Item library', 'Encounter', 'Bring one of mine', 'Home'])
+    await expect(items(menu)).toEqual(['Game settings', 'Bring one of mine', 'Home'])
   },
 }
 
@@ -82,32 +81,6 @@ export const OpensSettings: Story = {
     const menu = await openMenu(canvasElement)
     await userEvent.click(menu.getByRole('menuitem', { name: 'Game settings' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/settings`))
-  },
-}
-
-/** The master's monster library is a screen of its own too; players never see the item. */
-export const OpensMonsterLibrary: Story = {
-  tags: ['no-visual'],
-  parameters: { navigationNotice: false },
-  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: async ({ canvasElement }) => {
-    const menu = await openMenu(canvasElement)
-    await userEvent.click(menu.getByRole('menuitem', { name: 'Monster library' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/monsters`))
-  },
-}
-
-/** The item library is the master's too. */
-export const OpensItemLibrary: Story = {
-  tags: ['no-visual'],
-  parameters: { navigationNotice: false },
-  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: async ({ canvasElement }) => {
-    const menu = await openMenu(canvasElement)
-    await userEvent.click(menu.getByRole('menuitem', { name: 'Item library' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/items`))
   },
 }
 
@@ -226,33 +199,5 @@ export const LeaveFails: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Leave' }))
     await waitFor(() => expect(toastTexts()).toContain('Couldn’t leave the game. Try again.'))
     await expect(storyRouter.currentRoute.value.path).toBe(`/games/${olden.id}`)
-  },
-}
-
-export const MasterTogglesEncounter: Story = {
-  tags: ['no-visual'],
-  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: async ({ canvasElement }) => {
-    const encounter = useEncounterStore()
-    encounter.clearAll()
-    const menu = await openMenu(canvasElement)
-    await userEvent.click(menu.getByRole('menuitem', { name: 'Encounter' }))
-    await expect(encounter.panelOpen).toBe(true)
-  },
-}
-
-/** Off the table the menu item goes to the table with the panel open. */
-export const EncounterGoesToTheTable: Story = {
-  tags: ['no-visual'],
-  decorators: [withGameTable(crookhollow, [...PARTY, sage], CROOKHOLLOW_META)],
-  loaders: [atRoute(`/games/${crookhollow.id}/items`)],
-  play: async ({ canvasElement }) => {
-    const encounter = useEncounterStore()
-    encounter.clearAll()
-    const menu = await openMenu(canvasElement)
-    await userEvent.click(menu.getByRole('menuitem', { name: 'Encounter' }))
-    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
-    await expect(encounter.panelOpen).toBe(true)
   },
 }
