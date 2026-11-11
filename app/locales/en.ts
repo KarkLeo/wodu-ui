@@ -15,6 +15,13 @@ export const messages = {
     searchField: {
       clear: 'Clear search',
     },
+    fileField: {
+      choose: 'Choose a file',
+      remove: 'Remove file',
+      sizeB: '{n} B',
+      sizeKb: '{n} KB',
+      sizeMb: '{n} MB',
+    },
     stepper: {
       decrease: 'Decrease',
       increase: 'Increase',

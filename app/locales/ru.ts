@@ -17,6 +17,13 @@ export const messages: Messages = {
     searchField: {
       clear: 'Очистить поиск',
     },
+    fileField: {
+      choose: 'Выбрать файл',
+      remove: 'Убрать файл',
+      sizeB: '{n} Б',
+      sizeKb: '{n} КБ',
+      sizeMb: '{n} МБ',
+    },
     stepper: {
       decrease: 'Уменьшить',
       increase: 'Увеличить',

@@ -22,11 +22,13 @@ import IconFlask from './IconFlask.vue'
 import IconGrip from './IconGrip.vue'
 import IconHeart from './IconHeart.vue'
 import IconHome from './IconHome.vue'
+import IconImage from './IconImage.vue'
 import IconInfo from './IconInfo.vue'
 import IconLightning from './IconLightning.vue'
 import IconLock from './IconLock.vue'
 import IconMenu from './IconMenu.vue'
 import IconMinus from './IconMinus.vue'
+import IconMusic from './IconMusic.vue'
 import IconPlus from './IconPlus.vue'
 import IconReroll from './IconReroll.vue'
 import IconSearch from './IconSearch.vue'
@@ -37,6 +39,8 @@ import IconStarBold from './IconStarBold.vue'
 import IconSwords from './IconSwords.vue'
 import IconTool from './IconTool.vue'
 import IconTrash from './IconTrash.vue'
+import IconVolume from './IconVolume.vue'
+import IconVolumeOff from './IconVolumeOff.vue'
 import IconWarning from './IconWarning.vue'
 import IconWeapon from './IconWeapon.vue'
 
@@ -64,11 +68,13 @@ const icons = {
   IconGrip,
   IconHeart,
   IconHome,
+  IconImage,
   IconInfo,
   IconLightning,
   IconLock,
   IconMenu,
   IconMinus,
+  IconMusic,
   IconPlus,
   IconReroll,
   IconSearch,
@@ -79,6 +85,8 @@ const icons = {
   IconSwords,
   IconTool,
   IconTrash,
+  IconVolume,
+  IconVolumeOff,
   IconWarning,
   IconWeapon,
 }
