@@ -11,7 +11,7 @@ import { catalogItem } from '@/domain/inventory'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { currentUser } from '@/transport/auth'
-import { itemSources } from '@/utils/permissions'
+import { canGiveFromLibrary } from '@/utils/permissions'
 import { t } from '@/locales'
 import { gearName } from '@/locales/content'
 
@@ -44,7 +44,7 @@ const games = useGamesStore()
 
 const meta = computed(() => characters.metaOf(props.char.id))
 const gameId = computed(() => meta.value?.game ?? '')
-const sources = computed(() => itemSources(
+const fromLibrary = computed(() => canGiveFromLibrary(
   props.char.status,
   meta.value,
   gameId.value ? games.byId(gameId.value) : undefined,
@@ -53,8 +53,7 @@ const sources = computed(() => itemSources(
 
 const catalogOpen = ref(false)
 const libraryOpen = ref(false)
-watch(() => sources.value.catalog, (on) => { if (!on) catalogOpen.value = false })
-watch(() => sources.value.fromLibrary, (on) => { if (!on) libraryOpen.value = false })
+watch(fromLibrary, (on) => { if (!on) libraryOpen.value = false })
 watch(readonly, (on) => {
   if (on) {
     catalogOpen.value = false
@@ -168,30 +167,28 @@ function gmCancel() { gmPendingId.value = null }
 
     <template v-if="!readonly">
       <InvToolbar
-        v-if="sources.catalog || sources.fromLibrary"
-        :catalog="sources.catalog"
-        :from-library="sources.fromLibrary"
+        :from-library="fromLibrary"
         @open-catalog="catalogOpen = true"
         @open-library="libraryOpen = true"
       />
 
       <CatalogSheet
-        v-if="sources.catalog"
         v-model:open="catalogOpen"
         :coins="char.coins"
+        :inventory="char.inventory"
         @buy="onBuyTemplate"
         @request-gm="onRequestGm"
       />
 
       <LibraryPickSheet
-        v-if="sources.fromLibrary"
+        v-if="fromLibrary"
         v-model:open="libraryOpen"
         :game-id="gameId"
         :character-id="char.id"
       />
 
       <ConfirmSheet
-        v-if="sources.catalog && gmPending"
+        v-if="gmPending"
         v-model:open="gmOpen"
         variant="gold"
         :title="t('inGame.inventory.gm.title')"

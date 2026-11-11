@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canEdit, canSeeTrueName, isMaster, itemSources } from './permissions'
+import { canEdit, canGiveFromLibrary, canSeeTrueName, isMaster } from './permissions'
 import type { Game, GameMember, CharacterMeta } from '@/types/game'
 
 const game: Game = { id: 'G', name: 'Table', master: 'm', inviteCode: 'K7QX29AB' }
@@ -95,42 +95,34 @@ describe('canSeeTrueName', () => {
   })
 })
 
-describe('itemSources', () => {
-  const catalog = { catalog: true, fromLibrary: false }
-  const library = { catalog: false, fromLibrary: true }
-  const neither = { catalog: false, fromLibrary: false }
-
-  it('offers the catalog to a draft, for the owner and the master alike', () => {
-    expect(itemSources('draft', playerChar, game, 'p')).toEqual(catalog)
-    expect(itemSources('draft', playerChar, game, 'm')).toEqual(catalog)
+describe('canGiveFromLibrary', () => {
+  it('lets the master hand out on a player character in their game', () => {
+    expect(canGiveFromLibrary('active', playerChar, game, 'm')).toBe(true)
   })
 
-  it('offers a player nothing on their active character in a game with a master', () => {
-    expect(itemSources('active', playerChar, game, 'p')).toEqual(neither)
+  it('lets the master hand out on their own character too', () => {
+    expect(canGiveFromLibrary('active', { owner: 'm', game: 'G' }, game, 'm')).toBe(true)
   })
 
-  it('offers the master the library on a player character', () => {
-    expect(itemSources('active', playerChar, game, 'm')).toEqual(library)
+  it('does not let a player hand out', () => {
+    expect(canGiveFromLibrary('active', playerChar, game, 'p')).toBe(false)
   })
 
-  it('offers the master the library on their own character too', () => {
-    expect(itemSources('active', { owner: 'm', game: 'G' }, game, 'm')).toEqual(library)
+  it('offers no library to a draft', () => {
+    expect(canGiveFromLibrary('draft', playerChar, game, 'm')).toBe(false)
   })
 
-  it('offers the catalog on a free character', () => {
-    expect(itemSources('active', { owner: 'p', game: '' }, game, 'p')).toEqual(catalog)
+  it('offers no library on a free character or in a masterless game', () => {
+    expect(canGiveFromLibrary('active', { owner: 'p', game: '' }, game, 'm')).toBe(false)
+    expect(canGiveFromLibrary('active', playerChar, { ...game, master: '' }, 'p')).toBe(false)
   })
 
-  it('offers the catalog in a masterless game', () => {
-    expect(itemSources('active', playerChar, { ...game, master: '' }, 'p')).toEqual(catalog)
+  it('offers no library offline, without meta', () => {
+    expect(canGiveFromLibrary('active', undefined, undefined, null)).toBe(false)
   })
 
-  it('offers the catalog offline, without meta', () => {
-    expect(itemSources('active', undefined, undefined, null)).toEqual(catalog)
-  })
-
-  it('offers the catalog when the game is unknown or another one', () => {
-    expect(itemSources('active', playerChar, undefined, 'm')).toEqual(catalog)
-    expect(itemSources('active', playerChar, { ...game, id: 'H' }, 'm')).toEqual(catalog)
+  it('offers no library when the game is unknown or another one', () => {
+    expect(canGiveFromLibrary('active', playerChar, undefined, 'm')).toBe(false)
+    expect(canGiveFromLibrary('active', playerChar, { ...game, id: 'H' }, 'm')).toBe(false)
   })
 })

@@ -145,6 +145,7 @@ function onUse(item: InventoryItem) {
   <CatalogSheet
     v-model:open="catalogOpen"
     :coins="draft.coins"
+    :inventory="draft.inventory"
     @buy="onBuy"
     @request-gm="onRequestGm"
   />

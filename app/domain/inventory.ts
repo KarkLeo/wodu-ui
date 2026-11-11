@@ -19,6 +19,15 @@ export function isConsumable(item: { descriptor: ItemDescriptor }): boolean {
   return false
 }
 
+/** How many of each catalog item an inventory holds, by `templateId`; a stack counts by its quantity. */
+export function ownedByTemplate(inventory: InventoryItem[]): Record<string, number> {
+  const owned: Record<string, number> = {}
+  for (const i of inventory) {
+    if (i.templateId) owned[i.templateId] = (owned[i.templateId] ?? 0) + (i.quantity ?? 1)
+  }
+  return owned
+}
+
 function stackConsumable(
   char: Character,
   key: { templateId?: string; libraryItemId?: string },

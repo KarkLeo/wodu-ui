@@ -124,14 +124,14 @@ export const ReadOnlyQuicksilver: Story = {
   },
 }
 
-/** A player at a table with a master hands out nothing and buys nothing: no toolbar, the gear still works. */
+/** A player at a table with a master buys from the catalog and hands out nothing; the gear works as anywhere. */
 export const OwnerInGameWithMaster: Story = {
   render: forCharacter(wren.id),
   decorators: [withGameTable(olden, TABLE, OLDEN_META), sheetFor(wren.id)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const bow = (await canvas.findByText('Shortbow')).closest<HTMLElement>('.inv-item')!
-    await expect(canvasElement.querySelector('.inv-toolbar')).toBeNull()
+    await expect(toolbar(canvasElement)).toEqual(['Catalog'])
     await userEvent.click(within(bow).getByRole('button', { name: 'Equip' }))
     await expect(await canvas.findByText('Multiple weapons equipped.')).toBeVisible()
     await userEvent.click(within(canvas.getByText('Lockpicks').closest<HTMLElement>('.inv-item')!).getByRole('button', { name: 'Remove' }))
@@ -139,13 +139,13 @@ export const OwnerInGameWithMaster: Story = {
   },
 }
 
-/** The master on a player's sheet: only From library. */
+/** The master on a player's sheet hands out from the library and may buy from the catalog. */
 export const MasterOnPlayerSheet: Story = {
   render: forCharacter(wren.id),
   decorators: [withGameTable(crookhollow, TABLE, CROOKHOLLOW_META), sheetFor(wren.id)],
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByText('Shortbow')
-    await expect(toolbar(canvasElement)).toEqual(['From library'])
+    await expect(toolbar(canvasElement)).toEqual(['From library', 'Catalog'])
   },
 }
 
@@ -183,11 +183,11 @@ export const MasterOwnCharacter: Story = {
   decorators: [withGameTable(crookhollow, TABLE, CROOKHOLLOW_META), sheetFor(brann.id)],
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByText('Rope (20ft)')
-    await expect(toolbar(canvasElement)).toEqual(['From library'])
+    await expect(toolbar(canvasElement)).toEqual(['From library', 'Catalog'])
   },
 }
 
-/** A character outside any game keeps the catalog and the Ask the GM path. */
+/** A character outside any game has the catalog and the Ask the GM path, and nobody to hand items out. */
 export const FreeCharacter: Story = {
   render: forCharacter(sage.id),
   decorators: [withGameTable(crookhollow, TABLE, CROOKHOLLOW_META), sheetFor(sage.id)],
@@ -199,7 +199,7 @@ export const FreeCharacter: Story = {
   },
 }
 
-/** A game whose master left behind has nobody to hand items out: the catalog is back. */
+/** A game whose master left behind has nobody to hand items out: only the catalog. */
 export const MasterlessGame: Story = {
   render: forCharacter(brann.id),
   decorators: [withGameTable({ ...crookhollow, master: '' }, TABLE, CROOKHOLLOW_META), sheetFor(brann.id)],

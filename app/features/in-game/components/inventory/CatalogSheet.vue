@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { VisuallyHidden } from 'reka-ui'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import Pill from '@/components/ui/Pill.vue'
 import SearchField from '@/components/ui/SearchField.vue'
 import SegmentedFilter from '@/components/ui/SegmentedFilter.vue'
+import IconBag from '@/components/ui/icons/IconBag.vue'
+import IconCheck from '@/components/ui/icons/IconCheck.vue'
 import { GEAR_CATEGORY_IDS, GEAR_CATALOG, type GearTemplate } from '@/data/gear'
-import { isConsumable } from '@/domain/inventory'
+import { isConsumable, ownedByTemplate } from '@/domain/inventory'
+import type { InventoryItem } from '@/types/character'
 import ItemIcon from './ItemIcon.vue'
 import ItemStatChip from './ItemStatChip.vue'
 import { t } from '@/locales'
 import { gearName, gearNotes, gearCategoryName } from '@/locales/content'
 
-const props = defineProps<{ coins: number }>()
+const props = defineProps<{ coins: number; inventory: InventoryItem[] }>()
 const emit = defineEmits<{
   (e: 'buy', templateId: string): void
   (e: 'request-gm', templateId: string): void
@@ -51,17 +56,63 @@ function armorChip(tpl: GearTemplate): string | null {
   return null
 }
 
+// ── Purchase feedback ──
+// The row and the coins answer to what actually changed, so an item that arrives through "Ask the GM" shows too.
+const BOUGHT_MS = 900
+const owned = computed(() => ownedByTemplate(props.inventory))
+/** Per item, how many times it has arrived while the sheet is open: the key that replays its animations. */
+const arrivals = ref<Record<string, number>>({})
+const spent = ref<{ amount: number; n: number } | null>(null)
+const boughtId = ref<string | null>(null)
+const announcement = ref('')
+let boughtTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(owned, (now, before) => {
+  if (!open.value) return
+  for (const [id, count] of Object.entries(now)) {
+    if (count <= (before[id] ?? 0)) continue
+    arrivals.value = { ...arrivals.value, [id]: (arrivals.value[id] ?? 0) + 1 }
+    announcement.value = `${gearName(id)}. ${t('inGame.inventory.catalog.owned', { count })}`
+  }
+})
+
+watch(() => props.coins, (now, before) => {
+  if (open.value && now < before) spent.value = { amount: before - now, n: (spent.value?.n ?? 0) + 1 }
+})
+
+watch(open, (now) => {
+  if (now) return
+  clearTimeout(boughtTimer)
+  arrivals.value = {}
+  spent.value = null
+  boughtId.value = null
+  announcement.value = ''
+})
+
+onBeforeUnmount(() => clearTimeout(boughtTimer))
+
 function onBuyClick(tpl: GearTemplate) {
   const price = tpl.price ?? 0
-  if (price > props.coins) emit('request-gm', tpl.templateId)
-  else emit('buy', tpl.templateId)
+  if (price > props.coins) {
+    emit('request-gm', tpl.templateId)
+    return
+  }
+  emit('buy', tpl.templateId)
+  boughtId.value = tpl.templateId
+  clearTimeout(boughtTimer)
+  boughtTimer = setTimeout(() => { boughtId.value = null }, BOUGHT_MS)
 }
 </script>
 
 <template>
   <BottomSheet v-model:open="open" :title="t('inGame.inventory.catalog.title')" :max-width="560">
     <template #head-right>
-      <span class="catalog-coins">{{ coins }} {{ t('inGame.inventory.coinsUnit') }}</span>
+      <span class="catalog-coins">
+        <span v-if="spent" :key="`spent-${spent.n}`" class="catalog-spent" aria-hidden="true">−{{ spent.amount }}</span>
+        <span :key="spent?.n ?? 0" :class="['catalog-coins-value', { 'is-spent': spent }]">
+          {{ coins }} {{ t('inGame.inventory.coinsUnit') }}
+        </span>
+      </span>
     </template>
 
     <div class="catalog-search">
@@ -74,15 +125,37 @@ function onBuyClick(tpl: GearTemplate) {
       <SegmentedFilter v-model="activeCat" :options="segments" class="catalog-segments" />
     </div>
 
+    <VisuallyHidden role="status">{{ announcement }}</VisuallyHidden>
+
     <EmptyState v-if="!filtered.length" :hint="t('inGame.inventory.catalog.empty')" />
     <div v-else>
       <div v-for="tpl in filtered" :key="tpl.templateId" class="cat-item">
-        <ItemIcon
-          :kind="tpl.descriptor.kind"
-          :consumable="isConsumable(tpl)"
+        <span
+          v-if="arrivals[tpl.templateId]"
+          :key="`flash-${arrivals[tpl.templateId]}`"
+          class="cat-item-flash"
+          aria-hidden="true"
         />
+        <span :key="arrivals[tpl.templateId] ?? 0" :class="['cat-item-icon', { 'is-arrived': arrivals[tpl.templateId] }]">
+          <ItemIcon
+            :kind="tpl.descriptor.kind"
+            :consumable="isConsumable(tpl)"
+          />
+        </span>
         <div class="cat-item-body">
-          <div class="cat-item-name">{{ gearName(tpl.templateId) }}</div>
+          <div class="cat-item-title">
+            <span class="cat-item-name">{{ gearName(tpl.templateId) }}</span>
+            <Pill
+              v-if="owned[tpl.templateId]"
+              :key="arrivals[tpl.templateId] ?? 0"
+              tone="accent"
+              size="sm"
+              :class="['cat-item-owned', { 'is-arrived': arrivals[tpl.templateId] }]"
+            >
+              <span class="cat-item-owned-count" aria-hidden="true"><IconBag :size="11" />×{{ owned[tpl.templateId] }}</span>
+              <VisuallyHidden>{{ t('inGame.inventory.catalog.owned', { count: owned[tpl.templateId] }) }}</VisuallyHidden>
+            </Pill>
+          </div>
           <div v-if="gearNotes(tpl.templateId)" class="cat-item-desc">{{ gearNotes(tpl.templateId) }}</div>
         </div>
         <div class="cat-item-stats">
@@ -102,10 +175,13 @@ function onBuyClick(tpl: GearTemplate) {
         </div>
         <button
           type="button"
-          :class="['cat-buy', { 'is-locked': (tpl.price ?? 0) > coins }]"
+          :class="['cat-buy', { 'is-locked': (tpl.price ?? 0) > coins, 'is-bought': boughtId === tpl.templateId }]"
           @click="onBuyClick(tpl)"
         >
-          {{ (tpl.price ?? 0) > coins ? t('inGame.inventory.catalog.ask') : t('inGame.inventory.buy') }}
+          <span class="cat-buy-label">
+            {{ (tpl.price ?? 0) > coins ? t('inGame.inventory.catalog.ask') : t('inGame.inventory.buy') }}
+          </span>
+          <IconCheck v-if="boughtId === tpl.templateId" class="cat-buy-check" :size="14" />
         </button>
       </div>
     </div>
@@ -114,9 +190,23 @@ function onBuyClick(tpl: GearTemplate) {
 
 <style scoped>
 .catalog-coins {
+  position: relative;
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--vtt-accent);
+}
+.catalog-coins-value { display: inline-block; }
+.catalog-coins-value.is-spent { animation: cat-pop 320ms var(--ease); }
+/* The spent amount leaves the purse: it stays inside the head, clear of the title on the far side. */
+.catalog-spent {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  margin-right: 8px;
+  color: var(--vtt-danger-bright);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: cat-spent 900ms ease-out forwards;
 }
 
 /* Pinned under the sheet's head while the list scrolls; the negative offsets cancel the body's top padding. */
@@ -139,16 +229,42 @@ function onBuyClick(tpl: GearTemplate) {
   gap: 12px;
   padding: 10px 4px;
   border-bottom: 1px solid var(--vtt-border-subtle);
+  /* Keeps the flash behind the row's own text. */
+  position: relative;
+  isolation: isolate;
 }
 .cat-item:last-child { border-bottom: none; }
+.cat-item-flash {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--r-sm);
+  pointer-events: none;
+  animation: cat-flash 700ms ease-out forwards;
+}
+.cat-item-icon { display: inline-flex; }
+.cat-item-icon.is-arrived,
+.cat-item-owned.is-arrived { animation: cat-pop 320ms var(--ease); }
 .cat-item-body { min-width: 0; }
+.cat-item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
 .cat-item-name {
+  min-width: 0;
   font-family: var(--font-serif);
   font-size: 14px;
   color: var(--vtt-accent-soft);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.cat-item-owned-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .cat-item-desc {
   font-size: 11px;
@@ -180,7 +296,18 @@ function onBuyClick(tpl: GearTemplate) {
   cursor: pointer;
   transition: all var(--t-fast) var(--ease);
   flex-shrink: 0;
+  /* The label keeps its place under the check mark, so the button neither changes width nor loses its name. */
+  display: inline-grid;
+  place-items: center;
 }
+.cat-buy-label,
+.cat-buy-check { grid-area: 1 / 1; }
+.cat-buy.is-bought,
+.cat-buy.is-bought:hover {
+  border-color: var(--vtt-success);
+  color: var(--vtt-success);
+}
+.cat-buy.is-bought .cat-buy-label { opacity: 0; }
 .cat-buy:hover { border-color: var(--vtt-border-gold); color: var(--vtt-accent); }
 .cat-buy.is-locked {
   color: var(--vtt-warning);
@@ -189,5 +316,19 @@ function onBuyClick(tpl: GearTemplate) {
 .cat-buy.is-locked:hover {
   border-color: var(--vtt-warning);
   color: var(--vtt-warning);
+}
+
+@keyframes cat-flash {
+  from { background: var(--vtt-accent-a18); }
+  to   { background: var(--vtt-accent-a00); }
+}
+@keyframes cat-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes cat-spent {
+  from { opacity: 1; transform: translateY(4px); }
+  to   { opacity: 0; transform: translateY(-8px); }
 }
 </style>

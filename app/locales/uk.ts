@@ -411,6 +411,7 @@ export const messages: Messages = {
         empty: 'Нічого не знайдено',
         ask: 'Запитати',
         consumableShort: 'витр.',
+        owned: 'У рюкзаку: {count}',
       },
       gm: {
         title: 'Не вистачає монет',

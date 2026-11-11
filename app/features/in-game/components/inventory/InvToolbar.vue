@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button.vue'
 import IconBag from '@/components/ui/icons/IconBag.vue'
 import { t } from '@/locales'
 
-defineProps<{ catalog: boolean; fromLibrary: boolean }>()
+defineProps<{ fromLibrary: boolean }>()
 defineEmits<{
   (e: 'open-catalog'): void
   (e: 'open-library'): void
@@ -15,7 +15,7 @@ defineEmits<{
     <Button v-if="fromLibrary" variant="dashed" class="inv-toolbar-btn" :icon-left="IconBag" @click="$emit('open-library')">
       {{ t('inGame.inventory.fromLibrary') }}
     </Button>
-    <Button v-if="catalog" variant="dashed" class="inv-toolbar-btn" :icon-left="IconBag" @click="$emit('open-catalog')">
+    <Button variant="dashed" class="inv-toolbar-btn" :icon-left="IconBag" @click="$emit('open-catalog')">
       {{ t('inGame.inventory.openCatalog') }}
     </Button>
   </div>
