@@ -19,11 +19,31 @@ export function clearSentForms(): void {
   forms.length = 0
 }
 
+let gate: Promise<void> | null = null
+let failure: number | null = null
+
+/** Keeps the next uploads half way (progress 0.4) until the returned function is called. */
+export function holdUploads(): () => void {
+  let release!: () => void
+  const mine = new Promise<void>((resolve) => { release = resolve })
+  gate = mine
+  return () => {
+    if (gate === mine) gate = null
+    release()
+  }
+}
+
+/** Makes uploads fail with this HTTP status until called with null. */
+export function failUploadsWith(status: number | null): void {
+  failure = status
+}
+
 export async function sendForm<T>(
   method: 'POST' | 'PATCH',
   path: string,
   form: FormData,
   onProgress?: (fraction: number) => void,
+  signal?: AbortSignal,
 ): Promise<T> {
   const sent: SentForm = { method, path, fields: {}, files: {} }
   for (const [key, value] of form.entries()) {
@@ -31,6 +51,12 @@ export async function sendForm<T>(
     else sent.files[key] = { name: value.name, type: value.type, size: value.size }
   }
   forms.push(sent)
+  if (gate) {
+    onProgress?.(0.4)
+    await gate
+  }
+  if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+  if (failure !== null) throw Object.assign(new Error(`mock ${failure}`), { status: failure })
   onProgress?.(1)
 
   const match = /^\/api\/collections\/([^/]+)\/records(?:\/([^/]+))?$/.exec(path)

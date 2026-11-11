@@ -175,6 +175,7 @@ function makeCollection(name: string) {
 }
 
 export const pb = {
+  baseURL: 'http://127.0.0.1:8090',
   collection,
   autoCancellation() {},
   // Same placeholder syntax as the SDK's pb.filter(): {:name} becomes the quoted value.
