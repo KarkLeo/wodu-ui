@@ -61,14 +61,17 @@ const crookhollowTable = withGameTable(crookhollow, PARTY, CROOKHOLLOW_META)
 const columns = (canvasElement: HTMLElement) => canvasElement.querySelectorAll('.sheet-column')
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body)
 
-/** The master's table: actions on their own character's column, none on a player's. */
+/** The master's table: the game actions on their own character's column, only Rename on a player's. */
 export const GameSheets: Story = {
   decorators: [crookhollowTable],
   loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('button', { name: `Actions for ${brann.name}` })).toBeVisible()
-    await expect(canvas.queryByRole('button', { name: `Actions for ${wren.name}` })).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: `Actions for ${wren.name}` }))
+    const items = await body(canvasElement).findAllByRole('menuitem')
+    await expect(items.map(i => i.textContent?.trim())).toEqual(['Rename'])
+    await userEvent.keyboard('{Escape}')
   },
 }
 
@@ -148,7 +151,12 @@ export const GiveFromColumn: Story = {
     await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
     await waitFor(() => expect(canvasElement.ownerDocument.body.style.pointerEvents).not.toBe('none'))
     await expect(columns(canvasElement)).toHaveLength(2)
-    await expect(within(canvasElement).queryByRole('button', { name: `Actions for ${brann.name}` })).toBeNull()
+    // Kostya's now: the master may still rename it, but the game actions are gone.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: `Actions for ${brann.name}` }))
+    const items = await body(canvasElement).findAllByRole('menuitem')
+    await expect(items.map(i => i.textContent?.trim())).toEqual(['Rename'])
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body(canvasElement).queryByRole('menu')).toBeNull())
     const [first] = within(canvasElement).getAllByRole('button', { name: 'Close sheet' })
     await userEvent.click(first!)
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}/party/${wren.id}`))

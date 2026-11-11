@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canEdit, isMaster, itemSources } from './permissions'
+import { canEdit, canSeeTrueName, isMaster, itemSources } from './permissions'
 import type { Game, GameMember, CharacterMeta } from '@/types/game'
 
 const game: Game = { id: 'G', name: 'Table', master: 'm', inviteCode: 'K7QX29AB' }
@@ -57,6 +57,41 @@ describe('isMaster', () => {
 
   it('is false for a masterless game', () => {
     expect(isMaster({ ...game, master: '' }, '')).toBe(false)
+  })
+})
+
+describe('canSeeTrueName', () => {
+  it('shows it to the owner, in a game or free', () => {
+    expect(canSeeTrueName(playerChar, 'p', game)).toBe(true)
+    expect(canSeeTrueName({ owner: 'p', game: '' }, 'p', undefined)).toBe(true)
+  })
+
+  it('shows it to the master of the character\'s game', () => {
+    expect(canSeeTrueName(playerChar, 'm', game)).toBe(true)
+  })
+
+  it('hides it from another player at the table', () => {
+    expect(canSeeTrueName(playerChar, 'q', game)).toBe(false)
+    expect(canSeeTrueName({ owner: 'm', game: 'G' }, 'p', game)).toBe(false)
+  })
+
+  it('hides it from the master of another game', () => {
+    expect(canSeeTrueName(playerChar, 'x', { ...game, id: 'H', master: 'x' })).toBe(false)
+  })
+
+  it('hides it from everyone but the owner in a masterless game', () => {
+    expect(canSeeTrueName(playerChar, '', { ...game, master: '' })).toBe(false)
+    expect(canSeeTrueName(playerChar, 'q', { ...game, master: '' })).toBe(false)
+  })
+
+  it('hides a free character\'s from a master', () => {
+    expect(canSeeTrueName({ owner: 'p', game: '' }, 'm', game)).toBe(false)
+  })
+
+  it('is false for unknown meta, no user or an unknown game', () => {
+    expect(canSeeTrueName(undefined, 'p', game)).toBe(false)
+    expect(canSeeTrueName(playerChar, null, game)).toBe(false)
+    expect(canSeeTrueName(playerChar, 'm', undefined)).toBe(false)
   })
 })
 

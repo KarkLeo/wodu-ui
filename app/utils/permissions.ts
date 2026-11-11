@@ -19,6 +19,17 @@ export function isMaster(game: Game | undefined, me: string | null): boolean {
   return !!game && me !== null && game.master !== '' && game.master === me
 }
 
+// UI-only: the true name stays in the character's data, which every member can read.
+export function canSeeTrueName(
+  meta: CharacterMeta | undefined,
+  me: string | null,
+  game: Game | undefined,
+): boolean {
+  if (!meta || me === null) return false
+  if (meta.owner === me) return true
+  return meta.game !== '' && !!game && game.id === meta.game && isMaster(game, me)
+}
+
 export interface ItemSources {
   catalog: boolean
   fromLibrary: boolean

@@ -96,6 +96,17 @@ export const withOnlineLoading: Decorator = (story) => ({
   template: '<story />',
 })
 
+/** Offline mode for one story, restored afterwards. List it before withStores, so it runs after it. */
+export const withOfflineMode: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const previous = mode.value
+    mode.value = 'offline'
+    onUnmounted(() => { mode.value = previous })
+  },
+  template: '<story />',
+})
+
 /** Desktop size at which GameLayout switches to three columns (its breakpoint is 961px). */
 export const DESKTOP_VIEWPORT = { viewport: { value: 'desktop', isRotated: false } }
 

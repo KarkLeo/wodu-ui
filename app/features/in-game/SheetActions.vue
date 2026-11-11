@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import IconMenu from '@/components/ui/icons/IconMenu.vue'
 import GiveCharacterSheet from '@/components/layout/GiveCharacterSheet.vue'
+import RenameCharacterSheet from './RenameCharacterSheet.vue'
 import { useGameAction } from '@/composables/useGameAction'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -34,10 +35,12 @@ const meta = computed(() => characters.metaOf(props.characterId))
 const game = computed(() => (meta.value?.game ? games.byId(meta.value.game) : undefined))
 const mine = computed(() => mode.value === 'online' && !!game.value && me.value !== null && meta.value?.owner === me.value)
 
+const canRename = computed(() => characters.canEditCharacter(props.characterId))
 const canTakeOut = computed(() => mine.value)
 // The server lets the master hand over only characters they own.
 const canGive = computed(() => mine.value && isMaster(game.value, me.value))
 
+const renameOpen = ref(false)
 const takeOutOpen = ref(false)
 const giveOpen = ref(false)
 
@@ -49,19 +52,21 @@ async function confirmTakeOut() {
 </script>
 
 <template>
-  <template v-if="canTakeOut || canGive">
+  <template v-if="canRename || canTakeOut || canGive">
     <DropdownMenuRoot :modal="false">
       <DropdownMenuTrigger as-child>
         <IconButton :label="t('games.sheet.actions', { name })"><IconMenu :size="12" /></IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="gm-menu" side="bottom" align="end" :side-offset="6">
+          <DropdownMenuItem v-if="canRename" class="gm-item" @select="renameOpen = true">{{ t('games.sheet.rename') }}</DropdownMenuItem>
           <DropdownMenuItem v-if="canGive" class="gm-item" @select="giveOpen = true">{{ t('games.sheet.give') }}</DropdownMenuItem>
           <DropdownMenuItem v-if="canTakeOut" class="gm-item" @select="takeOutOpen = true">{{ t('games.sheet.takeOut') }}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
 
+    <RenameCharacterSheet v-model:open="renameOpen" :character-id="characterId" />
     <ConfirmSheet v-model:open="takeOutOpen" :title="t('games.sheet.takeOutTitle', { name })">
       <p>{{ t('games.sheet.takeOutBody') }}</p>
       <template #actions>

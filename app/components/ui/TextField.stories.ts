@@ -159,3 +159,21 @@ export const Compact: Story = {
     await expect(input.getBoundingClientRect().height).toBeLessThan(36)
   },
 }
+
+/** Masked until the eye shows it, for something a neighbour should not read off the screen. Never a password field. */
+export const Secret: Story = {
+  args: { label: 'True name', modelValue: 'Ashen Wolf', secret: true, placeholder: 'A name that grants power' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole('textbox', { name: 'True name' })
+    await expect(input).toHaveAttribute('type', 'text')
+    await expect(getComputedStyle(input).getPropertyValue('-webkit-text-security')).toBe('disc')
+    const eye = canvas.getByRole('button', { name: 'Show text' })
+    await expect(eye).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(eye)
+    await expect(eye).toHaveAttribute('aria-pressed', 'true')
+    await expect(getComputedStyle(input).getPropertyValue('-webkit-text-security')).toBe('none')
+    await userEvent.click(eye)
+    await expect(getComputedStyle(input).getPropertyValue('-webkit-text-security')).toBe('disc')
+  },
+}

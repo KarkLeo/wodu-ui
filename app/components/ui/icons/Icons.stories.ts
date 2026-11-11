@@ -16,6 +16,8 @@ import IconDiceFab from './IconDiceFab.vue'
 import IconDiceFace from './IconDiceFace.vue'
 import IconDiceOutline from './IconDiceOutline.vue'
 import IconEdit from './IconEdit.vue'
+import IconEye from './IconEye.vue'
+import IconEyeOff from './IconEyeOff.vue'
 import IconFlask from './IconFlask.vue'
 import IconGrip from './IconGrip.vue'
 import IconHeart from './IconHeart.vue'
@@ -56,6 +58,8 @@ const icons = {
   IconDiceFace,
   IconDiceOutline,
   IconEdit,
+  IconEye,
+  IconEyeOff,
   IconFlask,
   IconGrip,
   IconHeart,
