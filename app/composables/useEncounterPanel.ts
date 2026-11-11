@@ -6,7 +6,7 @@ import { useEncounterStore } from '@/stores/encounter'
 // The routes that render the table's tray, where the panel shows.
 const TRAY_ROUTES = new Set(['game', 'game-party'])
 
-/** The master's opener of the encounter panel, in the players panel and the game menu. */
+/** The master's opener of the encounter panel, the Encounter row of `MasterTools`. */
 export function useEncounterPanel() {
   const encounter = useEncounterStore()
   const route = useRoute()

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ListRow from '@/components/ui/ListRow.vue'
+import Pill from '@/components/ui/Pill.vue'
 import SectionLabel from '@/components/ui/SectionLabel.vue'
 import { useGameLayout } from './gameLayoutContext'
 import { useEncounterPanel } from '@/composables/useEncounterPanel'
@@ -61,10 +62,11 @@ const rows = computed(() => [
 
 <template>
   <div role="group" :aria-label="t('games.tools.title')" class="master-tools">
-    <SectionLabel size="md" aria-hidden="true">{{ t('games.tools.title') }}</SectionLabel>
+    <SectionLabel class="mt-label" size="md" aria-hidden="true">{{ t('games.tools.title') }}</SectionLabel>
     <ListRow
       v-for="row in rows"
       :key="row.key"
+      class="mt-row"
       as="button"
       :title="row.label"
       :aria-label="row.ariaLabel"
@@ -74,7 +76,7 @@ const rows = computed(() => [
       @click="row.onClick"
     >
       <template v-if="row.count > 0" #trailing>
-        <span class="mt-count">{{ row.count }}</span>
+        <Pill tone="accent" size="sm">{{ row.count }}</Pill>
       </template>
     </ListRow>
   </div>
@@ -82,10 +84,18 @@ const rows = computed(() => [
 
 <style scoped>
 .master-tools { display: flex; flex-direction: column; gap: 2px; }
-.master-tools > .section-label { padding: 0 10px 4px; }
-.mt-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--vtt-accent-soft);
+.mt-label { padding: 0 10px 4px; }
+/* The same gold side bar as a selected player row: a tool that is on reads as selected. */
+.mt-row.is-selected::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 22px;
+  background: var(--vtt-accent);
+  border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  box-shadow: 0 0 8px var(--vtt-accent-a50);
 }
 </style>

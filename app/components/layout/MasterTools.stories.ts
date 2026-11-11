@@ -1,13 +1,11 @@
-import { provide } from 'vue'
+import { provide, ref } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import MasterTools from './MasterTools.vue'
 import { GameLayoutContextKey } from './gameLayoutContext'
-import { ref } from 'vue'
 import { crookhollow, CROOKHOLLOW_META, ENCOUNTER_MONSTERS, PARTY, sage } from '@/stories/fixtures'
 import { atRoute, withGameTable } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
-import { currentLocale } from '@/locales'
 import { useEncounterStore } from '@/stores/encounter'
 import { clearPbRequests, signInMock } from '../../../.storybook/mocks/pb'
 
@@ -72,6 +70,54 @@ export const EncounterCount: Story = {
   },
 }
 
+// Listed before withLivingMonsters, which clears the store in its own setup.
+const panelOpen: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    useEncounterStore().panelOpen = true
+  },
+  template: '<story />',
+})
+
+/** The panel is open: the Encounter row is pressed and carries the side bar of a selected row. */
+export const EncounterOpen: Story = {
+  decorators: [panelOpen, withLivingMonsters],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const row = await canvas.findByRole('button', { name: 'Encounter, 2 in the fight' })
+    await expect(row).toHaveAttribute('aria-pressed', 'true')
+    await expect(within(row).getByText('2')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Monsters' })).not.toHaveAttribute('aria-current')
+  },
+}
+
+/** The row toggles the panel: a click turns it on and a second one off. */
+export const EncounterToggles: Story = {
+  tags: ['no-visual'],
+  decorators: [withLivingMonsters],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const row = await canvas.findByRole('button', { name: 'Encounter, 2 in the fight' })
+    await expect(row).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'false'))
+  },
+}
+
+/** On the Monsters screen its row is the current page, with the same side bar. */
+export const OnMonstersRoute: Story = {
+  loaders: [atRoute(`/games/${crookhollow.id}/monsters`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('button', { name: 'Monsters' })).toHaveAttribute('aria-current', 'page')
+    await expect(canvas.getByRole('button', { name: 'Items' })).not.toHaveAttribute('aria-current')
+  },
+}
+
 export const OpensMonsters: Story = {
   tags: ['no-visual'],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
@@ -131,19 +177,6 @@ export const LibraryRowClosesTheDrawer: Story = {
   },
 }
 
-const ukrainian: Decorator = (story) => ({
-  components: { story },
-  setup() {
-    const previous = currentLocale.value
-    currentLocale.value = 'uk'
-    return { restore: () => { currentLocale.value = previous } }
-  },
-  unmounted() {
-    this.restore()
-  },
-  template: '<story />',
-})
-
 const manyMonsters: Decorator = (story) => ({
   components: { story },
   setup() {
@@ -161,16 +194,31 @@ const manyMonsters: Decorator = (story) => ({
   template: '<story />',
 })
 
-/** The longest copy (Ukrainian, a two-digit count) stays on one line in every row. */
-export const LongLabels: Story = {
-  decorators: [manyMonsters, ukrainian],
+/** The longest copy (a two-digit count) stays on one line in every row, untruncated. */
+const longLabels = async (canvasElement: HTMLElement, groupName: string) => {
+  const group = await within(canvasElement).findByRole('group', { name: groupName })
+  const rows = within(group).getAllByRole('button')
+  await expect(rows).toHaveLength(3)
+  await expect(within(group).getByText('99')).toBeVisible()
+  const heights = rows.map(r => r.getBoundingClientRect().height)
+  for (const row of rows) {
+    const title = row.querySelector('.lr-title') as HTMLElement
+    await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth)
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+  }
+  await expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1)
+}
+
+export const LongLabelsUk: Story = {
+  globals: { locale: 'uk' },
+  decorators: [manyMonsters],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: async ({ canvasElement }) => {
-    const group = await within(canvasElement).findByRole('group', { name: 'Майстер' })
-    const rows = within(group).getAllByRole('button')
-    await expect(rows).toHaveLength(3)
-    const heights = rows.map(r => r.getBoundingClientRect().height)
-    for (const row of rows) await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
-    await expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1)
-  },
+  play: ({ canvasElement }) => longLabels(canvasElement, 'Майстер'),
+}
+
+export const LongLabelsRu: Story = {
+  globals: { locale: 'ru' },
+  decorators: [manyMonsters],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: ({ canvasElement }) => longLabels(canvasElement, 'Мастер'),
 }

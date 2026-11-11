@@ -457,7 +457,8 @@ export const ToolsStayVisibleWithManyCharacters: Story = {
     await expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
     const list = canvasElement.querySelector('.gl-panel-list') as HTMLElement
     await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
-    await expect(list.clientHeight).toBeGreaterThanOrEqual(40)
+    const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
+    await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
   },
 }
 
