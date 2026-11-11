@@ -21,6 +21,7 @@ import { forgetGame, healStuckCharacters, loadGame, toGame, toMember } from './g
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useEncounterStore } from '@/stores/encounter'
+import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
 import { useLibraryStore } from '@/stores/library'
 import { useRollHistoryStore } from '@/stores/rollHistory'
@@ -437,6 +438,7 @@ export function stopOnline(): void {
   useGamesStore().clearAll()
   useLibraryStore().clearAll()
   useEncounterStore().clearAll()
+  useMediaStore().clearAll()
   useStageStore().clearAll()
   stopConnectionMonitor()
   playedLocally.clear()

@@ -15,6 +15,7 @@ import SignInView from '@/features/sign-in/SignInView.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useEncounterSession } from '@/composables/useEncounterSession'
+import { useMediaSession } from '@/composables/useMediaSession'
 import { useTable } from '@/composables/useTable'
 import { currentUser, signedIn } from '@/transport/auth'
 import { authGate } from '@/transport/authHelpers'
@@ -42,6 +43,7 @@ const { tableScope } = useTable()
 watch(tableScope, setScope, { immediate: true })
 
 useEncounterSession()
+useMediaSession()
 
 // An invite link opened while signed out shows the game's name above the sign-in form.
 const inviteGameName = ref<string | undefined>()
