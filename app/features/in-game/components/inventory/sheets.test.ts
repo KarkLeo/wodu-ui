@@ -18,7 +18,7 @@ function dialogName(): string | null {
 
 describe('inventory sheets', () => {
   it('names the catalog dialog with its title', async () => {
-    wrapper = mount(CatalogSheet, { props: { open: true, coins: 30 }, attachTo: document.body })
+    wrapper = mount(CatalogSheet, { props: { open: true, coins: 30, inventory: [] }, attachTo: document.body })
     await flushPromises()
     expect(dialogName()).toBe('Gear catalog')
   })

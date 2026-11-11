@@ -409,6 +409,7 @@ export const messages = {
         empty: 'Nothing found',
         ask: 'Ask',
         consumableShort: 'cons.',
+        owned: 'In backpack: {count}',
       },
       gm: {
         title: 'Not enough coins',

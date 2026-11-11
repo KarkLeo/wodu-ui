@@ -30,19 +30,13 @@ export function canSeeTrueName(
   return meta.game !== '' && !!game && game.id === meta.game && isMaster(game, me)
 }
 
-export interface ItemSources {
-  catalog: boolean
-  fromLibrary: boolean
-}
-
-// Once a character is created in a game with a master, only the master hands out items, from the library.
-export function itemSources(
+// The catalog is open to whoever may edit a character; handing out from the library is the master's alone.
+export function canGiveFromLibrary(
   status: CharacterStatus,
   meta: CharacterMeta | undefined,
   game: Game | undefined,
   me: string | null,
-): ItemSources {
-  const gameHasMaster = !!meta && meta.game !== '' && !!game && game.id === meta.game && game.master !== ''
-  if (status === 'draft' || !gameHasMaster) return { catalog: true, fromLibrary: false }
-  return { catalog: false, fromLibrary: isMaster(game, me) }
+): boolean {
+  if (status === 'draft' || !meta || meta.game === '' || !game || game.id !== meta.game) return false
+  return isMaster(game, me)
 }
