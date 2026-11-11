@@ -673,6 +673,8 @@ export const messages = {
       items: 'Items',
       scenes: 'Scenes',
       scenesOn: 'Scenes, {name} is on',
+      sceneOnStatus: 'A scene is on',
+      sceneOnUnnamed: 'Scenes, a scene is on',
     },
     members: {
       title: 'Members',

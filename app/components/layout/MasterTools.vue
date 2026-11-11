@@ -44,10 +44,12 @@ const living = computed(() => {
   return encounter.monsters.filter(m => m.diedAt === undefined).length
 })
 
+// The stage keeps only the scene's id: the name is unknown while the list loads, failed, or the scene was deleted.
 const activeSceneName = computed(() => {
   if (!activeSceneId.value || media.gameId !== props.game.id) return ''
   return media.scenes.list.find(s => s.id === activeSceneId.value)?.name ?? ''
 })
+const sceneIsOn = computed(() => activeSceneId.value !== null)
 
 // A library row on its own screen goes back to the table; elsewhere it opens its library.
 function openLibrary(name: 'game-monsters' | 'game-items') {
@@ -76,10 +78,11 @@ const rows = computed<ToolRow[]>(() => [
   {
     key: 'scenes',
     label: t('stage.scenes.title'),
-    ariaLabel: activeSceneName.value ? t('games.tools.scenesOn', { name: activeSceneName.value }) : undefined,
+    ariaLabel: !sceneIsOn.value ? undefined
+      : activeSceneName.value ? t('games.tools.scenesOn', { name: activeSceneName.value }) : t('games.tools.sceneOnUnnamed'),
     kind: 'toggle',
     on: scenesPanel.open.value,
-    status: activeSceneName.value || undefined,
+    status: !sceneIsOn.value ? undefined : activeSceneName.value || t('games.tools.sceneOnStatus'),
     onClick: scenesPanel.toggle,
   },
 ])
@@ -113,7 +116,16 @@ const rows = computed<ToolRow[]>(() => [
 <style scoped>
 .master-tools { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
 /* With more rows the block scrolls inside itself rather than squeezing the character list. */
-.mt-rows { display: flex; flex-direction: column; gap: 2px; min-height: 0; overflow-y: auto; }
+.mt-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  /* Scrolling clips on both axes: room for the on-bar (12px left of a row) and for the focus ring, undone by the margin. */
+  padding: 4px 4px 4px 12px;
+  margin: -4px -4px -4px -12px;
+}
 .mt-label { padding: 0 10px 4px; }
 /* The same gold side bar as a selected player row: a tool that is on reads as selected. */
 .mt-row.is-selected::before {

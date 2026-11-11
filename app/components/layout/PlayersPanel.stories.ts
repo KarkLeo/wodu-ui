@@ -461,8 +461,8 @@ const landscapePhone: Decorator = (story) => ({
   template: '<div data-small-phone style="width: 667px; height: 375px; display: flex; flex-direction: column"><story /></div>',
 })
 
-/** At least one full character row stays visible and every tool row can be scrolled to. */
-const budgetKept = async (canvasElement: HTMLElement) => {
+/** Four rows, the list, the head and the footer share the frame: the tools scroll inside themselves, the list keeps a row. */
+const budgetKept = async (canvasElement: HTMLElement, { overflows }: { overflows: boolean }) => {
   const canvas = within(canvasElement)
   const group = await canvas.findByRole('group', { name: 'Master' })
   const frame = canvasElement.querySelector('[data-small-phone]')!.getBoundingClientRect()
@@ -473,16 +473,15 @@ const budgetKept = async (canvasElement: HTMLElement) => {
   await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
   const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
   await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
-  const rows = canvas.getAllByRole('button').filter(b => ['Encounter', 'Monsters', 'Items', 'Scenes'].includes(b.textContent?.trim() ?? ''))
-  await expect(rows).toHaveLength(4)
+  for (const name of ['Encounter', 'Monsters', 'Items', 'Scenes']) await expect(within(group).getByRole('button', { name })).toBeInTheDocument()
   const scroller = group.querySelector('.mt-rows') as HTMLElement
-  for (const r of rows) {
-    r.scrollIntoView({ block: 'nearest' })
-    const rb = r.getBoundingClientRect()
-    const sb = scroller.getBoundingClientRect()
-    await expect(rb.top).toBeGreaterThanOrEqual(sb.top - 1)
-    await expect(rb.bottom).toBeLessThanOrEqual(sb.bottom + 1)
-  }
+  await expect(scroller.clientHeight).toBeGreaterThan(0)
+  const tools = canvasElement.querySelector('.gl-panel-tools') as HTMLElement
+  // The cap is a share of the panel, whose height is definite here.
+  const panel = canvasElement.querySelector('.players-panel') as HTMLElement
+  await expect(tools.getBoundingClientRect().height).toBeLessThanOrEqual(panel.getBoundingClientRect().height * 0.45 + 1)
+  if (overflows) await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
+  else await expect(scroller.scrollHeight).toBeLessThanOrEqual(scroller.clientHeight)
 }
 
 /** Many characters: the list scrolls and the tool group stays in view above the footer. */
@@ -490,7 +489,7 @@ export const ToolsStayVisibleWithManyCharacters: Story = {
   tags: ['no-visual'],
   decorators: [withGameTable(crookhollow, crowd, crowdMeta), smallPhone],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: ({ canvasElement }) => budgetKept(canvasElement),
+  play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: false }),
 }
 
 /** A landscape phone is too short for four rows, the list and the footer: the tools scroll inside themselves. */
@@ -498,7 +497,7 @@ export const ToolsStayVisibleOnALandscapePhone: Story = {
   tags: ['no-visual'],
   decorators: [withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
-  play: ({ canvasElement }) => budgetKept(canvasElement),
+  play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: true }),
 }
 
 /** The tools follow the master: another master takes the game and the group goes, getting it back returns it. */

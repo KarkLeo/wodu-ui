@@ -74,6 +74,23 @@ export const EncounterCount: Story = {
   },
 }
 
+/**
+ * The gold bar sits 12px left of a selected row and the focus ring 4px around it; the scrolling block clips both unless
+ * its padding box holds them.
+ */
+const barIsInsideTheScroller = async (row: HTMLElement) => {
+  const scroller = row.closest('.mt-rows') as HTMLElement
+  const rows = row.getBoundingClientRect()
+  const box = scroller.getBoundingClientRect()
+  await expect(rows.left - 12).toBeGreaterThanOrEqual(box.left)
+  await expect(rows.left - 4).toBeGreaterThanOrEqual(box.left)
+  await expect(rows.right + 4).toBeLessThanOrEqual(box.right)
+  const first = scroller.firstElementChild!.getBoundingClientRect()
+  const last = scroller.lastElementChild!.getBoundingClientRect()
+  await expect(first.top - 4).toBeGreaterThanOrEqual(box.top)
+  await expect(last.bottom + 4).toBeLessThanOrEqual(box.bottom)
+}
+
 // Listed before withLivingMonsters, which clears the store in its own setup.
 const panelOpen: Decorator = (story) => ({
   components: { story },
@@ -93,6 +110,7 @@ export const EncounterOpen: Story = {
     await expect(row).toHaveAttribute('aria-pressed', 'true')
     await expect(within(row).getByText('2')).toBeVisible()
     await expect(canvas.getByRole('button', { name: 'Monsters' })).not.toHaveAttribute('aria-current')
+    await barIsInsideTheScroller(row)
   },
 }
 
@@ -119,6 +137,7 @@ export const OnMonstersRoute: Story = {
     const canvas = within(canvasElement)
     await expect(await canvas.findByRole('button', { name: 'Monsters' })).toHaveAttribute('aria-current', 'page')
     await expect(canvas.getByRole('button', { name: 'Items' })).not.toHaveAttribute('aria-current')
+    await barIsInsideTheScroller(canvas.getByRole('button', { name: 'Monsters' }))
   },
 }
 
@@ -268,6 +287,53 @@ export const ScenesRowShowsTheActiveScene: Story = {
     await expect(title.clientWidth).toBeGreaterThan(40)
     await expect(row.querySelector('.lr-subtitle')).toHaveTextContent(scene.name)
     await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+  },
+}
+
+const sceneOnUnlisted: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const media = useMediaStore()
+    media.clearAll()
+    media.startLoading(crookhollow.id)
+    media.setScenes(crookhollow.id, [])
+    useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
+  },
+  template: '<story />',
+})
+
+const sceneOnListLoading: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const media = useMediaStore()
+    media.clearAll()
+    media.startLoading(crookhollow.id)
+    useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
+  },
+  template: '<story />',
+})
+
+/** A scene deleted from the library while it is on: the row still says a scene is on. Its card is a separate thing. */
+export const ScenesRowSceneNotInTheList: Story = {
+  decorators: [scenesCardClosed, sceneOnUnlisted],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: 'Scenes, a scene is on' })
+    await expect(row.querySelector('.lr-subtitle')).toHaveTextContent('A scene is on')
+    await expect(row).toHaveAttribute('aria-pressed', 'false')
+  },
+}
+
+/** The list has not arrived yet: the same generic text, then the name once it is there. */
+export const ScenesRowListStillLoading: Story = {
+  decorators: [scenesCardClosed, sceneOnListLoading],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const row = await canvas.findByRole('button', { name: 'Scenes, a scene is on' })
+    await expect(row.querySelector('.lr-subtitle')).toHaveTextContent('A scene is on')
+    useMediaStore().setScenes(crookhollow.id, [scene])
+    await expect(await canvas.findByRole('button', { name: `Scenes, ${scene.name} is on` })).toBeVisible()
   },
 }
 

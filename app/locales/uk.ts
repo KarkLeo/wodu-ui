@@ -675,6 +675,8 @@ export const messages: Messages = {
       items: 'Предмети',
       scenes: 'Сцени',
       scenesOn: 'Сцени, увімкнено: {name}',
+      sceneOnStatus: 'Сцену увімкнено',
+      sceneOnUnnamed: 'Сцени, сцену увімкнено',
     },
     members: {
       title: 'Учасники',

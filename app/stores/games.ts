@@ -17,7 +17,8 @@ function dropMasterDataOnChange(gameId: string, before: Game | undefined, after:
   useLibraryStore().clearGame(gameId)
   useEncounterStore().clearGame(gameId)
   useMediaStore().clearGame(gameId)
-  useToolPanelsStore().clearAll()
+  // The cards are one table's per-device state: another game's master change leaves them alone.
+  if (scope.value.kind === 'game' && scope.value.gameId === gameId) useToolPanelsStore().clearAll()
 }
 
 export const useGamesStore = defineStore('games', {

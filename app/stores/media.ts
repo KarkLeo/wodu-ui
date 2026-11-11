@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { Scene } from '@/types/stage'
 import type { LibraryStatus } from './library'
+import { useToolPanelsStore } from './toolPanels'
 
 /** The master's scenes for the open game: one game at a time, loaded and kept live by `transport/media.ts`. */
 export const useMediaStore = defineStore('media', {
@@ -11,7 +12,11 @@ export const useMediaStore = defineStore('media', {
   actions: {
     // Reloading the same game keeps its list on screen; another game starts empty.
     startLoading(gameId: string) {
-      if (this.gameId !== gameId) this.clearAll()
+      // Another game's table opens: its cards start closed, as the encounter panel does.
+      if (this.gameId !== gameId) {
+        this.clearAll()
+        useToolPanelsStore().clearAll()
+      }
       this.gameId = gameId
       if (this.scenes.status !== 'ready') this.scenes.status = 'loading'
     },

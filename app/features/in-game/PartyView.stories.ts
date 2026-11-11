@@ -5,9 +5,9 @@ import CharacterListView from '@/features/character-list/CharacterListView.vue'
 import { brann, wren, mirel, PARTY, crookhollow, CROOKHOLLOW_META, ENCOUNTER_MONSTERS } from '@/stories/fixtures'
 import type { Decorator } from '@storybook/vue3-vite'
 import { emptyEncounter } from '@/domain/encounter'
-import { useEncounterPanelShown } from '@/composables/useTableSelection'
 import { useTrayCards } from '@/composables/useTrayCards'
 import { useToolPanelsStore } from '@/stores/toolPanels'
+import { useMediaStore } from '@/stores/media'
 import { useEncounterStore } from '@/stores/encounter'
 import { useGamesStore } from '@/stores/games'
 import { atRoute, withGameTable, withStores } from '@/stories/state'
@@ -319,7 +319,7 @@ export const MasterLosesGameWhilePanelShows: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   render: () => ({
     components: { PartyView, CharacterListView },
-    setup: () => ({ showEncounter: useEncounterPanelShown() }),
+    setup: () => ({ showEncounter: useTrayCards().shown }),
     template: '<PartyView v-if="showEncounter" /><CharacterListView v-else />',
   }),
   play: async ({ canvasElement }) => {
@@ -403,6 +403,52 @@ export const MasterCardsGoWithTheMaster: Story = {
   play: async ({ canvasElement }) => {
     await expect(await within(canvasElement).findByRole('heading', { name: 'Scenes' })).toBeVisible()
     useGamesStore().upsertGame({ ...crookhollow, master: 'someone-else' })
+    await waitFor(() => expect(within(canvasElement).queryByRole('heading', { name: 'Scenes' })).toBeNull())
+    await expect(useToolPanelsStore().open.scenes).toBe(false)
+  },
+}
+
+/** The cards belong to one table: opening another game's table closes them, as the encounter panel does. */
+export const MasterCardsCloseOnAnotherGame: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesOpen, withOpenPanel, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async () => {
+    useMediaStore().startLoading(crookhollow.id)
+    useToolPanelsStore().toggle('scenes')
+    useMediaStore().startLoading(crookhollow.id)
+    await expect(useToolPanelsStore().open.scenes).toBe(true)
+    useMediaStore().startLoading('story-other-game')
+    await expect(useToolPanelsStore().open.scenes).toBe(false)
+    useEncounterStore().startLoading('story-other-game')
+    await expect(useEncounterStore().panelOpen).toBe(false)
+  },
+}
+
+/** Another game's master changing leaves this table's cards open. */
+export const MasterCardsKeepOnAnotherGamesMasterChange: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesOpen, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async () => {
+    const games = useGamesStore()
+    games.upsertGame({ ...crookhollow, id: 'story-other-game', master: 'a' })
+    games.upsertGame({ ...crookhollow, id: 'story-other-game', master: 'b' })
+    await expect(useToolPanelsStore().open.scenes).toBe(true)
+    games.upsertGame({ ...crookhollow, master: 'someone-else' })
+    await expect(useToolPanelsStore().open.scenes).toBe(false)
+  },
+}
+
+/** The game leaves the store (the path `removeGame` takes): the cards close and the tray gives way to the list. */
+export const MasterCardsGoWhenTheGameGoes: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesOpen, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  render: ScenesCardAloneShowsTheTray.render,
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findByRole('heading', { name: 'Scenes' })).toBeVisible()
+    useGamesStore().removeGame(crookhollow.id)
     await waitFor(() => expect(within(canvasElement).queryByRole('heading', { name: 'Scenes' })).toBeNull())
     await expect(useToolPanelsStore().open.scenes).toBe(false)
   },
