@@ -1,5 +1,5 @@
 import type {
-  FileRef, MediaCollection, Scene, Sound, Stage, StageImage, StageScene, StageSound,
+  FileRef, MediaCollection, Scene, Sound, Stage, StageImage, StageScene, StageSound, TableImage,
 } from '@/types/stage'
 
 export const MEDIA_LIMITS = { scenes: 20, sounds: 15, images: 30 } as const
@@ -9,6 +9,7 @@ export const IMAGE_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image
 export const AUDIO_TYPES: readonly string[] = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/aac']
 export const SCENE_NAME_MAX = 80
 export const SOUND_NAME_MAX = 80
+export const CAPTION_MAX = 120
 export const STALE_ONE_SHOT_SECONDS = 5
 
 export type FileKind = 'image' | 'audio'
@@ -61,6 +62,40 @@ export function withSound(stage: Stage, sound: Sound, startedAt: string): Stage 
 
 export function withoutSound(stage: Stage): Stage {
   return { ...stage, sound: null }
+}
+
+export function withImage(stage: Stage, image: TableImage, withCaption: boolean, shownAt: string): Stage {
+  return {
+    ...stage,
+    image: {
+      id: image.id,
+      file: { collection: 'images', record: image.id, name: image.file },
+      caption: withCaption ? image.caption : null,
+      shownAt,
+    },
+  }
+}
+
+export function withoutImage(stage: Stage): Stage {
+  return { ...stage, image: null }
+}
+
+/**
+ * The stage after the master saved `image`. Only the shown image is touched: its file follows, `shownAt` stays (an edit is
+ * not a new reveal), and a caption already on the table follows the edit. A stage caption of null stays null, so an edit
+ * never puts text on the players' screens that the master did not choose to show.
+ */
+export function withImageEdited(stage: Stage, image: TableImage): Stage {
+  const shown = stage.image
+  if (!shown || shown.id !== image.id) return stage
+  return {
+    ...stage,
+    image: {
+      ...shown,
+      file: { collection: 'images', record: image.id, name: image.file },
+      caption: shown.caption === null ? null : image.caption,
+    },
+  }
 }
 
 // A record id as PocketBase accepts it from this client, and a stored file name that cannot change the path
@@ -154,6 +189,22 @@ export function checkSoundDraft(draft: { name: string; hasFile: boolean }): Arra
   return problems
 }
 
+export function checkImageData(value: unknown): { id: string; caption: string | null } | null {
+  if (!isRecord(value) || !nonEmpty(value.id)) return null
+  const raw = value.caption
+  if (raw !== undefined && raw !== null && typeof raw !== 'string') return null
+  const caption = typeof raw === 'string' ? raw.trim() : ''
+  if (caption.length > CAPTION_MAX) return null
+  return { id: value.id, caption: caption || null }
+}
+
+export function checkImageDraft(draft: { caption: string; hasFile: boolean }): Array<'captionTooLong' | 'noFile'> {
+  const problems: Array<'captionTooLong' | 'noFile'> = []
+  if (draft.caption.trim().length > CAPTION_MAX) problems.push('captionTooLong')
+  if (!draft.hasFile) problems.push('noFile')
+  return problems
+}
+
 /** Whether a client that finds this overlay in the stage should play it: always while looping, otherwise only if fresh. */
 export function shouldPlayOverlay(sound: StageSound, receivedLive: boolean, now: Date): boolean {
   if (sound.loop || receivedLive) return true
@@ -188,6 +239,19 @@ export function formatDuration(seconds: number | null): string {
 
 export function overlayKey(sound: StageSound): string {
   return `${sound.id}:${sound.startedAt}`
+}
+
+export function revealKey(image: StageImage): string {
+  return `${image.id}:${image.shownAt}`
+}
+
+/**
+ * Whether a picture should pop up for this device. `previous` is the key seen last (`undefined`: nothing seen yet since
+ * the table opened, so what is found there never reveals); the master, who just showed it, is never revealed to.
+ */
+export function shouldReveal(previousKey: string | null | undefined, nextKey: string | null, isMaster: boolean): boolean {
+  if (previousKey === undefined || nextKey === null || isMaster) return false
+  return nextKey !== previousKey
 }
 
 export function checkUpload(kind: FileKind, file: { type: string; size: number }): 'ok' | 'type' | 'size' {

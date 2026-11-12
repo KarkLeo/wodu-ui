@@ -3,9 +3,11 @@ import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
   checkUpload, neutralFileName, fileUrl, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
   withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, nextOverlayMemory, endOverlay, shouldPlayKey, playedToTheEnd, formatDuration, overlayKey,
-  oneShotClearDelay, SOUND_NAME_MAX, STALE_ONE_SHOT_SECONDS, ONE_SHOT_CLEAR_GRACE_SECONDS, ONE_SHOT_UNKNOWN_CLEAR_SECONDS,
+  oneShotClearDelay, SOUND_NAME_MAX,
+  withImage, withoutImage, withImageEdited, checkImageData, checkImageDraft, revealKey, shouldReveal, CAPTION_MAX,
+  STALE_ONE_SHOT_SECONDS, ONE_SHOT_CLEAR_GRACE_SECONDS, ONE_SHOT_UNKNOWN_CLEAR_SECONDS,
 } from './stage'
-import type { Scene, StageImage, StageSound } from '@/types/stage'
+import type { Scene, StageImage, StageSound, TableImage } from '@/types/stage'
 
 const tavern: Scene = { id: 'scene-tavern-0001', name: 'Tavern', image: 'image_ab12.webp', sound: 'sound_cd34.mp3' }
 const shown: StageImage = {
@@ -475,5 +477,144 @@ describe('overlay memory', () => {
     const memory = endOverlay(nextOverlayMemory(empty, oneShot, live, true, T0), overlayKey(oneShot), true)
     expect(playedToTheEnd(memory, overlayKey(oneShot))).toBe(true)
     expect(playedToTheEnd(nextOverlayMemory(empty, oneShot, live, true, T0), overlayKey(oneShot))).toBe(false)
+  })
+})
+
+const T = '2026-11-12T11:00:00.000Z'
+const grum: TableImage = { id: 'i1', caption: 'Old Grum, the innkeeper', file: 'image_ab.webp' }
+const grumStage = () => ({ ...withSound(withScene(emptyStage('g1'), tavern), { id: 'k1', name: 'Rain', loop: true, duration: null, file: 'rain.mp3' }, T) })
+
+describe('withImage', () => {
+  it('with the caption', () => {
+    expect(withImage(emptyStage('g1'), grum, true, T).image).toEqual({
+      id: 'i1', file: { collection: 'images', record: 'i1', name: 'image_ab.webp' }, caption: 'Old Grum, the innkeeper', shownAt: T,
+    })
+  })
+  it('without the caption carries no caption text at all', () => {
+    const next = withImage(emptyStage('g1'), grum, false, T)
+    expect(next.image?.caption).toBeNull()
+    expect(JSON.stringify(next)).not.toContain('Grum')
+  })
+  it('an image with no caption shows none even when asked to', () => {
+    expect(withImage(emptyStage('g1'), { ...grum, caption: null }, true, T).image?.caption).toBeNull()
+  })
+  it('keeps scene and sound; withoutImage clears only the image', () => {
+    const before = grumStage()
+    const next = withImage(before, grum, true, T)
+    expect(next.scene).toBe(before.scene)
+    expect(next.sound).toBe(before.sound)
+    const cleared = withoutImage(next)
+    expect(cleared.image).toBeNull()
+    expect(cleared.scene).toBe(before.scene)
+    expect(cleared.sound).toBe(before.sound)
+    expect(next.image).not.toBeNull()
+  })
+})
+
+describe('withImageEdited', () => {
+  const live = withImage(emptyStage('g1'), grum, true, T)
+  it('leaves the stage alone when another image is shown or none', () => {
+    const other = { ...grum, id: 'i2', file: 'other.png', caption: 'x' }
+    expect(withImageEdited(live, other)).toBe(live)
+    const empty = emptyStage('g1')
+    expect(withImageEdited(empty, grum)).toBe(empty)
+  })
+  it('replaces the file name and keeps shownAt', () => {
+    const next = withImageEdited(live, { ...grum, file: 'new.webp' })
+    expect(next.image?.file).toEqual({ collection: 'images', record: 'i1', name: 'new.webp' })
+    expect(next.image?.shownAt).toBe(T)
+  })
+  it('a shown caption follows the edit', () => {
+    expect(withImageEdited(live, { ...grum, caption: 'Grum the younger' }).image?.caption).toBe('Grum the younger')
+  })
+  it('a shown caption becomes null when removed', () => {
+    expect(withImageEdited(live, { ...grum, caption: null }).image?.caption).toBeNull()
+  })
+  it('a null stage caption stays null, shown without caption', () => {
+    const hidden = withImage(emptyStage('g1'), grum, false, T)
+    const next = withImageEdited(hidden, { ...grum, caption: 'Secret' })
+    expect(next.image?.caption).toBeNull()
+    expect(JSON.stringify(next)).not.toContain('Secret')
+  })
+  it('a null stage caption stays null, image had none', () => {
+    const bare = withImage(emptyStage('g1'), { ...grum, caption: null }, true, T)
+    expect(withImageEdited(bare, { ...grum, caption: 'Added later' }).image?.caption).toBeNull()
+  })
+  it('does not touch the other slots', () => {
+    const before = withImage(grumStage(), grum, true, T)
+    const next = withImageEdited(before, { ...grum, file: 'n.webp' })
+    expect(next.scene).toBe(before.scene)
+    expect(next.sound).toBe(before.sound)
+  })
+})
+
+describe('checkImageData', () => {
+  it('trims the caption, turns an empty one into null, refuses one over the limit', () => {
+    expect(checkImageData({ id: 'i1', caption: '  Grum  ' })).toEqual({ id: 'i1', caption: 'Grum' })
+    expect(checkImageData({ id: 'i1', caption: '   ' })).toEqual({ id: 'i1', caption: null })
+    expect(checkImageData({ id: 'i1', caption: null })).toEqual({ id: 'i1', caption: null })
+    expect(checkImageData({ id: 'i1' })).toEqual({ id: 'i1', caption: null })
+    expect(checkImageData({ id: 'i1', caption: 'a'.repeat(CAPTION_MAX) })?.caption).toHaveLength(CAPTION_MAX)
+    expect(checkImageData({ id: 'i1', caption: 'a'.repeat(CAPTION_MAX + 1) })).toBeNull()
+    expect(checkImageData({ id: 'i1', caption: ` ${'a'.repeat(CAPTION_MAX)} ` })?.caption).toHaveLength(CAPTION_MAX)
+  })
+  it('refuses wrong types, a missing id and non-objects', () => {
+    expect(checkImageData({ id: 'i1', caption: 5 })).toBeNull()
+    expect(checkImageData({ id: '', caption: 'x' })).toBeNull()
+    expect(checkImageData({ id: 7 })).toBeNull()
+    expect(checkImageData({ caption: 'x' })).toBeNull()
+    expect(checkImageData(null)).toBeNull()
+    expect(checkImageData([])).toBeNull()
+    expect(checkImageData('x')).toBeNull()
+  })
+  it('drops extra keys', () => {
+    expect(checkImageData({ id: 'i1', caption: 'x', extra: 1 })).toEqual({ id: 'i1', caption: 'x' })
+  })
+})
+
+describe('checkImageDraft', () => {
+  it('is clean with an empty caption and a file', () => {
+    expect(checkImageDraft({ caption: '', hasFile: true })).toEqual([])
+    expect(checkImageDraft({ caption: '   ', hasFile: true })).toEqual([])
+  })
+  it('flags a caption over the limit by its trimmed length', () => {
+    expect(checkImageDraft({ caption: 'a'.repeat(CAPTION_MAX + 1), hasFile: true })).toEqual(['captionTooLong'])
+    expect(checkImageDraft({ caption: ` ${'a'.repeat(CAPTION_MAX)} `, hasFile: true })).toEqual([])
+  })
+  it('flags a missing file', () => {
+    expect(checkImageDraft({ caption: '', hasFile: false })).toEqual(['noFile'])
+    expect(checkImageDraft({ caption: 'a'.repeat(CAPTION_MAX + 1), hasFile: false })).toEqual(['captionTooLong', 'noFile'])
+  })
+})
+
+describe('revealKey', () => {
+  it('differs when the same image is shown twice', () => {
+    const a = withImage(emptyStage('g1'), grum, true, T).image!
+    const b = withImage(emptyStage('g1'), grum, true, '2026-11-12T11:05:00.000Z').image!
+    expect(revealKey(a)).toBe(`i1:${T}`)
+    expect(revealKey(a)).not.toBe(revealKey(b))
+  })
+})
+
+describe('shouldReveal', () => {
+  it('never reveals the first value seen since the table opened', () => {
+    expect(shouldReveal(undefined, 'a:1', false)).toBe(false)
+    expect(shouldReveal(undefined, null, false)).toBe(false)
+  })
+  it('reveals a change to a new key', () => {
+    expect(shouldReveal('a:1', 'b:2', false)).toBe(true)
+    expect(shouldReveal(null, 'a:1', false)).toBe(true)
+  })
+  it('never reveals to the master', () => {
+    expect(shouldReveal('a:1', 'b:2', true)).toBe(false)
+    expect(shouldReveal(null, 'a:1', true)).toBe(false)
+  })
+  it('never reveals null or the same key', () => {
+    expect(shouldReveal('a:1', null, false)).toBe(false)
+    expect(shouldReveal(null, null, false)).toBe(false)
+    expect(shouldReveal('a:1', 'a:1', false)).toBe(false)
+  })
+  it('the same image shown again after hiding reveals', () => {
+    expect(shouldReveal(null, 'a:2', false)).toBe(true)
   })
 })

@@ -36,6 +36,13 @@ export interface MediaEntries {
   images: UntypedMediaEntry
 }
 
+/** `file` is the stored file name on the record; an image always has its file. */
+export interface TableImage {
+  id: string
+  caption: string | null
+  file: string
+}
+
 export interface StageScene {
   id: string
   image: FileRef | null
