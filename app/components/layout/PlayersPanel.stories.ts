@@ -11,6 +11,7 @@ import { storyRouter } from '@/stories/router'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useToastsStore } from '@/stores/toasts'
+import { useToolPanelsStore } from '@/stores/toolPanels'
 import { mode } from '@/transport/mode'
 import { useEncounterStore } from '@/stores/encounter'
 import { clearPbRequests, pb, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
@@ -169,7 +170,7 @@ export const GameAsPlayer: Story = {
   },
 }
 
-/** A player has no master tools, so no Scenes or Sounds row either; neither has a masterless game. */
+/** A player has no master tools, so no Scenes, Sounds or Images row either; neither has a masterless game. */
 export const PlayerHasNoScenesRow: Story = {
   tags: ['no-visual'],
   decorators: [oldenTable],
@@ -180,6 +181,7 @@ export const PlayerHasNoScenesRow: Story = {
     await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
     await expect(canvas.queryByRole('button', { name: /^Scenes/ })).toBeNull()
     await expect(canvas.queryByRole('button', { name: /^Sounds/ })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Images/ })).toBeNull()
   },
 }
 
@@ -491,7 +493,7 @@ const landscapePhone: Decorator = (story) => ({
   template: '<div data-small-phone style="width: 667px; height: 375px; display: flex; flex-direction: column"><story /></div>',
 })
 
-/** Five rows, the list, the head and the footer share the frame: the tools scroll inside themselves, the list keeps a row. */
+/** Six rows, the list, the head and the footer share the frame: the tools scroll inside themselves, the list keeps a row. */
 const budgetKept = async (canvasElement: HTMLElement, { overflows }: { overflows: boolean }) => {
   const canvas = within(canvasElement)
   const group = await canvas.findByRole('group', { name: 'Master' })
@@ -503,7 +505,7 @@ const budgetKept = async (canvasElement: HTMLElement, { overflows }: { overflows
   await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
   const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
   await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
-  for (const name of ['Encounter', 'Monsters', 'Items', 'Scenes', 'Sounds']) await expect(within(group).getByRole('button', { name })).toBeInTheDocument()
+  for (const name of ['Encounter', 'Monsters', 'Items', 'Scenes', 'Sounds', 'Images']) await expect(within(group).getByRole('button', { name })).toBeInTheDocument()
   const scroller = group.querySelector('.mt-rows') as HTMLElement
   await expect(scroller.clientHeight).toBeGreaterThan(0)
   const tools = canvasElement.querySelector('.gl-panel-tools') as HTMLElement
@@ -522,12 +524,40 @@ export const ToolsStayVisibleWithManyCharacters: Story = {
   play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: false }),
 }
 
-/** A landscape phone is too short for five rows, the list and the footer: the tools scroll inside themselves. */
+/** A landscape phone is too short for six rows, the list and the footer: the tools scroll inside themselves. */
 export const ToolsStayVisibleOnALandscapePhone: Story = {
   tags: ['no-visual'],
   decorators: [withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: true }),
+}
+
+/** The last row, Images, is reachable by scrolling the tools, and its gold "on" bar and focus ring are not clipped. */
+export const LastToolRowReachableOnALandscapePhone: Story = {
+  tags: ['no-visual'],
+  decorators: [(story) => ({
+    components: { story },
+    setup() {
+      const panels = useToolPanelsStore()
+      panels.clearAll()
+      panels.open.images = true
+    },
+    template: '<story />',
+  }), withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const group = await within(canvasElement).findByRole('group', { name: 'Master' })
+    const scroller = group.querySelector('.mt-rows') as HTMLElement
+    await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
+    const row = within(group).getByRole('button', { name: 'Images' })
+    await expect(row).toHaveAttribute('aria-pressed', 'true')
+    scroller.scrollTop = scroller.scrollHeight
+    const box = scroller.getBoundingClientRect()
+    const rect = row.getBoundingClientRect()
+    await expect(rect.bottom + 4).toBeLessThanOrEqual(box.bottom + 1)
+    await expect(rect.top).toBeGreaterThanOrEqual(box.top)
+    await expect(rect.left - 12).toBeGreaterThanOrEqual(box.left)
+  },
 }
 
 /** The tools follow the master: another master takes the game and the group goes, getting it back returns it. */

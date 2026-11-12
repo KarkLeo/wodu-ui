@@ -10,6 +10,7 @@ import { useStageControl } from '@/composables/useStageControl'
 import { useTable } from '@/composables/useTable'
 import { useEncounterStore } from '@/stores/encounter'
 import { useMediaStore } from '@/stores/media'
+import { useStageStore } from '@/stores/stage'
 import type { Game } from '@/types/game'
 import { t } from '@/locales'
 
@@ -36,7 +37,9 @@ const media = useMediaStore()
 const encounterPanel = useToolPanel('encounter')
 const scenesPanel = useToolPanel('scenes')
 const soundsPanel = useToolPanel('sounds')
-const { activeSceneId, playingSoundId } = useStageControl()
+const imagesPanel = useToolPanel('images')
+const { activeSceneId, playingSoundId, shownImageId } = useStageControl()
+const stages = useStageStore()
 const { tableRoute } = useTable()
 const layout = useGameLayout()
 
@@ -57,6 +60,13 @@ const playingSoundName = computed(() => {
   return media.sounds.list.find(s => s.id === playingSoundId.value)?.name ?? ''
 })
 const soundIsPlaying = computed(() => playingSoundId.value !== null)
+
+// What the table shows under the image: the caption if it was shown with one, else only that an image is shown.
+const shownImageCaption = computed(() => {
+  const stage = props.game.id ? stages.stageOf(props.game.id).image : null
+  return stage?.id === shownImageId.value ? stage?.caption ?? '' : ''
+})
+const imageIsShown = computed(() => shownImageId.value !== null)
 
 // A library row on its own screen goes back to the table; elsewhere it opens its library.
 function openLibrary(name: 'game-monsters' | 'game-items') {
@@ -101,6 +111,16 @@ const rows = computed<ToolRow[]>(() => [
     on: soundsPanel.open.value,
     status: !soundIsPlaying.value ? undefined : playingSoundName.value || t('games.tools.soundOnStatus'),
     onClick: soundsPanel.toggle,
+  },
+  {
+    key: 'images',
+    label: t('stage.images.title'),
+    ariaLabel: !imageIsShown.value ? undefined
+      : shownImageCaption.value ? t('games.tools.imagesOn', { name: shownImageCaption.value }) : t('games.tools.imageOnUnnamed'),
+    kind: 'toggle',
+    on: imagesPanel.open.value,
+    status: !imageIsShown.value ? undefined : shownImageCaption.value || t('games.tools.imageOnStatus'),
+    onClick: imagesPanel.toggle,
   },
 ])
 </script>

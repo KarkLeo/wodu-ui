@@ -14,6 +14,6 @@ export function useBusyFocus(busy: () => boolean, buttons: Focusable[]) {
     const target = focused
     focused = null
     await nextTick()
-    if (target && (!document.activeElement || document.activeElement === document.body)) target.$el.focus()
+    if (target?.$el.isConnected && (!document.activeElement || document.activeElement === document.body)) target.$el.focus()
   })
 }

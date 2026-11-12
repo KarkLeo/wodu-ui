@@ -11,8 +11,8 @@ interface Options<E extends { id: string }> {
   remove: (gameId: string, id: string) => Promise<void>
   /** Whether the entry is on the table; its delete takes it off first, and that is the stage writer's to report. */
   isLive: (entry: E) => boolean
-  /** The entry's name for the confirm's title. */
-  nameOf: (entry: E) => string
+  /** The entry's name for the confirm's title, when it has one. */
+  nameOf?: (entry: E) => string
   notMasterKey: MessageKey
   failedKey: MessageKey
   focusEntry: (id: string) => void
@@ -40,7 +40,7 @@ export function useMediaDelete<E extends { id: string }>(o: Options<E>): MediaDe
   const live = ref(false)
 
   function ask(entry: E) {
-    name.value = o.nameOf(entry)
+    name.value = o.nameOf?.(entry) ?? ''
     live.value = o.isLive(entry)
     deleting.value = entry
   }

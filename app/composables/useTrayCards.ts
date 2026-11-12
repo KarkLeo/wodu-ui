@@ -2,6 +2,7 @@ import { computed, type Component, type ComputedRef } from 'vue'
 import { useTable } from '@/composables/useTable'
 import EncounterPanel from '@/features/encounter/EncounterPanel.vue'
 import ScenesPanel from '@/features/stage/ScenesPanel.vue'
+import ImagesPanel from '@/features/stage/ImagesPanel.vue'
 import SoundsPanel from '@/features/stage/SoundsPanel.vue'
 import { useEncounterStore } from '@/stores/encounter'
 import { useToolPanelsStore } from '@/stores/toolPanels'
@@ -34,6 +35,9 @@ export function useTrayCards(): { cards: ComputedRef<TrayCard[]>; shown: Compute
     }
     if (panels.open.sounds) {
       list.push({ key: 'sounds', component: SoundsPanel, closeLabel: t('stage.sounds.close'), close: () => panels.close('sounds') })
+    }
+    if (panels.open.images) {
+      list.push({ key: 'images', component: ImagesPanel, closeLabel: t('stage.images.close'), close: () => panels.close('images') })
     }
     return list
   })

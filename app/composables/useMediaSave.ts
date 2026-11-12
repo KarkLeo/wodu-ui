@@ -1,7 +1,7 @@
 import { computed, ref, type Ref } from 'vue'
 import { MEDIA_LIMITS } from '@/domain/stage'
 import { MediaWriteError } from '@/transport/media'
-import type { MediaEntries } from '@/types/stage'
+import type { MediaEntries, MediaKind } from '@/types/stage'
 import { createLogger } from '@/utils/logger'
 import { t, type MessageKey } from '@/locales'
 
@@ -22,7 +22,7 @@ export interface SaveContext {
  * progress, and a failure worded by the transport's kind. Each sheet keeps its own fields and what it does with
  * a refused file; the messages are `stage.<kind>.form.*`.
  */
-export function useMediaSave<K extends 'scenes' | 'sounds'>(kind: K, open: Ref<boolean>) {
+export function useMediaSave<K extends MediaKind>(kind: K, open: Ref<boolean>) {
   type Entry = MediaEntries[K]
   const saving = ref(false)
   const progress = ref(0)

@@ -6,10 +6,11 @@ import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import { retryMedia } from '@/composables/useMediaSession'
 import { MEDIA_LIMITS } from '@/domain/stage'
+import type { MediaKind } from '@/types/stage'
 import { t } from '@/locales'
 
 const props = defineProps<{
-  kind: 'scenes' | 'sounds'
+  kind: MediaKind
   status: 'idle' | 'loading' | 'ready' | 'failed'
   /** How many entries the list holds. */
   count: number

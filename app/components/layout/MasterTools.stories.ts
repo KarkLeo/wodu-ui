@@ -10,7 +10,7 @@ import { useEncounterStore } from '@/stores/encounter'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
 import { useToolPanelsStore } from '@/stores/toolPanels'
-import { emptyStage, withScene, withSound } from '@/domain/stage'
+import { emptyStage, withImage, withScene, withSound } from '@/domain/stage'
 import { clearPbRequests, signInMock } from '../../../.storybook/mocks/pb'
 
 const meta = {
@@ -36,13 +36,13 @@ type Story = StoryObj<typeof meta>
 const names = (group: HTMLElement) =>
   within(group).getAllByRole('button').map(b => b.getAttribute('aria-label') ?? b.textContent?.trim())
 
-/** The five rows of the master's tools, none of them active at the table. */
+/** The six rows of the master's tools, none of them active at the table. */
 export const Default: Story = {
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const group = await canvas.findByRole('group', { name: 'Master' })
-    await expect(names(group)).toEqual(['Encounter', 'Monsters', 'Items', 'Scenes', 'Sounds'])
+    await expect(names(group)).toEqual(['Encounter', 'Monsters', 'Items', 'Scenes', 'Sounds', 'Images'])
   },
 }
 
@@ -221,7 +221,7 @@ const manyMonsters: Decorator = (story) => ({
 const longLabels = async (canvasElement: HTMLElement, groupName: string) => {
   const group = await within(canvasElement).findByRole('group', { name: groupName })
   const rows = within(group).getAllByRole('button')
-  await expect(rows).toHaveLength(5)
+  await expect(rows).toHaveLength(6)
   await expect(within(group).getByText('99')).toBeVisible()
   const heights = rows.map(r => r.getBoundingClientRect().height)
   for (const row of rows) {
@@ -464,5 +464,105 @@ export const SoundsRowFromMonstersGoesToTheTable: Story = {
     await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Sounds' }))
     await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
     await expect(useToolPanelsStore().open.sounds).toBe(true)
+  },
+}
+
+const image = { id: 'story-image-bridge', caption: 'The old bridge at dusk, with the toll keeper waiting at the far end of it', file: 'image.jpg' }
+const imageOn = (withCaption: boolean): Decorator => (story) => ({
+  components: { story },
+  setup() {
+    const media = useMediaStore()
+    media.clearAll()
+    media.startLoading(crookhollow.id, ['images'])
+    media.setList('images', crookhollow.id, [image])
+    useStageStore().set(withImage(emptyStage(crookhollow.id), image, withCaption, new Date().toISOString()))
+  },
+  template: '<story />',
+})
+
+/** The Images row after Sounds, not pressed while its card is closed and nothing is shown. */
+export const ImagesRowOff: Story = {
+  decorators: [scenesCardClosed],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: 'Images' })
+    await expect(row).toHaveAttribute('aria-pressed', 'false')
+    await expect(row.querySelector('.lr-subtitle')).toBeNull()
+    await expect(row.compareDocumentPosition(within(canvasElement).getByRole('button', { name: 'Sounds' })) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+  },
+}
+
+/** An image is shown with its caption: the caption is the row's sub line (truncated, never squeezing the title). */
+export const ImagesRowShowsTheCaption: Story = {
+  decorators: [scenesCardClosed, imageOn(true)],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: `Images, ${image.caption} is shown` })
+    const title = row.querySelector('.lr-title') as HTMLElement
+    await expect(title).toHaveTextContent('Images')
+    await expect(title.clientWidth).toBeGreaterThan(40)
+    const subtitle = row.querySelector('.lr-subtitle') as HTMLElement
+    await expect(subtitle).toHaveTextContent(image.caption)
+    await expect(subtitle.scrollWidth).toBeGreaterThan(subtitle.clientWidth)
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+  },
+}
+
+/** Shown without its caption, the row says only that an image is shown, and never reveals the caption. */
+export const ImagesRowShownWithoutCaptionSaysOnlyShown: Story = {
+  decorators: [scenesCardClosed, imageOn(false)],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const row = await canvas.findByRole('button', { name: 'Images, an image is shown' })
+    await expect(row.querySelector('.lr-subtitle')).toHaveTextContent('An image is shown')
+    await expect(canvas.queryByText(image.caption)).toBeNull()
+  },
+}
+
+/** An open card is pressed and carries the gold bar, with an image shown too, inside the scrolling block. */
+export const ImagesRowOpenAndShown: Story = {
+  decorators: [(story) => ({
+    components: { story },
+    setup() {
+      const panels = useToolPanelsStore()
+      panels.clearAll()
+      panels.open.images = true
+    },
+    template: '<story />',
+  }), imageOn(true)],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: `Images, ${image.caption} is shown` })
+    await expect(row).toHaveAttribute('aria-pressed', 'true')
+    await barIsInsideTheScroller(row)
+  },
+}
+
+/** The row toggles the Images card on the table. */
+export const ImagesRowToggles: Story = {
+  tags: ['no-visual'],
+  decorators: [scenesCardClosed],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const row = await within(canvasElement).findByRole('button', { name: 'Images' })
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'true'))
+    await expect(useToolPanelsStore().open.images).toBe(true)
+    await expect(useToolPanelsStore().open.sounds).toBe(false)
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'false'))
+  },
+}
+
+/** From a library screen the card would not show, so the row opens it and goes to the table. */
+export const ImagesRowFromMonstersGoesToTheTable: Story = {
+  tags: ['no-visual'],
+  decorators: [scenesCardClosed],
+  loaders: [atRoute(`/games/${crookhollow.id}/monsters`)],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: 'Images' }))
+    await waitFor(() => expect(storyRouter.currentRoute.value.path).toBe(`/games/${crookhollow.id}`))
+    await expect(useToolPanelsStore().open.images).toBe(true)
   },
 }
