@@ -105,7 +105,7 @@ function sceneFromRow(row: MediaRow): Scene | null {
 
 function soundFromRow(row: MediaRow): Sound | null {
   const data = checkSoundData(row.data)
-  if (!data || data.id !== row.id) {
+  if (!data || data.id !== row.id || typeof row.file !== 'string' || !row.file) {
     log.warn('dropping a sound that fails the shape check', { id: row.id })
     return null
   }
@@ -114,7 +114,7 @@ function soundFromRow(row: MediaRow): Sound | null {
     name: data.name,
     loop: data.loop,
     duration: data.duration,
-    file: typeof row.file === 'string' && row.file ? row.file : '',
+    file: row.file,
   }
 }
 
@@ -155,7 +155,7 @@ export const mediaKinds: KindTable = {
       if (!data) return null
       return data.duration === null ? { id: data.id, name: data.name, loop: data.loop } : data
     },
-    stored: sound => ({ file: sound.file || null }),
+    stored: sound => ({ file: sound.file }),
     live: {
       isLive: (stage, id) => stage.sound?.id === id,
       // A changed name or loop flag applies from the next play, so a data-only update never re-publishes.

@@ -191,8 +191,12 @@ export const PlayPlayAgainAndStop: Story = {
         else super(...(args as ConstructorParameters<DateConstructor>))
       }
     } as DateConstructor
-    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
-    await waitFor(() => expect(soundOnStage()!.startedAt > first.startedAt).toBe(true))
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+      await waitFor(() => expect(soundOnStage()!.startedAt > first.startedAt).toBe(true))
+    } finally {
+      globalThis.Date = Frozen
+    }
     await userEvent.click(canvas.getByRole('button', { name: 'Stop' }))
     await waitFor(() => expect(soundOnStage()).toBeNull())
     await expect(canvas.getByTestId('playing')).toHaveTextContent('none')

@@ -19,6 +19,7 @@ let listFails = false
 let soundsListFails = false
 let soundRows: unknown[] = []
 let sceneGetImpl: (id: string) => Promise<unknown>
+let soundGetImpl: (id: string) => Promise<unknown>
 
 vi.mock('@/transport/pb', () => ({
   pb: {
@@ -27,10 +28,11 @@ vi.mock('@/transport/pb', () => ({
       get: (_t, method: string) => (...args: unknown[]) => {
         calls.push({ collection, method, args })
         if (collection === 'stages' && method === 'update') return stageUpdateImpl()
-        if (collection === 'scenes' && method === 'delete') return deleteImpl()
+        if ((collection === 'scenes' || collection === 'sounds') && method === 'delete') return deleteImpl()
         if (collection === 'scenes' && method === 'getFullList') return listFails ? Promise.reject(new Error('refused')) : Promise.resolve(listRows)
         if (collection === 'sounds' && method === 'getFullList') return soundsListFails ? Promise.reject(new Error('refused')) : Promise.resolve(soundRows)
         if (collection === 'scenes' && method === 'getOne') return sceneGetImpl(String(args[0]))
+        if (collection === 'sounds' && method === 'getOne') return soundGetImpl(String(args[0]))
         if (collection === 'games' && method === 'getOne') {
           return Promise.resolve({ id: 'game-1', name: 'G', master: gameMaster, invite_code: 'ABCD2345' })
         }
@@ -108,6 +110,7 @@ beforeEach(() => {
   soundsListFails = false
   soundRows = []
   sceneGetImpl = async () => { throw httpError(404) }
+  soundGetImpl = async () => { throw httpError(404) }
   sendImpl = async s => row(String(s.form.get('id') ?? 'sc-1'), { image: 'image.jpg', sound: 'sound.mp3' })
   stageUpdateImpl = async () => ({})
   deleteImpl = async () => true
@@ -559,8 +562,10 @@ describe('openMedia', () => {
   it('shares a load already in flight instead of listing and subscribing again', async () => {
     const { openMedia } = await load()
     await Promise.all([openMedia(GAME), openMedia(GAME)])
-    expect(calls.filter(c => c.method === 'getFullList')).toHaveLength(2)
-    expect(calls.filter(c => c.method === 'subscribe')).toHaveLength(2)
+    for (const collection of ['scenes', 'sounds']) {
+      expect(calls.filter(c => c.collection === collection && c.method === 'getFullList')).toHaveLength(1)
+      expect(calls.filter(c => c.collection === collection && c.method === 'subscribe')).toHaveLength(1)
+    }
   })
 
   it('stops listening when the load fails', async () => {
@@ -630,6 +635,7 @@ describe('sounds', () => {
       soundRow('b', { data: { id: 'other', name: 'Wrong id', loop: false } }),
       soundRow('c', { data: { id: 'c', name: 'No loop' } }),
       soundRow('d', { data: { id: 'd', name: 'Bell', loop: true } }),
+      soundRow('e', { file: '' }),
     ]
     const { openMedia, media } = await load()
     await openMedia(GAME)
@@ -726,5 +732,48 @@ describe('sounds', () => {
     await deleteSound(GAME, 'snd-1')
     expect(stagePublishes()).toHaveLength(0)
     expect(soundDeletes()).toHaveLength(1)
+  })
+
+  it('a row without a file is not in the store, so no empty file name can be published', async () => {
+    soundRows = [soundRow('a', { file: '' }), soundRow('b')]
+    const { openMedia, media } = await load()
+    await openMedia(GAME)
+    expect(media.sounds.list.map(s => s.id)).toEqual(['b'])
+    expect(media.sounds.list.every(s => s.file !== '')).toBe(true)
+  })
+
+  const soundFileBody = (code: string) => JSON.stringify({
+    data: { file: { code, message: 'refused' } }, message: 'Failed to create record.', status: 400,
+  })
+
+  it('maps a refused file on create and update to fileRefused on the file field', async () => {
+    const { createSound, updateSound, media } = await load()
+    sendImpl = async () => { throw errorFromResponse('', 400, soundFileBody('validation_invalid_mime_type')) }
+    await expect(createSound(GAME, draft, file('a.mp3', 'audio/mpeg')))
+      .rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'type' })
+    sendImpl = async () => { throw errorFromResponse('', 400, soundFileBody('validation_file_size_limit')) }
+    media.put('sounds', GAME, playingSound)
+    await expect(updateSound(GAME, draft)).rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'size' })
+  })
+
+  it('a 400 without a file code looks the sound up by id and returns it when it exists', async () => {
+    sendImpl = async () => { throw recorded('createDuplicateId') }
+    soundGetImpl = async () => soundRow('snd-1', { data: { id: 'snd-1', name: 'Rain', loop: true, duration: 12.5 } })
+    const { createSound, media } = await load()
+    const sound = await createSound(GAME, draft, file('a.mp3', 'audio/mpeg'))
+    expect(sound.id).toBe('snd-1')
+    expect(media.sounds.list.map(s => s.id)).toEqual(['snd-1'])
+    expect(calls.some(c => c.collection === 'sounds' && c.method === 'getOne' && c.args[0] === 'snd-1')).toBe(true)
+  })
+
+  it('a 404 on update or delete re-reads the game', async () => {
+    gameMaster = 'user-2'
+    const { updateSound, deleteSound, media } = await load()
+    media.put('sounds', GAME, playingSound)
+    sendImpl = async () => { throw recorded('updateNotFound') }
+    await expect(updateSound(GAME, draft)).rejects.toMatchObject({ kind: 'notMaster' })
+    deleteImpl = async () => { throw httpError(404) }
+    await expect(deleteSound(GAME, 'snd-1')).rejects.toMatchObject({ kind: 'notMaster' })
+    expect(calls.filter(c => c.collection === 'games' && c.method === 'getOne')).toHaveLength(2)
   })
 })
