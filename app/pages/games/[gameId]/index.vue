@@ -8,7 +8,7 @@ import { useRouteRecheck } from '@/composables/useRouteRecheck'
 definePageMeta({ name: 'game', middleware: 'game' })
 
 useRouteRecheck()
-// The master's open cards take the table's tray even with no sheet open.
+// The shown image and the master's open cards take the table's tray even with no sheet open.
 const { shown } = useTrayCards()
 </script>
 

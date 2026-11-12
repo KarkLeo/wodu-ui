@@ -17,7 +17,7 @@ const store = useCharactersStore()
 const { gameId, partyRoute } = useTable()
 const { cards, shown } = useTrayCards()
 const { selection, selectCharacter } = useTableSelection()
-// The master's cards come first and count as cards of the carousel.
+// The shown image and the master's cards come first and count as cards of the carousel.
 const cardCount = computed(() => ids.value.length + cards.value.length)
 const sheetOffset = computed(() => cards.value.length)
 
@@ -111,8 +111,8 @@ watch(() => cards.value.map(c => c.key), (keys, before) => {
         :ref="el => setItemRef(el as Element | null, i)"
         class="sheet-column"
       >
-        <div class="sheet-tools">
-          <IconButton :label="card.closeLabel" @click.stop="card.close()">
+        <div v-if="card.close" class="sheet-tools">
+          <IconButton :label="card.closeLabel ?? t('common.close')" @click.stop="card.close()">
             <IconClose :size="14" />
           </IconButton>
         </div>

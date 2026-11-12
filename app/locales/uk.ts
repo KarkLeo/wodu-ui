@@ -1009,6 +1009,16 @@ export const messages: Messages = {
         reading: 'Читаємо файл…',
       },
     },
+    shown: {
+      title: 'На столі',
+      generic: 'Показане зображення',
+      open: 'Відкрити',
+      openNamed: 'Відкрити: {caption}',
+      openGeneric: 'Відкрити показане зображення',
+      close: 'Закрити',
+      loading: 'Завантажуємо зображення…',
+      failed: 'Не вдалося завантажити зображення.',
+    },
     images: {
       title: 'Зображення',
       close: 'Закрити зображення',
