@@ -168,7 +168,7 @@ describe('publishStage', () => {
     await expect(publishStage(stage('s2'))).rejects.toMatchObject({ status: 500 })
     expect(store.stageOf(GAME).sound?.id).toBe('s1')
     expect(failures).toHaveLength(1)
-    expect(failures[0]!.message).toContain('Could not change')
+    expect(failures[0]!.message).toContain('did not reach the table')
   })
 
   it('restores an empty stage when nothing was ever confirmed', async () => {

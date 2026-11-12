@@ -49,7 +49,7 @@ const names = (el: HTMLElement) => within(el).getAllByRole('listitem').map(li =>
 type StageSoundData = { id: string; file: { collection: string; record: string; name: string }; loop: boolean; startedAt: string }
 const stageSound = () => (storedRecords('stages')[0]?.data as { sound: StageSoundData | null } | undefined)?.sound
 const toastTexts = () => useToastsStore().items.map(t => t.text)
-const STAGE_TOAST = 'Could not change what is shown at the table. Try again.'
+const STAGE_TOAST = 'The change did not reach the table. Try again.'
 // The preview freezes the clock; a later start needs a later time. The preview puts the real clock back after the story.
 function advanceClock(ms: number) {
   const frozen = globalThis.Date
@@ -418,7 +418,7 @@ export const EditAndDeleteWaitForTheLoopSave: Story = {
   },
 }
 
-/** While the sound's own delete is under way its loop switch does nothing, so no save follows it. */
+/** While the sound's own delete is under way its loop switch stays usable but does nothing, so no save follows it. */
 export const LoopSwitchIsOutWhileDeleting: Story = {
   tags: ['no-visual'],
   decorators: [withSounds(), asMaster],
@@ -428,8 +428,12 @@ export const LoopSwitchIsOutWhileDeleting: Story = {
     spyOn(pb.collection('sounds'), 'delete').mockImplementation(() => new Promise((resolve) => { release = () => resolve(true) }))
     await user.click(rowOf(canvasElement, 'Ogre roar').getByRole('button', { name: 'Delete Ogre roar' }))
     await user.click(within(await body(canvasElement).findByRole('dialog')).getByRole('button', { name: 'Delete' }))
-    const toggle = rowOf(canvasElement, 'Ogre roar').getByRole('switch', { name: 'Loop: Ogre roar' })
-    await waitFor(() => expect(toggle).toBeDisabled())
+    const row = rowOf(canvasElement, 'Ogre roar')
+    const toggle = row.getByRole('switch', { name: 'Loop: Ogre roar' })
+    await waitFor(() => expect(row.getByRole('button', { name: 'Delete Ogre roar' })).toBeDisabled())
+    await expect(toggle).toBeEnabled()
+    await user.click(toggle)
+    await expect(toggle).not.toBeChecked()
     await expect(sentForms()).toHaveLength(0)
     release()
     await waitFor(() => expect(names(canvasElement)).toEqual(['Hum and hearth', 'Tavern brawl']))

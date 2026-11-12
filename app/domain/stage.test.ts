@@ -678,6 +678,11 @@ describe('checkStage bounds the caption players render', () => {
     expect(withCaption('a'.repeat(CAPTION_MAX))?.image?.caption).toBe('a'.repeat(CAPTION_MAX))
     expect(withCaption(` ${'a'.repeat(CAPTION_MAX)} `)?.image?.caption).toBe('a'.repeat(CAPTION_MAX))
   })
+  it('trims after the cut too, so a cut never leaves a trailing space', () => {
+    const words = `${'a'.repeat(CAPTION_MAX - 1)} tail`
+    expect(withCaption(words)?.image?.caption).toBe('a'.repeat(CAPTION_MAX - 1))
+    expect(withImage(emptyStage('g1'), { ...grum, caption: words }, true, T).image?.caption).toBe('a'.repeat(CAPTION_MAX - 1))
+  })
   it('does not split an emoji when cutting', () => {
     const out = withCaption(`${'a'.repeat(CAPTION_MAX - 1)}😀`)?.image?.caption
     expect(out).toBe('a'.repeat(CAPTION_MAX - 1))

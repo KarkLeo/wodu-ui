@@ -887,6 +887,29 @@ describe('images', () => {
     expect(JSON.stringify(stagePublishes().at(-1)!.args)).not.toContain('Secret words')
   })
 
+  it('removing the caption of an image shown with its caption takes the caption off the stage', async () => {
+    sendImpl = async () => imageRow('img-1', { data: { id: 'img-1', caption: null } })
+    const { updateImage, stages } = await shown(true)
+    await updateImage(GAME, { id: 'img-1', caption: null })
+    expect(stagePublishes()).toHaveLength(1)
+    expect(lastStageImage()).toEqual({
+      id: 'img-1', file: { collection: 'images', record: 'img-1', name: 'image.jpg' }, caption: null, shownAt: SHOWN_AT,
+    })
+    expect(stages.stageOf(GAME).image?.caption).toBeNull()
+  })
+
+  it('a caption-only edit of an image shown with its caption publishes the new caption, the same file and shownAt', async () => {
+    sendImpl = async () => imageRow('img-1', { data: { id: 'img-1', caption: 'The old mill' } })
+    const { updateImage, stages } = await shown(true)
+    await updateImage(GAME, { id: 'img-1', caption: 'The old mill' })
+    expect(sent[0]!.form.has('file')).toBe(false)
+    expect(stagePublishes()).toHaveLength(1)
+    expect(lastStageImage()).toEqual({
+      id: 'img-1', file: { collection: 'images', record: 'img-1', name: 'image.jpg' }, caption: 'The old mill', shownAt: SHOWN_AT,
+    })
+    expect(stages.stageOf(GAME).image).toMatchObject({ caption: 'The old mill', shownAt: SHOWN_AT })
+  })
+
   it('saving an image that is not shown writes no stage', async () => {
     sendImpl = async () => imageRow('img-1', { file: 'image_new.png' })
     const { updateImage, media } = await load()

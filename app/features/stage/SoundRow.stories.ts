@@ -105,11 +105,15 @@ export const SavingTheLoop: Story = {
   },
 }
 
-/** While a play, stop or delete is on its way, the round button and the row's buttons do not answer. */
+/**
+ * While a play, stop or delete is on its way, the round button and the row's buttons do not answer. The loop switch
+ * keeps its look and its place in the tab order: the panel ignores a toggle meanwhile.
+ */
 export const Busy: Story = {
   args: { busy: true },
   play: async ({ canvasElement }) => {
     for (const button of within(canvasElement).getAllByRole('button')) await expect(button).toBeDisabled()
+    await expect(within(canvasElement).getByRole('switch', { name: 'Loop: Tavern brawl' })).toBeEnabled()
   },
 }
 

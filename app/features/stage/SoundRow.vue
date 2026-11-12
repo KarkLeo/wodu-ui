@@ -89,7 +89,7 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
         <span v-if="loopNextPlay" class="sr-note">{{ t('stage.sounds.row.loopNextPlay') }}</span>
       </div>
       <div class="sr-actions">
-        <Switch v-model="loopModel" :label="t('stage.sounds.row.loop', { name: sound.name })" :busy="loopSaving" :disabled="busy" hide-label />
+        <Switch v-model="loopModel" :label="t('stage.sounds.row.loop', { name: sound.name })" :busy="loopSaving" hide-label />
         <IconButton
           ref="editRef"
           variant="square"

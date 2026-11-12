@@ -67,7 +67,7 @@ export function withoutSound(stage: Stage): Stage {
 
 /** What players render: trimmed, a blank one is none, and never longer than `CAPTION_MAX`. */
 function stageCaption(raw: string | null): string | null {
-  const text = raw === null ? '' : cutText(raw.trim(), CAPTION_MAX)
+  const text = raw === null ? '' : cutText(raw.trim(), CAPTION_MAX).trim()
   return text === '' ? null : text
 }
 

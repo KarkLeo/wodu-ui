@@ -106,10 +106,3 @@ export interface MediaRow {
   [field: string]: unknown
 }
 
-export interface SceneRow {
-  id: string
-  game: string
-  data: unknown
-  image: string
-  sound: string
-}

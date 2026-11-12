@@ -46,7 +46,7 @@ const rowOf = (el: HTMLElement, name: string) => {
 const names = (el: HTMLElement) => within(el).getAllByRole('listitem').map(li => li.querySelector('.sr-name')?.textContent)
 const stageScene = () => (storedRecords('stages')[0]?.data as { scene: { id: string; image: { name: string } | null; sound: { name: string } | null } | null } | undefined)?.scene
 const toastTexts = () => useToastsStore().items.map(t => t.text)
-const STAGE_TOAST = 'Could not change what is shown at the table. Try again.'
+const STAGE_TOAST = 'The change did not reach the table. Try again.'
 const closed = (el: HTMLElement) => waitFor(() => expect(body(el).queryByRole('dialog')).toBeNull())
 
 /** Three scenes, one of them on at the table, with the count and the add button. */
