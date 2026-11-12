@@ -14,6 +14,7 @@ let deleteImpl: () => Promise<unknown>
 let gameMaster = 'user-1'
 let listRows: unknown[] = []
 let listFails = false
+let sceneGetImpl: (id: string) => Promise<unknown>
 
 vi.mock('@/transport/pb', () => ({
   pb: {
@@ -24,6 +25,7 @@ vi.mock('@/transport/pb', () => ({
         if (collection === 'stages' && method === 'update') return stageUpdateImpl()
         if (collection === 'scenes' && method === 'delete') return deleteImpl()
         if (collection === 'scenes' && method === 'getFullList') return listFails ? Promise.reject(new Error('refused')) : Promise.resolve(listRows)
+        if (collection === 'scenes' && method === 'getOne') return sceneGetImpl(String(args[0]))
         if (collection === 'games' && method === 'getOne') {
           return Promise.resolve({ id: 'game-1', name: 'G', master: gameMaster, invite_code: 'ABCD2345' })
         }
@@ -59,6 +61,11 @@ function deferred() {
 }
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 const httpError = (status: number) => Object.assign(new Error(`status ${status}`), { status })
+const refusal = (field: string, code: string) => Object.assign(new Error('status 400'), {
+  status: 400,
+  response: { data: { [field]: { code } } },
+  data: { [field]: { code } },
+})
 const file = (name: string, type: string) => new File(['x'], name, { type })
 
 function row(id: string, over: Record<string, unknown> = {}) {
@@ -91,6 +98,7 @@ beforeEach(() => {
   gameMaster = 'user-1'
   listRows = []
   listFails = false
+  sceneGetImpl = async () => { throw httpError(404) }
   sendImpl = async s => row(String(s.form.get('id') ?? 'sc-1'), { image: 'image.jpg', sound: 'sound.mp3' })
   stageUpdateImpl = async () => ({})
   deleteImpl = async () => true
@@ -121,7 +129,7 @@ describe('createScene', () => {
     const scene = await createScene(
       GAME,
       { id: 'sc-1', name: '  Crypt ' },
-      { image: file('Моя картинка.JPG', 'image/jpeg'), sound: file('track (1).mp3', 'audio/mpeg') },
+      { image: file('My Picture FINAL.JPG', 'image/jpeg'), sound: file('track (1).mp3', 'audio/mpeg') },
     )
     expect(sent).toHaveLength(1)
     const { method, path, form } = sent[0]!
@@ -145,6 +153,41 @@ describe('createScene', () => {
   })
 
   it('raises limitMayHaveChanged when the server refuses while the local count is under the limit', async () => {
+    sendImpl = async () => { throw httpError(400) }
+    const { createScene } = await load()
+    await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
+      .rejects.toMatchObject({ kind: 'limitMayHaveChanged' })
+  })
+
+  it('maps a refused file field to fileRefused with the field and the reason, not to a limit change', async () => {
+    const { createScene } = await load()
+    sendImpl = async () => { throw refusal('sound', 'validation_invalid_mime_type') }
+    await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
+      .rejects.toMatchObject({ kind: 'fileRefused', field: 'sound', reason: 'type' })
+    sendImpl = async () => { throw refusal('image', 'validation_file_size_limit') }
+    await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { image: file('a.png', 'image/png') }))
+      .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'size' })
+  })
+
+  it('counts an empty-data 400 as done when the scene with that id is already in the store (answer lost, retried)', async () => {
+    sendImpl = async () => { throw httpError(400) }
+    const { createScene, media } = await load()
+    media.putScene(GAME, { id: 'sc-1', name: 'X', image: null, sound: 'sound.mp3' })
+    await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
+      .resolves.toEqual({ id: 'sc-1', name: 'X', image: null, sound: 'sound.mp3' })
+  })
+
+  it('counts an empty-data 400 as done when one read of that id finds the scene, and stores it', async () => {
+    sendImpl = async () => { throw httpError(400) }
+    sceneGetImpl = async () => row('sc-1', { sound: 'sound.mp3', data: { id: 'sc-1', name: 'X' } })
+    const { createScene, media } = await load()
+    const scene = await createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') })
+    expect(scene.id).toBe('sc-1')
+    expect(media.scenes.list.map(s => s.id)).toEqual(['sc-1'])
+    expect(calls.some(c => c.collection === 'scenes' && c.method === 'getOne' && c.args[0] === 'sc-1')).toBe(true)
+  })
+
+  it('raises limitMayHaveChanged only for an empty-data 400 with no such scene', async () => {
     sendImpl = async () => { throw httpError(400) }
     const { createScene } = await load()
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
@@ -275,6 +318,14 @@ describe('updateScene', () => {
     media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await updateScene(GAME, { id: 'sc-1', name: 'New' }, {})
     expect(stagePublishes()).toHaveLength(0)
+  })
+
+  it('maps a refused file on update to fileRefused', async () => {
+    sendImpl = async () => { throw refusal('image', 'validation_invalid_mime_type') }
+    const { updateScene, media } = await load()
+    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png') }))
+      .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'type' })
   })
 
   it('raises notMaster on a 404 when the game now has another master', async () => {

@@ -156,6 +156,8 @@ async function submit() {
   if (!canSave.value) return
   const mine = attempt
   failure.value = null
+  imageError.value = ''
+  soundError.value = ''
   saving.value = true
   progress.value = 0
   const onProgress = (fraction: number) => { if (mine === attempt) progress.value = fraction }
@@ -171,6 +173,15 @@ async function submit() {
     if (err instanceof SceneWriteError) {
       // The session ended under the upload: there is nobody to tell.
       if (err.kind === 'aborted') return
+      if (err.kind === 'fileRefused') {
+        const { field, reason } = err.refusal ?? { field: 'image', reason: 'type' }
+        const text = field === 'image'
+          ? t(reason === 'type' ? 'stage.scenes.form.wrongImageType' : 'stage.scenes.form.imageTooLarge', { mb: IMAGE_MAX_BYTES / MB })
+          : t(reason === 'type' ? 'stage.scenes.form.wrongSoundType' : 'stage.scenes.form.soundTooLarge', { mb: AUDIO_MAX_BYTES / MB })
+        if (field === 'image') imageError.value = text
+        else soundError.value = text
+        return
+      }
       if (err.kind === 'stagePublishFailed' && err.scene) {
         savedScene.value = err.scene
         failure.value = 'publishFailed'

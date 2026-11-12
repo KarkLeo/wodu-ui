@@ -265,6 +265,22 @@ export const LimitMayHaveChanged: Story = {
   },
 }
 
+/** The server reads the content, not the name: a file refused for its type is told under its own field, with the rest kept. */
+export const ServerRefusesTheFileType: Story = {
+  play: async ({ canvasElement }) => {
+    failUploadsWith(400, { data: { image: { code: 'validation_invalid_mime_type' } } })
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'New scene' })
+    await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Tavern')
+    await user.upload(imageInput(canvasElement), pictureFile('tavern.png'))
+    await user.click(sheet.getByRole('button', { name: 'Add' }))
+    await expect(await sheet.findByText('This is not a JPEG, PNG or WebP picture.')).toBeVisible()
+    await expect(sheet.queryByText(/You may already have/)).toBeNull()
+    await expect(sheet.getByRole('textbox', { name: 'Name' })).toHaveValue('Tavern')
+    await expect(sheet.getByText('tavern.png')).toBeVisible()
+  },
+}
+
 /** Someone else is the master now. */
 export const NotMaster: Story = {
   args: { scene: TAVERN },

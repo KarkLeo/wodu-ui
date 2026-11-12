@@ -20,25 +20,51 @@ const log = createLogger('transport:media')
 /** A file for each of the scene's two slots: a `File` replaces, `null` removes, `undefined` keeps. */
 export interface SceneFiles { image?: File | null; sound?: File | null }
 
-export type SceneWriteKind = 'limitReached' | 'limitMayHaveChanged' | 'notMaster' | 'stagePublishFailed' | 'aborted'
+export type SceneWriteKind = 'limitReached' | 'limitMayHaveChanged' | 'fileRefused' | 'notMaster' | 'stagePublishFailed' | 'aborted'
+
+/** A file the server refused: which field, and whether for its type or its size. */
+export interface FileRefusal { field: 'image' | 'sound'; reason: 'type' | 'size' }
 
 /**
  * The failures the form words differently; any other failure is thrown as it came.
  * `limitReached`: the local list is full, nothing was sent.
- * `limitMayHaveChanged`: a create was refused while this device counted fewer scenes than the limit.
+ * `limitMayHaveChanged`: a create was refused by a rule (empty `data` in the body, no such scene) while this device counted fewer scenes than the limit.
+ * `fileRefused`: the server refused a file by its content; `field` and `reason` say which and why.
  * `notMaster`: the game's master is someone else now.
  * `stagePublishFailed`: the scene is saved (`scene`) but the table was not updated; `republishScene` retries that alone.
  * `aborted`: the upload was cancelled because the session or the game closed; the form can ignore it.
  */
 export class SceneWriteError extends Error {
-  constructor(public kind: SceneWriteKind, public override cause?: unknown, public scene?: Scene) {
+  constructor(
+    public kind: SceneWriteKind,
+    public override cause?: unknown,
+    public scene?: Scene,
+    public refusal?: FileRefusal,
+  ) {
     super(kind)
     this.name = 'SceneWriteError'
   }
+
+  get field(): FileRefusal['field'] | undefined { return this.refusal?.field }
+  get reason(): FileRefusal['reason'] | undefined { return this.refusal?.reason }
 }
 
 function statusOf(err: unknown): number | undefined {
   return typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: unknown }).status) : undefined
+}
+
+// PocketBase words a file refusal as `data.<field>.code`; a rule refusal has an empty `data`.
+function fileRefusal(err: unknown): FileRefusal | null {
+  if (statusOf(err) !== 400 || typeof err !== 'object' || err === null) return null
+  const e = err as { data?: unknown; response?: { data?: unknown } }
+  const data = e.data ?? e.response?.data
+  if (typeof data !== 'object' || data === null) return null
+  for (const field of ['image', 'sound'] as const) {
+    const code = (data as Record<string, { code?: unknown } | undefined>)[field]?.code
+    if (code === 'validation_invalid_mime_type') return { field, reason: 'type' }
+    if (code === 'validation_file_size_limit') return { field, reason: 'size' }
+  }
+  return null
 }
 
 const ROWS = '/api/collections/scenes/records'
@@ -218,11 +244,35 @@ export async function createScene(
   try {
     row = await upload(gameId, 'POST', ROWS, form, onProgress)
   } catch (err) {
-    if (statusOf(err) === 400 && store.scenes.list.length < MEDIA_LIMITS.scenes) throw new SceneWriteError('limitMayHaveChanged', err)
+    const refused = fileRefusal(err)
+    if (refused) throw new SceneWriteError('fileRefused', err, undefined, refused)
+    if (statusOf(err) === 400) {
+      // A create whose answer was lost and is retried under the same id is refused because the scene exists.
+      const existing = await existingScene(gameId, data.id, current)
+      if (existing) return existing
+      if (store.scenes.list.length < MEDIA_LIMITS.scenes) throw new SceneWriteError('limitMayHaveChanged', err)
+    }
     throw err
   }
   const scene = savedScene(row)
   if (current()) store.putScene(gameId, scene)
+  return scene
+}
+
+// The scene with this id, from the store or from one read; null when there is none.
+async function existingScene(gameId: string, id: string, current: () => boolean): Promise<Scene | null> {
+  const store = useMediaStore()
+  const known = store.gameId === gameId ? store.scenes.list.find(s => s.id === id) : undefined
+  if (known) return known
+  let row: SceneRow
+  try {
+    row = await call(() => pb.collection('scenes').getOne<SceneRow>(id))
+  } catch {
+    return null
+  }
+  if (row.game !== gameId) return null
+  const scene = sceneFromRow(row)
+  if (scene && current()) store.putScene(gameId, scene)
   return scene
 }
 
@@ -272,6 +322,8 @@ export async function updateScene(
   try {
     row = await upload(gameId, 'PATCH', `${ROWS}/${encodeURIComponent(data.id)}`, form, onProgress)
   } catch (err) {
+    const refused = fileRefusal(err)
+    if (refused) throw new SceneWriteError('fileRefused', err, undefined, refused)
     if (statusOf(err) === 404) await stillMaster(gameId, me, current, err)
     throw err
   }

@@ -21,6 +21,7 @@ export function clearSentForms(): void {
 
 let gate: Promise<void> | null = null
 let failure: number | null = null
+let failureBody: Record<string, unknown> = {}
 
 /** Keeps the next uploads half way (progress 0.4) until the returned function is called. */
 export function holdUploads(): () => void {
@@ -34,11 +35,12 @@ export function holdUploads(): () => void {
 }
 
 /**
- * Makes uploads fail with this HTTP status until called with null. Module-level state: a story that sets it
+ * Makes uploads fail with this HTTP status (and response body, e.g. `{ data: { image: { code } } }`) until called with null. Module-level state: a story that sets it
  * relies on `withScenes` (app/stories/scenes.ts) resetting it for the next one.
  */
-export function failUploadsWith(status: number | null): void {
+export function failUploadsWith(status: number | null, body: Record<string, unknown> = {}): void {
   failure = status
+  failureBody = body
 }
 
 export async function sendForm<T>(
@@ -59,7 +61,7 @@ export async function sendForm<T>(
     await gate
   }
   if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
-  if (failure !== null) throw Object.assign(new Error(`mock ${failure}`), { status: failure })
+  if (failure !== null) throw Object.assign(new Error(`mock ${failure}`), { status: failure, response: failureBody, data: failureBody.data ?? {} })
   onProgress?.(1)
 
   const match = /^\/api\/collections\/([^/]+)\/records(?:\/([^/]+))?$/.exec(path)
