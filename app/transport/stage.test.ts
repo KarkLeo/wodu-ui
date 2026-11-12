@@ -45,7 +45,7 @@ function stage(soundId: string | null, gameId = GAME): Stage {
     scene: null,
     image: null,
     sound: soundId
-      ? { id: soundId, file: { collection: 'sounds', record: soundId, name: 'a.mp3' }, loop: false, startedAt: '2026-01-01T00:00:00Z' }
+      ? { id: soundId, file: { collection: 'sounds', record: `record-${soundId}-0000000`, name: 'a.mp3' }, loop: false, startedAt: '2026-01-01T00:00:00Z' }
       : null,
   }
 }
@@ -121,6 +121,15 @@ describe('publishStage', () => {
     await publishStage(stage('s2'))
     expect(creates).toHaveLength(1)
     expect(updates.map(u => u.body.data.sound?.id)).toEqual(['s2'])
+  })
+
+  it('forgets which rows exist when asked, so a later session creates first again', async () => {
+    const { publishStage, forgetStageRows } = await load({ rowSeen: false })
+    await publishStage(stage('s1'))
+    forgetStageRows()
+    await publishStage(stage('s2'))
+    expect(creates).toHaveLength(2)
+    expect(updates).toHaveLength(0)
   })
 
   it('updates when the first create is refused because another device made the row meanwhile', async () => {

@@ -29,6 +29,11 @@ export function stageFromRow(row: StageRow): Stage | null {
 // of probing with an update. Either guess falls back: a refused create means the row appeared meanwhile.
 const rowSeen = new Set<string>()
 
+/** Forgets which rows exist; called wherever the stage store is cleared. */
+export function forgetStageRows(): void {
+  rowSeen.clear()
+}
+
 async function send(gameId: string, stage: Stage): Promise<void> {
   const rows = pb.collection('stages')
   const update = () => rows.update(gameId, { data: stage })

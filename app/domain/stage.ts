@@ -45,10 +45,16 @@ export function withoutScene(stage: Stage): Stage {
   return { ...stage, scene: null }
 }
 
+// A record id as PocketBase accepts it from this client, and a stored file name that cannot change the path
+// or the query of the address it is put into.
+const RECORD_ID = /^[a-zA-Z0-9_-]{15,36}$/
+const UNSAFE_NAME = /[/\\?#]|\.\./
+
 function checkFileRef(v: unknown): FileRef | null {
   if (!isRecord(v)) return null
   if (typeof v.collection !== 'string' || !COLLECTIONS.includes(v.collection)) return null
-  if (!nonEmpty(v.record) || !nonEmpty(v.name)) return null
+  if (typeof v.record !== 'string' || !RECORD_ID.test(v.record)) return null
+  if (!nonEmpty(v.name) || UNSAFE_NAME.test(v.name)) return null
   return { collection: v.collection as MediaCollection, record: v.record, name: v.name }
 }
 
@@ -95,7 +101,7 @@ export function checkSceneData(value: unknown): { id: string; name: string } | n
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string') return null
   const id = value.id.trim()
   const name = value.name.trim()
-  if (!id || name.length > SCENE_NAME_MAX) return null
+  if (!id || !name || name.length > SCENE_NAME_MAX) return null
   return { id, name }
 }
 
@@ -125,13 +131,8 @@ export function neutralFileName(kind: FileKind, type: string): string {
 
 export function fileUrl(base: string, ref: FileRef, thumb?: string): string {
   const root = base.replace(/\/+$/, '')
-  const url = `${root}/api/files/${ref.collection}/${ref.record}/${encodeURIComponent(ref.name)}`
+  const url = `${root}/api/files/${ref.collection}/${encodeURIComponent(ref.record)}/${encodeURIComponent(ref.name)}`
   return thumb ? `${url}?thumb=${encodeURIComponent(thumb)}` : url
-}
-
-export function sameFile(a: FileRef | null, b: FileRef | null): boolean {
-  if (a === null || b === null) return a === b
-  return a.collection === b.collection && a.record === b.record && a.name === b.name
 }
 
 export interface PlaybackPrefs {

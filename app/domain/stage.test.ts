@@ -1,20 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
-  checkUpload, neutralFileName, fileUrl, sameFile, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
+  checkUpload, neutralFileName, fileUrl, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
 } from './stage'
 import type { Scene, StageImage, StageSound } from '@/types/stage'
 
-const tavern: Scene = { id: 's1', name: 'Tavern', image: 'image_ab12.webp', sound: 'sound_cd34.mp3' }
+const tavern: Scene = { id: 'scene-tavern-0001', name: 'Tavern', image: 'image_ab12.webp', sound: 'sound_cd34.mp3' }
 const shown: StageImage = {
   id: 'i1',
-  file: { collection: 'images', record: 'i1', name: 'map.png' },
+  file: { collection: 'images', record: 'image-record-0001', name: 'map.png' },
   caption: 'A map',
   shownAt: '2026-11-12T10:00:00.000Z',
 }
 const playing: StageSound = {
   id: 'k1',
-  file: { collection: 'sounds', record: 'k1', name: 'rain.mp3' },
+  file: { collection: 'sounds', record: 'sound-record-0001', name: 'rain.mp3' },
   loop: true,
   startedAt: '2026-11-12T10:00:00.000Z',
 }
@@ -32,9 +32,9 @@ describe('withScene', () => {
     const before = { ...emptyStage('g1'), image: shown, sound: playing }
     const next = withScene(before, tavern)
     expect(next.scene).toEqual({
-      id: 's1',
-      image: { collection: 'scenes', record: 's1', name: 'image_ab12.webp' },
-      sound: { collection: 'scenes', record: 's1', name: 'sound_cd34.mp3' },
+      id: 'scene-tavern-0001',
+      image: { collection: 'scenes', record: 'scene-tavern-0001', name: 'image_ab12.webp' },
+      sound: { collection: 'scenes', record: 'scene-tavern-0001', name: 'sound_cd34.mp3' },
     })
     expect(next.image).toBe(before.image)
     expect(next.sound).toBe(before.sound)
@@ -79,6 +79,19 @@ describe('checkStage', () => {
     const emptyName = { id: 'g1', scene: { ...scene, sound: { collection: 'scenes', record: 's1', name: '' } }, image: null, sound: null }
     expect(checkStage(emptyName, 'g1')?.scene).toBeNull()
   })
+  it('turns a FileRef whose record or name could climb out of its path into a null part', () => {
+    const scene = withScene(emptyStage('g1'), tavern).scene!
+    const partWith = (image: unknown) => checkStage({ id: 'g1', scene: { ...scene, image }, image: null, sound: null }, 'g1')?.scene
+    const good = { collection: 'scenes', record: 'scene-tavern-0001', name: 'image_ab12.webp' }
+    expect(partWith(good)).not.toBeNull()
+    expect(partWith({ ...good, record: 'short' })).toBeNull()
+    expect(partWith({ ...good, record: 'x'.repeat(37) })).toBeNull()
+    expect(partWith({ ...good, record: '../scenes/other-record-0001' })).toBeNull()
+    expect(partWith({ ...good, record: 'scene tavern 0001' })).toBeNull()
+    for (const name of ['a/b.png', 'a\\b.png', 'a?x=1.png', 'a#b.png', '..', 'a..b.png']) {
+      expect(partWith({ ...good, name }), name).toBeNull()
+    }
+  })
   it('a bad part becomes null and the rest survives', () => {
     const scene = withScene(emptyStage('g1'), tavern).scene
     const out = checkStage({ id: 'g1', scene, image: { id: 'i1' }, sound: playing }, 'g1')
@@ -91,6 +104,10 @@ describe('checkStage', () => {
 describe('checkSceneData', () => {
   it('trims the name', () => {
     expect(checkSceneData({ id: 's1', name: '  Tavern ' })).toEqual({ id: 's1', name: 'Tavern' })
+  })
+  it('refuses a name that is empty after trimming', () => {
+    expect(checkSceneData({ id: 's1', name: '' })).toBeNull()
+    expect(checkSceneData({ id: 's1', name: '   ' })).toBeNull()
   })
   it('refuses an empty id, a name over 80 or a non-string', () => {
     expect(checkSceneData({ id: '', name: 'x' })).toBeNull()
@@ -141,20 +158,8 @@ describe('fileUrl', () => {
   it('builds the file address', () => {
     const ref = { collection: 'scenes', record: 's1', name: 'image_ab 12.webp' } as const
     expect(fileUrl('https://api.test', ref)).toBe('https://api.test/api/files/scenes/s1/image_ab%2012.webp')
+    expect(fileUrl('https://api.test', { ...ref, record: 'a b/c' })).toBe('https://api.test/api/files/scenes/a%20b%2Fc/image_ab%2012.webp')
     expect(fileUrl('https://api.test/', ref, '176x112')).toBe('https://api.test/api/files/scenes/s1/image_ab%2012.webp?thumb=176x112')
-  })
-})
-
-describe('sameFile', () => {
-  it('compares by collection, record and name; two nulls are the same', () => {
-    const a = { collection: 'scenes', record: 's1', name: 'a.png' } as const
-    expect(sameFile(a, { ...a })).toBe(true)
-    expect(sameFile(a, { ...a, name: 'b.png' })).toBe(false)
-    expect(sameFile(a, { ...a, record: 's2' })).toBe(false)
-    expect(sameFile(a, { ...a, collection: 'images' })).toBe(false)
-    expect(sameFile(a, null)).toBe(false)
-    expect(sameFile(null, a)).toBe(false)
-    expect(sameFile(null, null)).toBe(true)
   })
 })
 
@@ -165,8 +170,8 @@ describe('playbackTarget', () => {
 
   it('builds the scene sound and backdrop URLs', () => {
     expect(playbackTarget(onTavern, all, base)).toEqual({
-      sceneSound: 'https://api.test/api/files/scenes/s1/sound_cd34.mp3',
-      backdrop: 'https://api.test/api/files/scenes/s1/image_ab12.webp',
+      sceneSound: 'https://api.test/api/files/scenes/scene-tavern-0001/sound_cd34.mp3',
+      backdrop: 'https://api.test/api/files/scenes/scene-tavern-0001/image_ab12.webp',
       wantsSound: true,
     })
   })

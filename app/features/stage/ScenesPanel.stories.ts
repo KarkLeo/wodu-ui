@@ -90,6 +90,32 @@ export const Loading: Story = {
   },
 }
 
+// The store holds another game's scenes, as it does for a master of two games who has just moved to the second.
+const holdingOtherGame: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const media = useMediaStore()
+    media.clearAll()
+    media.startLoading(olden.id)
+    media.setScenes(olden.id, structuredClone(SCENES))
+  },
+  template: '<story />',
+})
+
+/** Another game's scenes are never listed, and nothing can turn one of them on at this table. */
+export const OtherGamesScenesAreNotShown: Story = {
+  tags: ['no-visual'],
+  decorators: [holdingOtherGame, withScenes({ status: 'idle' }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('status')).toHaveTextContent('Loading scenes…')
+    await expect(canvas.queryByRole('list')).toBeNull()
+    await expect(canvas.queryByRole('button', { name: 'Turn on' })).toBeNull()
+    await expect(canvas.queryByText('Tavern')).toBeNull()
+  },
+}
+
 const SessionHarness = defineComponent({
   components: { ScenesPanel },
   setup() {

@@ -24,7 +24,10 @@ const toasts = useToastsStore()
 const { gameId } = useTable()
 const { activeSceneId, turnOnScene, turnOffScene } = useStageControl()
 
-const scenes = computed(() => media.scenes.list)
+// The store holds one game's list; at another game's table it is not this table's to show or to turn on.
+const mine = computed(() => media.gameId !== null && media.gameId === gameId.value)
+const status = computed(() => (mine.value ? media.scenes.status : 'idle'))
+const scenes = computed(() => (mine.value ? media.scenes.list : []))
 const atLimit = computed(() => scenes.value.length >= MEDIA_LIMITS.scenes)
 
 // A scene's own change (turn on or off, delete) is on its way: its row waits, the others do not.
@@ -117,11 +120,11 @@ async function confirmDelete() {
   <section class="sp" :aria-label="t('stage.scenes.title')">
     <header class="sp-head">
       <h2 class="sp-title">{{ t('stage.scenes.title') }}</h2>
-      <span v-if="media.scenes.status === 'ready'" class="sp-count">
+      <span v-if="status === 'ready'" class="sp-count">
         {{ t('stage.scenes.count', { count: scenes.length, max: MEDIA_LIMITS.scenes }) }}
       </span>
       <Button
-        v-if="media.scenes.status === 'ready'"
+        v-if="status === 'ready'"
         ref="addRef"
         variant="dashed"
         size="sm"
@@ -134,14 +137,14 @@ async function confirmDelete() {
     </header>
 
     <div class="sp-body">
-      <StateNote v-if="media.scenes.status === 'loading'" size="sm" role="status">{{ t('stage.scenes.loading') }}</StateNote>
-      <StateNote v-else-if="media.scenes.status === 'failed'" size="sm" role="alert">
+      <StateNote v-if="status === 'loading' || status === 'idle'" size="sm" role="status">{{ t('stage.scenes.loading') }}</StateNote>
+      <StateNote v-else-if="status === 'failed'" size="sm" role="alert">
         {{ t('stage.scenes.loadFailed') }}
         <template #action>
           <Button variant="ghost" size="sm" @click="retryMedia">{{ t('stage.scenes.retry') }}</Button>
         </template>
       </StateNote>
-      <template v-else-if="media.scenes.status === 'ready'">
+      <template v-else-if="status === 'ready'">
         <!-- Above the list: at the limit the list is long and the note would scroll out of sight. -->
         <StateNote v-if="atLimit" size="sm" inline>{{ t('stage.scenes.limitReached', { max: MEDIA_LIMITS.scenes }) }}</StateNote>
         <EmptyState v-if="!scenes.length" :hint="t('stage.scenes.empty')" />

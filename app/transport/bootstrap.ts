@@ -16,7 +16,7 @@ import {
 } from './connection'
 import { isCharacterShape, isRollRecordShape, isChangeEntryShape } from './shapes'
 import { scope } from './scope'
-import { applyStages, receiveStage } from './stage'
+import { applyStages, forgetStageRows, receiveStage } from './stage'
 import { forgetGame, healStuckCharacters, loadGame, toGame, toMember } from './games'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
@@ -457,6 +457,7 @@ export function stopOnline(): void {
   useMediaStore().clearAll()
   useToolPanelsStore().clearAll()
   useStageStore().clearAll()
+  forgetStageRows()
   stopConnectionMonitor()
   playedLocally.clear()
   bootstrapStatus.value = 'loading'

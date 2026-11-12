@@ -41,7 +41,7 @@ const row = (soundId: string) => ({
   game: 'g1',
   data: {
     id: 'g1', scene: null, image: null,
-    sound: { id: soundId, file: { collection: 'sounds', record: soundId, name: 'a.mp3' }, loop: false, startedAt: 'x' },
+    sound: { id: soundId, file: { collection: 'sounds', record: `record-${soundId}-0000000`, name: 'a.mp3' }, loop: false, startedAt: 'x' },
   },
 })
 

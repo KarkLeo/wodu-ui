@@ -144,8 +144,12 @@ export async function loadGame(gameId: string): Promise<void> {
 // refused request or a timeout simply means nothing is shown.
 async function loadStage(gameId: string, current: () => boolean): Promise<void> {
   try {
-    const row = await withTimeout(pb.collection('stages').getOne<StageRow>(gameId), STAGE_TIMEOUT_MS)
-    if (current()) receiveStage('update', row)
+    // A list, not getOne: a game with no row is an ordinary answer here, and a 404 is logged as a console error.
+    const rows = await withTimeout(pb.collection('stages').getFullList<StageRow>({
+      filter: pb.filter('id = {:id}', { id: gameId }),
+    }), STAGE_TIMEOUT_MS)
+    const row = rows.find(r => r.id === gameId)
+    if (row && current()) receiveStage('update', row)
   } catch (err) {
     log.debug('no stage for the joined game', { gameId, err })
   }
