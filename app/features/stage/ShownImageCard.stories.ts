@@ -51,6 +51,10 @@ export const TinyIcon: Story = {
   play: async ({ canvasElement }) => {
     await loaded(canvasElement)
     await expect(within(canvasElement).getByText('A silver key')).toBeVisible()
+    // Natural size, not stretched to the card's width.
+    const box = imageIn(canvasElement).getBoundingClientRect()
+    await expect(Math.round(box.width)).toBe(TINY_ICON.width)
+    await expect(Math.round(box.height)).toBe(TINY_ICON.height)
   },
 }
 
@@ -87,7 +91,8 @@ export const ImageFailsToLoad: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(await canvas.findByText('The image could not be loaded.')).toBeVisible()
-    await expect(canvas.queryByRole('button')).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Open/ })).toBeNull()
+    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
     await expect(canvas.getByText('The old bridge at dusk')).toBeVisible()
   },
 }

@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import ShownImageReveal from './ShownImageReveal.vue'
-import { drawPicture, holdImages, LONG_CAPTION, PORTRAIT, TINY_ICON, WIDE_MAP } from '@/stories/pictures'
+import { drawPicture, holdImages, LONG_CAPTION, PORTRAIT, servePictures, TINY_ICON, WIDE_MAP } from '@/stories/pictures'
 
 const meta = {
   title: 'Features/Stage/ShownImageReveal',
@@ -22,6 +22,8 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+let hold: ReturnType<typeof holdImages> | undefined
 
 const body = (el: HTMLElement) => within(el.ownerDocument.body)
 
@@ -149,18 +151,41 @@ export const ClosesThreeWays: Story = {
 /** The dialog shows a quiet loading state, then the picture, with no jump in between. */
 export const LoadingState: Story = {
   args: { image: portrait },
-  loaders: [async () => ({ hold: holdImages() })],
-  play: async ({ canvasElement, loaded }) => {
-    const hold = (loaded as { hold: ReturnType<typeof holdImages> }).hold
+  // Restored by the story's own cleanup, so a story that never reaches `play` leaves nothing behind.
+  beforeEach: () => {
+    hold = holdImages()
+    return () => hold?.restore()
+  },
+  play: async ({ canvasElement }) => {
     try {
       const note = await body(canvasElement).findByText('Loading the image…')
       await waitFor(() => expect(note).toBeVisible())
       await expect(canvasElement.ownerDocument.querySelector('.sir-img.is-pending')).not.toBeNull()
-      hold.release()
+      hold!.release()
       await waitFor(() => expect(body(canvasElement).queryByText('Loading the image…')).toBeNull())
       await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.sir-img.is-pending')).toBeNull())
     } finally {
-      hold.restore()
+      hold?.restore()
+    }
+  },
+}
+
+/** A failed picture is not remembered: once it can be fetched, closing and reopening shows it. */
+export const ReopeningAfterAFailureShowsThePicture: Story = {
+  args: { image: { url: 'http://127.0.0.1:8090/api/files/images/story-retry/image.png', caption: 'Retried' } },
+  beforeEach: () => servePictures({}) && (() => {}),
+  play: async ({ canvasElement }) => {
+    const note = await body(canvasElement).findByText('The image could not be loaded.')
+    await waitFor(() => expect(note).toBeVisible())
+    await userEvent.click(body(canvasElement).getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+    const restore = servePictures({ 'story-retry': portrait.url })
+    try {
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Card' }))
+      await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.sir-img:not(.is-pending)')).not.toBeNull())
+      await expect(body(canvasElement).queryByText('The image could not be loaded.')).toBeNull()
+    } finally {
+      restore()
     }
   },
 }

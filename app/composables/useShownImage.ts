@@ -4,6 +4,7 @@ import { isGameMaster } from '@/composables/useRouteRecheck'
 import { fileUrl, revealKey, shouldReveal } from '@/domain/stage'
 import { useStageStore } from '@/stores/stage'
 import { currentUser } from '@/transport/auth'
+import { onlineDataReady } from '@/transport/bootstrap'
 import { mode } from '@/transport/mode'
 import { pb } from '@/transport/pb'
 
@@ -47,7 +48,8 @@ export function useShownImage(): {
 
   const image = computed<ShownImage | null>(() => {
     const id = gameId.value
-    if (!id || mode.value !== 'online' || !currentUser.value) return null
+    // Until the online data is here the stores are empty, which looks like a table with nothing shown.
+    if (!id || mode.value !== 'online' || !currentUser.value || !onlineDataReady.value) return null
     const shown = stages.stageOf(id).image
     if (!shown) return null
     return { url: fileUrl(pb.baseURL, shown.file), caption: shown.caption, key: revealKey(shown) }
@@ -72,9 +74,10 @@ export function useShownImageReveal(): void {
   resetSeen()
 
   watch(
-    () => [image.value?.key ?? null, gameId.value, mode.value, currentUser.value?.id ?? null] as const,
-    ([key, id, m, user]) => {
-      const game = id && m === 'online' && user ? id : null
+    () => [image.value?.key ?? null, gameId.value, mode.value, currentUser.value?.id ?? null, onlineDataReady.value] as const,
+    ([key, id, m, user, ready]) => {
+      // Not ready counts as no open table: what was seen starts with the first value after the data has loaded.
+      const game = id && m === 'online' && user && ready ? id : null
       if (game !== openGame) {
         openGame = game
         seen = undefined

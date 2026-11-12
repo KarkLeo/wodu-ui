@@ -14,17 +14,33 @@ const open = defineModel<boolean>('open', { required: true })
 
 const loaded = ref(false)
 const failed = ref(false)
-watch(() => props.image?.url, () => {
+function reset() {
   loaded.value = false
   failed.value = false
-})
+}
+// A new picture, or the view opening again, starts clean: one failed attempt is not remembered.
+watch(() => props.image?.url, reset)
+watch(open, (now) => { if (now) reset() })
+
+function onLoad() {
+  loaded.value = true
+  failed.value = false
+}
 
 const visible = computed(() => open.value && props.image !== null)
 
-// Back to the card's picture button; when the card is gone, the focus is left to the page.
+// Where the focus was before the view opened, so closing it returns there when that is an element of a sheet that is
+// still open (the reveal can open above one); otherwise to the card's picture button, otherwise to the page.
+let before: HTMLElement | null = null
+function rememberFocus() {
+  before = document.activeElement instanceof HTMLElement ? document.activeElement : null
+}
 function returnFocus(event: Event) {
   event.preventDefault()
-  document.querySelector<HTMLElement>('[data-shown-image-open]')?.focus()
+  const inOpenDialog = before?.isConnected && before.closest('[role="dialog"]')
+  if (before && inOpenDialog) before.focus()
+  else document.querySelector<HTMLElement>('[data-shown-image-open]')?.focus()
+  before = null
 }
 </script>
 
@@ -32,7 +48,7 @@ function returnFocus(event: Event) {
   <DialogRoot :open="visible" @update:open="open = $event">
     <DialogPortal>
       <DialogOverlay class="sir-veil" />
-      <DialogContent v-if="image" class="sir-panel" :aria-describedby="undefined" @close-auto-focus="returnFocus">
+      <DialogContent v-if="image" class="sir-panel" :aria-describedby="undefined" @open-auto-focus="rememberFocus" @close-auto-focus="returnFocus">
         <div class="sir-head">
           <DialogClose as-child>
             <IconButton class="sir-close" :label="t('stage.shown.close')"><IconClose :size="14" /></IconButton>
@@ -46,7 +62,7 @@ function returnFocus(event: Event) {
             :class="['sir-img', { 'is-pending': !loaded || failed }]"
             :src="image.url"
             alt=""
-            @load="loaded = true"
+            @load="onLoad"
             @error="failed = true"
           >
         </div>
@@ -65,6 +81,8 @@ function returnFocus(event: Event) {
   background: var(--vtt-black-a72);
 }
 .sir-panel {
+  --sir-mx: max(var(--s-4), env(safe-area-inset-left), env(safe-area-inset-right));
+  --sir-my: max(var(--s-4), env(safe-area-inset-top), env(safe-area-inset-bottom));
   position: fixed;
   top: 50%;
   left: 50%;
@@ -75,9 +93,9 @@ function returnFocus(event: Event) {
   gap: var(--s-2);
   box-sizing: border-box;
   width: max-content;
-  min-width: min(320px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
+  min-width: min(320px, calc(100vw - 2 * var(--sir-mx)));
+  max-width: calc(100vw - 2 * var(--sir-mx));
+  max-height: calc(100dvh - 2 * var(--sir-my));
   padding: var(--s-3);
   background: var(--vtt-bg-elevated);
   border: 1px solid var(--vtt-border-gold);
@@ -110,8 +128,8 @@ function returnFocus(event: Event) {
   display: block;
   width: auto;
   height: auto;
-  max-width: calc(100vw - 32px - 2 * var(--s-3) - 2px);
-  max-height: calc(100dvh - 240px);
+  max-width: calc(100vw - 2 * var(--sir-mx) - 2 * var(--s-3) - 2px);
+  max-height: calc(100dvh - 2 * var(--sir-my) - 208px);
   object-fit: contain;
 }
 .sir-img.is-pending { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }

@@ -95,10 +95,23 @@ function scrollToIndex(i: number) {
   if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
 }
 
-// On a phone, opened from a later sheet, a new card would come up off-screen to the left.
+// On a phone, opened from a later sheet, a new card would come up off-screen to the left. The shown image's card is
+// the exception: it comes and goes on the master's click, so the tray never scrolls to it; the card the person was
+// looking at stays in view instead, whatever the insertion at the front did to the content.
 watch(() => cards.value.map(c => c.key), (keys, before) => {
-  const added = keys.findIndex(k => !before.includes(k))
-  if (added !== -1) nextTick(() => scrollToIndex(added))
+  const shownChanged = keys.includes('shown-image') !== before.includes('shown-image')
+  const anchor = shownChanged ? scrollerRef.value?.querySelectorAll('.sheet-column')[activeIndex.value] : undefined
+  const anchorLeft = anchor?.getBoundingClientRect().left
+  const added = keys.findIndex(k => k !== 'shown-image' && !before.includes(k))
+  nextTick(() => {
+    const root = scrollerRef.value
+    if (anchor?.isConnected && anchorLeft !== undefined && root && root.scrollWidth > root.clientWidth) {
+      const shift = anchor.getBoundingClientRect().left - anchorLeft
+      if (Math.abs(shift) > 0.5) root.scrollTo({ left: root.scrollLeft + shift, behavior: 'instant' })
+    }
+    if (added !== -1) scrollToIndex(added)
+    else recalcActive()
+  })
 })
 </script>
 

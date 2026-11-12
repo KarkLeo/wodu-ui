@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted } from 'vue'
+import { defineComponent, onUnmounted, ref } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
 import ShownImageHost from './ShownImageHost.vue'
@@ -7,13 +7,15 @@ import PartyView from '@/features/in-game/PartyView.vue'
 import { useShownImage, useShownImageReveal, resetShownImage } from '@/composables/useShownImage'
 import { useTrayCards } from '@/composables/useTrayCards'
 import { emptyStage, withImage } from '@/domain/stage'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { bootstrapStatus } from '@/transport/bootstrap'
 import { crookhollow, CROOKHOLLOW_META, olden, PARTY } from '@/stories/fixtures'
 import { withMediaPrefs } from '@/stories/playback'
 import { drawPicture, LONG_CAPTION, PORTRAIT, servePictures, WIDE_MAP } from '@/stories/pictures'
 import { storyRouter } from '@/stories/router'
 import { atRoute, withGameTable, withOfflineMode } from '@/stories/state'
 import { useStageStore } from '@/stores/stage'
-import { clearPbRequests, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
+import { authStore, clearPbRequests, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
 import type { TableImage } from '@/types/stage'
 
 // A slow runner takes longer than the default second.
@@ -441,5 +443,166 @@ export const LongCaption: Story = {
     const panel = canvasElement.ownerDocument.querySelector('.sir-panel')!.getBoundingClientRect()
     await expect(panel.bottom).toBeLessThanOrEqual(window.innerHeight + 0.5)
     await expect(panel.right).toBeLessThanOrEqual(window.innerWidth + 0.5)
+  },
+}
+
+/** Online data that has not arrived yet: nothing is open, whatever the stores hold. Restored to ready afterwards. */
+const dataNotReady: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    bootstrapStatus.value = 'loading'
+    onUnmounted(() => { bootstrapStatus.value = 'ready' })
+  },
+  template: '<story />',
+})
+
+/** The stage that arrives after the table opened is the first value seen, not a change: the card, never the pop-up. */
+export const LoadsAfterTheTableOpened: Story = {
+  decorators: [dataNotReady, withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), withPictures, asPlayer],
+  loaders: [playerRoute],
+  play: async ({ canvasElement }) => {
+    await settle()
+    show(PLAYER_GAME, OGRE, 'load')
+    await settle()
+    await expect(within(canvasElement).queryByRole('button', { name: /^Open: /, hidden: true })).toBeNull()
+    bootstrapStatus.value = 'ready'
+    await findCardButton(canvasElement, /^Open: Brakk/)
+    await settle()
+    await expect(dialog(canvasElement)).toBeNull()
+  },
+}
+
+/** Signing in at a table's address: the account is known before the data is, and the data then loads as the first value. */
+export const SignInOnATableRoute: Story = {
+  decorators: [
+    (story) => ({ components: { story }, setup() { authStore.clear() }, template: '<story />' }),
+    dataNotReady, withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), withPictures, asPlayer,
+  ],
+  loaders: [playerRoute],
+  play: async ({ canvasElement }) => {
+    await settle()
+    signInMock()
+    await settle()
+    show(PLAYER_GAME, OGRE, 'load')
+    bootstrapStatus.value = 'ready'
+    await findCardButton(canvasElement, /^Open: Brakk/)
+    await settle()
+    await expect(dialog(canvasElement)).toBeNull()
+  },
+}
+
+/** A stopped and restarted online session forgets what was seen: the next stage is a first value. */
+export const RestartedSessionForgetsWhatWasSeen: Story = {
+  decorators: baseDecorators(asPlayer, BRIDGE),
+  loaders: [playerRoute],
+  play: async ({ canvasElement }) => {
+    await findCardButton(canvasElement, /^Open: The old bridge/)
+    bootstrapStatus.value = 'loading'
+    await settle()
+    show(PLAYER_GAME, OGRE, 'load')
+    bootstrapStatus.value = 'ready'
+    await findCardButton(canvasElement, /^Open: Brakk/)
+    await settle()
+    await expect(dialog(canvasElement)).toBeNull()
+  },
+}
+
+const scrollerOf = (el: HTMLElement) => el.querySelector<HTMLElement>('.party-center')!
+const leftOf = (el: Element) => el.getBoundingClientRect().left
+
+/** On a phone, an image appearing (or going) never moves the tray to the card: the sheet in view stays in view. */
+export const TrayStaysWhereItIs: Story = {
+  decorators: baseDecorators(asMaster),
+  // The sheets' route: the tray is on screen with no card in it.
+  render: () => ({
+    components: { PartyView, ShownImageHost },
+    setup() { useShownImageReveal() },
+    template: '<PartyView /><ShownImageHost />',
+  }),
+  loaders: [atRoute(`/games/${MASTER_GAME}/party/${PARTY[0]!.id},${PARTY[2]!.id}`)],
+  play: async ({ canvasElement }) => {
+    if (!setViewport) return
+    await setViewport(375, 667)
+    try {
+      await waitFor(() => expect(canvasElement.querySelectorAll('.sheet-column')).toHaveLength(2))
+      const scroller = scrollerOf(canvasElement)
+      // Look at the second sheet.
+      canvasElement.querySelectorAll('.sheet-column')[1]!.scrollIntoView({ inline: 'center', block: 'nearest' })
+      await settle()
+      const watched = canvasElement.querySelectorAll('.sheet-column')[1]!
+      const before = leftOf(watched)
+      await expect(before).toBeGreaterThanOrEqual(0)
+      await expect(before).toBeLessThan(window.innerWidth)
+      show(MASTER_GAME, BRIDGE)
+      await findCardButton(canvasElement, /^Open: The old bridge/)
+      await settle(900)
+      await expect(Math.abs(leftOf(watched) - before)).toBeLessThan(2)
+      await expect(scroller.scrollLeft).toBeGreaterThan(0)
+      show(MASTER_GAME, null)
+      await waitFor(() => expect(canvasElement.querySelector('[data-shown-image-open]')).toBeNull())
+      await settle(900)
+      await expect(Math.abs(leftOf(watched) - before)).toBeLessThan(2)
+    } finally {
+      await setViewport(1280, 720)
+    }
+  },
+}
+
+/** The reveal over a real open sheet: it opens above it, Esc closes it first and focus returns into the sheet. */
+export const RevealOverAnOpenSheet: Story = {
+  decorators: baseDecorators(asPlayer),
+  loaders: [playerRoute],
+  render: () => ({
+    components: { Table, BottomSheet },
+    setup() {
+      const sheet = ref(true)
+      return { sheet }
+    },
+    template: '<Table /><BottomSheet v-model:open="sheet" title="Pick something"><button type="button">Inside the sheet</button></BottomSheet>',
+  }),
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    await body(canvasElement).findByRole('dialog', { name: 'Pick something' })
+    const inside = body(canvasElement).getByRole('button', { name: 'Inside the sheet' })
+    inside.focus()
+    show(PLAYER_GAME, OGRE)
+    await visibleDialog(canvasElement, OGRE.caption!)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog', { name: OGRE.caption! })).toBeNull())
+    await expect(body(canvasElement).getByRole('dialog', { name: 'Pick something' })).toBeVisible()
+    await waitFor(() => expect(doc.activeElement).toBe(inside))
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(dialog(canvasElement)).toBeNull())
+    await waitFor(() => expect(doc.body.style.pointerEvents).not.toBe('none'))
+    await expect(doc.body.hasAttribute('data-scroll-locked')).toBe(false)
+  },
+}
+
+/** A picture that failed shows Try again on the card; once it can be fetched, the card shows it and opens it. */
+export const CardTryAgainLoadsThePicture: Story = {
+  decorators: [
+    (story) => ({
+      components: { story },
+      setup() {
+        const served: Record<string, string> = {}
+        const restore = servePictures(served)
+        ;(window as unknown as { __served: Record<string, string> }).__served = served
+        onUnmounted(restore)
+      },
+      template: '<story />',
+    }),
+    withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), asPlayer,
+  ],
+  loaders: [playerRoute],
+  play: async ({ canvasElement }) => {
+    await settle()
+    show(PLAYER_GAME, { id: 'story-shown-late', caption: 'Late picture', file: 'image.png' })
+    await userEvent.click(await body(canvasElement).findByRole('button', { name: 'Close' }))
+    const canvas = within(canvasElement)
+    const retry = await canvas.findByRole('button', { name: 'Try again' })
+    ;(window as unknown as { __served: Record<string, string> }).__served['story-shown-late'] = pictures[OGRE.id]!
+    await userEvent.click(retry)
+    await findCardButton(canvasElement, 'Open: Late picture')
+    await expect(canvas.queryByText('The image could not be loaded.')).toBeNull()
   },
 }

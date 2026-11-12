@@ -1012,12 +1012,12 @@ export const messages: Messages = {
     shown: {
       title: 'На столі',
       generic: 'Показане зображення',
-      open: 'Відкрити',
       openNamed: 'Відкрити: {caption}',
       openGeneric: 'Відкрити показане зображення',
       close: 'Закрити',
       loading: 'Завантажуємо зображення…',
       failed: 'Не вдалося завантажити зображення.',
+      retry: 'Спробувати ще раз',
     },
     images: {
       title: 'Зображення',

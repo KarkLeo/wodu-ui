@@ -1010,12 +1010,12 @@ export const messages = {
     shown: {
       title: 'On the table',
       generic: 'Shown image',
-      open: 'Open',
       openNamed: 'Open: {caption}',
       openGeneric: 'Open the shown image',
       close: 'Close',
       loading: 'Loading the image…',
       failed: 'The image could not be loaded.',
+      retry: 'Try again',
     },
     images: {
       title: 'Images',
