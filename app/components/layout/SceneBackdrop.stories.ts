@@ -148,3 +148,45 @@ export const LatestWins: Story = {
     }
   },
 }
+
+/**
+ * A new picture while a fade is under way: the layer that shows more stays as the base and the new picture fades
+ * in over it. Early in the fade the old picture stays (the half-faded one never jumps to full); late, the nearly
+ * shown one does.
+ */
+export const InterruptedFadeKeepsWhatShows: Story = {
+  args: { url: null },
+  render: harness(),
+  play: async ({ canvasElement }) => {
+    const decode = controlDecode()
+    try {
+      const canvas = within(canvasElement)
+      const original = shown(base(canvasElement))
+      // Early: Blue has only just started to fade in when Red is asked for.
+      await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
+      await waitFor(() => expect(decode.waiting(BLUE)).toBe(true))
+      decode.release(BLUE)
+      await waitFor(() => expect(incoming(canvasElement)).toHaveClass('is-visible'))
+      await userEvent.click(canvas.getByRole('button', { name: 'Red' }))
+      await waitFor(() => expect(decode.waiting(RED)).toBe(true))
+      decode.release(RED)
+      await waitFor(() => expect(shown(incoming(canvasElement) ?? undefined)).toBe(`url("${RED}")`))
+      await expect(shown(base(canvasElement))).toBe(original)
+      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${RED}")`), { timeout: 4000 })
+      await expect(layers(canvasElement)).toHaveLength(1)
+      // Late: Green is nearly in when Blue is asked for, so Green stays under it.
+      await userEvent.click(canvas.getByRole('button', { name: 'Green' }))
+      await waitFor(() => expect(decode.waiting(GREEN)).toBe(true))
+      decode.release(GREEN)
+      await waitFor(() => expect(incoming(canvasElement)).toHaveClass('is-visible'))
+      await waitFor(() => expect(Number(getComputedStyle(incoming(canvasElement)!).opacity)).toBeGreaterThan(0.6), { timeout: 3000 })
+      await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
+      await waitFor(() => expect(decode.waiting(BLUE)).toBe(true))
+      decode.release(BLUE)
+      await waitFor(() => expect(shown(incoming(canvasElement) ?? undefined)).toBe(`url("${BLUE}")`))
+      await expect(shown(base(canvasElement))).toBe(`url("${GREEN}")`)
+    } finally {
+      decode.restore()
+    }
+  },
+}

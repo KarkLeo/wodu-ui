@@ -17,6 +17,7 @@ const FADE_MS = 2000
 const base = ref(bgUrl)
 const incoming = ref<string | null>(null)
 const fading = ref(false)
+const incomingEl = ref<HTMLElement | null>(null)
 
 let request = 0
 let promote: ReturnType<typeof setTimeout> | undefined
@@ -26,11 +27,17 @@ function reduceMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-function settle() {
+function settle(keepIncoming = true) {
   clearTimeout(promote)
-  if (incoming.value !== null) base.value = incoming.value
+  if (keepIncoming && incoming.value !== null) base.value = incoming.value
   incoming.value = null
   fading.value = false
+}
+
+// Mid-fade, the layer that shows more is what the eye sees: keeping it means the screen jumps by at most half a fade.
+function incomingShowsMore(): boolean {
+  const el = incomingEl.value
+  return fading.value && el !== null && Number(getComputedStyle(el).opacity) >= 0.5
 }
 
 async function decoded(src: string): Promise<boolean> {
@@ -58,8 +65,8 @@ watch(() => props.url ?? bgUrl, async (next) => {
     return
   }
   if (!(await decoded(next)) || mine !== request) return
-  // A fade still running is finished at once, so the new picture fades in over the last one.
-  settle()
+  // A fade still running is cut short, keeping the layer that shows more; the new picture fades in over it.
+  settle(incomingShowsMore())
   if (reduceMotion()) {
     base.value = next
     return
@@ -84,6 +91,7 @@ onBeforeUnmount(() => {
     <div class="sb-layer" data-layer="base" :style="{ backgroundImage: `url(${base})` }" />
     <div
       v-if="incoming !== null"
+      ref="incomingEl"
       :class="['sb-layer', 'sb-incoming', { 'is-visible': fading }]"
       data-layer="incoming"
       :style="{ backgroundImage: `url(${incoming})` }"
