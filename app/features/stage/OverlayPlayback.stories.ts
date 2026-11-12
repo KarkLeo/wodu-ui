@@ -3,9 +3,10 @@ import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, waitFor as waitForDefault } from 'storybook/test'
 import { useMediaSession } from '@/composables/useMediaSession'
 import { useStagePlayback } from '@/composables/useStagePlayback'
-import { emptyStage, overlayKey } from '@/domain/stage'
+import { emptyStage, overlayKey, withScene } from '@/domain/stage'
 import { crookhollow, CROOKHOLLOW_META, olden, PARTY } from '@/stories/fixtures'
 import { withMediaPrefs } from '@/stories/playback'
+import { SCENES } from '@/stories/scenes'
 import { atRoute, withGameTable } from '@/stories/state'
 import { useMediaPrefsStore } from '@/stores/mediaPrefs'
 import { useMediaStore } from '@/stores/media'
@@ -62,6 +63,22 @@ function stageSound(over: Partial<StageSound> = {}, id = SOUND_ID): StageSound {
     startedAt: secondsFromNow(0),
     ...over,
   }
+}
+
+/** The preview freezes the clock: moves what the app reads forward by `ms`. Call the result to put the clock back. */
+function advanceClock(ms: number): () => void {
+  const Previous = globalThis.Date
+  globalThis.Date = class extends Previous {
+    constructor(...args: ConstructorParameters<DateConstructor> | []) {
+      if (args.length === 0) super(Previous.now() + ms)
+      else super(...(args as ConstructorParameters<DateConstructor>))
+    }
+
+    static override now() {
+      return Previous.now() + ms
+    }
+  } as DateConstructor
+  return () => { globalThis.Date = Previous }
 }
 
 const soundUrl = (id = SOUND_ID) => `http://127.0.0.1:8090/api/files/sounds/${id}/sound.mp3`
@@ -278,15 +295,47 @@ export const ReconnectSnapshotWithANewStaleOneShotIsNotPlayed: Story = {
   },
 }
 
-/** A one-shot that arrived while sound was off does not start from the beginning when sound is turned on much later. */
+/**
+ * A one-shot arrives live while sound is off, then a live scene change follows, and sound is turned on only after more
+ * than the stale window: it is not played. (The scene change must not refresh the one-shot's first-seen time.)
+ */
 export const SoundTurnedOnLateSkipsTheOneShot: Story = {
   decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'off' }), asPlayer],
   loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
   play: async () => {
     const stages = useStageStore()
     show(PLAYER_GAME, stageSound())
-    // The device's clock, not the master's: age the arrival instead of waiting for it.
-    stages.received[PLAYER_GAME]!.at -= 60_000
+    await settle()
+    const restore = advanceClock(4000)
+    try {
+      stages.set(withScene(stages.stageOf(PLAYER_GAME), SCENES[1]!))
+      await settle()
+      // 4 s after the sound arrived the scene changed (a fresh store time); sound on 8 s after the arrival.
+      restore()
+      const later = advanceClock(8000)
+      try {
+        useMediaPrefsStore().sound = 'on'
+        await settle(400)
+      } finally {
+        later()
+      }
+    } finally {
+      restore()
+    }
+    await expect(overlayUrls()).toEqual([])
+    await expect(stages.stageOf(PLAYER_GAME).sound).not.toBeNull()
+  },
+}
+
+/** A one-shot found stale on load, then a live scene change, then sound on: still found, still not played. */
+export const FoundStaleOneShotIsNotMadeLiveByASceneChange: Story = {
+  decorators: [withStageOnLoad(PLAYER_GAME, () => stageSound({ startedAt: secondsFromNow(-60) })), withMediaPrefs({ sound: 'off' }), asPlayer],
+  loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
+  play: async () => {
+    const stages = useStageStore()
+    await settle()
+    stages.set(withScene(stages.stageOf(PLAYER_GAME), SCENES[1]!))
+    await settle()
     useMediaPrefsStore().sound = 'on'
     await settle(400)
     await expect(overlayUrls()).toEqual([])
@@ -310,15 +359,14 @@ export const FailedClearDoesNotReplay: Story = {
   loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
   play: async () => {
     await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
-    // The stage row has to exist already, as it does once the master has published.
-    resetRecords('stages', [{ id: MASTER_GAME, game: MASTER_GAME, data: { ...emptyStage(MASTER_GAME) } }])
     const sound = stageSound()
     show(MASTER_GAME, sound)
     await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
     failWrites('stages')
     try {
       fireOverlayEnded(overlayKey(sound))
-      await waitFor(() => expect(pbRequests().filter(r => r === 'stages.update')).toHaveLength(1))
+      // One write, an update or (on a fresh page that has not seen the row) a create.
+      await waitFor(() => expect(stageWrites()).toHaveLength(1))
       await settle(500)
       // Rolled back: the key is in the stage again, and was not played a second time.
       await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
@@ -346,5 +394,22 @@ export const MasterPlayingAnUnknownDurationClearsOnlyAfterEnded: Story = {
     await settle(1500)
     await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
     await waitFor(() => expect(storedSound()).toBeNull())
+  },
+}
+
+/** The master finds an overdue one-shot (skipped), its clear fails and rolls back: the key is never handed to the service. */
+export const FailedClearOfAnOverdueOneShotNeverPlaysIt: Story = {
+  decorators: [withStageOnLoad(MASTER_GAME, () => stageSound({ startedAt: secondsFromNow(-600) })), withMediaPrefs({ sound: 'on' }), asMaster],
+  loaders: [seed(3), atRoute(`/games/${MASTER_GAME}`)],
+  beforeEach() {
+    failWrites('stages')
+    return () => failWrites(null)
+  },
+  play: async () => {
+    await waitFor(() => expect(pbRequests().some(r => r === 'stages.create' || r === 'stages.update')).toBe(true))
+    await settle(600)
+    // Rolled back (the write failed), and the key came back as a live value without being played.
+    await expect(useStageStore().stageOf(MASTER_GAME).sound).not.toBeNull()
+    await expect(overlayUrls()).toEqual([])
   },
 }

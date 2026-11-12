@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
   checkUpload, neutralFileName, fileUrl, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
-  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, nextOverlayDecision, formatDuration, overlayKey,
+  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, nextOverlayMemory, endOverlay, shouldPlayKey, playedToTheEnd, formatDuration, overlayKey,
   oneShotClearDelay, SOUND_NAME_MAX, STALE_ONE_SHOT_SECONDS, ONE_SHOT_CLEAR_GRACE_SECONDS, ONE_SHOT_UNKNOWN_CLEAR_SECONDS,
 } from './stage'
 import type { Scene, StageImage, StageSound } from '@/types/stage'
@@ -380,51 +380,100 @@ describe('overlayKey', () => {
   })
 })
 
-describe('nextOverlayDecision', () => {
+describe('overlay memory', () => {
   const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
-  const loop = { ...playing, loop: true, startedAt: '2026-11-12T10:00:00.000Z' }
-  const at = (s: string) => new Date(s)
-  const seen = at('2026-11-12T10:00:00.000Z')
-  const live = { live: true, firstSeen: seen }
-  const found = { live: false, firstSeen: seen }
+  const loop = { ...playing, id: 'looper', loop: true, startedAt: '2026-11-12T10:00:00.000Z' }
+  const ms = (s: string) => new Date(s).getTime()
+  const T0 = ms('2026-11-12T10:00:00.000Z')
+  const live = { source: 'live' as const, at: T0 }
+  const found = { source: 'load' as const, at: T0 }
+  const empty = {}
 
-  it('forgets everything when there is no overlay', () => {
-    const decided = nextOverlayDecision(null, oneShot, live, true, seen)
-    expect(nextOverlayDecision(decided, null, live, true, seen)).toBeNull()
+  it('changes nothing when there is no overlay', () => {
+    expect(nextOverlayMemory(empty, null, live, true, T0)).toBe(empty)
   })
-  it('live and sound on at arrival: plays', () => {
-    expect(nextOverlayDecision(null, oneShot, live, true, seen)).toMatchObject({ key: overlayKey(oneShot), play: true })
+  it('live and sound on at arrival: plays; sound turned on 2 s later: plays', () => {
+    expect(shouldPlayKey(nextOverlayMemory(empty, oneShot, live, true, T0), oneShot)).toBe(true)
+    const waiting = nextOverlayMemory(empty, oneShot, live, false, T0)
+    expect(shouldPlayKey(waiting, oneShot)).toBe(false)
+    expect(waiting[overlayKey(oneShot)]!.play).toBeNull()
+    expect(shouldPlayKey(nextOverlayMemory(waiting, oneShot, live, true, T0 + 2000), oneShot)).toBe(true)
   })
-  it('live, sound off at arrival: undecided, then plays when turned on 2 s later', () => {
-    const waiting = nextOverlayDecision(null, oneShot, live, false, seen)
-    expect(waiting).toMatchObject({ play: null })
-    expect(nextOverlayDecision(waiting, oneShot, live, false, at('2026-11-12T10:00:30.000Z'))).toBe(waiting)
-    expect(nextOverlayDecision(waiting, oneShot, live, true, at('2026-11-12T10:00:02.000Z'))).toMatchObject({ play: true })
+  it('sound turned on 60 s after first sight: a one-shot is skipped, a loop plays', () => {
+    const waiting = nextOverlayMemory(empty, oneShot, live, false, T0)
+    expect(shouldPlayKey(nextOverlayMemory(waiting, oneShot, live, true, T0 + 60000), oneShot)).toBe(false)
+    const loopWaiting = nextOverlayMemory(empty, loop, live, false, T0)
+    expect(shouldPlayKey(nextOverlayMemory(loopWaiting, loop, live, true, T0 + 60000), loop)).toBe(true)
   })
-  it('live one-shot with sound turned on 60 s after it was first seen: not played; a loop is', () => {
-    const waiting = nextOverlayDecision(null, oneShot, live, false, seen)
-    expect(nextOverlayDecision(waiting, oneShot, live, true, at('2026-11-12T10:01:00.000Z'))).toMatchObject({ play: false })
-    const loopWaiting = nextOverlayDecision(null, loop, live, false, seen)
-    expect(nextOverlayDecision(loopWaiting, loop, live, true, at('2026-11-12T10:01:00.000Z'))).toMatchObject({ play: true })
+  it('found on load follows the startedAt rule when it is decided; a loop found plays', () => {
+    expect(shouldPlayKey(nextOverlayMemory(empty, oneShot, found, true, T0 + 3000), oneShot)).toBe(true)
+    expect(shouldPlayKey(nextOverlayMemory(empty, oneShot, found, true, T0 + 30000), oneShot)).toBe(false)
+    expect(shouldPlayKey(nextOverlayMemory(empty, loop, found, true, T0 + 3600000), loop)).toBe(true)
   })
-  it('the window is measured from the first-seen moment on this device, not from startedAt', () => {
-    const late = { live: true, firstSeen: at('2026-11-12T10:10:00.000Z') }
-    expect(nextOverlayDecision(null, oneShot, late, true, at('2026-11-12T10:10:02.000Z'))).toMatchObject({ play: true })
+  it('a loop met again with the same key (a reconnect snapshot) keeps its record, so it is not restarted or re-decided', () => {
+    const playingNow = nextOverlayMemory(empty, loop, live, true, T0)
+    expect(nextOverlayMemory(playingNow, loop, found, true, T0 + 90000)).toBe(playingNow)
   })
-  it('found on load follows the startedAt rule at the moment it can be decided', () => {
-    expect(nextOverlayDecision(null, oneShot, found, true, at('2026-11-12T10:00:03.000Z'))).toMatchObject({ play: true })
-    expect(nextOverlayDecision(null, oneShot, found, true, at('2026-11-12T10:00:30.000Z'))).toMatchObject({ play: false })
-    expect(nextOverlayDecision(null, loop, found, true, at('2026-11-12T11:00:00.000Z'))).toMatchObject({ play: true })
-  })
-  it('keeps a decision once made, however the arrival, the sound choice or the clock change', () => {
-    const played = nextOverlayDecision(null, oneShot, live, true, seen)
-    expect(nextOverlayDecision(played, oneShot, found, false, at('2026-11-12T12:00:00.000Z'))).toBe(played)
-    const skipped = nextOverlayDecision(null, oneShot, found, true, at('2026-11-12T10:05:00.000Z'))
-    expect(nextOverlayDecision(skipped, oneShot, live, true, seen)).toBe(skipped)
-  })
-  it('decides again for another key, a replay included', () => {
-    const played = nextOverlayDecision(null, oneShot, live, true, seen)
+  it('a replay with a new startedAt is a new key and plays', () => {
+    const first = nextOverlayMemory(empty, oneShot, live, true, T0)
     const replay = { ...oneShot, startedAt: '2026-11-12T10:02:00.000Z' }
-    expect(nextOverlayDecision(played, replay, { live: true, firstSeen: at('2026-11-12T10:02:00.000Z') }, true, at('2026-11-12T10:02:00.000Z'))).toMatchObject({ key: overlayKey(replay), play: true })
+    const next = nextOverlayMemory(first, replay, { source: 'live', at: T0 + 120000 }, true, T0 + 120000)
+    expect(shouldPlayKey(next, replay)).toBe(true)
+  })
+
+  // A failed write rolls the stage back: the same key returns as a live value with a later time.
+  it('a skipped one-shot that goes to null and comes back live and later is still not played', () => {
+    const skipped = nextOverlayMemory(empty, oneShot, found, true, T0 + 600000)
+    expect(shouldPlayKey(skipped, oneShot)).toBe(false)
+    const cleared = nextOverlayMemory(skipped, null, live, true, T0 + 600001)
+    const back = nextOverlayMemory(cleared, oneShot, { source: 'live', at: T0 + 600002 }, true, T0 + 600002)
+    expect(shouldPlayKey(back, oneShot)).toBe(false)
+  })
+  it('a one-shot that could not be played yet, rolled back as live, does not become fresh', () => {
+    const waiting = nextOverlayMemory(empty, oneShot, found, false, T0 + 600000)
+    const back = nextOverlayMemory(waiting, oneShot, { source: 'live', at: T0 + 700000 }, true, T0 + 700000)
+    expect(shouldPlayKey(back, oneShot)).toBe(false)
+  })
+  it('a previous one-shot restored by a rollback is not restarted once it ended or was replaced', () => {
+    const other = { ...oneShot, id: 'other' }
+    let memory = nextOverlayMemory(empty, oneShot, live, true, T0)
+    memory = endOverlay(memory, overlayKey(oneShot))
+    memory = nextOverlayMemory(memory, other, live, true, T0 + 1000)
+    memory = nextOverlayMemory(memory, oneShot, { source: 'live', at: T0 + 2000 }, true, T0 + 2000)
+    expect(shouldPlayKey(memory, oneShot)).toBe(false)
+  })
+  it('a previous loop restored by a rollback still sounds, even after being replaced meanwhile', () => {
+    const other = { ...loop, id: 'other' }
+    let memory = nextOverlayMemory(empty, loop, live, true, T0)
+    memory = endOverlay(memory, overlayKey(loop))
+    memory = nextOverlayMemory(memory, other, live, true, T0 + 1000)
+    memory = nextOverlayMemory(memory, loop, { source: 'live', at: T0 + 2000 }, true, T0 + 2000)
+    expect(shouldPlayKey(memory, loop)).toBe(true)
+  })
+
+  // The store's latest time and source must not be read later than the key's first sight.
+  it('a found stale one-shot seen while sound was off stays found when a live change follows and sound is turned on', () => {
+    let memory = nextOverlayMemory(empty, oneShot, { source: 'load', at: T0 }, false, T0 + 600000)
+    memory = nextOverlayMemory(memory, oneShot, { source: 'live', at: T0 + 610000 }, false, T0 + 610000)
+    memory = nextOverlayMemory(memory, oneShot, { source: 'live', at: T0 + 620000 }, true, T0 + 620000)
+    expect(shouldPlayKey(memory, oneShot)).toBe(false)
+  })
+  it('a live one-shot seen at T0 is not refreshed by a change 30 s later, so sound on at 31 s skips it', () => {
+    let memory = nextOverlayMemory(empty, oneShot, live, false, T0)
+    memory = nextOverlayMemory(memory, oneShot, { source: 'live', at: T0 + 30000 }, false, T0 + 30000)
+    memory = nextOverlayMemory(memory, oneShot, { source: 'live', at: T0 + 30000 }, true, T0 + 31000)
+    expect(shouldPlayKey(memory, oneShot)).toBe(false)
+  })
+
+  it('a one-shot is retired when it ends or is replaced; a loop only when it ends by itself (never)', () => {
+    const memory = nextOverlayMemory(nextOverlayMemory(empty, oneShot, live, true, T0), loop, live, true, T0)
+    expect(shouldPlayKey(endOverlay(memory, overlayKey(oneShot)), oneShot)).toBe(false)
+    expect(endOverlay(memory, overlayKey(loop))).toBe(memory)
+    expect(endOverlay(memory, 'unknown')).toBe(memory)
+  })
+  it('knows a track that played to its end', () => {
+    const memory = endOverlay(nextOverlayMemory(empty, oneShot, live, true, T0), overlayKey(oneShot), true)
+    expect(playedToTheEnd(memory, overlayKey(oneShot))).toBe(true)
+    expect(playedToTheEnd(nextOverlayMemory(empty, oneShot, live, true, T0), overlayKey(oneShot))).toBe(false)
   })
 })

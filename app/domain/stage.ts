@@ -209,42 +209,68 @@ export function fileUrl(base: string, ref: FileRef, thumb?: string): string {
   return thumb ? `${url}?thumb=${encodeURIComponent(thumb)}` : url
 }
 
-/** What this device decided about playing the stage's overlay: once per key, then kept. */
-export interface OverlayDecision {
-  key: string
-  /** `null` until a moment at which this device could play it (sound on). */
+/** What one open table's device knows about one overlay key; created when the key is first seen and never re-created. */
+export interface OverlayRecord {
+  /** How the value that first brought the key arrived: a realtime change or my own publish (`live`), or a load or reload. */
+  source: 'live' | 'load'
+  /** This device's clock (ms) at that first sight. */
+  firstSeen: number
+  loop: boolean
+  /** `null` until a moment at which this device could play it (sound on); then fixed. */
   play: boolean | null
+  /** It finished, or was replaced or stopped, here: a one-shot is never played again. */
+  ended: boolean
+  /** The track ran to its end on this device (the service reported it). */
+  finished: boolean
 }
 
-/** How the stage value holding the overlay came to this device, and when (this device's clock). */
-export interface OverlayArrival {
-  /** A realtime change or my own publish; false for a value applied by a load or a reload. */
-  live: boolean
-  firstSeen: Date
-}
+/** Per open game; survives the stage's sound going to null, so a rollback, an echo or a snapshot never makes a key new. */
+export type OverlayMemory = Readonly<Record<string, OverlayRecord>>
 
 /**
- * The decision to hold after the stage's overlay (or none) changed. Made once per key, at the first moment sound
- * is on, and never revised, so the clock moving on can neither stop a one-shot mid-play nor start a stale one.
- * A loop always plays. A live one-shot plays while it is at most `STALE_ONE_SHOT_SECONDS` since this device first
- * saw it (its own clock, whatever the master's says); a found one follows the `startedAt` rule.
+ * The memory after the stage's overlay became `sound` (null: none, nothing changes). A key seen for the first time
+ * gets its record from `arrival`; the decision to play is made once, at the first moment `canPlay` (sound on), from
+ * the record's own source and first-seen time and never from later values: a loop always plays; a live one-shot
+ * plays while it is at most `STALE_ONE_SHOT_SECONDS` since this device first saw it (its clock, not the master's);
+ * a found one follows the `startedAt` rule.
  */
-export function nextOverlayDecision(
-  previous: OverlayDecision | null,
+export function nextOverlayMemory(
+  memory: OverlayMemory,
   sound: StageSound | null,
-  arrival: OverlayArrival,
-  soundOn: boolean,
-  now: Date,
-): OverlayDecision | null {
-  if (!sound) return null
+  arrival: { source: 'live' | 'load'; at: number },
+  canPlay: boolean,
+  now: number,
+): OverlayMemory {
+  if (!sound) return memory
   const key = overlayKey(sound)
-  if (previous?.key === key && previous.play !== null) return previous
-  if (!soundOn) return previous?.key === key ? previous : { key, play: null }
-  if (sound.loop) return { key, play: true }
-  const play = arrival.live
-    ? now.getTime() - arrival.firstSeen.getTime() <= STALE_ONE_SHOT_SECONDS * 1000
-    : shouldPlayOverlay(sound, false, now)
-  return { key, play }
+  const record: OverlayRecord = memory[key] ?? { source: arrival.source, firstSeen: arrival.at, loop: sound.loop, play: null, ended: false, finished: false }
+  let play = record.play
+  if (play === null && canPlay) {
+    if (record.loop) play = true
+    else if (record.source === 'live') play = now - record.firstSeen <= STALE_ONE_SHOT_SECONDS * 1000
+    else play = shouldPlayOverlay(sound, false, new Date(now))
+  }
+  if (memory[key] && play === record.play) return memory
+  return { ...memory, [key]: { ...record, play } }
+}
+
+/** A one-shot that finished, or was replaced or stopped, here; a loop is never retired, it plays whenever it should sound. */
+export function endOverlay(memory: OverlayMemory, key: string, byEnding = false): OverlayMemory {
+  const record = memory[key]
+  if (!record || (record.ended && (record.finished || !byEnding)) || (record.loop && !byEnding)) return memory
+  return { ...memory, [key]: { ...record, ended: true, finished: record.finished || byEnding } }
+}
+
+/** Whether this device should have the stage's overlay sounding now. */
+export function shouldPlayKey(memory: OverlayMemory, sound: StageSound | null): boolean {
+  const record = sound ? memory[overlayKey(sound)] : undefined
+  return record?.play === true && !record.ended
+}
+
+/** This device played the key and it ran to its end here: its clear comes from the end of the track. */
+export function playedToTheEnd(memory: OverlayMemory, key: string): boolean {
+  const record = memory[key]
+  return record?.play === true && record.finished
 }
 
 export interface PlaybackPrefs {
