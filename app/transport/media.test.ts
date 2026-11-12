@@ -73,6 +73,9 @@ async function load() {
   const { useStageStore } = await import('@/stores/stage')
   const { useGamesStore } = await import('@/stores/games')
   useGamesStore().upsertGame({ id: GAME, name: 'G', master: 'user-1', inviteCode: 'ABCD2345' })
+  // The game's stage row exists, as it does once anything was ever shown, so stage writes are updates.
+  const { applyStages } = await import('./stage')
+  applyStages([{ id: GAME, game: GAME, data: { id: GAME, scene: null, image: null, sound: null } }])
   const media = useMediaStore()
   media.startLoading(GAME)
   return { ...transport, media, stages: useStageStore() }

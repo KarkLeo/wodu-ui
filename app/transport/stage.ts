@@ -24,20 +24,36 @@ export function stageFromRow(row: StageRow): Stage | null {
   return stage
 }
 
-// The row exists only once the master has published; a refused create means it appeared meanwhile.
+// Games whose row the server has shown (snapshot, realtime) or accepted. The row exists only once the master
+// has published, and the browser logs every 404 as a console error, so a game's first publish creates instead
+// of probing with an update. Either guess falls back: a refused create means the row appeared meanwhile.
+const rowSeen = new Set<string>()
+
 async function send(gameId: string, stage: Stage): Promise<void> {
   const rows = pb.collection('stages')
-  try {
-    await rows.update(gameId, { data: stage })
-  } catch (err) {
-    if (statusOf(err) !== 404) throw err
+  const update = () => rows.update(gameId, { data: stage })
+  const create = () => rows.create({ id: gameId, game: gameId, data: stage })
+  if (rowSeen.has(gameId)) {
     try {
-      await rows.create({ id: gameId, game: gameId, data: stage })
-    } catch (createErr) {
-      if (statusOf(createErr) !== 400) throw createErr
-      await rows.update(gameId, { data: stage })
+      await update()
+    } catch (err) {
+      if (statusOf(err) !== 404) throw err
+      try {
+        await create()
+      } catch (createErr) {
+        if (statusOf(createErr) !== 400) throw createErr
+        await update()
+      }
+    }
+  } else {
+    try {
+      await create()
+    } catch (err) {
+      if (statusOf(err) !== 400) throw err
+      await update()
     }
   }
+  rowSeen.add(gameId)
 }
 
 interface Waiter { resolve: () => void; reject: (err: unknown) => void }
@@ -79,6 +95,8 @@ export async function publishStage(next: Stage): Promise<void> {
 
 // While my own publish for a game is pending, an older echo of it must not undo the newer optimistic value.
 export function receiveStage(action: string, row: StageRow): void {
+  if (action === 'delete') rowSeen.delete(row.id)
+  else rowSeen.add(row.id)
   const store = useStageStore()
   if (writer.busy(row.id) || !useGamesStore().byId(row.id)) return
   if (action === 'delete') {
@@ -100,6 +118,7 @@ export function applyStages(rows: StageRow[]): void {
   const seen = new Set<string>()
   for (const row of rows) {
     seen.add(row.id)
+    rowSeen.add(row.id)
     if (writer.busy(row.id) || !games.byId(row.id)) continue
     const stage = stageFromRow(row)
     if (stage) store.set(stage)

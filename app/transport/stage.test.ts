@@ -60,13 +60,15 @@ function deferred() {
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 const httpError = (status: number) => Object.assign(new Error(`status ${status}`), { status })
 
-async function load() {
+// `rowSeen`: the game's stage row was in the snapshot, as it is once the master has published once.
+async function load({ rowSeen = true } = {}) {
   vi.resetModules()
   setActivePinia(createPinia())
   const transport = await import('./stage')
   const { useStageStore } = await import('@/stores/stage')
   const { useGamesStore } = await import('@/stores/games')
   useGamesStore().upsertGame({ id: GAME, name: 'G', master: 'user-1', inviteCode: 'ABCD2345' })
+  if (rowSeen) transport.applyStages([{ id: GAME, game: GAME, data: stage(null) }])
   return { ...transport, store: useStageStore() }
 }
 
@@ -108,6 +110,33 @@ describe('publishStage', () => {
     await publishStage(stage('s1'))
     expect(updates).toHaveLength(2)
     expect(creates).toHaveLength(1)
+  })
+
+  // The browser logs every 404 as a console error, so a game's first publish must not probe with an update.
+  it('creates first for a game whose row was never seen, then updates', async () => {
+    const { publishStage } = await load({ rowSeen: false })
+    await publishStage(stage('s1'))
+    expect(creates).toEqual([{ id: GAME, game: GAME, data: stage('s1') }])
+    expect(updates).toHaveLength(0)
+    await publishStage(stage('s2'))
+    expect(creates).toHaveLength(1)
+    expect(updates.map(u => u.body.data.sound?.id)).toEqual(['s2'])
+  })
+
+  it('updates when the first create is refused because another device made the row meanwhile', async () => {
+    createImpl = async () => { throw httpError(400) }
+    const { publishStage } = await load({ rowSeen: false })
+    await publishStage(stage('s1'))
+    expect(creates).toHaveLength(1)
+    expect(updates.map(u => u.body.data.sound?.id)).toEqual(['s1'])
+  })
+
+  it('updates a row that arrived through realtime', async () => {
+    const { publishStage, receiveStage } = await load({ rowSeen: false })
+    receiveStage('create', { id: GAME, game: GAME, data: stage(null) })
+    await publishStage(stage('s1'))
+    expect(creates).toHaveLength(0)
+    expect(updates).toHaveLength(1)
   })
 
   it('writes the first and the last of three publishes while the first is in flight, in order', async () => {
