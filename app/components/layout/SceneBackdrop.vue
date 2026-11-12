@@ -10,9 +10,6 @@ const props = defineProps<{
 
 const log = createLogger('scene-backdrop')
 
-// Matches SCENE_FADE_SECONDS of the sound: the picture and the sound change over together.
-const FADE_MS = 2000
-
 // `base` is what is on screen; `incoming` is decoded and fading in over it. At most these two exist.
 // A fade is never interrupted: while one runs, a new request only records the newest target. When the fade
 // ends, the backdrop fades on from what is then shown to the newest target, so every picture a viewer sees
@@ -31,7 +28,8 @@ let preparing: string | null = null
 let request = 0
 // The picture being decoded: its download is stopped when a newer request, or the unmount, replaces it.
 let pending: HTMLImageElement | null = null
-let promote: ReturnType<typeof setTimeout> | undefined
+// Only if the incoming layer never reports the end of its transition (a hidden tab, a browser that drops the event).
+let backstop: ReturnType<typeof setTimeout> | undefined
 let failed: string | null = null
 
 function reduceMotion(): boolean {
@@ -63,6 +61,20 @@ async function decoded(src: string, token: number): Promise<boolean> {
   }
 }
 
+// The length of the layer's opacity transition in ms, as its style says (the fade length lives in the CSS).
+function transitionMs(el: HTMLElement): number {
+  const style = getComputedStyle(el)
+  const names = style.transitionProperty.split(',').map(s => s.trim())
+  const durations = style.transitionDuration.split(',').map(s => s.trim())
+  const at = Math.max(0, names.findIndex(n => n === 'opacity' || n === 'all'))
+  const raw = durations[at % durations.length] ?? '0s'
+  const value = Number.parseFloat(raw)
+  if (!Number.isFinite(value)) return 0
+  return raw.endsWith('ms') ? value : value * 1000
+}
+
+const layer = ref<HTMLElement | null>(null)
+
 function startFade(src: string) {
   if (reduceMotion()) {
     base.value = src
@@ -74,8 +86,17 @@ function startFade(src: string) {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (incoming.value !== src) return
     fading.value = true
-    promote = setTimeout(settle, FADE_MS + 50)
+    const ms = layer.value ? transitionMs(layer.value) : 0
+    // The end of the fade is the layer's own transitionend; this only stops a lost event from holding the next picture forever.
+    backstop = setTimeout(settle, ms * 2 + 1000)
   }))
+}
+
+// The incoming layer's opacity transition ended (or was cancelled, which leaves it fully shown): the fade is over.
+function onTransitionEnd(event: TransitionEvent) {
+  // Only the current layer's own opacity: a layer already gone, or a child, is not the fade under way.
+  if (event.target !== layer.value || event.propertyName !== 'opacity' || !fading.value) return
+  settle()
 }
 
 // Decodes the newest target; once it is ready and no fade is running, the fade to it starts.
@@ -97,7 +118,7 @@ function advance() {
 }
 
 function settle() {
-  clearTimeout(promote)
+  clearTimeout(backstop)
   if (incoming.value !== null) base.value = incoming.value
   incoming.value = null
   fading.value = false
@@ -124,7 +145,7 @@ watch(() => props.url ?? bgUrl, (next) => {
 onBeforeUnmount(() => {
   request++
   cancelPending()
-  clearTimeout(promote)
+  clearTimeout(backstop)
 })
 </script>
 
@@ -134,9 +155,12 @@ onBeforeUnmount(() => {
     <div
       v-if="incoming !== null"
       :key="fadeId"
+      ref="layer"
       :class="['sb-layer', 'sb-incoming', { 'is-visible': fading }]"
       data-layer="incoming"
       :style="{ backgroundImage: `url(${incoming})` }"
+      @transitionend="onTransitionEnd"
+      @transitioncancel="onTransitionEnd"
     />
     <div class="sb-shade" />
   </div>
@@ -158,7 +182,8 @@ onBeforeUnmount(() => {
 }
 .sb-incoming {
   opacity: 0;
-  transition: opacity 2s ease;
+  /* 2 s matches SCENE_FADE_SECONDS of the sound: the picture and the sound change over together. Stories lengthen it. */
+  transition: opacity var(--sb-fade, 2s) ease;
 }
 .sb-incoming.is-visible { opacity: 1; }
 /* The gradient lies over both layers, so it does not fade with the picture. */

@@ -21,16 +21,17 @@ const RED = colourPicture('crimson')
 const BLUE = colourPicture('royalblue')
 const GREEN = colourPicture('seagreen')
 
-// The backdrop fills its parent; the buttons stand in for the table's stage changes.
-function harness(first: string | null = null) {
+// The backdrop fills its parent; the buttons stand in for the table's stage changes. `fade` replaces the 2 s fade.
+function harness(first: string | null = null, fade?: string) {
   return () => ({
     components: { SceneBackdrop },
     setup() {
       const url = ref<string | null>(first)
-      return { url, RED, BLUE, GREEN }
+      const frame = { position: 'relative', height: '240px', overflow: 'hidden', ...(fade ? { '--sb-fade': fade } : {}) }
+      return { url, frame, RED, BLUE, GREEN }
     },
     template: `
-      <div style="position: relative; height: 240px; overflow: hidden">
+      <div :style="frame">
         <SceneBackdrop :url="url" />
         <div style="position: relative; z-index: 1; display: flex; gap: 8px; padding: 12px">
           <button type="button" @click="url = RED">Red</button>
@@ -87,6 +88,8 @@ export const SwitchCrossfades: Story = {
       decode.release(BLUE)
       await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
       await expect(shown(incoming(canvasElement)!)).toBe(`url("${BLUE}")`)
+      // The app's fade: 2 s, the length of the scene sound's crossfade.
+      await expect(getComputedStyle(incoming(canvasElement)!).transitionDuration).toBe('2s')
       // Under way: both layers exist while it fades.
       await expect(layers(canvasElement)).toHaveLength(2)
       await waitFor(() => expect(incoming(canvasElement)).toHaveClass('is-visible'))
@@ -152,34 +155,27 @@ export const LatestWins: Story = {
   },
 }
 
-interface Frame { at: number; incoming: number; base: number; shown: string; coming: string }
+// Long enough that no fade can end by itself while a story looks at it: the mid-fade stories step it instead.
+const HELD_FADE = '1000s'
 
-/** One reading per animation frame of both layers, until stopped. */
-function recordFrames(root: HTMLElement) {
-  const frames: Frame[] = []
-  let running = true
-  // The frame's own time (the animation runs on it), not the time the callback got round to reading it.
-  const read = (frameTime: number = performance.now()) => {
-    if (!running) return
-    const el = incoming(root)
-    frames.push({
-      at: frameTime,
-      incoming: el ? Number(getComputedStyle(el).opacity) : 0,
-      base: Number(getComputedStyle(base(root)).opacity),
-      shown: shown(base(root)),
-      coming: shown(el ?? undefined),
-    })
-    requestAnimationFrame(read)
+/** One reading of both layers, at a point of the stepped fades: fade `n` at fraction `f` is progress `n + f`. */
+interface Frame { progress: number; incoming: number; base: number; shown: string; coming: string }
+
+function read(root: HTMLElement, progress: number): Frame {
+  const el = incoming(root)
+  return {
+    progress,
+    incoming: el ? Number(getComputedStyle(el).opacity) : 0,
+    base: Number(getComputedStyle(base(root)).opacity),
+    shown: shown(base(root)),
+    coming: shown(el ?? undefined),
   }
-  read()
-  return { stop() { running = false; return frames } }
 }
 
-// The component's fade length (SceneBackdrop.vue FADE_MS). The fade eases, so its fastest moment runs at about
-// 2.2 times the average rate (measured: 0.0011 per ms over a 2 s fade); what a frame may change depends on how
-// long it took, so a slow frame is not a cut while a jump within a fast one (a 40% cut in 16 ms) still fails.
-const FADE_MS = 2000
-const allowedStep = (ms: number) => (ms / FADE_MS) * 3 + 0.02
+// The fade eases, so its fastest moment runs at about 2.2 times the average rate; what a step may change depends on
+// how much of a fade it covers, so stepping through a fade is not a cut while a change at one point of it (a 40% jump
+// with no progress) still fails.
+const allowedStep = (progress: number) => progress * 3 + 0.02
 
 // How much of each picture the eye gets: the incoming layer covers the base by its opacity. Handing the
 // finished fade over to the base layer keeps every weight, so only a real jump shows as a step.
@@ -193,13 +189,10 @@ function weights(f: Frame): Map<string, number> {
 }
 
 async function expectNoCut(frames: Frame[]) {
-  // The recording must cover the fades in time, however many frames the machine managed in it.
-  await expect(frames.length).toBeGreaterThan(5)
-  await expect(frames.at(-1)!.at - frames[0]!.at).toBeGreaterThanOrEqual(FADE_MS - 300)
   for (let i = 1; i < frames.length; i++) {
     const before = weights(frames[i - 1]!)
     const after = weights(frames[i]!)
-    const limit = allowedStep(frames[i]!.at - frames[i - 1]!.at)
+    const limit = allowedStep(frames[i]!.progress - frames[i - 1]!.progress)
     for (const picture of new Set([...before.keys(), ...after.keys()])) {
       await expect(Math.abs((after.get(picture) ?? 0) - (before.get(picture) ?? 0))).toBeLessThanOrEqual(limit)
     }
@@ -207,43 +200,52 @@ async function expectNoCut(frames: Frame[]) {
   }
 }
 
-const twoFrames = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-
 /** The pictures that were ever fully shown (the base layer), in order. */
 const sequence = (frames: Frame[]) => frames.map(f => f.shown).filter((v, i, all) => i === 0 || v !== all[i - 1])
 
+/** The incoming layer's opacity transition, once the fade has begun (the layer waits a frame at opacity 0 first). */
+const fadeOf = (root: HTMLElement) => waitFor(() => {
+  const el = incoming(root)
+  const transition = el?.getAnimations().find((a): a is CSSTransition => a instanceof CSSTransition && a.transitionProperty === 'opacity')
+  if (!el || !transition) throw new Error('the fade has not begun')
+  return { el, transition }
+})
+
 /**
- * Stops the running fade in its middle (it is a CSS transition, so its animation can be paused), runs `act`
- * synchronously-ish, and lets it go on. Pausing is how a story holds "the middle of a fade" without racing a 2 s
- * transition against its own polling; the interruption itself takes microtasks, so the component's end-of-fade
- * timer (FADE_MS + 50 after the fade began) cannot fire before the animation has really finished.
+ * Drives fade number `n` through the CSS transition itself: holds it, reads both layers at each chosen fraction,
+ * runs `act` at one of them (and reads again, at the same point), then finishes it, so the layer reports its own end,
+ * and reads once more after the component has handed the fade over. Nothing waits on the clock.
  */
-async function atMidFade(root: HTMLElement, act: () => void | Promise<void>) {
-  const caught = await new Promise<Animation | null>((resolve) => {
-    const look = () => {
-      const el = incoming(root)
-      // The fade is gone: it ended before this story looked (a stalled machine).
-      if (!el) return resolve(null)
-      const opacity = Number(getComputedStyle(el).opacity)
-      if (opacity < 0.3) return void requestAnimationFrame(look)
-      const animation = el.getAnimations().find(a => a instanceof CSSTransition) ?? null
-      if (animation) animation.pause()
-      resolve(opacity > 0.95 ? null : animation)
+async function stepFade(
+  root: HTMLElement,
+  frames: Frame[],
+  n: number,
+  fractions: number[],
+  during?: { at: number; act: (layer: HTMLElement) => Promise<void> },
+) {
+  const { el, transition } = await fadeOf(root)
+  transition.pause()
+  // The fade this story set, not the 2 s of the app: it cannot end before the story finishes it.
+  await expect(getComputedStyle(el).transitionDuration).toBe(HELD_FADE)
+  const total = Number(transition.effect!.getComputedTiming().duration)
+  for (const f of fractions) {
+    transition.currentTime = f * total
+    frames.push(read(root, n + f))
+    if (during && during.at === f) {
+      await during.act(el)
+      frames.push(read(root, n + f))
     }
-    look()
-  })
-  if (!caught) throw new Error('could not catch the fade in the middle: the machine was too busy for this story')
-  try {
-    await act()
-  } finally {
-    caught.play()
   }
+  transition.finish()
+  // The layer's transitionend ends the fade: it is gone, and its picture is the base.
+  await waitFor(() => expect(incoming(root) === el).toBe(false))
+  frames.push(read(root, n + 1))
 }
 
 const settled = (root: HTMLElement, picture: string) => waitFor(() => {
   expect(incoming(root)).toBeNull()
   expect(shown(base(root))).toBe(picture)
-}, { timeout: 15000 })
+})
 
 /**
  * A fade is never interrupted: a new request in the middle of one waits, and when the fade has ended the
@@ -252,21 +254,27 @@ const settled = (root: HTMLElement, picture: string) => waitFor(() => {
  */
 export const NewRequestWaitsForTheFade: Story = {
   args: { url: null },
-  render: harness(),
+  render: harness(null, HELD_FADE),
   play: async ({ canvasElement }) => {
     const decode = controlDecode(true)
     try {
       const canvas = within(canvasElement)
       const original = shown(base(canvasElement))
-      const recording = recordFrames(canvasElement)
+      const frames: Frame[] = [read(canvasElement, 0)]
       await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
-      await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
-      await atMidFade(canvasElement, () => canvas.getByRole('button', { name: 'Green' }).click())
-      // The fade to Blue goes on: Green is not on screen yet.
-      await expect(shown(incoming(canvasElement)!)).toBe(`url("${BLUE}")`)
+      await stepFade(canvasElement, frames, 0, [0, 0.25, 0.5, 0.75, 0.999], {
+        at: 0.5,
+        act: async (layer) => {
+          canvas.getByRole('button', { name: 'Green' }).click()
+          await nextTick()
+          // The fade to Blue goes on, on the same layer: Green is not on screen yet.
+          await expect(incoming(canvasElement)).toBe(layer)
+          await expect(shown(layer)).toBe(`url("${BLUE}")`)
+        },
+      })
+      // Blue's fade ended: Green fades in from nothing, over a whole fade of its own.
+      await stepFade(canvasElement, frames, 1, [0, 0.5, 0.999])
       await settled(canvasElement, `url("${GREEN}")`)
-      await twoFrames()
-      const frames = recording.stop()
       await expectNoCut(frames)
       await expect(sequence(frames)).toEqual([original, `url("${BLUE}")`, `url("${GREEN}")`])
     } finally {
@@ -278,20 +286,26 @@ export const NewRequestWaitsForTheFade: Story = {
 /** Back to the picture that was showing, mid-fade to another: the fade to it completes, then it fades back. */
 export const BackToTheBaseDuringAFade: Story = {
   args: { url: null },
-  render: harness(),
+  render: harness(null, HELD_FADE),
   play: async ({ canvasElement }) => {
     const decode = controlDecode(true)
     try {
       const canvas = within(canvasElement)
       const original = shown(base(canvasElement))
-      const recording = recordFrames(canvasElement)
+      const frames: Frame[] = [read(canvasElement, 0)]
       await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
-      await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
-      await atMidFade(canvasElement, () => canvas.getByRole('button', { name: 'Default' }).click())
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
+      await stepFade(canvasElement, frames, 0, [0, 0.25, 0.5, 0.75, 0.999], {
+        at: 0.5,
+        act: async (layer) => {
+          canvas.getByRole('button', { name: 'Default' }).click()
+          await nextTick()
+          await expect(incoming(canvasElement)).toBe(layer)
+          await expect(shown(layer)).toBe(`url("${BLUE}")`)
+        },
+      })
+      await expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`)
+      await stepFade(canvasElement, frames, 1, [0, 0.5, 0.999])
       await settled(canvasElement, original)
-      await twoFrames()
-      const frames = recording.stop()
       await expectNoCut(frames)
       await expect(sequence(frames)).toEqual([original, `url("${BLUE}")`, original])
     } finally {
@@ -300,37 +314,49 @@ export const BackToTheBaseDuringAFade: Story = {
   },
 }
 
-/** C, then D, asked for mid-fade: C is never shown and its load is cancelled; the pictures shown are A, B, D. */
+/**
+ * C, then D, asked for mid-fade: C is never shown and its load is cancelled, and D, still decoding when the fade to B
+ * ends, starts its fade only once it has decoded. The pictures shown are A, B, D.
+ */
 export const SupersededTargetIsNeverShown: Story = {
   args: { url: null },
-  render: harness(),
+  render: harness(null, HELD_FADE),
   play: async ({ canvasElement }) => {
     const decode = controlDecode()
     try {
       const canvas = within(canvasElement)
       const original = shown(base(canvasElement))
-      const recording = recordFrames(canvasElement)
+      const frames: Frame[] = [read(canvasElement, 0)]
       await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
       await waitFor(() => expect(decode.waiting(BLUE)).toBe(true))
       decode.release(BLUE)
-      await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
       // Red is asked for mid-fade and is still loading when Green replaces it.
-      await atMidFade(canvasElement, async () => {
-        canvas.getByRole('button', { name: 'Red' }).click()
-        await nextTick()
-        canvas.getByRole('button', { name: 'Green' }).click()
-        await nextTick()
+      await stepFade(canvasElement, frames, 0, [0, 0.25, 0.5, 0.75, 0.999], {
+        at: 0.5,
+        act: async (layer) => {
+          canvas.getByRole('button', { name: 'Red' }).click()
+          await nextTick()
+          canvas.getByRole('button', { name: 'Green' }).click()
+          await nextTick()
+          await waitFor(() => expect(decode.waiting(GREEN)).toBe(true))
+          // Blue, Red and Green were each asked to decode; Red's download is the one that was stopped.
+          await expect(decode.images).toHaveLength(3)
+          await expect(decode.images.filter(img => img.getAttribute('src') === RED)).toHaveLength(0)
+          await expect(incoming(canvasElement)).toBe(layer)
+        },
       })
-      await waitFor(() => expect(decode.waiting(GREEN)).toBe(true))
-      // Blue, Red and Green were each asked to decode; Red's download is the one that was stopped.
-      await expect(decode.images).toHaveLength(3)
-      await expect(decode.images.filter(img => img.getAttribute('src') === RED)).toHaveLength(0)
+      // Blue is shown and Green has not decoded: nothing fades in yet.
+      await expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`)
+      await expect(incoming(canvasElement)).toBeNull()
+      frames.push(read(canvasElement, 1))
       decode.release(GREEN)
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
+      await stepFade(canvasElement, frames, 1, [0, 0.5, 0.999])
       await settled(canvasElement, `url("${GREEN}")`)
+      // The older request decodes only now, and changes nothing.
       decode.release(RED)
-      await twoFrames()
-      const frames = recording.stop()
+      await nextTick()
+      await expect(incoming(canvasElement)).toBeNull()
+      frames.push(read(canvasElement, 2))
       await expectNoCut(frames)
       await expect(sequence(frames)).toEqual([original, `url("${BLUE}")`, `url("${GREEN}")`])
     } finally {
