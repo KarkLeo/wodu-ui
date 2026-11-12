@@ -51,7 +51,7 @@ export function withScenes(seed: ScenesSeed = {}): Decorator {
       const media = useMediaStore()
       media.clearAll()
       if (status !== 'idle') {
-        media.startLoading(crookhollow.id)
+        media.startLoading(crookhollow.id, ['scenes'])
         if (status === 'ready') media.setList('scenes', crookhollow.id, structuredClone(list))
         if (status === 'failed') media.setFailed('scenes', crookhollow.id)
       }

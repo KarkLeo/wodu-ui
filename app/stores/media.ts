@@ -22,14 +22,15 @@ export const useMediaStore = defineStore('media', {
   }),
   actions: {
     // Reloading the same game keeps its lists on screen; another game starts empty.
-    startLoading(gameId: string) {
+    startLoading(gameId: string, kinds: readonly MediaKind[]) {
       // Another game's table opens: its cards start closed, as the encounter panel does.
       if (this.gameId !== gameId) {
         this.clearAll()
         useToolPanelsStore().clearAll()
       }
       this.gameId = gameId
-      for (const kind of KINDS) {
+      // A kind nobody loads yet stays idle.
+      for (const kind of kinds) {
         if (this[kind].status !== 'ready') this[kind].status = 'loading'
       }
     },

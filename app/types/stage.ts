@@ -24,7 +24,7 @@ export interface Sound {
   file: string
 }
 
-/** Temporary stand-in for the sound and image entries; the Sounds and Shown-images steps replace it with the real types. */
+/** Temporary stand-in for the image entry; the Shown-images step replaces it with the real type. */
 export interface UntypedMediaEntry {
   id: string
 }

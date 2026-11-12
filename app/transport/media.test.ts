@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { Scene } from '@/types/stage'
+import type { Scene, Sound } from '@/types/stage'
 import { RECORDED } from './recordedResponses'
 import { errorFromResponse } from './responseError'
 
@@ -17,6 +17,7 @@ let gameMaster = 'user-1'
 let listRows: unknown[] = []
 let listFails = false
 let soundsListFails = false
+let soundRows: unknown[] = []
 let sceneGetImpl: (id: string) => Promise<unknown>
 
 vi.mock('@/transport/pb', () => ({
@@ -28,7 +29,7 @@ vi.mock('@/transport/pb', () => ({
         if (collection === 'stages' && method === 'update') return stageUpdateImpl()
         if (collection === 'scenes' && method === 'delete') return deleteImpl()
         if (collection === 'scenes' && method === 'getFullList') return listFails ? Promise.reject(new Error('refused')) : Promise.resolve(listRows)
-        if (collection === 'sounds' && method === 'getFullList') return soundsListFails ? Promise.reject(new Error('refused')) : Promise.resolve([])
+        if (collection === 'sounds' && method === 'getFullList') return soundsListFails ? Promise.reject(new Error('refused')) : Promise.resolve(soundRows)
         if (collection === 'scenes' && method === 'getOne') return sceneGetImpl(String(args[0]))
         if (collection === 'games' && method === 'getOne') {
           return Promise.resolve({ id: 'game-1', name: 'G', master: gameMaster, invite_code: 'ABCD2345' })
@@ -69,6 +70,10 @@ const httpError = (status: number) => errorFromResponse('', status, JSON.stringi
 const recorded = (key: keyof typeof RECORDED) => errorFromResponse('', RECORDED[key].status, RECORDED[key].body)
 const file = (name: string, type: string) => new File(['x'], name, { type })
 
+function soundRow(id: string, over: Record<string, unknown> = {}) {
+  return { id, game: GAME, data: { id, name: `Sound ${id}`, loop: false, duration: 12 }, file: 'sound.mp3', ...over }
+}
+
 function row(id: string, over: Record<string, unknown> = {}) {
   return { id, game: GAME, data: { id, name: `Scene ${id}` }, image: '', sound: '', ...over }
 }
@@ -85,11 +90,12 @@ async function load() {
   const { applyStages } = await import('./stage')
   applyStages([{ id: GAME, game: GAME, data: { id: GAME, scene: null, image: null, sound: null } }])
   const media = useMediaStore()
-  media.startLoading(GAME)
+  media.startLoading(GAME, ['scenes', 'sounds'])
   return { ...transport, media, stages: useStageStore() }
 }
 
 const stagePublishes = () => calls.filter(c => c.collection === 'stages' && c.method === 'update')
+const soundDeletes = () => calls.filter(c => c.collection === 'sounds' && c.method === 'delete')
 const sceneDeletes = () => calls.filter(c => c.collection === 'scenes' && c.method === 'delete')
 
 beforeEach(() => {
@@ -100,6 +106,7 @@ beforeEach(() => {
   listRows = []
   listFails = false
   soundsListFails = false
+  soundRows = []
   sceneGetImpl = async () => { throw httpError(404) }
   sendImpl = async s => row(String(s.form.get('id') ?? 'sc-1'), { image: 'image.jpg', sound: 'sound.mp3' })
   stageUpdateImpl = async () => ({})
@@ -121,7 +128,7 @@ describe('openMedia', () => {
       { id: 'a', name: 'Scene a', image: 'image.webp', sound: null },
       { id: 'd', name: 'Scene d', image: null, sound: 'sound.mp3' },
     ])
-    expect(calls.filter(c => c.method === 'subscribe')).toHaveLength(1)
+    expect(calls.filter(c => c.collection === 'scenes' && c.method === 'subscribe')).toHaveLength(1)
   })
 })
 
@@ -220,7 +227,7 @@ describe('createScene', () => {
     sendImpl = () => other.promise
     const second = createScene(GAME, { id: 'sc-2', name: 'Y' }, { sound: file('a.mp3', 'audio/mpeg') })
     await flush()
-    media.startLoading('game-2')
+    media.startLoading('game-2', ['scenes', 'sounds'])
     other.resolve(row('sc-2', { sound: 'sound.mp3' }))
     await second
     expect(media.scenes.list).toEqual([])
@@ -454,7 +461,7 @@ describe('writes that outlive their game or session', () => {
     const { updateScene, media } = await liveContext()
     const done = updateScene(GAME, { id: 'sc-1', name: 'New' }, { sound: file('a.mp3', 'audio/mpeg') })
     await flush()
-    media.startLoading('game-2')
+    media.startLoading('game-2', ['scenes', 'sounds'])
     gate.resolve(row('sc-1', { image: 'image.jpg', sound: 'sound_new.mp3' }))
     await done
     expect(media.scenes.list).toEqual([])
@@ -494,7 +501,7 @@ describe('writes that outlive their game or session', () => {
     const done = deleteScene(GAME, 'sc-2')
     await flush()
     media.clearAll()
-    media.startLoading('game-2')
+    media.startLoading('game-2', ['scenes', 'sounds'])
     media.put('scenes', 'game-2', { id: 'sc-2', name: 'Same id elsewhere', image: null, sound: 'sound.mp3' })
     gate.resolve(true)
     await done
@@ -552,8 +559,8 @@ describe('openMedia', () => {
   it('shares a load already in flight instead of listing and subscribing again', async () => {
     const { openMedia } = await load()
     await Promise.all([openMedia(GAME), openMedia(GAME)])
-    expect(calls.filter(c => c.method === 'getFullList')).toHaveLength(1)
-    expect(calls.filter(c => c.method === 'subscribe')).toHaveLength(1)
+    expect(calls.filter(c => c.method === 'getFullList')).toHaveLength(2)
+    expect(calls.filter(c => c.method === 'subscribe')).toHaveLength(2)
   })
 
   it('stops listening when the load fails', async () => {
@@ -565,22 +572,9 @@ describe('openMedia', () => {
   })
 })
 
-// A second kind, registered only here: the production table wires scenes alone for now.
-function wireSounds(mediaKinds: Record<string, unknown>) {
-  mediaKinds.sounds = {
-    collection: 'sounds',
-    files: [{ name: 'file', kind: 'audio', required: true }],
-    limit: 15,
-    fromRow: (r: { id: string }) => ({ id: r.id }),
-    checkDraft: (d: { id: string }) => ({ id: d.id }),
-    stored: () => ({ file: null }),
-  }
-}
-
 describe('several kinds', () => {
   it('a failed load of one kind fails only its slot', async () => {
-    const { openMedia, mediaKinds, media } = await load()
-    wireSounds(mediaKinds)
+    const { openMedia, media } = await load()
     listRows = [row('a', { image: 'image.webp' })]
     soundsListFails = true
     await openMedia(GAME)
@@ -591,9 +585,20 @@ describe('several kinds', () => {
     expect(calls.filter(c => c.collection === 'scenes' && c.method === 'unsubscribe')).toHaveLength(0)
   })
 
+  it('a failed load of scenes leaves the sounds slot ready', async () => {
+    const { openMedia, media } = await load()
+    listFails = true
+    soundRows = [soundRow('s1')]
+    await openMedia(GAME)
+    expect(media.scenes.status).toBe('failed')
+    expect(media.sounds.status).toBe('ready')
+    expect(media.sounds.list.map(x => x.id)).toEqual(['s1'])
+    expect(calls.filter(c => c.collection === 'scenes' && c.method === 'unsubscribe')).toHaveLength(1)
+    expect(calls.filter(c => c.collection === 'sounds' && c.method === 'unsubscribe')).toHaveLength(0)
+  })
+
   it('a late write for one kind cannot touch another kind or another game', async () => {
-    const { createMedia, mediaKinds, media } = await load()
-    wireSounds(mediaKinds)
+    const { createSound, media } = await load()
     media.put('scenes', GAME, { id: 'same', name: 'Scene', image: null, sound: 'sound.mp3' })
     media.put('sounds', GAME, { id: 'same', name: 'Sound', loop: false, duration: null, file: 'sound.mp3' })
     media.remove('sounds', GAME, 'same')
@@ -601,16 +606,125 @@ describe('several kinds', () => {
     expect(media.sounds.list).toEqual([])
 
     const late = deferred()
-    sendImpl = async () => { await late.promise; return { id: 'snd-1', game: GAME, data: { id: 'snd-1' }, file: 'file.mp3' } }
-    const pending = createMedia('sounds', GAME, { id: 'snd-1' }, { file: file('a.mp3', 'audio/mpeg') })
+    sendImpl = async () => { await late.promise; return soundRow('snd-1') }
+    const pending = createSound(GAME, { id: 'snd-1', name: 'Rain', loop: true, duration: 12 }, file('a.mp3', 'audio/mpeg'))
     await flush()
     media.clearAll()
-    media.startLoading('game-2')
+    media.startLoading('game-2', ['scenes', 'sounds'])
     media.put('scenes', 'game-2', { id: 'other', name: 'Other', image: null, sound: 'sound.mp3' })
     late.resolve()
     await pending
     expect(media.sounds.list).toEqual([])
     expect(media.scenes.list.map(s => s.id)).toEqual(['other'])
     expect(sent[0]!.path).toBe('/api/collections/sounds/records')
+  })
+})
+
+describe('sounds', () => {
+  const draft = { id: 'snd-1', name: ' Rain ', loop: true, duration: 12.5 }
+  const playingSound: Sound = { id: 'snd-1', name: 'Rain', loop: true, duration: 12.5, file: 'sound.mp3' }
+
+  it('lists the game, maps a row to a Sound and drops one that fails the shape check', async () => {
+    soundRows = [
+      soundRow('a'),
+      soundRow('b', { data: { id: 'other', name: 'Wrong id', loop: false } }),
+      soundRow('c', { data: { id: 'c', name: 'No loop' } }),
+      soundRow('d', { data: { id: 'd', name: 'Bell', loop: true } }),
+    ]
+    const { openMedia, media } = await load()
+    await openMedia(GAME)
+    expect(media.sounds.status).toBe('ready')
+    expect(media.sounds.list).toEqual<Sound[]>([
+      { id: 'a', name: 'Sound a', loop: false, duration: 12, file: 'sound.mp3' },
+      { id: 'd', name: 'Bell', loop: true, duration: null, file: 'sound.mp3' },
+    ])
+    expect(calls.filter(c => c.collection === 'sounds' && c.method === 'subscribe')).toHaveLength(1)
+  })
+
+  it('create uploads the file as sound.<ext> with the data carrying name, loop and duration', async () => {
+    sendImpl = async s => soundRow(String(s.form.get('id')), { data: JSON.parse(String(s.form.get('data'))) })
+    const { createSound, media } = await load()
+    const sound = await createSound(GAME, draft, file('My Track (1).MP3', 'audio/mpeg'))
+    const { method, path, form } = sent[0]!
+    expect(method).toBe('POST')
+    expect(path).toBe('/api/collections/sounds/records')
+    expect(form.get('id')).toBe('snd-1')
+    expect(form.get('game')).toBe(GAME)
+    expect(JSON.parse(String(form.get('data')))).toEqual({ id: 'snd-1', name: 'Rain', loop: true, duration: 12.5 })
+    expect((form.get('file') as File).name).toBe('sound.mp3')
+    expect(sound).toEqual(playingSound)
+    expect(media.sounds.list).toEqual([playingSound])
+  })
+
+  it('create leaves an unknown duration out of the data', async () => {
+    sendImpl = async s => soundRow(String(s.form.get('id')))
+    const { createSound } = await load()
+    await createSound(GAME, { ...draft, duration: null }, file('a.m4a', 'audio/mp4'))
+    expect(JSON.parse(String(sent[0]!.form.get('data')))).toEqual({ id: 'snd-1', name: 'Rain', loop: true })
+    expect((sent[0]!.form.get('file') as File).name).toBe('sound.m4a')
+  })
+
+  it('create refuses a draft without a name before any request', async () => {
+    const { createSound } = await load()
+    await expect(createSound(GAME, { ...draft, name: ' ' }, file('a.mp3', 'audio/mpeg'))).rejects.toThrow(/invalid sounds entry/)
+    expect(sent).toHaveLength(0)
+  })
+
+  it('the 16th sound is limitReached before any request', async () => {
+    const { createSound, media } = await load()
+    for (let i = 0; i < 15; i++) media.put('sounds', GAME, { id: `s${i}`, name: `S${i}`, loop: false, duration: null, file: 'sound.mp3' })
+    await expect(createSound(GAME, draft, file('a.mp3', 'audio/mpeg'))).rejects.toMatchObject({ kind: 'limitReached' })
+    expect(sent).toHaveLength(0)
+  })
+
+  it('update sends data only, and publishes nothing even when that sound is playing', async () => {
+    sendImpl = async s => soundRow('snd-1', { data: JSON.parse(String(s.form.get('data'))) })
+    const { updateSound, media, stages } = await load()
+    media.put('sounds', GAME, playingSound)
+    const { withSound } = await import('@/domain/stage')
+    stages.set(withSound(stages.stageOf(GAME), playingSound, '2026-11-12T10:00:00.000Z'))
+    const saved = await updateSound(GAME, { ...draft, name: 'Heavy rain', loop: false })
+    const { method, path, form } = sent[0]!
+    expect(method).toBe('PATCH')
+    expect(path).toBe('/api/collections/sounds/records/snd-1')
+    expect([...form.keys()].sort()).toEqual(['data'])
+    expect(saved).toMatchObject({ name: 'Heavy rain', loop: false })
+    expect(media.sounds.list[0]).toMatchObject({ name: 'Heavy rain', loop: false })
+    expect(stagePublishes()).toHaveLength(0)
+    expect(stages.stageOf(GAME).sound?.startedAt).toBe('2026-11-12T10:00:00.000Z')
+  })
+
+  it('deleting the playing sound publishes the stage without it first, then deletes', async () => {
+    const { deleteSound, media, stages } = await load()
+    media.put('sounds', GAME, playingSound)
+    const { withSound } = await import('@/domain/stage')
+    stages.set(withSound(stages.stageOf(GAME), playingSound, '2026-11-12T10:00:00.000Z'))
+    await deleteSound(GAME, 'snd-1')
+    const order = calls.filter(c => (c.collection === 'stages' && c.method === 'update')
+      || (c.collection === 'sounds' && c.method === 'delete')).map(c => c.collection)
+    expect(order).toEqual(['stages', 'sounds'])
+    expect((stagePublishes()[0]!.args[1] as { data: { sound: unknown } }).data.sound).toBeNull()
+    expect(stages.stageOf(GAME).sound).toBeNull()
+    expect(media.sounds.list).toEqual([])
+  })
+
+  it('does not delete the playing sound when taking it off the table fails', async () => {
+    stageUpdateImpl = async () => { throw httpError(500) }
+    const { deleteSound, media, stages } = await load()
+    media.put('sounds', GAME, playingSound)
+    const { withSound } = await import('@/domain/stage')
+    stages.set(withSound(stages.stageOf(GAME), playingSound, '2026-11-12T10:00:00.000Z'))
+    await expect(deleteSound(GAME, 'snd-1')).rejects.toMatchObject({ status: 500 })
+    expect(soundDeletes()).toHaveLength(0)
+    expect(media.sounds.list).toHaveLength(1)
+    expect(stages.stageOf(GAME).sound?.id).toBe('snd-1')
+  })
+
+  it('deleting a sound that is not playing publishes nothing', async () => {
+    const { deleteSound, media } = await load()
+    media.put('sounds', GAME, playingSound)
+    await deleteSound(GAME, 'snd-1')
+    expect(stagePublishes()).toHaveLength(0)
+    expect(soundDeletes()).toHaveLength(1)
   })
 })

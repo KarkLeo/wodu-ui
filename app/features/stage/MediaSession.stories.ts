@@ -16,7 +16,7 @@ import { useStageControl } from '@/composables/useStageControl'
 import { clearPbRequests, pbRequests, resetRecords, seedRecords, storedRecords } from '../../../.storybook/mocks/pb'
 import { holdUploads, sentForms } from '../../../.storybook/mocks/upload'
 
-// Story-only harness: the session and the master's two switches have no screen yet.
+// Story-only harness: the session and the master's switches have no screen yet.
 const Harness = defineComponent({
   setup() {
     const media = useMediaStore()
@@ -25,16 +25,27 @@ const Harness = defineComponent({
     useMediaSession()
     // The next story starts with nothing listening, as a fresh page would.
     onUnmounted(closeMedia)
-    const { activeSceneId, turnOnScene, turnOffScene } = useStageControl()
-    return { media, activeSceneId, on: () => turnOnScene(media.scenes.list[0]!), off: () => turnOffScene() }
+    const { activeSceneId, turnOnScene, turnOffScene, playingSoundId, playSound, stopSound } = useStageControl()
+    return {
+      media, activeSceneId, playingSoundId,
+      on: () => turnOnScene(media.scenes.list[0]!),
+      off: () => turnOffScene(),
+      play: () => playSound(media.sounds.list[0]!),
+      stop: () => stopSound(),
+    }
   },
   template: `
     <div>
       <p data-testid="status">{{ media.scenes.status }}</p>
       <p data-testid="count">{{ media.scenes.list.length }}</p>
       <p data-testid="active">{{ activeSceneId ?? 'none' }}</p>
+      <p data-testid="sounds-status">{{ media.sounds.status }}</p>
+      <p data-testid="sounds-count">{{ media.sounds.list.length }}</p>
+      <p data-testid="playing">{{ playingSoundId ?? 'none' }}</p>
       <button type="button" @click="on">On</button>
       <button type="button" @click="off">Off</button>
+      <button type="button" @click="play">Play</button>
+      <button type="button" @click="stop">Stop</button>
     </div>`,
 })
 
@@ -49,6 +60,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const SCENE_ID = 'story-scene-crypt'
+const SOUND_ID = 'story-sound-rain-01'
 
 const seed = async () => {
   clearPbRequests()
@@ -56,6 +68,10 @@ const seed = async () => {
   resetRecords('scenes', [
     { id: SCENE_ID, game: crookhollow.id, data: { id: SCENE_ID, name: 'Crypt' }, image: 'image.jpg', sound: 'sound.mp3' },
     { id: 'story-scene-other', game: olden.id, data: { id: 'story-scene-other', name: 'Tower' }, image: 'image.png', sound: '' },
+  ])
+  resetRecords('sounds', [
+    { id: SOUND_ID, game: crookhollow.id, data: { id: SOUND_ID, name: 'Rain', loop: true, duration: 42 }, file: 'sound.mp3' },
+    { id: 'story-sound-other-1', game: olden.id, data: { id: 'story-sound-other-1', name: 'Bell', loop: false }, file: 'sound.m4a' },
   ])
 }
 
@@ -79,6 +95,20 @@ export const MasterOpensTheScenes: Story = {
   },
 }
 
+/** The same open loads and listens to the sounds once, and only this game's. */
+export const MasterOpensTheSounds: Story = {
+  decorators: [asMaster],
+  loaders: [seed, atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(canvas.getByTestId('sounds-status')).toHaveTextContent('ready'))
+    await expect(canvas.getByTestId('sounds-count')).toHaveTextContent('1')
+    await flush()
+    await expect(requestsFor('sounds').filter(r => r === 'sounds.getFullList')).toHaveLength(1)
+    await expect(requestsFor('sounds').filter(r => r === 'sounds.subscribe')).toHaveLength(1)
+  },
+}
+
 /** A player's client never asks for the scenes. */
 export const PlayerNeverOpensThem: Story = {
   decorators: [asPlayer],
@@ -88,6 +118,8 @@ export const PlayerNeverOpensThem: Story = {
     await flush()
     await expect(canvas.getByTestId('status')).toHaveTextContent('idle')
     await expect(requestsFor('scenes')).toEqual([])
+    await expect(canvas.getByTestId('sounds-status')).toHaveTextContent('idle')
+    await expect(requestsFor('sounds')).toEqual([])
   },
 }
 
@@ -129,6 +161,41 @@ export const TurnOnAndOff: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Off' }))
     await waitFor(() => expect((storedRecords('stages')[0]!.data as { scene: unknown }).scene).toBeNull())
     await expect(canvas.getByTestId('active')).toHaveTextContent('none')
+  },
+}
+
+/** Play writes the stage's sound with the file reference, loop and start but no name; play again restarts it; stop clears it. */
+export const PlayPlayAgainAndStop: Story = {
+  decorators: [asMaster],
+  loaders: [seed, atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const soundOnStage = () => (storedRecords('stages')[0]?.data as { sound: { startedAt: string } | null } | undefined)?.sound
+    await waitFor(() => expect(canvas.getByTestId('sounds-count')).toHaveTextContent('1'))
+    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+    await waitFor(() => expect(soundOnStage()).toBeTruthy())
+    const first = soundOnStage()!
+    await expect(first).toEqual({
+      id: SOUND_ID,
+      file: { collection: 'sounds', record: SOUND_ID, name: 'sound.mp3' },
+      loop: true,
+      startedAt: expect.any(String),
+    })
+    await expect(JSON.stringify(storedRecords('stages')[0]!.data)).not.toContain('Rain')
+    await expect(canvas.getByTestId('playing')).toHaveTextContent(SOUND_ID)
+    // The preview freezes the clock; the master presses Play again a second later.
+    const Frozen = globalThis.Date
+    globalThis.Date = class extends Frozen {
+      constructor(...args: ConstructorParameters<DateConstructor> | []) {
+        if (args.length === 0) super(Frozen.now() + 1000)
+        else super(...(args as ConstructorParameters<DateConstructor>))
+      }
+    } as DateConstructor
+    await userEvent.click(canvas.getByRole('button', { name: 'Play' }))
+    await waitFor(() => expect(soundOnStage()!.startedAt > first.startedAt).toBe(true))
+    await userEvent.click(canvas.getByRole('button', { name: 'Stop' }))
+    await waitFor(() => expect(soundOnStage()).toBeNull())
+    await expect(canvas.getByTestId('playing')).toHaveTextContent('none')
   },
 }
 

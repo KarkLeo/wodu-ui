@@ -241,6 +241,12 @@ describe('playbackTarget', () => {
         .toEqual({ key: overlayKey(oneShot), src: url, loop: false })
     })
 
+    it('still wants sound for a stale one-shot that is not played, even with sound on', () => {
+      const target = playbackTarget(withOverlay(oneShot), all, base, { receivedLive: false, now: new Date('2026-11-12T10:10:00Z') })
+      expect(target.overlay).toBeNull()
+      expect(target.wantsSound).toBe(true)
+    })
+
     it('is null without a sound on the stage', () => {
       expect(playbackTarget(onTavern, all, base, live('2026-11-12T10:00:01Z')).overlay).toBeNull()
     })
@@ -279,6 +285,15 @@ describe('shouldPlayOverlay', () => {
     expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T10:00:05Z'))).toBe(true)
     expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T10:00:06Z'))).toBe(false)
   })
+  it('plays a one-shot whose startedAt is in the future', () => {
+    expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T09:00:00Z'))).toBe(true)
+  })
+  it('does not play a one-shot whose startedAt does not parse, unless it arrived live or loops', () => {
+    const broken = { ...oneShot, startedAt: 'yesterday-ish' }
+    expect(shouldPlayOverlay(broken, false, at('2026-11-12T10:00:00Z'))).toBe(false)
+    expect(shouldPlayOverlay(broken, true, at('2026-11-12T10:00:00Z'))).toBe(true)
+    expect(shouldPlayOverlay({ ...broken, loop: true }, false, at('2026-11-12T10:00:00Z'))).toBe(true)
+  })
 })
 
 describe('oneShotClearDelay', () => {
@@ -290,6 +305,16 @@ describe('oneShotClearDelay', () => {
   it('counts down the known duration and never goes below zero', () => {
     expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'))).toBe(20000)
     expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:01:00Z'))).toBe(0)
+  })
+  it('is 0 for a duration of 0', () => {
+    expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'))).toBe(0)
+  })
+  it('is 0, not NaN, for a startedAt that does not parse', () => {
+    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, 30, at('2026-11-12T10:00:00Z'))).toBe(0)
+    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, null, at('2026-11-12T10:00:00Z'))).toBe(0)
+  })
+  it('counts the whole duration for a startedAt in the future', () => {
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T09:59:50Z'))).toBe(40000)
   })
   it('falls back to the stale window for an unknown duration', () => {
     expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:02Z'))).toBe(3000)

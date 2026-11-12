@@ -164,7 +164,8 @@ export function shouldPlayOverlay(sound: StageSound, receivedLive: boolean, now:
 export function oneShotClearDelay(sound: StageSound, duration: number | null, now: Date): number | null {
   if (sound.loop) return null
   const seconds = duration === null ? STALE_ONE_SHOT_SECONDS : duration
-  return Math.max(0, Date.parse(sound.startedAt) + seconds * 1000 - now.getTime())
+  const delay = Date.parse(sound.startedAt) + seconds * 1000 - now.getTime()
+  return Number.isNaN(delay) ? 0 : Math.max(0, delay)
 }
 
 export function formatDuration(seconds: number | null): string {

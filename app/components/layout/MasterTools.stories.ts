@@ -252,7 +252,7 @@ const sceneOn: Decorator = (story) => ({
   setup() {
     const media = useMediaStore()
     media.clearAll()
-    media.startLoading(crookhollow.id)
+    media.startLoading(crookhollow.id, ['scenes'])
     media.setList('scenes', crookhollow.id, [scene])
     useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
   },
@@ -295,7 +295,7 @@ const sceneOnUnlisted: Decorator = (story) => ({
   setup() {
     const media = useMediaStore()
     media.clearAll()
-    media.startLoading(crookhollow.id)
+    media.startLoading(crookhollow.id, ['scenes'])
     media.setList('scenes', crookhollow.id, [])
     useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
   },
@@ -307,7 +307,7 @@ const sceneOnListLoading: Decorator = (story) => ({
   setup() {
     const media = useMediaStore()
     media.clearAll()
-    media.startLoading(crookhollow.id)
+    media.startLoading(crookhollow.id, ['scenes'])
     useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
   },
   template: '<story />',

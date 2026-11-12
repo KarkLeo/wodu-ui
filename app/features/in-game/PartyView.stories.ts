@@ -414,11 +414,11 @@ export const MasterCardsCloseOnAnotherGame: Story = {
   decorators: [withScenesOpen, withOpenPanel, crookhollowTable],
   loaders: [atRoute(`/games/${crookhollow.id}`)],
   play: async () => {
-    useMediaStore().startLoading(crookhollow.id)
+    useMediaStore().startLoading(crookhollow.id, ['scenes'])
     useToolPanelsStore().toggle('scenes')
-    useMediaStore().startLoading(crookhollow.id)
+    useMediaStore().startLoading(crookhollow.id, ['scenes'])
     await expect(useToolPanelsStore().open.scenes).toBe(true)
-    useMediaStore().startLoading('story-other-game')
+    useMediaStore().startLoading('story-other-game', ['scenes'])
     await expect(useToolPanelsStore().open.scenes).toBe(false)
     useEncounterStore().startLoading('story-other-game')
     await expect(useEncounterStore().panelOpen).toBe(false)

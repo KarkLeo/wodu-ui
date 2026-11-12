@@ -75,7 +75,7 @@ export async function sendForm<T>(
   const row: Record<string, unknown> & { id: string } = { ...existing, id, updated: new Date().toISOString() }
   if (method === 'POST') Object.assign(row, { game: sent.fields.game, created: row.updated })
   if ('data' in sent.fields) row.data = JSON.parse(sent.fields.data!)
-  for (const field of ['image', 'sound']) {
+  for (const field of ['image', 'sound', 'file']) {
     if (sent.files[field]) row[field] = sent.files[field].name
     else if (field in sent.fields) row[field] = sent.fields[field]
     else if (method === 'POST') row[field] = ''

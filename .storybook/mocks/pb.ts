@@ -1,4 +1,4 @@
-// In-memory stand-in for app/transport/pb.ts: writes succeed, lists return nothing (except a game's library, its scenes and the stages),
+// In-memory stand-in for app/transport/pb.ts: writes succeed, lists return nothing (except a game's library, its scenes, sounds and the stages),
 // realtime is silent.
 // Records written (or seeded with seedRecords) are kept per collection, so getOne after a create or an
 // update answers like the server would. Auth is in memory too: any code signs in except WRONG_CODE, and
@@ -102,7 +102,7 @@ class MockResponseError extends Error {
   }
 }
 
-const LIBRARY = new Set(['monsters', 'items', 'encounters', 'encounter_monsters', 'encounter_hits', 'scenes'])
+const LIBRARY = new Set(['monsters', 'items', 'encounters', 'encounter_monsters', 'encounter_hits', 'scenes', 'sounds'])
 
 // One object per collection name, so stories can spy on its methods.
 const collections = new Map<string, ReturnType<typeof makeCollection>>()

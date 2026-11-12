@@ -6,13 +6,13 @@ import { publishStage, WriteDropped } from './stage'
 import { toGame } from './games'
 import { sendForm } from '@/transport/upload'
 import {
-  IMAGE_MAX_BYTES, MEDIA_LIMITS, checkSceneData, checkSceneDraft, checkUpload, fileUrl, neutralFileName,
-  withScene, withoutScene,
+  IMAGE_MAX_BYTES, MEDIA_LIMITS, checkSceneData, checkSceneDraft, checkSoundData, checkSoundDraft, checkUpload, fileUrl,
+  neutralFileName, withScene, withSound, withoutScene, withoutSound,
 } from '@/domain/stage'
 import { useGamesStore } from '@/stores/games'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
-import type { FileRef, MediaEntries, MediaKind, Scene, Stage } from '@/types/stage'
+import type { FileRef, MediaEntries, MediaKind, Scene, Sound, Stage } from '@/types/stage'
 import { fitImage } from '@/utils/fitImage'
 import { createLogger } from '@/utils/logger'
 
@@ -103,6 +103,21 @@ function sceneFromRow(row: MediaRow): Scene | null {
   }
 }
 
+function soundFromRow(row: MediaRow): Sound | null {
+  const data = checkSoundData(row.data)
+  if (!data || data.id !== row.id) {
+    log.warn('dropping a sound that fails the shape check', { id: row.id })
+    return null
+  }
+  return {
+    id: row.id,
+    name: data.name,
+    loop: data.loop,
+    duration: data.duration,
+    file: typeof row.file === 'string' && row.file ? row.file : '',
+  }
+}
+
 function sceneInSync(stage: Stage, scene: Scene): boolean {
   return (stage.scene?.image?.name ?? null) === scene.image && (stage.scene?.sound?.name ?? null) === scene.sound
 }
@@ -126,6 +141,27 @@ export const mediaKinds: KindTable = {
       inSync: sceneInSync,
       publish: withScene,
       clear: withoutScene,
+    },
+  },
+  sounds: {
+    collection: 'sounds',
+    files: [{ name: 'file', kind: 'audio', required: true }],
+    limit: MEDIA_LIMITS.sounds,
+    fromRow: soundFromRow,
+    checkDraft: (draft, has) => {
+      const name = typeof draft.name === 'string' ? draft.name : ''
+      if (checkSoundDraft({ name, hasFile: !!has.file }).length) return null
+      const data = checkSoundData({ id: draft.id, name, loop: draft.loop, duration: draft.duration })
+      if (!data) return null
+      return data.duration === null ? { id: data.id, name: data.name, loop: data.loop } : data
+    },
+    stored: sound => ({ file: sound.file || null }),
+    live: {
+      isLive: (stage, id) => stage.sound?.id === id,
+      // A changed name or loop flag applies from the next play, so a data-only update never re-publishes.
+      inSync: () => true,
+      publish: (stage, sound) => withSound(stage, sound, new Date().toISOString()),
+      clear: withoutSound,
     },
   },
 }
@@ -221,8 +257,8 @@ async function run(gameId: string): Promise<void> {
   const open = () => gen === openGen && current() && store.gameId === gameId
   abortUploads(gameId)
   unsubscribeOwn()
-  store.startLoading(gameId)
   const kinds = wiredKinds()
+  store.startLoading(gameId, kinds)
   held.clear()
   for (const kind of kinds) held.set(kind, [])
   try {
@@ -524,4 +560,19 @@ export function republishScene(gameId: string, scene: Scene): Promise<void> {
 
 export function deleteScene(gameId: string, id: string): Promise<void> {
   return deleteMedia('scenes', gameId, id)
+}
+
+export type SoundDraft = { id: string; name: string; loop: boolean; duration: number | null }
+
+export function createSound(gameId: string, draft: SoundDraft, file: File, onProgress?: (fraction: number) => void): Promise<Sound> {
+  return createMedia('sounds', gameId, draft, { file }, onProgress)
+}
+
+/** Data only: a sound's file never changes, so the form has no file to send. */
+export function updateSound(gameId: string, sound: SoundDraft): Promise<Sound> {
+  return updateMedia('sounds', gameId, sound, {})
+}
+
+export function deleteSound(gameId: string, id: string): Promise<void> {
+  return deleteMedia('sounds', gameId, id)
 }
