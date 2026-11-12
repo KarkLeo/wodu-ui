@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { createSceneAudio, SCENE_FADE_SECONDS, type SceneAudio, type SceneAudioDeps, type Track } from './SceneAudio'
+import {
+  createAudioMixer,
+  createSceneAudio,
+  IDLE_DELAY_SECONDS,
+  SCENE_FADE_SECONDS,
+  type AudioMixer,
+  type SceneAudio,
+  type SceneAudioDeps,
+  type Track,
+} from './SceneAudio'
 
 interface FakeTrack extends Track {
   src: string
@@ -9,6 +18,10 @@ interface FakeTrack extends Track {
   rejectReady(): void
   refusePlay(): void
   failPlay(): void
+  /** The browser stopped it: an error after start, a pause from outside, the context leaving `running`. */
+  interrupt(): void
+  /** A non-looping track reached its end. */
+  finish(): void
 }
 
 function makeFakeTrack(src: string, loop: boolean): FakeTrack {
@@ -20,6 +33,8 @@ function makeFakeTrack(src: string, loop: boolean): FakeTrack {
   })
   ready.catch(() => {})
   const calls: string[] = []
+  const interrupted: Array<() => void> = []
+  const ended: Array<() => void> = []
   let playMode: 'ok' | 'refuse' | 'fail' = 'ok'
   return {
     src,
@@ -30,6 +45,8 @@ function makeFakeTrack(src: string, loop: boolean): FakeTrack {
     rejectReady: () => rejectReady(new Error('load failed')),
     refusePlay: () => { playMode = 'refuse' },
     failPlay: () => { playMode = 'fail' },
+    interrupt: () => interrupted.forEach(l => l()),
+    finish: () => ended.forEach(l => l()),
     play() {
       calls.push('play')
       const mode = playMode
@@ -40,18 +57,69 @@ function makeFakeTrack(src: string, loop: boolean): FakeTrack {
     },
     pause() { calls.push('pause') },
     fadeTo(level, seconds) { calls.push(`fadeTo(${level},${seconds})`) },
+    onEnded(listener) { ended.push(listener) },
+    onInterrupted(listener) { interrupted.push(listener) },
     dispose() { calls.push('dispose') },
   }
 }
 
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve() }
 
+interface Harness {
+  tracks: FakeTrack[]
+  waits: Array<{ seconds: number, resolve: () => void }>
+  masterVolumes: number[]
+  unlockResult: boolean
+  unlockCalls: number
+  idleCalls: number
+  /** The document-gesture listeners installed and not yet removed. */
+  gestures: Array<() => void>
+  gestureInstalls: number
+  deps: SceneAudioDeps
+}
+
+function harness(): Harness {
+  const h: Harness = {
+    tracks: [],
+    waits: [],
+    masterVolumes: [],
+    unlockResult: true,
+    unlockCalls: 0,
+    idleCalls: 0,
+    gestures: [],
+    gestureInstalls: 0,
+    deps: undefined as unknown as SceneAudioDeps,
+  }
+  h.deps = {
+    createTrack(src, loop) {
+      const t = makeFakeTrack(src, loop)
+      h.tracks.push(t)
+      return t
+    },
+    wait: seconds => new Promise<void>(resolve => { h.waits.push({ seconds, resolve }) }),
+    setMasterVolume: level => { h.masterVolumes.push(level) },
+    unlock: async () => { h.unlockCalls++; return h.unlockResult },
+    idle: () => { h.idleCalls++ },
+    // Like the shell's: fires once, then is gone.
+    addGestureListener(callback) {
+      h.gestureInstalls++
+      const remove = () => {
+        const i = h.gestures.indexOf(fire)
+        if (i >= 0) h.gestures.splice(i, 1)
+      }
+      const fire = () => { remove(); callback() }
+      h.gestures.push(fire)
+      return remove
+    },
+  }
+  return h
+}
+
 describe('SceneAudio', () => {
+  let h: Harness
   let tracks: FakeTrack[]
-  let waits: Array<{ seconds: number, resolve: () => void }>
+  let waits: Harness['waits']
   let masterVolumes: number[]
-  let unlockResult: boolean
-  let unlockCalls: number
   let audio: SceneAudio
 
   const track = (name: string) => {
@@ -66,22 +134,11 @@ describe('SceneAudio', () => {
   }
 
   beforeEach(() => {
-    tracks = []
-    waits = []
-    masterVolumes = []
-    unlockResult = true
-    unlockCalls = 0
-    const deps: SceneAudioDeps = {
-      createTrack(src, loop) {
-        const t = makeFakeTrack(src, loop)
-        tracks.push(t)
-        return t
-      },
-      wait: seconds => new Promise<void>(resolve => { waits.push({ seconds, resolve }) }),
-      setMasterVolume: level => { masterVolumes.push(level) },
-      unlock: async () => { unlockCalls++; return unlockResult },
-    }
-    audio = createSceneAudio(deps)
+    h = harness()
+    tracks = h.tracks
+    waits = h.waits
+    masterVolumes = h.masterVolumes
+    audio = createSceneAudio(h.deps)
   })
 
   it('exposes a 2 second fade constant', () => {
@@ -183,23 +240,25 @@ describe('SceneAudio', () => {
     expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
   })
 
-  it('a refused play sets blocked and keeps the track; unlock() clears blocked and plays it once', async () => {
+  // Changed on purpose (Sounds plan, Task 1): the old scene's sound no longer keeps playing under the new picture.
+  it('a refused play sets blocked and keeps the track, and the previous track fades out anyway; unlock() plays the kept one once', async () => {
     audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
     audio.setScene('b.mp3'); track('b').refusePlay(); track('b').resolveReady(); await flush()
     expect(audio.blocked.value).toBe(true)
     expect(track('b').calls).toEqual(['play'])
-    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
-    expect(waits).toHaveLength(0)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,2)'])
+    expect(waits.map(w => w.seconds)).toEqual([2])
+    await advance(2)
+    expect(track('a').calls.slice(-2)).toEqual(['pause', 'dispose'])
     await audio.unlock()
-    expect(unlockCalls).toBe(1)
+    expect(h.unlockCalls).toBe(1)
     expect(audio.blocked.value).toBe(false)
     expect(track('b').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
-    expect(track('a').calls.at(-1)).toBe('fadeTo(0,2)')
   })
 
   it('unlock() that the browser still refuses leaves blocked true', async () => {
     audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
-    unlockResult = false
+    h.unlockResult = false
     await audio.unlock()
     expect(audio.blocked.value).toBe(true)
     expect(track('a').calls).toEqual(['play'])
@@ -255,13 +314,14 @@ describe('SceneAudio', () => {
     expect(audio.blocked.value).toBe(false)
   })
 
-  it('blocked clears when the current src is set again while a refused track is kept', async () => {
+  it('blocked clears when the previous src is set again while a refused track is kept; it loads anew, since its old track faded out', async () => {
     audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
     audio.setScene('b.mp3'); track('b').refusePlay(); track('b').resolveReady(); await flush()
     expect(audio.blocked.value).toBe(true)
     audio.setScene('a.mp3'); await flush()
     expect(audio.blocked.value).toBe(false)
     expect(track('b').calls).toEqual(['play', 'dispose'])
+    expect(tracks.map(t => t.src)).toEqual(['a.mp3', 'b.mp3', 'a.mp3'])
   })
 
   it('unlock() with nothing blocked starts nothing', async () => {
@@ -287,5 +347,261 @@ describe('SceneAudio', () => {
     audio.setVolume(-1)
     audio.setVolume(3)
     expect(masterVolumes).toEqual([0.5, 0, 1])
+  })
+
+  it('an interruption of the playing track sets blocked; unlock() resumes it with play() from where it stopped and restores its gain', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').interrupt()
+    expect(audio.blocked.value).toBe(true)
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'play', 'fadeTo(1,2)'])
+    expect(tracks).toHaveLength(1)
+  })
+
+  it('an interrupted track that the browser still refuses stays blocked', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').interrupt()
+    track('a').refusePlay()
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(true)
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'play', 'play', 'fadeTo(1,2)'])
+  })
+
+  it('an interruption of a track that is fading out is ignored', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    audio.setScene('b.mp3'); track('b').resolveReady(); await flush()
+    track('a').interrupt()
+    expect(audio.blocked.value).toBe(false)
+  })
+
+  it('a new scene replaces an interrupted one and clears blocked once it plays', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').interrupt()
+    audio.setScene('b.mp3'); track('b').resolveReady(); await flush()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls.at(-1)).toBe('fadeTo(0,2)')
+  })
+
+  it('while blocked, one document gesture is listened for and unlocks; the listener goes when nothing is blocked', async () => {
+    expect(h.gestureInstalls).toBe(0)
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(h.gestures).toHaveLength(1)
+    h.gestures[0]!()
+    await flush()
+    expect(h.unlockCalls).toBe(1)
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+    expect(h.gestures).toHaveLength(0)
+    expect(h.gestureInstalls).toBe(1)
+  })
+
+  it('a gesture whose unlock the browser refuses listens again for the next one', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    h.unlockResult = false
+    h.gestures[0]!()
+    await flush()
+    expect(audio.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(1)
+    expect(h.gestureInstalls).toBe(2)
+  })
+
+  it('the gesture listener is removed when blocked clears another way (the prompt\'s button, a new scene)', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(h.gestures).toHaveLength(1)
+    audio.setScene(null); await flush()
+    expect(audio.blocked.value).toBe(false)
+    expect(h.gestures).toHaveLength(0)
+  })
+
+  it('after the last track has faded out and been released, idle() follows a short delay', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    audio.setScene(null); await flush()
+    await advance(SCENE_FADE_SECONDS)
+    expect(h.idleCalls).toBe(0)
+    expect(waits.map(w => w.seconds)).toEqual([IDLE_DELAY_SECONDS])
+    await advance(IDLE_DELAY_SECONDS)
+    expect(h.idleCalls).toBe(1)
+  })
+
+  it('a new request during the idle delay cancels idle()', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    audio.stop(); await flush()
+    await advance(SCENE_FADE_SECONDS)
+    audio.setScene('b.mp3'); await flush()
+    await advance(IDLE_DELAY_SECONDS)
+    expect(h.idleCalls).toBe(0)
+  })
+
+  it('replacing a track that is still loading does not count as silence', async () => {
+    audio.setScene('a.mp3'); await flush()
+    audio.setScene('b.mp3'); await flush()
+    expect(waits).toHaveLength(0)
+  })
+})
+
+describe('audio channels', () => {
+  let h: Harness
+  let mixer: AudioMixer
+
+  const track = (src: string) => {
+    const found = h.tracks.filter(t => t.src === src).at(-1)
+    if (!found) throw new Error(`no track ${src}`)
+    return found
+  }
+  const advance = async () => {
+    h.waits.splice(0).forEach(w => w.resolve())
+    await flush()
+  }
+  const req = (key: string, src = key, loop = true, fade = 2) => ({ key, src, loop, fade })
+
+  beforeEach(() => {
+    h = harness()
+    mixer = createAudioMixer(h.deps)
+  })
+
+  it('blocked is kept per channel; the service is blocked while any channel is, and unlock() resumes every channel', async () => {
+    const one = mixer.channel()
+    const two = mixer.channel()
+    one.request(req('a')); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(one.blocked.value).toBe(true)
+    expect(two.blocked.value).toBe(false)
+    expect(mixer.blocked.value).toBe(true)
+    two.request(req('b')); track('b').refusePlay(); track('b').resolveReady(); await flush()
+    expect(two.blocked.value).toBe(true)
+    await mixer.unlock()
+    expect(one.blocked.value).toBe(false)
+    expect(two.blocked.value).toBe(false)
+    expect(mixer.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+    expect(track('b').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+  })
+
+  it('one channel clearing its block leaves the service blocked while the other still is', async () => {
+    const one = mixer.channel()
+    const two = mixer.channel()
+    one.request(req('a')); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    two.request(req('b')); track('b').refusePlay(); track('b').resolveReady(); await flush()
+    one.request(null); await flush()
+    expect(one.blocked.value).toBe(false)
+    expect(mixer.blocked.value).toBe(true)
+  })
+
+  it('takes loop and fade length per request', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a', 'a.mp3', false, 1)); track('a.mp3').resolveReady(); await flush()
+    expect(track('a.mp3').loop).toBe(false)
+    expect(track('a.mp3').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(h.waits).toHaveLength(0)
+    ch.request(null); await flush()
+    expect(track('a.mp3').calls.at(-1)).toBe('fadeTo(0,1)')
+    expect(h.waits.map(w => w.seconds)).toEqual([1])
+  })
+
+  it('a new key with the same src restarts: a new track is created and crossfaded in', async () => {
+    const ch = mixer.channel()
+    ch.request(req('k1', 'a.mp3')); h.tracks[0]!.resolveReady(); await flush()
+    ch.request(req('k1', 'a.mp3')); await flush()
+    expect(h.tracks).toHaveLength(1)
+    ch.request(req('k2', 'a.mp3')); h.tracks[1]!.resolveReady(); await flush()
+    expect(h.tracks).toHaveLength(2)
+    expect(h.tracks[1]!.calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(h.tracks[0]!.calls.at(-1)).toBe('fadeTo(0,2)')
+  })
+
+  it('hold() fades the playing track out and pauses it in place; release() plays it on and fades it back in', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    ch.hold(1)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)'])
+    await advance()
+    expect(track('a').calls.at(-1)).toBe('pause')
+    ch.release(1); await flush()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'pause', 'play', 'fadeTo(1,1)'])
+    expect(h.tracks).toHaveLength(1)
+  })
+
+  it('release() during the hold fade only fades back in, and the pending pause never comes', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    ch.hold(1)
+    ch.release(1); await flush()
+    await advance()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'fadeTo(1,1)'])
+  })
+
+  it('a request while held is prepared but stays silent, the held track goes, and release() brings the new one in', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    ch.hold(1); await advance()
+    ch.request(req('b')); track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual([])
+    expect(track('a').calls.at(-1)).toBe('fadeTo(0,2)')
+    await advance()
+    expect(track('a').calls.at(-1)).toBe('dispose')
+    ch.release(1); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,1)'])
+  })
+
+  it('a null request while held leaves nothing to resume', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    ch.hold(1); await advance()
+    ch.request(null); await flush()
+    await advance()
+    ch.release(1); await flush()
+    expect(track('a').calls.filter(c => c === 'play')).toHaveLength(1)
+  })
+
+  it('a held channel is not blocked, even with a refused track waiting; release() tries that track again', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(ch.blocked.value).toBe(true)
+    ch.hold(1)
+    expect(ch.blocked.value).toBe(false)
+    ch.release(1); await flush()
+    expect(ch.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,1)'])
+  })
+
+  it('a non-looping track that finishes by itself is released and reported with its key', async () => {
+    const ch = mixer.channel()
+    const ended: string[] = []
+    ch.onEnded(key => ended.push(key))
+    ch.request(req('k', 'a.mp3', false, 1)); track('a.mp3').resolveReady(); await flush()
+    track('a.mp3').finish(); await flush()
+    expect(ended).toEqual(['k'])
+    expect(track('a.mp3').calls.at(-1)).toBe('dispose')
+    ch.request(req('k', 'a.mp3', false, 1)); await flush()
+    expect(h.tracks).toHaveLength(2)
+  })
+
+  it('a track that was replaced or stopped is not reported as ended', async () => {
+    const ch = mixer.channel()
+    const ended: string[] = []
+    ch.onEnded(key => ended.push(key))
+    ch.request(req('a', 'a.mp3', false)); track('a.mp3').resolveReady(); await flush()
+    ch.request(req('b', 'b.mp3', false)); track('b.mp3').resolveReady(); await flush()
+    track('a.mp3').finish()
+    ch.stop()
+    track('b.mp3').finish(); await flush()
+    expect(ended).toEqual([])
+  })
+
+  it('idle() waits for every channel to fall silent', async () => {
+    const one = mixer.channel()
+    const two = mixer.channel()
+    one.request(req('a')); track('a').resolveReady(); await flush()
+    two.request(req('b')); track('b').resolveReady(); await flush()
+    one.request(null); await flush()
+    await advance()
+    await advance()
+    expect(h.idleCalls).toBe(0)
+    mixer.stop(); await flush()
+    await advance()
+    await advance()
+    expect(h.idleCalls).toBe(1)
   })
 })
