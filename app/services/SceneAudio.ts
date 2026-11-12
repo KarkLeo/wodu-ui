@@ -57,7 +57,8 @@ export interface SceneAudio {
   /** Crossfades to `src` once it can play; null fades to silence. The latest call wins. While an overlay plays it is prepared silently and comes in when the overlay goes. */
   setScene(src: string | null): void
   /**
-   * Plays `overlay` over the scene; a different `key` restarts even the same src; null stops it.
+   * Plays `overlay` over the scene; a different `key` restarts even the same src; null stops it. The same key again does
+   * nothing, and a key that already played to its end is not played again (until null or another key).
    * The scene falls silent only once the overlay plays, and comes back from where it paused when the overlay goes.
    */
   setOverlay(overlay: OverlayRequest | null): void
@@ -84,7 +85,7 @@ export interface Channel {
   readonly blocked: Readonly<Ref<boolean>>
   /** Blocked for a reason any tap can fix (a refused play, a suspended context), not by a deliberate pause from outside. */
   readonly tapHelps: Readonly<Ref<boolean>>
-  /** The latest call wins; the same key again does nothing; null fades to silence. */
+  /** The latest call wins; the same key again does nothing, also after its track ended by itself (until null or another key); null fades to silence. */
   request(next: ChannelRequest | null): void
   /** Fades the playing track out over `fade` and pauses it in place. A request meanwhile is prepared but kept silent. */
   hold(fade: number): void
@@ -189,10 +190,10 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
     current = null
   }
 
-  // The track is gone for good: its key may be asked for again.
-  function forgetCurrent(c: Playing) {
+  // The track is gone. A failed one may be asked for again; one that played to its end may not, until null or another key.
+  function forgetCurrent(c: Playing, retry = true) {
     current = null
-    if (requested === c.req.key) requested = null
+    if (retry && requested === c.req.key) requested = null
     safely(() => c.track.unpin())
     book.release(c.track)
   }
@@ -234,7 +235,8 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
     track.onEnded(() => {
       const c = current
       if (c?.track !== track) return
-      forgetCurrent(c)
+      // A reconnect re-applying the same stage must not replay a cue that already finished.
+      forgetCurrent(c, false)
       sync()
       endedListeners.forEach(listener => listener(c.req.key))
     })
@@ -440,9 +442,11 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
 
 export function createSceneAudio(deps: SceneAudioDeps): SceneAudio {
   const mixer = createAudioMixer(deps)
-  const scene = mixer.channel()
+  // The overlay first: an unlock resumes channels in this order, so with both refused the overlay's play is tried
+  // first and, where it resolves first, holds the scene before the scene's start would fade it in.
   const overlay = mixer.channel()
-  const endedListeners = new Set<(key: string) => void>()
+  const scene = mixer.channel()
+  const endedListeners: Array<(key: string) => void> = []
   // From the moment an overlay plays until the overlay channel has nothing left: a loading, failed or refused overlay
   // leaves the scene alone, and a replacement keeps it held throughout.
   let holding = false
@@ -457,7 +461,7 @@ export function createSceneAudio(deps: SceneAudioDeps): SceneAudio {
     holding = false
     scene.release(OVERLAY_FADE_SECONDS)
   })
-  overlay.onEnded(key => endedListeners.forEach(listener => listener(key)))
+  overlay.onEnded(key => { for (const listener of [...endedListeners]) listener(key) })
 
   return {
     blocked: mixer.blocked,
@@ -465,12 +469,18 @@ export function createSceneAudio(deps: SceneAudioDeps): SceneAudio {
     setScene: src => scene.request(src === null ? null : { key: src, src, loop: true, fade: SCENE_FADE_SECONDS }),
     setOverlay: next => overlay.request(next && { key: next.key, src: next.src, loop: next.loop, fade: OVERLAY_FADE_SECONDS }),
     onOverlayEnded(listener) {
-      endedListeners.add(listener)
-      return () => { endedListeners.delete(listener) }
+      endedListeners.push(listener)
+      let subscribed = true
+      return () => {
+        if (!subscribed) return
+        subscribed = false
+        const i = endedListeners.indexOf(listener)
+        if (i >= 0) endedListeners.splice(i, 1)
+      }
     },
     unlock: mixer.unlock,
     stop() {
-      // Both channels stop: the scene is not to come back in the meantime.
+      // Both channels stop: the scene is not to come back in the meantime (the overlay stops first).
       holding = false
       mixer.stop()
     },

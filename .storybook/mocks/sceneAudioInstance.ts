@@ -13,18 +13,17 @@ export type SceneAudioCall =
 
 export const sceneAudioCalls: SceneAudioCall[] = []
 
-const overlayEndedListeners = new Set<(key: string) => void>()
+const overlayEndedListeners: Array<(key: string) => void> = []
 
 /** What the real service reports when a non-looping overlay finishes by itself. */
 export function fireOverlayEnded(key: string): void {
-  overlayEndedListeners.forEach(listener => listener(key))
+  for (const listener of [...overlayEndedListeners]) listener(key)
 }
 
-/** Also drops the overlay-ended listeners: the story's components subscribe after the decorators reset. */
+/** Keeps the overlay-ended listeners: a subscriber made before the reset stays, and each one unsubscribes itself. */
 export function resetSceneAudioMock(): void {
   sceneAudioCalls.length = 0
   blockedMock.value = false
-  overlayEndedListeners.clear()
 }
 
 const mock: SceneAudio = {
@@ -33,8 +32,14 @@ const mock: SceneAudio = {
   setScene(src) { sceneAudioCalls.push({ method: 'setScene', src }) },
   setOverlay(overlay) { sceneAudioCalls.push({ method: 'setOverlay', overlay: overlay && { ...overlay } }) },
   onOverlayEnded(listener) {
-    overlayEndedListeners.add(listener)
-    return () => { overlayEndedListeners.delete(listener) }
+    overlayEndedListeners.push(listener)
+    let subscribed = true
+    return () => {
+      if (!subscribed) return
+      subscribed = false
+      const i = overlayEndedListeners.indexOf(listener)
+      if (i >= 0) overlayEndedListeners.splice(i, 1)
+    }
   },
   async unlock() {
     sceneAudioCalls.push({ method: 'unlock' })

@@ -686,7 +686,8 @@ describe('audio channels', () => {
     expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,1)'])
   })
 
-  it('a non-looping track that finishes by itself is released and reported with its key', async () => {
+  // Changed on purpose (Sounds plan, Task 4 fix round 1): the same key after a natural end no longer plays it again.
+  it('a non-looping track that finishes by itself is released and reported with its key; the same key stays a no-op until null or another key', async () => {
     const ch = mixer.channel()
     const ended: string[] = []
     ch.onEnded(key => ended.push(key))
@@ -694,6 +695,9 @@ describe('audio channels', () => {
     track('a.mp3').finish(); await flush()
     expect(ended).toEqual(['k'])
     expect(track('a.mp3').calls.at(-1)).toBe('dispose')
+    ch.request(req('k', 'a.mp3', false, 1)); await flush()
+    expect(h.tracks).toHaveLength(1)
+    ch.request(null)
     ch.request(req('k', 'a.mp3', false, 1)); await flush()
     expect(h.tracks).toHaveLength(2)
   })
@@ -932,6 +936,46 @@ describe('the overlay', () => {
     expect(audible()).toEqual(['a.mp3'])
   })
 
+  it('the same key sent again after the overlay ended by itself plays nothing and does not hold the scene again', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    track('o').finish(); await flush()
+    const sceneCalls = [...track('a').calls]
+    audio.setOverlay(ov('k', 'o')); await flush()
+    expect(h.tracks).toHaveLength(2)
+    expect(track('a').calls).toEqual(sceneCalls)
+    expect(ended).toEqual(['k'])
+  })
+
+  it('after an overlay ended by itself, null then the same key plays it again, and so does a different key', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    track('o').finish(); await flush()
+    audio.setOverlay(null)
+    audio.setOverlay(ov('k', 'o')); await flush()
+    expect(h.tracks).toHaveLength(3)
+    h.tracks[2]!.resolveReady(); await flush()
+    expect(h.tracks[2]!.calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(track('a').calls.at(-1)).toBe('fadeTo(0,1)')
+    h.tracks[2]!.finish(); await flush()
+    await playOverlay('k2', 'p')
+    expect(track('p').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(ended).toEqual(['k', 'k'])
+  })
+
+  it('the same listener subscribed twice is called twice, and each unsubscribe removes one', async () => {
+    const heard: string[] = []
+    const listener = (key: string) => heard.push(key)
+    const offFirst = audio.onOverlayEnded(listener)
+    audio.onOverlayEnded(listener)
+    await playOverlay('k1', 'o')
+    track('o').finish(); await flush()
+    expect(heard).toEqual(['k1', 'k1'])
+    offFirst()
+    offFirst()
+    await playOverlay('k2', 'p')
+    track('p').finish(); await flush()
+    expect(heard).toEqual(['k1', 'k1', 'k2'])
+  })
+
   it('onOverlayEnded returns an unsubscribe', async () => {
     const heard: string[] = []
     const off = audio.onOverlayEnded(key => heard.push(key))
@@ -1076,6 +1120,19 @@ describe('the overlay', () => {
     expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)'])
   })
 
+  it('unlock() with both refused tries the overlay first, so the scene\'s start finds it held and never fades in', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    audio.setOverlay(ov('k', 'o')); track('o').refusePlay(); track('o').resolveReady(); await flush()
+    const order: string[] = []
+    const scenePlay = track('a').play.bind(track('a'))
+    const overlayPlay = track('o').play.bind(track('o'))
+    track('a').play = () => { order.push('scene'); return scenePlay() }
+    track('o').play = () => { order.push('overlay'); return overlayPlay() }
+    await audio.unlock()
+    expect(order).toEqual(['overlay', 'scene'])
+    expect(track('a').calls).toEqual(['play', 'play', 'pause'])
+  })
+
   it('unlock() with both the scene and the overlay refused ends with the overlay audible and the scene held', async () => {
     audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
     audio.setOverlay(ov('k', 'o')); track('o').refusePlay(); track('o').resolveReady(); await flush()
@@ -1086,6 +1143,27 @@ describe('the overlay', () => {
     expect(audible()).toEqual(['o.mp3'])
     track('o').finish(); await flush()
     expect(audible()).toEqual(['a.mp3'])
+  })
+
+  it('setOverlay(null) while a refused replacement waits releases the scene', async () => {
+    await playScene('a'); await playOverlay('k1', 'o'); await advance()
+    audio.setOverlay(ov('k2', 'p')); track('p').refusePlay(); track('p').resolveReady(); await flush()
+    expect(audio.blocked.value).toBe(true)
+    expect(track('a').calls.at(-1)).toBe('pause')
+    audio.setOverlay(null); await flush()
+    expect(track('p').calls).toEqual(['play', 'dispose'])
+    expect(track('a').calls.slice(-2)).toEqual(['play', 'fadeTo(1,1)'])
+    expect(audio.blocked.value).toBe(false)
+  })
+
+  it('an overlay error while its replacement loads keeps the scene held; the replacement then failing to load releases it', async () => {
+    await playScene('a'); await playOverlay('k1', 'o'); await advance()
+    audio.setOverlay(ov('k2', 'p')); await flush()
+    track('o').interrupt('error'); await flush()
+    expect(track('a').calls.at(-1)).toBe('pause')
+    track('p').rejectReady(); await flush()
+    expect(track('a').calls.slice(-2)).toEqual(['play', 'fadeTo(1,1)'])
+    expect(ended).toEqual([])
   })
 
   it('an overlay that errors mid-play is dropped and the scene comes back, without onOverlayEnded', async () => {
