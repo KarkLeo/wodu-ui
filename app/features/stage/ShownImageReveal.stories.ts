@@ -173,7 +173,6 @@ export const LoadingState: Story = {
 /** A failed picture is not remembered: once it can be fetched, closing and reopening shows it. */
 export const ReopeningAfterAFailureShowsThePicture: Story = {
   args: { image: { url: 'http://127.0.0.1:8090/api/files/images/story-retry/image.png', caption: 'Retried' } },
-  beforeEach: () => servePictures({}) && (() => {}),
   play: async ({ canvasElement }) => {
     const note = await body(canvasElement).findByText('The image could not be loaded.')
     await waitFor(() => expect(note).toBeVisible())
