@@ -45,7 +45,7 @@
     "playwright": "^1.65.0",
     "storybook": "^10.6.3",
     "typescript": "^6.0.3",
-    "vite": "^8.3.6",
+    "vite": "^8.3.7",
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.5",
     "vue-tsc": "^3.3.14"
