@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
-import IconPlus from '@/components/ui/icons/IconPlus.vue'
-import StateNote from '@/components/ui/StateNote.vue'
+import MediaPanelShell from './MediaPanelShell.vue'
 import SoundRow from './SoundRow.vue'
 import SoundSheet from './SoundSheet.vue'
-import { retryMedia } from '@/composables/useMediaSession'
+import { useMediaChanges } from '@/composables/useMediaChanges'
+import { useMediaDelete } from '@/composables/useMediaDelete'
 import { useStageControl } from '@/composables/useStageControl'
 import { useTable } from '@/composables/useTable'
-import { MEDIA_LIMITS } from '@/domain/stage'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
 import { useToastsStore } from '@/stores/toasts'
@@ -30,32 +28,14 @@ const { playingSoundId, playSound, stopSound } = useStageControl()
 const mine = computed(() => media.gameId !== null && media.gameId === gameId.value)
 const status = computed(() => (mine.value ? media.sounds.status : 'idle'))
 const sounds = computed(() => (mine.value ? media.sounds.list : []))
-const atLimit = computed(() => sounds.value.length >= MEDIA_LIMITS.sounds)
 
 // A sound's own change (play, stop, delete) is on its way: its row waits, the others do not.
-const busy = reactive(new Set<string>())
-
-// `failed` turns an error into the toast to show, or null for one that needs none.
-async function change(sound: Sound, run: () => Promise<void>, failed: (err: unknown) => string | null): Promise<boolean> {
-  if (busy.has(sound.id)) return true
-  busy.add(sound.id)
-  try {
-    await run()
-    return true
-  } catch (err) {
-    log.error('sound change failed', { id: sound.id, err })
-    const text = failed(err)
-    if (text) toasts.push(text, 'error')
-    return false
-  } finally {
-    busy.delete(sound.id)
-  }
-}
+const { busy, change } = useMediaChanges()
 
 // The stage writer says by itself when a switch did not reach the table, so the panel adds nothing of its own;
 // the row follows the store and stays as it was.
-const play = (sound: Sound) => change(sound, () => playSound(sound), () => null)
-const stop = (sound: Sound) => change(sound, stopSound, () => null)
+const play = (sound: Sound) => change(sound.id, () => playSound(sound), () => null)
+const stop = (sound: Sound) => change(sound.id, stopSound, () => null)
 
 // The loop values being saved, so a switch shows what was asked for until the answer comes.
 const loopSaving = reactive(new Map<string, boolean>())
@@ -87,7 +67,7 @@ function setRow(id: string, row: unknown) {
   else rows.delete(id)
 }
 
-const addRef = ref<{ $el: HTMLElement } | null>(null)
+const shell = ref<{ focusAdd: () => void } | null>(null)
 
 const sheetOpen = ref(false)
 // Kept after the sheet closes, so its title does not flip to "new sound" while it fades out.
@@ -103,154 +83,57 @@ function edit(sound: Sound) {
   sheetOpen.value = true
 }
 
-const deleting = ref<Sound | null>(null)
-const deleteOpen = computed({
-  get: () => deleting.value !== null,
-  set: (v: boolean) => { if (!v) deleting.value = null },
+const { open: deleteOpen, name: deletingName, live: deletingPlaying, ask: askDelete, confirm: confirmDelete } = useMediaDelete<Sound>({
+  gameId: () => gameId.value,
+  list: () => media.sounds.list,
+  busy,
+  change,
+  remove: deleteSound,
+  isLive: sound => playingSoundId.value === sound.id,
+  nameOf: sound => sound.name,
+  notMasterKey: 'errors.soundNotMaster',
+  failedKey: 'errors.soundDeleteFailed',
+  focusEntry: id => rows.get(id)?.focusDelete(),
+  focusAdd: () => shell.value?.focusAdd(),
 })
-// Kept when the sheet closes, or the title loses the name during the closing animation.
-const deletingName = ref('')
-const deletingPlaying = ref(false)
-
-function askDelete(sound: Sound) {
-  deletingName.value = sound.name
-  deletingPlaying.value = playingSoundId.value === sound.id
-  deleting.value = sound
-}
-
-async function confirmDelete() {
-  const sound = deleting.value
-  const game = gameId.value
-  if (!sound || !game || busy.has(sound.id)) return
-  deleting.value = null
-  const wasPlaying = playingSoundId.value === sound.id
-  const done = await change(sound, () => deleteSound(game, sound.id), (err) => {
-    // The session ended under the write: nobody is left to tell.
-    if (err instanceof MediaWriteError) {
-      if (err.kind === 'aborted') return null
-      if (err.kind === 'notMaster') return t('errors.soundNotMaster')
-    }
-    // A playing sound is stopped first; if that failed it still plays, and the stage writer has said so.
-    if (wasPlaying && playingSoundId.value === sound.id) return null
-    return t('errors.soundDeleteFailed')
-  })
-  await nextTick()
-  if (!done) {
-    rows.get(sound.id)?.focusDelete()
-    return
-  }
-  // The row went with the sound, and with it the button the focus came from.
-  if (!media.sounds.list.some(s => s.id === sound.id)) addRef.value?.$el.focus()
-}
 </script>
 
 <template>
-  <section class="sp" :aria-label="t('stage.sounds.title')">
-    <header class="sp-head">
-      <h2 class="sp-title">{{ t('stage.sounds.title') }}</h2>
-      <span v-if="status === 'ready'" class="sp-count">
-        {{ t('stage.sounds.count', { count: sounds.length, max: MEDIA_LIMITS.sounds }) }}
-      </span>
-      <Button
-        v-if="status === 'ready'"
-        ref="addRef"
-        variant="dashed"
-        size="sm"
-        :icon-left="IconPlus"
-        :disabled="atLimit"
-        @click="add"
-      >
-        {{ t('stage.sounds.add') }}
-      </Button>
-    </header>
+  <MediaPanelShell ref="shell" kind="sounds" :status="status" :count="sounds.length" @add="add">
+    <ul class="sp-list">
+      <SoundRow
+        v-for="sound in sounds"
+        :key="sound.id"
+        :ref="el => setRow(sound.id, el)"
+        :sound="sound"
+        :playing="playingSoundId === sound.id"
+        :busy="busy.has(sound.id)"
+        :loop="loopSaving.get(sound.id) ?? sound.loop"
+        :loop-saving="loopSaving.has(sound.id)"
+        :loop-next-play="loopWaits(sound)"
+        @play="play(sound)"
+        @stop="stop(sound)"
+        @toggle-loop="toggleLoop(sound, $event)"
+        @edit="edit(sound)"
+        @delete="askDelete(sound)"
+      />
+    </ul>
 
-    <div class="sp-body">
-      <StateNote v-if="status === 'loading' || status === 'idle'" size="sm" role="status">{{ t('stage.sounds.loading') }}</StateNote>
-      <StateNote v-else-if="status === 'failed'" size="sm" role="alert">
-        {{ t('stage.sounds.loadFailed') }}
-        <template #action>
-          <Button variant="ghost" size="sm" @click="retryMedia">{{ t('stage.sounds.retry') }}</Button>
+    <template #sheets>
+      <SoundSheet v-if="gameId" v-model:open="sheetOpen" :game-id="gameId" :sound="sheetSound" />
+
+      <ConfirmSheet v-model:open="deleteOpen" variant="danger" :title="t('stage.sounds.delete.title', { name: deletingName })">
+        <p>{{ deletingPlaying ? t('stage.sounds.delete.bodyPlaying') : t('stage.sounds.delete.body') }}</p>
+        <template #actions>
+          <Button variant="hero-danger" @click="confirmDelete">{{ t('stage.sounds.delete.confirm') }}</Button>
+          <Button variant="ghost" @click="deleteOpen = false">{{ t('common.cancel') }}</Button>
         </template>
-      </StateNote>
-      <template v-else-if="status === 'ready'">
-        <!-- Above the list: at the limit the list is long and the note would scroll out of sight. -->
-        <StateNote v-if="atLimit" size="sm" inline>{{ t('stage.sounds.limitReached', { max: MEDIA_LIMITS.sounds }) }}</StateNote>
-        <EmptyState v-if="!sounds.length" :hint="t('stage.sounds.empty')" />
-        <ul v-else class="sp-list">
-          <SoundRow
-            v-for="sound in sounds"
-            :key="sound.id"
-            :ref="el => setRow(sound.id, el)"
-            :sound="sound"
-            :playing="playingSoundId === sound.id"
-            :busy="busy.has(sound.id)"
-            :loop="loopSaving.get(sound.id) ?? sound.loop"
-            :loop-saving="loopSaving.has(sound.id)"
-            :loop-next-play="loopWaits(sound)"
-            @play="play(sound)"
-            @stop="stop(sound)"
-            @toggle-loop="toggleLoop(sound, $event)"
-            @edit="edit(sound)"
-            @delete="askDelete(sound)"
-          />
-        </ul>
-      </template>
-    </div>
-
-    <SoundSheet v-if="gameId" v-model:open="sheetOpen" :game-id="gameId" :sound="sheetSound" />
-
-    <ConfirmSheet v-model:open="deleteOpen" variant="danger" :title="t('stage.sounds.delete.title', { name: deletingName })">
-      <p>{{ deletingPlaying ? t('stage.sounds.delete.bodyPlaying') : t('stage.sounds.delete.body') }}</p>
-      <template #actions>
-        <Button variant="hero-danger" @click="confirmDelete">{{ t('stage.sounds.delete.confirm') }}</Button>
-        <Button variant="ghost" @click="deleteOpen = false">{{ t('common.cancel') }}</Button>
-      </template>
-    </ConfirmSheet>
-  </section>
+      </ConfirmSheet>
+    </template>
+  </MediaPanelShell>
 </template>
 
 <style scoped>
-.sp {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  border-radius: var(--r-lg);
-  background: var(--vtt-surface-a88);
-  box-shadow: 0 0 0 1px var(--vtt-gold-a35);
-  overflow: hidden;
-}
-.sp-head {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  /* Room on the right for the column's close button. */
-  padding: 12px 40px 10px 14px;
-  border-bottom: 1px solid var(--vtt-border-subtle);
-}
-.sp-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 20px;
-  color: var(--vtt-text-primary);
-}
-.sp-count {
-  flex: 1 1 auto;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
-.sp-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 .sp-list {
   display: flex;
   flex-direction: column;

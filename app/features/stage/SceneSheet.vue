@@ -7,17 +7,15 @@ import FormError from '@/components/ui/FormError.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import TextField from '@/components/ui/TextField.vue'
 import {
-  AUDIO_MAX_BYTES, AUDIO_TYPES, IMAGE_MAX_BYTES, IMAGE_TYPES, MEDIA_LIMITS, SCENE_NAME_MAX,
+  AUDIO_MAX_BYTES, AUDIO_TYPES, IMAGE_MAX_BYTES, IMAGE_TYPES, SCENE_NAME_MAX,
   checkSceneDraft, checkUpload,
 } from '@/domain/stage'
+import { useMediaSave } from '@/composables/useMediaSave'
 import { createScene, republishScene, MediaWriteError, updateScene, type SceneFiles } from '@/transport/media'
 import type { Scene } from '@/types/stage'
 import { ImageFitError } from '@/utils/fitImage'
-import { createLogger } from '@/utils/logger'
 import { sceneThumbUrl } from './sceneThumb'
 import { t } from '@/locales'
-
-const log = createLogger('scene-sheet')
 
 const props = defineProps<{
   gameId: string
@@ -37,21 +35,10 @@ const removeImage = ref(false)
 const removeSound = ref(false)
 const imageError = ref('')
 const soundError = ref('')
-const saving = ref(false)
-const progress = ref(0)
-type Failure = 'limitReached' | 'limitMayHaveChanged' | 'notMaster' | 'publishFailed' | 'saveFailed'
-const failure = ref<Failure | null>(null)
-// Set once the scene is saved but the table did not get it: the form is over, only the table's update is left.
-const savedScene = ref<Scene | null>(null)
-const republishFailed = ref(false)
-const republishing = ref(false)
-// One id for every try of one form, so a try after a lost answer cannot add the scene twice.
-let draftId = crypto.randomUUID()
-let attempt = 0
+const { saving, progress, failure, failureText, saved: savedScene, republishing, sheetOpen, reset: resetSave, run, retryPublish } = useMediaSave('scenes', open)
 
 function reset() {
-  attempt++
-  draftId = crypto.randomUUID()
+  resetSave()
   name.value = props.scene?.name ?? ''
   image.value = null
   sound.value = null
@@ -59,23 +46,9 @@ function reset() {
   removeSound.value = false
   imageError.value = ''
   soundError.value = ''
-  saving.value = false
-  failure.value = null
-  savedScene.value = null
-  republishFailed.value = false
-  republishing.value = false
 }
 
 watch(open, (v) => { if (v) reset() }, { immediate: true })
-
-// An upload that is under way is not abandoned by closing the sheet over it.
-const sheetOpen = computed({
-  get: () => open.value,
-  set: (v: boolean) => {
-    if (!v && saving.value) return
-    open.value = v
-  },
-})
 
 const hasImage = computed(() => image.value !== null || (!!props.scene?.image && !removeImage.value))
 const hasSound = computed(() => sound.value !== null || (!!props.scene?.sound && !removeSound.value))
@@ -129,21 +102,6 @@ function clearSound() {
   removeSound.value = true
 }
 
-const failureText = computed(() => {
-  switch (failure.value) {
-    case 'limitReached':
-    case 'limitMayHaveChanged':
-      return t(`stage.scenes.form.${failure.value}`, { max: MEDIA_LIMITS.scenes })
-    case 'publishFailed':
-      return t(republishFailed.value ? 'stage.scenes.form.publishStillFailed' : 'stage.scenes.form.publishFailed')
-    case 'notMaster':
-    case 'saveFailed':
-      return t(`stage.scenes.form.${failure.value}`)
-    default:
-      return ''
-  }
-})
-
 function files(): SceneFiles {
   const out: SceneFiles = {}
   const nextImage = image.value ?? (props.scene && removeImage.value ? null : undefined)
@@ -153,70 +111,34 @@ function files(): SceneFiles {
   return out
 }
 
-async function submit() {
-  if (!canSave.value) return
-  const mine = attempt
-  failure.value = null
-  imageError.value = ''
-  soundError.value = ''
-  saving.value = true
-  progress.value = 0
-  const onProgress = (fraction: number) => { if (mine === attempt) progress.value = fraction }
-  try {
-    if (props.scene) await updateScene(props.gameId, { id: props.scene.id, name: name.value }, files(), onProgress)
-    else await createScene(props.gameId, { id: draftId, name: name.value }, files(), onProgress)
-    if (mine !== attempt) return
-    saving.value = false
-    open.value = false
-  } catch (err) {
-    if (mine !== attempt) return
-    saving.value = false
-    if (err instanceof ImageFitError) {
-      imageError.value = t(err.kind === 'decode' ? 'stage.scenes.form.imageUnreadable' : 'stage.scenes.form.imageCannotFit')
-      return
-    }
-    if (err instanceof MediaWriteError) {
-      // The session ended under the upload: there is nobody to tell.
-      if (err.kind === 'aborted') return
-      if (err.kind === 'fileRefused') {
-        const { field, reason } = err.refusal ?? { field: 'image', reason: 'type' }
-        const text = field === 'image'
-          ? t(reason === 'type' ? 'stage.scenes.form.wrongImageType' : 'stage.scenes.form.imageTooLarge', { mb: IMAGE_MAX_BYTES / MB })
-          : t(reason === 'type' ? 'stage.scenes.form.wrongSoundType' : 'stage.scenes.form.soundTooLarge', { mb: AUDIO_MAX_BYTES / MB })
-        if (field === 'image') imageError.value = text
-        else soundError.value = text
-        return
-      }
-      if (err.kind === 'stagePublishFailed' && err.saved) {
-        savedScene.value = err.saved as Scene
-        failure.value = 'publishFailed'
-        return
-      }
-      if (err.kind !== 'stagePublishFailed') {
-        failure.value = err.kind
-        return
-      }
-    }
-    log.error('save failed', { err })
-    failure.value = 'saveFailed'
+function refused(err: unknown): boolean {
+  if (err instanceof ImageFitError) {
+    imageError.value = t(err.kind === 'decode' ? 'stage.scenes.form.imageUnreadable' : 'stage.scenes.form.imageCannotFit')
+    return true
   }
+  if (err instanceof MediaWriteError && err.kind === 'fileRefused') {
+    const { field, reason } = err.refusal ?? { field: 'image', reason: 'type' }
+    const text = field === 'image'
+      ? t(reason === 'type' ? 'stage.scenes.form.wrongImageType' : 'stage.scenes.form.imageTooLarge', { mb: IMAGE_MAX_BYTES / MB })
+      : t(reason === 'type' ? 'stage.scenes.form.wrongSoundType' : 'stage.scenes.form.soundTooLarge', { mb: AUDIO_MAX_BYTES / MB })
+    if (field === 'image') imageError.value = text
+    else soundError.value = text
+    return true
+  }
+  return false
 }
 
-async function retryPublish() {
-  const scene = savedScene.value
-  if (!scene || republishing.value) return
-  const mine = attempt
-  republishing.value = true
-  try {
-    await republishScene(props.gameId, scene)
-    if (mine === attempt) open.value = false
-  } catch (err) {
-    log.error('republish failed', { err })
-    if (mine === attempt) republishFailed.value = true
-  } finally {
-    if (mine === attempt) republishing.value = false
-  }
+async function submit() {
+  if (!canSave.value) return
+  imageError.value = ''
+  soundError.value = ''
+  await run(async ({ id, onProgress }) => {
+    if (props.scene) await updateScene(props.gameId, { id: props.scene.id, name: name.value }, files(), onProgress)
+    else await createScene(props.gameId, { id, name: name.value }, files(), onProgress)
+  }, refused)
 }
+
+const publish = () => retryPublish(scene => republishScene(props.gameId, scene))
 </script>
 
 <template>
@@ -262,7 +184,7 @@ async function retryPublish() {
 
       <div v-if="failure" class="ss-failure">
         <FormError role="alert">{{ failureText }}</FormError>
-        <Button v-if="savedScene" variant="ghost" size="sm" :disabled="republishing" @click="retryPublish">
+        <Button v-if="savedScene" variant="ghost" size="sm" :disabled="republishing" @click="publish">
           {{ t('stage.scenes.form.publishRetry') }}
         </Button>
       </div>

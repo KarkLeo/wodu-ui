@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Pill from '@/components/ui/Pill.vue'
 import Switch from '@/components/ui/Switch.vue'
@@ -7,6 +7,7 @@ import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconPlay from '@/components/ui/icons/IconPlay.vue'
 import IconStop from '@/components/ui/icons/IconStop.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import { useBusyFocus } from '@/composables/useBusyFocus'
 import { formatDuration } from '@/domain/stage'
 import type { Sound } from '@/types/stage'
 import { t } from '@/locales'
@@ -45,22 +46,10 @@ function toggle() {
   else emit('play')
 }
 
-// A disabled button drops the focus, so a keyboard user gets it back on the same button when the change is over.
 const playRef = ref<{ $el: HTMLElement } | null>(null)
 const editRef = ref<{ $el: HTMLElement } | null>(null)
 const deleteRef = ref<{ $el: HTMLElement } | null>(null)
-let focused: { $el: HTMLElement } | null = null
-watch(() => props.busy, async (busy) => {
-  if (busy) {
-    const active = document.activeElement
-    focused = [playRef, editRef, deleteRef].map(r => r.value).find(r => r?.$el === active) ?? null
-    return
-  }
-  const target = focused
-  focused = null
-  await nextTick()
-  if (target && (!document.activeElement || document.activeElement === document.body)) target.$el.focus()
-})
+useBusyFocus(() => props.busy, [playRef, editRef, deleteRef])
 
 defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
 </script>

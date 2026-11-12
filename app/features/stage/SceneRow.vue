@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Pill from '@/components/ui/Pill.vue'
@@ -7,6 +7,7 @@ import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconImage from '@/components/ui/icons/IconImage.vue'
 import IconMusic from '@/components/ui/icons/IconMusic.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import { useBusyFocus } from '@/composables/useBusyFocus'
 import { sceneThumbUrl } from './sceneThumb'
 import type { Scene } from '@/types/stage'
 import { t } from '@/locales'
@@ -35,22 +36,10 @@ const broken = ref(false)
 watch(() => props.scene.image, () => { broken.value = false })
 const thumb = computed(() => (broken.value ? null : sceneThumbUrl(props.scene)))
 
-// A disabled button drops the focus, so a keyboard user gets it back on the same button when the change is over.
 const mainRef = ref<{ $el: HTMLElement } | null>(null)
 const editRef = ref<{ $el: HTMLElement } | null>(null)
 const deleteRef = ref<{ $el: HTMLElement } | null>(null)
-let focused: { $el: HTMLElement } | null = null
-watch(() => props.busy, async (busy) => {
-  if (busy) {
-    const active = document.activeElement
-    focused = [mainRef, editRef, deleteRef].map(r => r.value).find(r => r?.$el === active) ?? null
-    return
-  }
-  const target = focused
-  focused = null
-  await nextTick()
-  if (target && (!document.activeElement || document.activeElement === document.body)) target.$el.focus()
-})
+useBusyFocus(() => props.busy, [mainRef, editRef, deleteRef])
 
 defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
 </script>

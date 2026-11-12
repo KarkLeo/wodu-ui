@@ -7,16 +7,14 @@ import FormError from '@/components/ui/FormError.vue'
 import StateNote from '@/components/ui/StateNote.vue'
 import Switch from '@/components/ui/Switch.vue'
 import TextField from '@/components/ui/TextField.vue'
-import { AUDIO_MAX_BYTES, AUDIO_TYPES, MEDIA_LIMITS, SOUND_NAME_MAX, checkSoundDraft, checkUpload } from '@/domain/stage'
+import { AUDIO_MAX_BYTES, AUDIO_TYPES, SOUND_NAME_MAX, checkSoundDraft, checkUpload } from '@/domain/stage'
+import { useMediaSave } from '@/composables/useMediaSave'
 import { useMediaStore } from '@/stores/media'
 import { createSound, MediaWriteError, updateSound } from '@/transport/media'
 import type { Sound } from '@/types/stage'
 import { audioDuration } from '@/utils/audioDuration'
-import { createLogger } from '@/utils/logger'
 import { cutText } from '@/utils/text'
 import { t } from '@/locales'
-
-const log = createLogger('sound-sheet')
 
 const props = defineProps<{
   gameId: string
@@ -36,40 +34,22 @@ const loop = ref(false)
 // The length of the picked file, read while the person fills in the rest; null when the browser cannot tell.
 let duration: Promise<number | null> = Promise.resolve(null)
 const fileError = ref('')
-const saving = ref(false)
 // Saving has begun but the file's length is still being read: the upload has not started.
 const reading = ref(false)
-const progress = ref(0)
-type Failure = 'limitReached' | 'limitMayHaveChanged' | 'notMaster' | 'saveFailed'
-const failure = ref<Failure | null>(null)
-// One id for every try of one form, so a try after a lost answer cannot add the sound twice.
-let draftId = crypto.randomUUID()
-let attempt = 0
+const { saving, progress, failure, failureText, sheetOpen, reset: resetSave, run } = useMediaSave('sounds', open)
 
 function reset() {
-  attempt++
-  draftId = crypto.randomUUID()
+  resetSave()
   name.value = props.sound?.name ?? ''
   nameTyped.value = false
   file.value = null
   loop.value = false
   duration = Promise.resolve(null)
   fileError.value = ''
-  saving.value = false
   reading.value = false
-  failure.value = null
 }
 
 watch(open, (v) => { if (v) reset() }, { immediate: true })
-
-// An upload that is under way is not abandoned by closing the sheet over it.
-const sheetOpen = computed({
-  get: () => open.value,
-  set: (v: boolean) => {
-    if (!v && saving.value) return
-    open.value = v
-  },
-})
 
 const problems = computed(() => checkSoundDraft({ name: name.value, hasFile: props.sound !== undefined || file.value !== null }))
 const canSave = computed(() => !saving.value && problems.value.length === 0)
@@ -108,22 +88,17 @@ function pickFile(picked: File | null) {
   if (!nameTyped.value) name.value = cutText(picked.name.replace(/\.[^.]*$/, ''), SOUND_NAME_MAX)
 }
 
-const failureText = computed(() => {
-  switch (failure.value) {
-    case 'limitReached':
-    case 'limitMayHaveChanged':
-      return t(`stage.sounds.form.${failure.value}`, { max: MEDIA_LIMITS.sounds })
-    case 'notMaster':
-    case 'saveFailed':
-      return t(`stage.sounds.form.${failure.value}`)
-    default:
-      return ''
+function refused(err: unknown): boolean {
+  reading.value = false
+  if (err instanceof MediaWriteError && err.kind === 'fileRefused') {
+    fileError.value = t(err.refusal?.reason === 'size' ? 'stage.sounds.form.tooLarge' : 'stage.sounds.form.wrongType', { mb: AUDIO_MAX_BYTES / MB })
+    return true
   }
-})
+  return false
+}
 
 async function submit() {
   if (!canSave.value) return
-  const mine = attempt
   const picked = file.value
   if (!props.sound && !picked) return
   // The entry as it is now: a loop switch or the master's other device may have changed it since the sheet opened.
@@ -133,43 +108,18 @@ async function submit() {
     open.value = false
     return
   }
-  failure.value = null
   fileError.value = ''
-  saving.value = true
-  progress.value = 0
-  const onProgress = (fraction: number) => { if (mine === attempt) progress.value = fraction }
-  try {
+  await run(async ({ id, onProgress, stale }) => {
     if (current) {
       await updateSound(props.gameId, { id: current.id, name: name.value, loop: current.loop, duration: current.duration })
     } else if (picked) {
       reading.value = true
       const length = await duration
-      if (mine !== attempt) return
+      if (stale()) return
       reading.value = false
-      await createSound(props.gameId, { id: draftId, name: name.value, loop: loop.value, duration: length }, picked, onProgress)
+      await createSound(props.gameId, { id, name: name.value, loop: loop.value, duration: length }, picked, onProgress)
     }
-    if (mine !== attempt) return
-    saving.value = false
-    open.value = false
-  } catch (err) {
-    if (mine !== attempt) return
-    saving.value = false
-    reading.value = false
-    if (err instanceof MediaWriteError) {
-      // The session ended under the upload: there is nobody to tell.
-      if (err.kind === 'aborted') return
-      if (err.kind === 'fileRefused') {
-        fileError.value = t(err.refusal?.reason === 'size' ? 'stage.sounds.form.tooLarge' : 'stage.sounds.form.wrongType', { mb: AUDIO_MAX_BYTES / MB })
-        return
-      }
-      if (err.kind === 'limitReached' || err.kind === 'limitMayHaveChanged' || err.kind === 'notMaster') {
-        failure.value = err.kind
-        return
-      }
-    }
-    log.error('save failed', { err })
-    failure.value = 'saveFailed'
-  }
+  }, refused)
 }
 </script>
 
