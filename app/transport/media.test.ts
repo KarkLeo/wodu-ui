@@ -595,7 +595,7 @@ describe('several kinds', () => {
     const { createMedia, mediaKinds, media } = await load()
     wireSounds(mediaKinds)
     media.put('scenes', GAME, { id: 'same', name: 'Scene', image: null, sound: 'sound.mp3' })
-    media.put('sounds', GAME, { id: 'same' })
+    media.put('sounds', GAME, { id: 'same', name: 'Sound', loop: false, duration: null, file: 'sound.mp3' })
     media.remove('sounds', GAME, 'same')
     expect(media.scenes.list.map(s => s.id)).toEqual(['same'])
     expect(media.sounds.list).toEqual([])

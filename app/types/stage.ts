@@ -15,6 +15,15 @@ export interface Scene {
   sound: string | null
 }
 
+/** `file` is the stored file name on the record; a sound always has its file. `duration` is in seconds, null when unknown. */
+export interface Sound {
+  id: string
+  name: string
+  loop: boolean
+  duration: number | null
+  file: string
+}
+
 /** Temporary stand-in for the sound and image entries; the Sounds and Shown-images steps replace it with the real types. */
 export interface UntypedMediaEntry {
   id: string
@@ -23,7 +32,7 @@ export interface UntypedMediaEntry {
 /** The entry each kind keeps in the master's store. */
 export interface MediaEntries {
   scenes: Scene
-  sounds: UntypedMediaEntry
+  sounds: Sound
   images: UntypedMediaEntry
 }
 

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
   checkUpload, neutralFileName, fileUrl, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
+  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, formatDuration, overlayKey,
+  oneShotClearDelay, SOUND_NAME_MAX, STALE_ONE_SHOT_SECONDS,
 } from './stage'
 import type { Scene, StageImage, StageSound } from '@/types/stage'
 
@@ -173,6 +175,7 @@ describe('playbackTarget', () => {
       sceneSound: 'https://api.test/api/files/scenes/scene-tavern-0001/sound_cd34.mp3',
       backdrop: 'https://api.test/api/files/scenes/scene-tavern-0001/image_ab12.webp',
       wantsSound: true,
+      overlay: null,
     })
   })
 
@@ -199,16 +202,142 @@ describe('playbackTarget', () => {
   })
 
   it('has nothing for no stage, whatever the prefs', () => {
-    expect(playbackTarget(null, all, base)).toEqual({ sceneSound: null, backdrop: null, wantsSound: false })
+    expect(playbackTarget(null, all, base)).toEqual({ sceneSound: null, backdrop: null, wantsSound: false, overlay: null })
   })
 
   it('wants sound when only an overlay sound plays', () => {
     const stage = { ...emptyStage('g1'), sound: playing }
     expect(playbackTarget(stage, { sound: 'unset', background: true }, base))
-      .toEqual({ sceneSound: null, backdrop: null, wantsSound: true })
+      .toEqual({ sceneSound: null, backdrop: null, wantsSound: true, overlay: null })
   })
 
   it('wants no sound for an empty stage', () => {
     expect(playbackTarget(emptyStage('g1'), all, base).wantsSound).toBe(false)
+  })
+
+  describe('overlay', () => {
+    const oneShot: StageSound = { ...playing, loop: false }
+    const withOverlay = (sound: StageSound) => ({ ...emptyStage('g1'), sound })
+    const live = (now: string) => ({ receivedLive: true, now: new Date(now) })
+    const url = 'https://api.test/api/files/sounds/sound-record-0001/rain.mp3'
+
+    it('plays a looping sound with sound on, keyed by id and start', () => {
+      expect(playbackTarget(withOverlay(playing), all, base, { receivedLive: false, now: new Date('2026-11-12T12:00:00Z') }).overlay)
+        .toEqual({ key: overlayKey(playing), src: url, loop: true })
+    })
+
+    it('is null with sound off or unset', () => {
+      for (const sound of ['unset', 'off'] as const) {
+        const target = playbackTarget(withOverlay(playing), { sound, background: true }, base, live('2026-11-12T10:00:01Z'))
+        expect(target.overlay).toBeNull()
+        expect(target.wantsSound).toBe(true)
+      }
+    })
+
+    it('is null for a stale one-shot found on load, played when received live', () => {
+      const late = new Date('2026-11-12T10:10:00Z')
+      expect(playbackTarget(withOverlay(oneShot), all, base, { receivedLive: false, now: late }).overlay).toBeNull()
+      expect(playbackTarget(withOverlay(oneShot), all, base, { receivedLive: true, now: late }).overlay)
+        .toEqual({ key: overlayKey(oneShot), src: url, loop: false })
+    })
+
+    it('is null without a sound on the stage', () => {
+      expect(playbackTarget(onTavern, all, base, live('2026-11-12T10:00:01Z')).overlay).toBeNull()
+    })
+  })
+})
+
+describe('withSound', () => {
+  const stage = { ...withScene(emptyStage('g1'), tavern), image: shown }
+  it('points at the sound file, copies loop, stamps startedAt and keeps scene and image', () => {
+    const next = withSound(stage, { id: 'x1', name: 'Brawl', loop: true, duration: 160, file: 'sound_ab.mp3' }, '2026-11-12T10:00:00.000Z')
+    expect(next.sound).toEqual({
+      id: 'x1',
+      file: { collection: 'sounds', record: 'x1', name: 'sound_ab.mp3' },
+      loop: true,
+      startedAt: '2026-11-12T10:00:00.000Z',
+    })
+    expect(JSON.stringify(next)).not.toContain('Brawl')
+    expect(next.scene).toBe(stage.scene)
+    expect(next.image).toBe(stage.image)
+  })
+  it('withoutSound clears only the sound', () => {
+    const next = withoutSound({ ...stage, sound: playing })
+    expect(next.sound).toBeNull()
+    expect(next.scene).toBe(stage.scene)
+    expect(next.image).toBe(stage.image)
+  })
+})
+
+describe('shouldPlayOverlay', () => {
+  const at = (s: string) => new Date(s)
+  const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
+  it('plays loops always, one-shots only live or fresh', () => {
+    expect(STALE_ONE_SHOT_SECONDS).toBe(5)
+    expect(shouldPlayOverlay({ ...oneShot, loop: true }, false, at('2026-11-12T11:00:00Z'))).toBe(true)
+    expect(shouldPlayOverlay(oneShot, true, at('2026-11-12T11:00:00Z'))).toBe(true)
+    expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T10:00:05Z'))).toBe(true)
+    expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T10:00:06Z'))).toBe(false)
+  })
+})
+
+describe('oneShotClearDelay', () => {
+  const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
+  const at = (s: string) => new Date(s)
+  it('is null for a loop', () => {
+    expect(oneShotClearDelay(playing, 30, at('2026-11-12T10:00:00Z'))).toBeNull()
+  })
+  it('counts down the known duration and never goes below zero', () => {
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'))).toBe(20000)
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:01:00Z'))).toBe(0)
+  })
+  it('falls back to the stale window for an unknown duration', () => {
+    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:02Z'))).toBe(3000)
+    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:09Z'))).toBe(0)
+  })
+})
+
+describe('formatDuration', () => {
+  it('formats whole seconds as m:ss and null as a dash', () => {
+    expect([252, 6, 0, 3600, null].map(formatDuration)).toEqual(['4:12', '0:06', '0:00', '60:00', '—'])
+    expect(formatDuration(6.9)).toBe('0:06')
+  })
+})
+
+describe('checkSoundData', () => {
+  it('keeps a valid sound and defaults a missing or null duration to null', () => {
+    expect(checkSoundData({ id: 's1', name: ' Brawl ', loop: true, duration: 12.5 }))
+      .toEqual({ id: 's1', name: 'Brawl', loop: true, duration: 12.5 })
+    expect(checkSoundData({ id: 's1', name: 'a', loop: false })).toEqual({ id: 's1', name: 'a', loop: false, duration: null })
+    expect(checkSoundData({ id: 's1', name: 'a', loop: false, duration: null })?.duration).toBeNull()
+    expect(checkSoundData({ id: 's1', name: 'a', loop: false, duration: 0 })?.duration).toBe(0)
+  })
+  it('refuses a bad id, a non-boolean loop, a bad duration and a bad name', () => {
+    const ok = { id: 's1', name: 'a', loop: false, duration: 1 }
+    expect(checkSoundData(null)).toBeNull()
+    expect(checkSoundData({ ...ok, id: '' })).toBeNull()
+    expect(checkSoundData({ ...ok, loop: 'yes' })).toBeNull()
+    expect(checkSoundData({ ...ok, loop: undefined })).toBeNull()
+    for (const duration of [-1, Infinity, NaN, '3']) expect(checkSoundData({ ...ok, duration })).toBeNull()
+    expect(checkSoundData({ ...ok, name: '   ' })).toBeNull()
+    expect(checkSoundData({ ...ok, name: 'x'.repeat(SOUND_NAME_MAX + 1) })).toBeNull()
+    expect(checkSoundData({ ...ok, name: 'x'.repeat(SOUND_NAME_MAX) })).not.toBeNull()
+  })
+})
+
+describe('checkSoundDraft', () => {
+  it('reports each problem and is empty when clean', () => {
+    expect(checkSoundDraft({ name: '  ', hasFile: true })).toEqual(['nameRequired'])
+    expect(checkSoundDraft({ name: 'x'.repeat(81), hasFile: true })).toEqual(['nameTooLong'])
+    expect(checkSoundDraft({ name: 'Brawl', hasFile: false })).toEqual(['noFile'])
+    expect(checkSoundDraft({ name: '', hasFile: false })).toEqual(['nameRequired', 'noFile'])
+    expect(checkSoundDraft({ name: 'Brawl', hasFile: true })).toEqual([])
+  })
+})
+
+describe('overlayKey', () => {
+  it('differs for the same sound started twice', () => {
+    expect(overlayKey(playing)).toBe('k1:2026-11-12T10:00:00.000Z')
+    expect(overlayKey(playing)).not.toBe(overlayKey({ ...playing, startedAt: '2026-11-12T10:05:00.000Z' }))
   })
 })

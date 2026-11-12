@@ -1,5 +1,5 @@
 import type {
-  FileRef, MediaCollection, Scene, Stage, StageImage, StageScene, StageSound,
+  FileRef, MediaCollection, Scene, Sound, Stage, StageImage, StageScene, StageSound,
 } from '@/types/stage'
 
 export const MEDIA_LIMITS = { scenes: 20, sounds: 15, images: 30 } as const
@@ -8,6 +8,8 @@ export const AUDIO_MAX_BYTES = 20971520
 export const IMAGE_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image/webp']
 export const AUDIO_TYPES: readonly string[] = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/aac']
 export const SCENE_NAME_MAX = 80
+export const SOUND_NAME_MAX = 80
+export const STALE_ONE_SHOT_SECONDS = 5
 
 export type FileKind = 'image' | 'audio'
 
@@ -43,6 +45,22 @@ export function withScene(stage: Stage, scene: Scene): Stage {
 
 export function withoutScene(stage: Stage): Stage {
   return { ...stage, scene: null }
+}
+
+export function withSound(stage: Stage, sound: Sound, startedAt: string): Stage {
+  return {
+    ...stage,
+    sound: {
+      id: sound.id,
+      file: { collection: 'sounds', record: sound.id, name: sound.file },
+      loop: sound.loop,
+      startedAt,
+    },
+  }
+}
+
+export function withoutSound(stage: Stage): Stage {
+  return { ...stage, sound: null }
 }
 
 // A record id as PocketBase accepts it from this client, and a stored file name that cannot change the path
@@ -116,6 +134,49 @@ export function checkSceneDraft(
   return problems
 }
 
+export function checkSoundData(
+  value: unknown,
+): { id: string; name: string; loop: boolean; duration: number | null } | null {
+  if (!isRecord(value) || !nonEmpty(value.id) || typeof value.name !== 'string') return null
+  const name = value.name.trim()
+  if (!name || name.length > SOUND_NAME_MAX || typeof value.loop !== 'boolean') return null
+  const raw = value.duration
+  if (raw !== undefined && raw !== null && (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0)) return null
+  return { id: value.id, name, loop: value.loop, duration: typeof raw === 'number' ? raw : null }
+}
+
+export function checkSoundDraft(draft: { name: string; hasFile: boolean }): Array<'nameRequired' | 'nameTooLong' | 'noFile'> {
+  const problems: Array<'nameRequired' | 'nameTooLong' | 'noFile'> = []
+  const name = draft.name.trim()
+  if (!name) problems.push('nameRequired')
+  else if (name.length > SOUND_NAME_MAX) problems.push('nameTooLong')
+  if (!draft.hasFile) problems.push('noFile')
+  return problems
+}
+
+/** Whether a client that finds this overlay in the stage should play it: always while looping, otherwise only if fresh. */
+export function shouldPlayOverlay(sound: StageSound, receivedLive: boolean, now: Date): boolean {
+  if (sound.loop || receivedLive) return true
+  return now.getTime() - Date.parse(sound.startedAt) <= STALE_ONE_SHOT_SECONDS * 1000
+}
+
+/** Milliseconds until the master's client clears a one-shot overlay from the stage; null for a loop. */
+export function oneShotClearDelay(sound: StageSound, duration: number | null, now: Date): number | null {
+  if (sound.loop) return null
+  const seconds = duration === null ? STALE_ONE_SHOT_SECONDS : duration
+  return Math.max(0, Date.parse(sound.startedAt) + seconds * 1000 - now.getTime())
+}
+
+export function formatDuration(seconds: number | null): string {
+  if (seconds === null) return '—'
+  const whole = Math.floor(seconds)
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
+export function overlayKey(sound: StageSound): string {
+  return `${sound.id}:${sound.startedAt}`
+}
+
 export function checkUpload(kind: FileKind, file: { type: string; size: number }): 'ok' | 'type' | 'size' {
   const types = kind === 'image' ? IMAGE_TYPES : AUDIO_TYPES
   if (!types.includes(file.type)) return 'type'
@@ -147,16 +208,26 @@ export interface PlaybackTarget {
   backdrop: string | null
   /** The stage carries a sound, whatever this device's choice: it decides whether to ask. */
   wantsSound: boolean
+  /** The single sound the master played, only while this device has sound on and it is worth playing. */
+  overlay: { key: string; src: string; loop: boolean } | null
 }
 
 /** What one device fetches and plays for a stage: what is off gets no URL, so nothing is downloaded. */
-export function playbackTarget(stage: Stage | null, prefs: PlaybackPrefs, base: string): PlaybackTarget {
-  if (!stage) return { sceneSound: null, backdrop: null, wantsSound: false }
+export function playbackTarget(
+  stage: Stage | null,
+  prefs: PlaybackPrefs,
+  base: string,
+  arrival: { receivedLive: boolean; now: Date } = { receivedLive: true, now: new Date() },
+): PlaybackTarget {
+  if (!stage) return { sceneSound: null, backdrop: null, wantsSound: false, overlay: null }
   const sound = stage.scene?.sound ?? null
   const image = stage.scene?.image ?? null
   return {
     sceneSound: prefs.sound === 'on' && sound ? fileUrl(base, sound) : null,
     backdrop: prefs.background && image ? fileUrl(base, image) : null,
     wantsSound: sound !== null || stage.sound !== null,
+    overlay: stage.sound && prefs.sound === 'on' && shouldPlayOverlay(stage.sound, arrival.receivedLive, arrival.now)
+      ? { key: overlayKey(stage.sound), src: fileUrl(base, stage.sound.file), loop: stage.sound.loop }
+      : null,
   }
 }
