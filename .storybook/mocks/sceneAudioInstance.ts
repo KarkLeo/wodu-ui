@@ -10,6 +10,7 @@ export type SceneAudioCall =
   | { method: 'setVolume'; level: number }
   | { method: 'unlock' }
   | { method: 'arm' }
+  | { method: 'disarm' }
   | { method: 'stop' }
 
 export const sceneAudioCalls: SceneAudioCall[] = []
@@ -47,6 +48,7 @@ const mock: SceneAudio = {
     blockedMock.value = false
   },
   arm() { sceneAudioCalls.push({ method: 'arm' }) },
+  disarm() { sceneAudioCalls.push({ method: 'disarm' }) },
   stop() { sceneAudioCalls.push({ method: 'stop' }) },
 }
 

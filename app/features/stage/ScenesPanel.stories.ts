@@ -514,6 +514,9 @@ export const PublishFailedAfterSave: Story = {
     await user.upload(sheet.getByLabelText('Picture', { selector: 'input' }), pictureFile('cellar.png'))
     await user.click(sheet.getByRole('button', { name: 'Save' }))
     await expect(await sheet.findByRole('alert')).toHaveTextContent('The scene is saved, but the table was not updated.')
+    // The sheet's own words are the one message: no stage toast besides.
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(toastTexts()).toEqual([])
     await expect(sheet.getByRole('dialog')).toBeVisible()
     await expect(sheet.queryByRole('button', { name: 'Save' })).toBeNull()
     await expect(storedRecords('scenes').find(r => r.id === TAVERN.id)).toMatchObject({ image: 'image.png' })
@@ -521,6 +524,7 @@ export const PublishFailedAfterSave: Story = {
     await user.click(sheet.getByRole('button', { name: 'Try again' }))
     await waitFor(() => expect(sheet.getByRole('alert')).toHaveTextContent('the table still was not updated'))
     await expect(sheet.getByRole('dialog')).toBeVisible()
+    await expect(toastTexts()).toEqual([])
     stages.mockRestore()
     await user.click(sheet.getByRole('button', { name: 'Try again' }))
     await closed(canvasElement)

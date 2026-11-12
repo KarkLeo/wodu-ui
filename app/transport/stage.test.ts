@@ -10,9 +10,17 @@ let stays = true
 let reportThrows = false
 const failures: Array<{ err: unknown; message: string }> = []
 
+const lists: unknown[] = []
+let listImpl: () => Promise<unknown[]>
+
 vi.mock('@/transport/pb', () => ({
   pb: {
+    filter: (raw: string, params: Record<string, unknown>) => raw.replace(/\{:(\w+)\}/g, (_m, key: string) => JSON.stringify(params[key])),
     collection: () => ({
+      getFullList: (options: unknown) => {
+        lists.push(options)
+        return listImpl()
+      },
       update: (id: string, body: { data: Stage }) => {
         updates.push({ id, body })
         return updateImpl(id, body)
@@ -73,6 +81,8 @@ async function load({ rowSeen = true } = {}) {
 }
 
 beforeEach(() => {
+  lists.length = 0
+  listImpl = async () => []
   updates.length = 0
   creates.length = 0
   failures.length = 0
@@ -321,5 +331,83 @@ describe('where the sound slot\'s value came from', () => {
     expect(store.soundArrivalOf(GAME)).toEqual(first)
     applyStages([row(withScene)])
     expect(store.soundArrivalOf(GAME)).toEqual(first)
+  })
+})
+
+// Only master devices write; while their own write is in flight, a remote row is skipped so it cannot undo the newer
+// optimistic value. What the server holds is read once the writer is done, so such a change is not lost.
+describe('a remote change skipped during a write', () => {
+  const row = (data: Stage) => ({ id: data.id, game: data.id, data })
+
+  it('is re-read once the writer settles and applied as a load', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage, store } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s9')))
+    expect(store.stageOf(GAME).sound?.id).toBe('s1')
+    listImpl = async () => [row(stage('s9'))]
+    gate.resolve()
+    await done
+    await flush()
+    expect(lists).toEqual([{ filter: `id = "${GAME}"` }])
+    expect(store.stageOf(GAME).sound?.id).toBe('s9')
+    expect(store.soundArrivalOf(GAME)?.source).toBe('load')
+  })
+
+  it('changes nothing when the server holds what is shown, and reads only once', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage, store } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s9')))
+    listImpl = async () => [row(stage('s1'))]
+    gate.resolve()
+    await done
+    await flush()
+    await flush()
+    expect(lists).toHaveLength(1)
+    expect(store.stageOf(GAME).sound?.id).toBe('s1')
+  })
+
+  it('a snapshot row skipped during a write is re-read too', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, applyStages, store } = await load()
+    const done = publishStage(stage('s1'))
+    applyStages([row(stage('s9'))])
+    listImpl = async () => [row(stage('s9'))]
+    gate.resolve()
+    await done
+    await flush()
+    expect(lists).toHaveLength(1)
+    expect(store.stageOf(GAME).sound?.id).toBe('s9')
+  })
+
+  it('the echo of the value being written asks for no re-read', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s1')))
+    gate.resolve()
+    await done
+    await flush()
+    expect(lists).toHaveLength(0)
+  })
+
+  it('a failed re-read is quiet and leaves the stage as it is', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage, store } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s9')))
+    listImpl = async () => { throw httpError(500) }
+    gate.resolve()
+    await done
+    await flush()
+    expect(lists).toHaveLength(1)
+    expect(store.stageOf(GAME).sound?.id).toBe('s1')
+    expect(failures).toHaveLength(0)
   })
 })

@@ -1312,6 +1312,36 @@ describe('arming', () => {
     expect(audio.blocked.value).toBe(true)
   })
 
+  it('disarm removes the listener the arming installed', () => {
+    audio.arm()
+    expect(h.gestures).toHaveLength(1)
+    audio.disarm()
+    expect(h.gestures).toHaveLength(0)
+  })
+
+  it('arm, disarm: a later gesture primes nothing, and arming again works', async () => {
+    audio.arm()
+    audio.disarm()
+    // No listener is left to hear a tap elsewhere on the page.
+    expect(h.gestures).toHaveLength(0)
+    expect(h.unlockCalls).toBe(0)
+    audio.arm()
+    expect(h.gestures).toHaveLength(1)
+    h.gestures[0]!()
+    await flush()
+    expect(h.unlockCalls).toBe(1)
+    expect(h.gestures).toHaveLength(0)
+  })
+
+  it('disarm keeps the listener a refused track still needs', async () => {
+    h.needsPriming = false
+    audio.arm()
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(audio.blocked.value).toBe(true)
+    audio.disarm()
+    expect(h.gestures).toHaveLength(1)
+  })
+
   it('the listener outlives the scope that first used the mixer', async () => {
     const { effectScope } = await import('vue')
     const scope = effectScope()

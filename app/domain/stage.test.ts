@@ -573,13 +573,17 @@ describe('withImageEdited', () => {
 })
 
 describe('checkImageData', () => {
-  it('trims the caption, turns an empty one into null, refuses one over the limit', () => {
+  it('trims the caption, turns an empty one into null, cuts one over the limit', () => {
     expect(checkImageData({ id: 'i1', caption: '  Grum  ' })).toEqual({ id: 'i1', caption: 'Grum' })
     expect(checkImageData({ id: 'i1', caption: '   ' })).toEqual({ id: 'i1', caption: null })
     expect(checkImageData({ id: 'i1', caption: null })).toEqual({ id: 'i1', caption: null })
     expect(checkImageData({ id: 'i1' })).toEqual({ id: 'i1', caption: null })
     expect(checkImageData({ id: 'i1', caption: 'a'.repeat(CAPTION_MAX) })?.caption).toHaveLength(CAPTION_MAX)
-    expect(checkImageData({ id: 'i1', caption: 'a'.repeat(CAPTION_MAX + 1) })).toBeNull()
+    // A stored row with a longer caption (written by hand, or by an older client) still shows, so it can be edited or deleted.
+    expect(checkImageData({ id: 'i1', caption: 'a'.repeat(CAPTION_MAX + 1) })).toEqual({ id: 'i1', caption: 'a'.repeat(CAPTION_MAX) })
+    // Cut as text, never in the middle of a character.
+    const cut = checkImageData({ id: 'i1', caption: `${'a'.repeat(CAPTION_MAX - 1)}🗺️ and more` })?.caption
+    expect(cut).toBe('a'.repeat(CAPTION_MAX - 1))
     expect(checkImageData({ id: 'i1', caption: ` ${'a'.repeat(CAPTION_MAX)} ` })?.caption).toHaveLength(CAPTION_MAX)
   })
   it('refuses wrong types, a missing id and non-objects', () => {
@@ -737,10 +741,10 @@ describe('withImageEdited identity and immutability', () => {
 
 describe('caption length counting', () => {
   // UTF-16 units, like the sibling name checks: the UI counter must count the same way.
-  it('61 astral emoji are 122 units: refused and flagged', () => {
+  it('61 astral emoji are 122 units: a draft is flagged, a stored one is cut to 60 whole ones', () => {
     const caption = '😀'.repeat(61)
-    expect(checkImageData({ id: 'i1', caption })).toBeNull()
     expect(checkImageDraft({ caption, hasFile: true })).toEqual(['captionTooLong'])
-    expect(checkImageData({ id: 'i1', caption: '😀'.repeat(60) })).not.toBeNull()
+    expect(checkImageData({ id: 'i1', caption })?.caption).toBe('😀'.repeat(60))
+    expect(checkImageData({ id: 'i1', caption: '😀'.repeat(60) })?.caption).toBe('😀'.repeat(60))
   })
 })

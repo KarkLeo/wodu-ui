@@ -38,7 +38,9 @@ export interface FileRefusal { field: string; reason: 'type' | 'size' }
  * `limitMayHaveChanged`: a create was refused by a rule (empty `data` in the body, no such entry) while this device counted fewer entries than the limit.
  * `fileRefused`: the server refused a file by its content; `field` and `reason` say which and why.
  * `notMaster`: the game's master is someone else now.
- * `stagePublishFailed`: the entry is saved (`saved`) but the table was not updated; `republishMedia` retries that alone.
+ * `stagePublishFailed`: the table was not updated. After a save the entry is saved (`saved`) and `republishMedia` retries
+ *   the table alone; the publish was quiet, so the form's own wording is the one message. Before a delete the entry stays
+ *   on the table and is not deleted; the stage writer has already said so, so the panel adds nothing.
  * `aborted`: the upload was cancelled because the session or the game closed; the form can ignore it.
  */
 export class MediaWriteError<S = MediaEntries[MediaKind]> extends Error {
@@ -51,9 +53,6 @@ export class MediaWriteError<S = MediaEntries[MediaKind]> extends Error {
     super(kind)
     this.name = 'MediaWriteError'
   }
-
-  get field(): string | undefined { return this.refusal?.field }
-  get reason(): FileRefusal['reason'] | undefined { return this.refusal?.reason }
 }
 
 /** One file field of a kind's collection. */
@@ -87,7 +86,7 @@ export interface MediaKindSpec<E extends { id: string }> {
   live?: LiveHooks<E>
 }
 
-type KindTable = { [K in MediaKind]?: MediaKindSpec<MediaEntries[K]> }
+type KindTable = { [K in MediaKind]: MediaKindSpec<MediaEntries[K]> }
 
 function sceneFromRow(row: MediaRow): Scene | null {
   const data = checkSceneData(row.data)
@@ -186,8 +185,9 @@ export const mediaKinds: KindTable = {
     stored: image => ({ file: image.file }),
     live: {
       isLive: (stage, id) => stage.image?.id === id,
-      // An edit that changes nothing the stage shows (a caption edit while it is shown without one) publishes nothing.
-      inSync: (stage, image) => JSON.stringify(withImageEdited(stage, image)) === JSON.stringify(stage),
+      // An edit that changes nothing the stage shows (a caption edit while it is shown without one) publishes nothing:
+      // `withImageEdited` hands the same stage back then.
+      inSync: (stage, image) => withImageEdited(stage, image) === stage,
       publish: withImageEdited,
       clear: withoutImage,
     },
@@ -195,16 +195,10 @@ export const mediaKinds: KindTable = {
 }
 
 function specOf<K extends MediaKind>(kind: K): MediaKindSpec<MediaEntries[K]> {
-  const spec = mediaKinds[kind]
-  if (!spec) throw new Error(`media kind not wired: ${kind}`)
-  return spec as MediaKindSpec<MediaEntries[K]>
+  return mediaKinds[kind] as MediaKindSpec<MediaEntries[K]>
 }
 
 const listOf = <K extends MediaKind>(kind: K): MediaEntries[K][] => useMediaStore()[kind].list as MediaEntries[K][]
-
-function wiredKinds(): MediaKind[] {
-  return (Object.keys(mediaKinds) as MediaKind[]).filter(k => mediaKinds[k])
-}
 
 /** Where the server serves a stored file at the size of a thumbnail. */
 export function mediaThumb(ref: FileRef, size: string): string {
@@ -255,7 +249,7 @@ function unsubscribeOwn() {
 }
 
 /**
- * Master: subscribes to the game's media, then loads them, each wired kind on its own. Events that arrive
+ * Master: subscribes to the game's media, then loads them, each kind on its own. Events that arrive
  * during a load are held and replayed on top of it. A failure leaves that kind's slot `failed` and is not rethrown.
  */
 export function openMedia(gameId: string): Promise<void> {
@@ -285,7 +279,7 @@ async function run(gameId: string): Promise<void> {
   const open = () => gen === openGen && current() && store.gameId === gameId
   abortUploads(gameId)
   unsubscribeOwn()
-  const kinds = wiredKinds()
+  const kinds = Object.keys(mediaKinds) as MediaKind[]
   store.startLoading(gameId, kinds)
   held.clear()
   for (const kind of kinds) held.set(kind, [])
@@ -522,7 +516,8 @@ async function publishLive<K extends MediaKind>(kind: K, gameId: string, entry: 
   const stage = useStageStore().stageOf(gameId)
   if (!live.isLive(stage, entry.id)) return
   try {
-    await publishStage(live.publish(stage, entry))
+    // Quiet: the sheet words this failure itself, with Try again, so the stage writer's toast would be a second message.
+    await publishStage(live.publish(stage, entry), { quiet: true })
   } catch (err) {
     // The mode or the user changed first: nothing to report to a form that is gone.
     if (err instanceof WriteDropped || !current()) return
@@ -551,7 +546,8 @@ export async function deleteMedia(kind: MediaKind, gameId: string, id: string): 
       await publishStage(live.clear(stage))
     } catch (err) {
       if (err instanceof WriteDropped) throw new MediaWriteError('aborted', err)
-      throw err
+      // The stage writer has told the person the table was not updated; the entry stays, and nothing more is to be said.
+      throw new MediaWriteError('stagePublishFailed', err)
     }
     if (!holds(gameId, current)) throw new MediaWriteError('aborted')
   }

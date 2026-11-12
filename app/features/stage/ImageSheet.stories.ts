@@ -10,6 +10,7 @@ import { noisePng, pictureFile } from '@/stories/scenes'
 import { storyRouter } from '@/stories/router'
 import { atRoute, withGameTable } from '@/stories/state'
 import { useMediaStore } from '@/stores/media'
+import { useToastsStore } from '@/stores/toasts'
 import { closeMedia } from '@/transport/media'
 import { RECORDED } from '@/transport/recordedResponses'
 import { pb, seedRecords, storedRecords } from '../../../.storybook/mocks/pb'
@@ -204,6 +205,22 @@ export const EditCaptionOnly: Story = {
   },
 }
 
+/** An image deleted elsewhere while its sheet is open: Save just closes the sheet, as for a sound; nothing is sent. */
+export const EditOfAGoneImageCloses: Story = {
+  tags: ['no-visual'],
+  args: { image: BRIDGE },
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'Edit image' })
+    useMediaStore().remove('images', crookhollow.id, BRIDGE.id)
+    await user.type(sheet.getByRole('textbox', { name: 'Caption' }), '!')
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await closed(canvasElement)
+    await expect(sentForms()).toHaveLength(0)
+    await expect(useToastsStore().items).toEqual([])
+  },
+}
+
 /** An emptied caption saves as none. */
 export const EmptyingTheCaptionRemovesIt: Story = {
   tags: ['no-visual'],
@@ -273,11 +290,15 @@ export const PublishFailedAfterSave: Story = {
     await user.upload(fileInput(canvasElement), pictureFile('cellar.png'))
     await user.click(sheet.getByRole('button', { name: 'Save' }))
     await expect(await sheet.findByRole('alert')).toHaveTextContent('The image is saved, but the table was not updated.')
+    // The sheet's own words are the one message: no stage toast besides.
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(useToastsStore().items).toEqual([])
     await expect(sheet.getByRole('dialog')).toBeVisible()
     await expect(sheet.queryByRole('button', { name: 'Save' })).toBeNull()
     await expect(storedRecords('images').find(r => r.id === BRIDGE.id)).toMatchObject({ file: 'image.png' })
     await user.click(sheet.getByRole('button', { name: 'Try again' }))
     await waitFor(() => expect(sheet.getByRole('alert')).toHaveTextContent('the table still was not updated'))
+    await expect(useToastsStore().items).toEqual([])
     for (const spy of stages) spy.mockRestore()
     await user.click(sheet.getByRole('button', { name: 'Try again' }))
     await closed(canvasElement)

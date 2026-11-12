@@ -9,7 +9,7 @@ interface Options<E extends { id: string }> {
   busy: Set<string>
   change: (id: string, run: () => Promise<void>, failed: (err: unknown) => string | null) => Promise<boolean>
   remove: (gameId: string, id: string) => Promise<void>
-  /** Whether the entry is on the table; its delete takes it off first, and that is the stage writer's to report. */
+  /** Whether the entry is on the table, for the confirm's wording; the transport decides by the stage itself. */
   isLive: (entry: E) => boolean
   /** The entry's name for the confirm's title, when it has one. */
   nameOf?: (entry: E) => string
@@ -50,15 +50,14 @@ export function useMediaDelete<E extends { id: string }>(o: Options<E>): MediaDe
     const game = o.gameId()
     if (!entry || !game || o.busy.has(entry.id)) return
     deleting.value = null
-    const wasLive = o.isLive(entry)
     const done = await o.change(entry.id, () => o.remove(game, entry.id), (err) => {
-      // The session ended under the write: nobody is left to tell.
       if (err instanceof MediaWriteError) {
+        // The session ended under the write: nobody is left to tell.
         if (err.kind === 'aborted') return null
         if (err.kind === 'notMaster') return t(o.notMasterKey)
+        // The entry was on the table and taking it off failed: the stage writer has said so, and it was not deleted.
+        if (err.kind === 'stagePublishFailed') return null
       }
-      // An entry that is on the table is taken off first; if that failed it is still on, and the stage writer has said so.
-      if (wasLive && o.isLive(entry)) return null
       return t(o.failedKey)
     })
     await nextTick()

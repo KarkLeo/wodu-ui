@@ -115,7 +115,11 @@ export function useStagePlayback(options: StagePlaybackOptions = {}) {
   watch(() => prefs.volume, level => audio.setVolume(level), { immediate: true })
   // With sound on, the first tap anywhere primes the pool, so the first sound plays without one; the listener runs in
   // the capture phase, before the master's own Play. An `unset` device is primed by the prompt's button instead.
-  watch(() => prefs.sound === 'on' && stage.value !== null, (on) => { if (on) audio.arm() }, { immediate: true, flush: 'sync' })
+  // Leaving the table or turning sound off disarms, so no tap elsewhere primes the audio for a table that is not open.
+  watch(() => prefs.sound === 'on' && stage.value !== null, (on) => {
+    if (on) audio.arm()
+    else audio.disarm()
+  }, { immediate: true, flush: 'sync' })
 
   useOneShotClear({
     playingHere: key => target.value.overlay?.key === key || playedToTheEnd(memory.value, key),

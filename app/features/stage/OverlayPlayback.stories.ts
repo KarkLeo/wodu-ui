@@ -1,6 +1,7 @@
 import { defineComponent } from 'vue'
+import { ClientResponseError } from 'pocketbase'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
+import { expect, spyOn, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
 import MasterTools from '@/components/layout/MasterTools.vue'
 import SoundsPanel from './SoundsPanel.vue'
 import { useMediaSession } from '@/composables/useMediaSession'
@@ -18,8 +19,9 @@ import { useStageStore } from '@/stores/stage'
 import type { StageSound } from '@/types/stage'
 import { connection } from '@/transport/connection'
 import { closeMedia } from '@/transport/media'
+import { publishStage } from '@/transport/stage'
 import { fireOverlayEnded, sceneAudioCalls } from '../../../.storybook/mocks/sceneAudioInstance'
-import { clearPbRequests, failWrites, pbRequests, resetRecords, signInMock, storedRecords } from '../../../.storybook/mocks/pb'
+import { clearPbRequests, failWrites, pb, pbRequests, resetRecords, signInMock, storedRecords } from '../../../.storybook/mocks/pb'
 
 // A slow runner takes longer than the default second.
 const waitFor: typeof waitForDefault = (callback, options) => waitForDefault(callback, { timeout: 10000, ...options })
@@ -140,6 +142,7 @@ const storedSound = () => (storedRecords('stages')[0]?.data as { sound: unknown 
 const settle = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
 
 const armCalls = () => sceneAudioCalls.filter(c => c.method === 'arm')
+const lastArming = () => sceneAudioCalls.filter(c => c.method === 'arm' || c.method === 'disarm').at(-1)?.method
 
 /** Sound on at an open table: the audio service is armed, so the first tap primes it before any sound arrives. */
 export const SoundOnArmsTheAudio: Story = {
@@ -164,6 +167,24 @@ export const SoundOffOrUnsetDoesNotArm: Story = {
     await expect(armCalls()).toEqual([])
     prefs.sound = 'on'
     await waitFor(() => expect(armCalls()).toHaveLength(1))
+  },
+}
+
+/**
+ * Leaving the table, or turning sound off, disarms: a device that left without a tap keeps no listener that would prime
+ * the audio on the first tap elsewhere. Coming back arms again.
+ */
+export const LeavingTheTableDisarms: Story = {
+  decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), asPlayer],
+  loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
+  play: async () => {
+    await waitFor(() => expect(lastArming()).toBe('arm'))
+    await storyRouter.push('/games')
+    await waitFor(() => expect(lastArming()).toBe('disarm'))
+    await storyRouter.push(`/games/${PLAYER_GAME}`)
+    await waitFor(() => expect(lastArming()).toBe('arm'))
+    useMediaPrefsStore().sound = 'off'
+    await waitFor(() => expect(lastArming()).toBe('disarm'))
   },
 }
 
@@ -483,6 +504,52 @@ export const FailedClearIsRetriedOnceAndOnReconnect: Story = {
   },
 }
 
+/**
+ * A clear that comes due while another is on its way is not dropped: the first cue's clear is held on the network, the
+ * master plays a second cue and it ends too; once the first write is over, the second is cleared (it has an unknown
+ * duration and plays here, so no clock would ever clear it).
+ */
+export const ClearDueDuringAnotherIsNotDropped: Story = {
+  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
+  loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
+  play: async () => {
+    await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
+    const stages = useStageStore()
+    const rows = pb.collection('stages')
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    // Only the first write waits for the gate.
+    let calls = 0
+    const hold = <A extends unknown[], R>(real: (...args: A) => Promise<R>) => async (...args: A) => {
+      if (calls++ === 0) await gate
+      return real(...args)
+    }
+    const create = hold(rows.create)
+    const update = hold(rows.update)
+    spyOn(rows, 'create').mockImplementation(create)
+    spyOn(rows, 'update').mockImplementation(update)
+    const first = stageSound()
+    show(MASTER_GAME, first)
+    await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(first)))
+    fireOverlayEnded(overlayKey(first))
+    // The first clear is on its way, held.
+    await waitFor(() => expect(calls).toBe(1))
+    await expect(stages.stageOf(MASTER_GAME).sound).toBeNull()
+    const second = stageSound({ startedAt: secondsFromNow(1) }, 'story-sound-second')
+    void publishStage({ ...stages.stageOf(MASTER_GAME), sound: second })
+    await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(second)))
+    fireOverlayEnded(overlayKey(second))
+    // Its clear comes due while the first is still held.
+    await settle(STORY_GRACE_MS + 500)
+    await expect(stages.stageOf(MASTER_GAME).sound).toEqual(second)
+    release()
+    // At once, not by a timer: the waiting clear runs when the first one is over.
+    await waitFor(() => expect(storedSound()).toBeNull(), { timeout: 3000 })
+    await expect(stages.stageOf(MASTER_GAME).sound).toBeNull()
+    await expect(useToastsStore().items).toHaveLength(0)
+  },
+}
+
 /** Playing here with an unknown duration: nothing clears until the track ends, and then only after the grace. */
 export const MasterPlayingAnUnknownDurationClearsOnlyAfterEnded: Story = {
   decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
@@ -552,6 +619,38 @@ export const RowIsBackToPlayWhenTheCueEnds: Story = {
     } finally {
       restore()
     }
+  },
+}
+
+/**
+ * A cue that is over on the master's device but still on the stage (the clear comes later), deleted while the stage
+ * refuses: the transport takes it off the table first, that fails, and the stage writer's message is the only one.
+ */
+export const DeleteOfAnOverCueRefusedByTheStage: Story = {
+  render: () => ({ components: { TableWithSounds }, template: '<TableWithSounds />' }),
+  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
+  loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const stages = useStageStore()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Play Bell' }))
+    await waitFor(() => expect(stages.stageOf(MASTER_GAME).sound).not.toBeNull())
+    const cue = stages.stageOf(MASTER_GAME).sound!
+    await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(cue)))
+    fireOverlayEnded(overlayKey(cue))
+    // Over here: the row offers Play again, while the stage still holds the cue.
+    await expect(await canvas.findByRole('button', { name: 'Play Bell' })).toBeVisible()
+    await expect(stages.stageOf(MASTER_GAME).sound).toEqual(cue)
+    spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    spyOn(pb.collection('stages'), 'create').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Delete Bell' }))
+    const confirm = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(useToastsStore().items.length).toBeGreaterThan(0))
+    await settle(300)
+    await expect(useToastsStore().items.map(t => t.text)).toEqual(['The change did not reach the table. Try again.'])
+    await expect(pbRequests()).not.toContain('sounds.delete')
+    await expect(canvas.getByRole('button', { name: 'Play Bell' })).toBeVisible()
   },
 }
 

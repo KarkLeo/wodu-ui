@@ -60,7 +60,9 @@ vi.mock('./games', () => ({
   toGame: (r: { id: string; name: string; master: string; invite_code: string }) => ({ id: r.id, name: r.name, master: r.master, inviteCode: r.invite_code }),
 }))
 vi.mock('./mode', () => ({ modeSession: () => 1 }))
-vi.mock('./writeFailure', () => ({ reportWriteFailure: () => {} }))
+// What the stage writer would toast: a quiet publish adds nothing here.
+const reports: string[] = []
+vi.mock('./writeFailure', () => ({ reportWriteFailure: (_err: unknown, message: string) => { reports.push(message) } }))
 vi.mock('./upload', () => ({
   sendForm: (method: string, path: string, form: FormData, _progress?: unknown, signal?: AbortSignal) => {
     const s = { method, path, form, signal }
@@ -117,6 +119,7 @@ const sceneDeletes = () => calls.filter(c => c.collection === 'scenes' && c.meth
 beforeEach(() => {
   calls.length = 0
   sent.length = 0
+  reports.length = 0
   stays = true
   gameMaster = 'user-1'
   listRows = []
@@ -193,10 +196,10 @@ describe('createScene', () => {
     const { createScene } = await load()
     sendImpl = async () => { throw recorded('createTextAsSound') }
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
-      .rejects.toMatchObject({ kind: 'fileRefused', field: 'sound', reason: 'type' })
+      .rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'sound', reason: 'type' } })
     sendImpl = async () => { throw recorded('createBigImage') }
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { image: file('a.png', 'image/png') }))
-      .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'size' })
+      .rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'image', reason: 'size' } })
   })
 
   it('counts an empty-data 400 as done when the scene with that id is already in the store (answer lost, retried)', async () => {
@@ -355,7 +358,7 @@ describe('updateScene', () => {
     const { updateScene, media } = await load()
     media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png') }))
-      .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'type' })
+      .rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'image', reason: 'type' } })
   })
 
   it('maps a refused sound on update to fileRefused on the sound field', async () => {
@@ -363,7 +366,7 @@ describe('updateScene', () => {
     const { updateScene, media } = await load()
     media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { sound: file('x.mp3', 'audio/mpeg') }))
-      .rejects.toMatchObject({ kind: 'fileRefused', field: 'sound', reason: 'type' })
+      .rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'sound', reason: 'type' } })
   })
 
   it('keeps a 404 on update as what it was: a re-read of the game, not a file refusal', async () => {
@@ -408,7 +411,9 @@ describe('deleteScene', () => {
   it('does not delete when the publish fails', async () => {
     stageUpdateImpl = async () => { throw httpError(500) }
     const { deleteScene, media, stages } = await withLiveScene()
-    await expect(deleteScene(GAME, 'sc-1')).rejects.toMatchObject({ status: 500 })
+    // The stage writer has told the person; the panel needs to know not to say it again.
+    await expect(deleteScene(GAME, 'sc-1')).rejects.toMatchObject({ kind: 'stagePublishFailed', cause: { status: 500 } })
+    expect(reports).toHaveLength(1)
     expect(sceneDeletes()).toHaveLength(0)
     expect(media.scenes.list).toHaveLength(1)
     expect(stages.stageOf(GAME).scene?.id).toBe('sc-1')
@@ -557,6 +562,10 @@ describe('the live scene after an update', () => {
     const err = await updateScene(GAME, { id: 'sc-1', name: 'Old' }, { image: file('x.jpg', 'image/jpeg') }).catch((e: unknown) => e)
     expect(err).toMatchObject({ kind: 'stagePublishFailed', saved: { id: 'sc-1', image: 'image_new.jpg' } })
     expect(media.scenes.list[0]!.image).toBe('image_new.jpg')
+    // The sheet words it; the stage writer stays quiet, also when the retry fails.
+    expect(reports).toEqual([])
+    await expect(republishScene(GAME, (err as { saved: Scene }).saved)).rejects.toMatchObject({ kind: 'stagePublishFailed' })
+    expect(reports).toEqual([])
     stageUpdateImpl = async () => ({})
     await republishScene(GAME, (err as { saved: Scene }).saved)
     const last = stagePublishes().at(-1)!
@@ -738,7 +747,7 @@ describe('sounds', () => {
     media.put('sounds', GAME, playingSound)
     const { withSound } = await import('@/domain/stage')
     stages.set(withSound(stages.stageOf(GAME), playingSound, '2026-11-12T10:00:00.000Z'))
-    await expect(deleteSound(GAME, 'snd-1')).rejects.toMatchObject({ status: 500 })
+    await expect(deleteSound(GAME, 'snd-1')).rejects.toMatchObject({ kind: 'stagePublishFailed', cause: { status: 500 } })
     expect(soundDeletes()).toHaveLength(0)
     expect(media.sounds.list).toHaveLength(1)
     expect(stages.stageOf(GAME).sound?.id).toBe('snd-1')
@@ -768,10 +777,10 @@ describe('sounds', () => {
     const { createSound, updateSound, media } = await load()
     sendImpl = async () => { throw errorFromResponse('', 400, soundFileBody('validation_invalid_mime_type')) }
     await expect(createSound(GAME, draft, file('a.mp3', 'audio/mpeg')))
-      .rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'type' })
+      .rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'file', reason: 'type' } })
     sendImpl = async () => { throw errorFromResponse('', 400, soundFileBody('validation_file_size_limit')) }
     media.put('sounds', GAME, playingSound)
-    await expect(updateSound(GAME, draft)).rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'size' })
+    await expect(updateSound(GAME, draft)).rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'file', reason: 'size' } })
   })
 
   it('a 400 without a file code looks the sound up by id and returns it when it exists', async () => {
@@ -810,7 +819,7 @@ describe('images', () => {
   }
   const lastStageImage = () => (stagePublishes().at(-1)!.args[1] as { data: { image: { file: { name: string }; caption: string | null; shownAt: string } } }).data.image
 
-  it('lists the game, maps a row to a TableImage and drops one that fails the shape check', async () => {
+  it('lists the game, maps a row to a TableImage, cuts an over-long caption and drops one that fails the shape check', async () => {
     imageRows = [
       imageRow('a', { data: { id: 'a', caption: '  Trimmed  ' } }),
       imageRow('b', { data: { id: 'other', caption: 'Wrong id' } }),
@@ -826,6 +835,8 @@ describe('images', () => {
       { id: 'a', caption: 'Trimmed', file: 'image.jpg' },
       { id: 'c', caption: null, file: 'image.jpg' },
       { id: 'd', caption: null, file: 'image.jpg' },
+      // Over the limit: cut, not dropped, so it can still be edited or deleted.
+      { id: 'e', caption: 'x'.repeat(120), file: 'image.jpg' },
     ])
     expect(calls.filter(c => c.collection === 'images' && c.method === 'subscribe')).toHaveLength(1)
   })
@@ -944,6 +955,7 @@ describe('images', () => {
     const err = await updateImage(GAME, { id: 'img-1', caption: 'A map' }, file('b.png', 'image/png')).catch((e: unknown) => e)
     expect(err).toMatchObject({ kind: 'stagePublishFailed', saved: { id: 'img-1', file: 'image_new.png' } })
     expect(media.images.list[0]!.file).toBe('image_new.png')
+    expect(reports).toEqual([])
     stageUpdateImpl = async () => ({})
     await republishImage(GAME, (err as { saved: TableImage }).saved)
     expect(lastStageImage()).toMatchObject({ file: { name: 'image_new.png' }, shownAt: SHOWN_AT })
@@ -963,7 +975,7 @@ describe('images', () => {
   it('does not delete the shown image when taking it off the table fails', async () => {
     stageUpdateImpl = async () => { throw httpError(500) }
     const { deleteImage, media, stages } = await shown(true)
-    await expect(deleteImage(GAME, 'img-1')).rejects.toMatchObject({ status: 500 })
+    await expect(deleteImage(GAME, 'img-1')).rejects.toMatchObject({ kind: 'stagePublishFailed', cause: { status: 500 } })
     expect(imageDeletes()).toHaveLength(0)
     expect(media.images.list).toHaveLength(1)
     expect(stages.stageOf(GAME).image?.id).toBe('img-1')
@@ -985,10 +997,10 @@ describe('images', () => {
     const { createImage, updateImage, media } = await load()
     sendImpl = async () => { throw errorFromResponse('', 400, imageFileBody('validation_invalid_mime_type')) }
     await expect(createImage(GAME, draft, file('a.png', 'image/png')))
-      .rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'type' })
+      .rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'file', reason: 'type' } })
     sendImpl = async () => { throw errorFromResponse('', 400, imageFileBody('validation_file_size_limit')) }
     media.put('images', GAME, IMG)
-    await expect(updateImage(GAME, draft, file('a.png', 'image/png'))).rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'size' })
+    await expect(updateImage(GAME, draft, file('a.png', 'image/png'))).rejects.toMatchObject({ kind: 'fileRefused', refusal: { field: 'file', reason: 'size' } })
   })
 
   it('a 400 without a file code looks the image up by id and returns it when it exists', async () => {

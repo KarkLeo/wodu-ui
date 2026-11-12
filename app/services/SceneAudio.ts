@@ -73,6 +73,11 @@ export interface SceneAudio {
    * plays without a tap. Harmless to call again; it never resumes a deliberate outside pause.
    */
   arm(): void
+  /**
+   * Undoes `arm`: a device that left the table keeps no listener that would prime the pool on a tap elsewhere. A listener
+   * a refused or interrupted track still needs stays. Harmless when not armed.
+   */
+  disarm(): void
   /** Fades everything out and releases every track. */
   stop(): void
 }
@@ -118,6 +123,8 @@ export interface AudioMixer {
   unlock(): Promise<void>
   /** See `SceneAudio.arm`. */
   arm(): void
+  /** See `SceneAudio.disarm`. */
+  disarm(): void
   stop(): void
 }
 
@@ -458,6 +465,9 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
     arm() {
       armed.value = true
     },
+    disarm() {
+      armed.value = false
+    },
     stop() {
       channels.forEach(c => c.stop())
     },
@@ -504,6 +514,7 @@ export function createSceneAudio(deps: SceneAudioDeps): SceneAudio {
     },
     unlock: mixer.unlock,
     arm: mixer.arm,
+    disarm: mixer.disarm,
     stop() {
       // Both channels stop: the scene is not to come back in the meantime (the overlay stops first).
       holding = false

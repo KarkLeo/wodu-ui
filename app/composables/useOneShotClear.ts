@@ -40,7 +40,8 @@ export interface OneShotClearOptions {
  * `oneShotClearDelay`): while this device plays it, `graceSeconds` after the end of the track, with a clock backstop;
  * otherwise the clock alone. Whatever fires, the stage is published without the sound only if it still holds the
  * same overlay. A failed clear is silent; it is tried once more after the grace, and again whenever the connection
- * comes back, while the stage still holds that overlay. Players never publish.
+ * comes back, while the stage still holds that overlay. One clear is on its way at a time: one that comes due meanwhile
+ * waits for it and then runs, still quiet and still checked against the stage. Players never publish.
  */
 export function useOneShotClear({ playingHere, endedHere, graceSeconds = ONE_SHOT_CLEAR_GRACE_SECONDS }: OneShotClearOptions) {
   const { gameId } = useTable()
@@ -80,6 +81,8 @@ export function useOneShotClear({ playingHere, endedHere, graceSeconds = ONE_SHO
   let overTimer: ReturnType<typeof setTimeout> | undefined
   let failedKey: string | null = null
   let sending = false
+  // A clear that came due while another was on its way: it runs when that one is over, checked against the stage then.
+  let waiting: { key: string; retry: boolean } | null = null
 
   function later(seconds: number, run: () => void) {
     const timer = setTimeout(() => {
@@ -91,8 +94,13 @@ export function useOneShotClear({ playingHere, endedHere, graceSeconds = ONE_SHO
 
   // After a failure only a retry may try that key again, so the timers that are re-armed by the rollback do not.
   async function clearIfCurrent(key: string, retry = false) {
+    if (sending) {
+      // The newest one wins; a retry stays a retry when the same key comes due again meanwhile.
+      waiting = { key, retry: retry || (waiting?.key === key && waiting.retry) }
+      return
+    }
     const now = current.value
-    if (!now || now.key !== key || sending || (failedKey === key && !retry)) return
+    if (!now || now.key !== key || (failedKey === key && !retry)) return
     sending = true
     try {
       await publishStage(withoutSound(stages.stageOf(now.gameId)), { quiet: true })
@@ -104,6 +112,9 @@ export function useOneShotClear({ playingHere, endedHere, graceSeconds = ONE_SHO
       if (first) later(graceSeconds, () => void clearIfCurrent(key, true))
     } finally {
       sending = false
+      const next = waiting
+      waiting = null
+      if (next) void clearIfCurrent(next.key, next.retry)
     }
   }
 
@@ -131,6 +142,7 @@ export function useOneShotClear({ playingHere, endedHere, graceSeconds = ONE_SHO
     later(graceSeconds, () => void clearIfCurrent(key))
   })
   onScopeDispose(() => {
+    waiting = null
     clearTimeout(clockTimer)
     clearTimeout(overTimer)
     timers.forEach(clearTimeout)

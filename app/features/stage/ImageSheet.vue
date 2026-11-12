@@ -8,6 +8,7 @@ import StateNote from '@/components/ui/StateNote.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { useMediaSave } from '@/composables/useMediaSave'
 import { useStageControl } from '@/composables/useStageControl'
+import { useMediaStore } from '@/stores/media'
 import { CAPTION_MAX, IMAGE_MAX_BYTES, IMAGE_TYPES, checkImageDraft, checkUpload } from '@/domain/stage'
 import { createImage, MediaWriteError, republishImage, updateImage } from '@/transport/media'
 import type { TableImage } from '@/types/stage'
@@ -87,6 +88,12 @@ function refused(err: unknown): boolean {
 
 async function submit() {
   if (!canSave.value) return
+  // Deleted elsewhere since the sheet opened (the master's other device): there is nothing left to save, as for a sound.
+  const media = useMediaStore()
+  if (props.image && !(media.gameId === props.gameId && media.images.list.some(i => i.id === props.image!.id))) {
+    open.value = false
+    return
+  }
   fileError.value = ''
   const text = caption.value.trim() || null
   await run(async ({ id, onProgress }) => {

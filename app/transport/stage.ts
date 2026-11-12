@@ -1,5 +1,5 @@
 import { pb, type StageRow } from '@/transport/pb'
-import { requireOnlineUser } from './onlineOps'
+import { call, requireOnlineUser, staysCurrent } from './onlineOps'
 import { serialWriter, WriteDropped } from './serialWriter'
 export { WriteDropped }
 import { checkStage } from '@/domain/stage'
@@ -32,6 +32,49 @@ const rowSeen = new Set<string>()
 /** Forgets which rows exist; called wherever the stage store is cleared. */
 export function forgetStageRows(): void {
   rowSeen.clear()
+  skipped.clear()
+}
+
+// Games whose row came in (realtime or a snapshot) while this device's own write for them was in flight, and was set
+// aside so it could not undo the newer optimistic value. Once the writer settles, that game's row is read once.
+const skipped = new Set<string>()
+
+// The same stage, whatever order its keys were built in.
+function sameStage(a: Stage, b: Stage): boolean {
+  return JSON.stringify(checkStage(a, a.id)) === JSON.stringify(checkStage(b, b.id))
+}
+
+// A row that arrives during a write is set aside, unless it is what this device is showing (the echo of its own newest write).
+function setAside(row: StageRow): void {
+  const stage = stageFromRow(row)
+  if (stage && sameStage(stage, useStageStore().stageOf(row.id))) return
+  skipped.add(row.id)
+}
+
+/** Reads the game's row once and applies it, as a load, when it differs from what is shown; never loops, never toasts. */
+async function reread(gameId: string): Promise<void> {
+  const current = staysCurrent()
+  try {
+    const rows = await call(() => pb.collection('stages').getFullList<StageRow>({ filter: pb.filter('id = {:id}', { id: gameId }) }))
+    if (!current() || !useGamesStore().byId(gameId)) return
+    // Another write began meanwhile: the read waits for it in turn.
+    if (writer.busy(gameId)) {
+      skipped.add(gameId)
+      return
+    }
+    const row = rows.find(r => r.id === gameId)
+    const store = useStageStore()
+    if (!row) {
+      rowSeen.delete(gameId)
+      store.remove(gameId)
+      return
+    }
+    rowSeen.add(gameId)
+    const stage = stageFromRow(row)
+    if (stage && !sameStage(stage, store.stageOf(gameId))) store.set(stage, 'load')
+  } catch (err) {
+    log.debug('re-reading the stage after a write failed', { gameId, err })
+  }
 }
 
 async function send(gameId: string, stage: Stage): Promise<void> {
@@ -67,6 +110,9 @@ const waiters = new Map<string, Waiter[]>()
 // Games whose newest publish asked not to be reported when it fails.
 const quiet = new Map<string, boolean>()
 
+// Every caller of a coalesced chain is told the chain's final outcome, not its own: a caller whose value was confirmed is
+// told "failed" when a later value folded into the same chain fails (and the stage then shows the last confirmed value).
+// Accepted: the panels follow the stage store, not this promise, and the stage writer's one toast says what happened.
 const writer = serialWriter<Stage>({
   show: stage => useStageStore().set(stage),
   // A game forgotten meanwhile must not get its stage back.
@@ -83,6 +129,7 @@ const writer = serialWriter<Stage>({
       if (error === null) w.resolve()
       else w.reject(error)
     }
+    if (skipped.delete(key)) void reread(key)
   },
 })
 
@@ -104,12 +151,19 @@ export async function publishStage(next: Stage, options: { quiet?: boolean } = {
   })
 }
 
-// While my own publish for a game is pending, an older echo of it must not undo the newer optimistic value.
+// While my own publish for a game is pending, an older echo of it must not undo the newer optimistic value; a row that
+// differs from what is shown is set aside and the game's row is read again once the publish has settled.
 export function receiveStage(action: string, row: StageRow, source: StageSource = 'live'): void {
   if (action === 'delete') rowSeen.delete(row.id)
   else rowSeen.add(row.id)
   const store = useStageStore()
-  if (writer.busy(row.id) || !useGamesStore().byId(row.id)) return
+  if (!useGamesStore().byId(row.id)) return
+  if (writer.busy(row.id)) {
+    // A delete is not an echo of anything this device writes.
+    if (action === 'delete') skipped.add(row.id)
+    else setAside(row)
+    return
+  }
   if (action === 'delete') {
     store.remove(row.id)
     return
@@ -130,7 +184,11 @@ export function applyStages(rows: StageRow[]): void {
   for (const row of rows) {
     seen.add(row.id)
     rowSeen.add(row.id)
-    if (writer.busy(row.id) || !games.byId(row.id)) continue
+    if (!games.byId(row.id)) continue
+    if (writer.busy(row.id)) {
+      setAside(row)
+      continue
+    }
     const stage = stageFromRow(row)
     if (stage) store.set(stage, 'load')
   }

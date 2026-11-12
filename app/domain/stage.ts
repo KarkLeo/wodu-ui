@@ -194,13 +194,16 @@ export function checkSoundDraft(draft: { name: string; hasFile: boolean }): Arra
   return problems
 }
 
+/**
+ * A stored image's data. A caption over `CAPTION_MAX` is cut, as on the stage, not refused: dropping the row would make
+ * the image invisible and undeletable while it still counts toward the limit. A person's draft is refused instead
+ * (`checkImageDraft`).
+ */
 export function checkImageData(value: unknown): { id: string; caption: string | null } | null {
   if (!isRecord(value) || !nonEmpty(value.id)) return null
   const raw = value.caption
   if (raw !== undefined && raw !== null && typeof raw !== 'string') return null
-  const caption = typeof raw === 'string' ? raw.trim() : ''
-  if (caption.length > CAPTION_MAX) return null
-  return { id: value.id, caption: caption || null }
+  return { id: value.id, caption: stageCaption(typeof raw === 'string' ? raw : null) }
 }
 
 export function checkImageDraft(draft: { caption: string; hasFile: boolean }): Array<'captionTooLong' | 'noFile'> {
