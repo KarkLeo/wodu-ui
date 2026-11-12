@@ -13,12 +13,18 @@ const props = defineProps<{
 defineEmits<{ (e: 'open'): void }>()
 
 const failed = ref(false)
-// A new element for every attempt, so Try again asks for the picture again.
+const loaded = ref(false)
+// A new element for every picture and every attempt: Try again asks for the picture again, and while a replacement
+// loads the old picture is not left under the new caption.
 const attempt = ref(0)
-watch(() => props.url, () => { failed.value = false })
+watch(() => props.url, () => {
+  failed.value = false
+  loaded.value = false
+})
 
 function retry() {
   failed.value = false
+  loaded.value = false
   attempt.value++
 }
 
@@ -34,8 +40,23 @@ const openLabel = computed(() => (props.caption ? t('stage.shown.openNamed', { c
         <Button variant="ghost" size="sm" @click="retry">{{ t('stage.shown.retry') }}</Button>
       </template>
     </StateNote>
-    <button v-else type="button" class="sic-open" data-shown-image-open :aria-label="openLabel" @click="$emit('open')">
-      <img :key="attempt" class="sic-img" :src="url" alt="" @error="failed = true">
+    <button
+      v-else
+      type="button"
+      :class="['sic-open', { 'is-loading': !loaded }]"
+      data-shown-image-open
+      :aria-label="openLabel"
+      @click="$emit('open')"
+    >
+      <StateNote v-if="!loaded" class="sic-loading" size="sm" compact>{{ t('stage.shown.loading') }}</StateNote>
+      <img
+        :key="`${attempt}:${url}`"
+        :class="['sic-img', { 'is-pending': !loaded }]"
+        :src="url"
+        alt=""
+        @load="loaded = true"
+        @error="failed = true"
+      >
     </button>
     <p v-if="caption" class="sic-caption">{{ caption }}</p>
   </div>
@@ -52,6 +73,7 @@ const openLabel = computed(() => (props.caption ? t('stage.shown.openNamed', { c
   min-width: 0;
 }
 .sic-open {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,6 +86,9 @@ const openLabel = computed(() => (props.caption ? t('stage.shown.openNamed', { c
   cursor: zoom-in;
   flex: 0 0 auto;
 }
+/* Until the picture is there, a quiet note in a frame of some height, not a thin empty button. */
+.sic-open.is-loading { min-height: 120px; cursor: progress; }
+.sic-loading { margin: 0; }
 .sic-open:focus-visible {
   outline: 2px solid var(--vtt-accent);
   outline-offset: 2px;
@@ -77,6 +102,7 @@ const openLabel = computed(() => (props.caption ? t('stage.shown.openNamed', { c
   max-height: min(60vh, 520px);
   object-fit: contain;
 }
+.sic-img.is-pending { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .sic-caption {
   margin: 0;
   font-family: var(--font-serif);

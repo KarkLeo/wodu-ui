@@ -29,19 +29,29 @@ function onLoad() {
 
 const visible = computed(() => open.value && props.image !== null)
 
-// Where the focus was before the view opened, so closing it returns there when that is an element of a sheet that is
-// still open (the reveal can open above one); otherwise to the card's picture button, otherwise to the page. The card
-// is focused without scrolling: on a phone the tray would otherwise jump from the sheet the person was on to the card.
+// Where the focus was before the view opened. Opened by itself (the master showed a picture), the view must not take the
+// keys of someone typing in a sheet: no control gets the focus, the panel itself does, so a Space or an Enter does
+// nothing. Opened from the card's own button, the close button takes it as usual. Closing gives the focus back to that
+// element wherever it is, when it is still there; without one, to the card's picture button when the card is shown,
+// otherwise it stays on the page. Nothing scrolls on the way: on a phone the tray would jump to the card.
 let before: HTMLElement | null = null
-function rememberFocus() {
-  before = document.activeElement instanceof HTMLElement ? document.activeElement : null
+function rememberFocus(event: Event) {
+  const active = document.activeElement
+  before = active instanceof HTMLElement && active !== document.body ? active : null
+  if (before?.closest('[data-shown-image-open]')) return
+  event.preventDefault()
+  ;(event.target as HTMLElement | null)?.focus({ preventScroll: true })
 }
 function returnFocus(event: Event) {
   event.preventDefault()
-  const inOpenDialog = before?.isConnected && before.closest('[role="dialog"]')
-  if (before && inOpenDialog) before.focus()
-  else document.querySelector<HTMLElement>('[data-shown-image-open]')?.focus({ preventScroll: true })
+  const back = before
   before = null
+  if (back?.isConnected) {
+    back.focus({ preventScroll: true })
+    return
+  }
+  const card = document.querySelector<HTMLElement>('[data-shown-image-open]')
+  if (card && card.getClientRects().length > 0) card.focus({ preventScroll: true })
 }
 </script>
 
@@ -49,7 +59,13 @@ function returnFocus(event: Event) {
   <DialogRoot :open="visible" @update:open="open = $event">
     <DialogPortal>
       <DialogOverlay class="sir-veil" />
-      <DialogContent v-if="image" class="sir-panel" :aria-describedby="undefined" @open-auto-focus="rememberFocus" @close-auto-focus="returnFocus">
+      <DialogContent
+        v-if="image"
+        :class="['sir-panel', { 'has-caption': !!image.caption }]"
+        :aria-describedby="undefined"
+        @open-auto-focus="rememberFocus"
+        @close-auto-focus="returnFocus"
+      >
         <div class="sir-head">
           <DialogClose as-child>
             <IconButton class="sir-close" :label="t('stage.shown.close')"><IconClose :size="14" /></IconButton>
@@ -74,11 +90,11 @@ function returnFocus(event: Event) {
 </template>
 
 <style>
-/* Portalled to <body>: not scoped. */
+/* Portalled to <body>: not scoped. Above the sheets (300 / 301), so an open sheet is dimmed too; below the tooltips (400). */
 .sir-veil {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: 350;
   background: var(--vtt-black-a72);
 }
 .sir-panel {
@@ -87,7 +103,7 @@ function returnFocus(event: Event) {
   position: fixed;
   top: 50%;
   left: 50%;
-  z-index: 301;
+  z-index: 351;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -135,6 +151,32 @@ function returnFocus(event: Event) {
 }
 .sir-img.is-pending { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .sir-note { margin: 0; }
+
+/* A short landscape screen (a phone on its side): the close button and the caption go beside the picture, which then
+   gets nearly the whole height. The side column is the close button alone without a caption. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .sir-panel {
+    --sir-my: max(var(--s-2), env(safe-area-inset-top), env(safe-area-inset-bottom));
+    --sir-side: 28px;
+    display: grid;
+    grid-template: "stage head" auto "stage title" minmax(0, 1fr) / auto minmax(0, max-content);
+    gap: var(--s-2) var(--s-3);
+    padding: var(--s-2);
+  }
+  .sir-panel.has-caption { --sir-side: min(12rem, 30vw); }
+  .sir-stage { grid-area: stage; }
+  .sir-head { grid-area: head; }
+  .sir-title {
+    grid-area: title;
+    max-width: var(--sir-side);
+    max-height: calc(100dvh - 2 * var(--sir-my) - 2 * var(--s-2) - 2px - 28px - var(--s-2));
+    font-size: 14px;
+  }
+  .sir-img {
+    max-height: calc(100dvh - 2 * var(--sir-my) - 2 * var(--s-2) - 2px);
+    max-width: calc(100vw - 2 * var(--sir-mx) - 2 * var(--s-2) - 2px - var(--s-3) - var(--sir-side));
+  }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .sir-veil[data-state='open'],

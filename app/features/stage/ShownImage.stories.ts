@@ -9,11 +9,12 @@ import { useTrayCards } from '@/composables/useTrayCards'
 import { emptyStage, withImage } from '@/domain/stage'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { bootstrapStatus } from '@/transport/bootstrap'
-import { crookhollow, CROOKHOLLOW_META, olden, PARTY } from '@/stories/fixtures'
+import { crookhollow, CROOKHOLLOW_META, oda, olden, OLDEN_META, PARTY, wren } from '@/stories/fixtures'
 import { withMediaPrefs } from '@/stories/playback'
 import { drawPicture, LONG_CAPTION, PORTRAIT, servePictures, WIDE_MAP } from '@/stories/pictures'
 import { storyRouter } from '@/stories/router'
 import { atRoute, withGameTable, withOfflineMode } from '@/stories/state'
+import { useCharactersStore } from '@/stores/characters'
 import { useStageStore } from '@/stores/stage'
 import { authStore, clearPbRequests, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
 import type { TableImage } from '@/types/stage'
@@ -195,7 +196,7 @@ export const CardReopens: Story = {
   },
 }
 
-/** The card's picture button is where focus lands when the large view closes. */
+/** Opened from the card, the close button has the focus, and closing gives it back to the card's picture button. */
 export const FocusReturnsToTheCard: Story = {
   decorators: baseDecorators(asPlayer, OGRE),
   loaders: [playerRoute],
@@ -203,7 +204,8 @@ export const FocusReturnsToTheCard: Story = {
     const open = await findCardButton(canvasElement, /^Open: Brakk/)
     open.focus()
     await userEvent.click(open)
-    await body(canvasElement).findByRole('dialog')
+    const found = await body(canvasElement).findByRole('dialog')
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(within(found).getByRole('button', { name: 'Close' })))
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(dialog(canvasElement)).toBeNull())
     await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(open))
@@ -611,6 +613,11 @@ export const RevealOverAnOpenSheet: Story = {
     inside.focus()
     show(PLAYER_GAME, OGRE)
     await visibleDialog(canvasElement, OGRE.caption!)
+    // The veil dims the sheet too, and the tooltips (400), the dice (500) and the server-down overlay (900) stay above.
+    const z = (selector: string) => Number(getComputedStyle(doc.querySelector(selector)!).zIndex)
+    await expect(z('.sir-veil')).toBeGreaterThan(z('.bs-content-wrap'))
+    await expect(z('.sir-panel')).toBeGreaterThan(z('.sir-veil'))
+    await expect(z('.sir-panel')).toBeLessThan(400)
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(body(canvasElement).queryByRole('dialog', { name: OGRE.caption! })).toBeNull())
     await expect(body(canvasElement).getByRole('dialog', { name: 'Pick something' })).toBeVisible()
@@ -648,5 +655,89 @@ export const CardTryAgainLoadsThePicture: Story = {
     await userEvent.click(retry)
     await findCardButton(canvasElement, 'Open: Late picture')
     await expect(canvas.queryByText('The image could not be loaded.')).toBeNull()
+  },
+}
+
+// A player at Olden's table with Wren's sheet open (Wren is theirs, so the sheet can be edited).
+const atMySheet = [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), withPictures, withGameTable(olden, [oda, wren], OLDEN_META)]
+const sheetTable = () => ({
+  components: { PartyView, ShownImageHost },
+  setup() { useShownImageReveal() },
+  template: '<PartyView /><ShownImageHost />',
+})
+
+/**
+ * A player typing in their sheet when the master shows a picture: the view opens over the sheet without taking their
+ * keys. A Space and an Enter neither close it nor reach the field; Esc gives the focus back to the field, with its text
+ * as it was and the caret where it was.
+ */
+export const TypingInTheSheetIsNotTaken: Story = {
+  decorators: atMySheet,
+  loaders: [atRoute(`/games/${PLAYER_GAME}/party/${wren.id}`)],
+  render: sheetTable,
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('tab', { name: 'Notes' }))
+    const notes = await canvas.findByRole('textbox', { name: 'Notes about the character, world, story…' })
+    await userEvent.clear(notes)
+    await userEvent.type(notes, 'The bridge')
+    await expect(doc.activeElement).toBe(notes)
+    show(PLAYER_GAME, OGRE)
+    await visibleDialog(canvasElement, OGRE.caption!)
+    // The panel has the focus, not its close button.
+    await waitFor(() => expect(doc.activeElement).toBe(doc.querySelector('.sir-panel')))
+    await userEvent.keyboard(' ')
+    await userEvent.keyboard('{Enter}')
+    await settle()
+    await expect(dialog(canvasElement)).not.toBeNull()
+    await expect(notes).toHaveValue('The bridge')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(dialog(canvasElement)).toBeNull())
+    await waitFor(() => expect(doc.activeElement).toBe(notes))
+    await userEvent.keyboard('!')
+    await expect(notes).toHaveValue('The bridge!')
+  },
+}
+
+/**
+ * A lazy number field mid-edit (the coins, in their popover) when the picture pops up: the field loses the focus, so
+ * its draft is committed, exactly as by any other blur (one write).
+ */
+export const LazyFieldCommitsLikeABlur: Story = {
+  decorators: atMySheet,
+  loaders: [atRoute(`/games/${PLAYER_GAME}/party/${wren.id}`)],
+  // The real clock for this one: Vue drops a handler for an event stamped no later than the handler was attached, and
+  // with the frozen clock every stamp is equal, so a blur that the popover's capture listeners see first never reaches
+  // the field. The preview puts its own clock back after the story.
+  beforeEach: () => {
+    const frozen = globalThis.Date
+    globalThis.Date = Object.getPrototypeOf(frozen) as DateConstructor
+    return () => { globalThis.Date = frozen }
+  },
+  render: sheetTable,
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const coinsNow = () => useCharactersStore().getById(wren.id)!.coins
+    await userEvent.click(await within(canvasElement).findByRole('button', { name: /Coins/ }))
+    const coins = await body(canvasElement).findByRole('spinbutton', { name: 'Coins' })
+    const before = coinsNow()
+    await userEvent.clear(coins)
+    await userEvent.type(coins, '57')
+    // A draft: nothing is written while the person types.
+    await expect(coinsNow()).toBe(before)
+    await expect(doc.activeElement).toBe(coins)
+    clearPbRequests()
+    show(PLAYER_GAME, OGRE)
+    await visibleDialog(canvasElement, OGRE.caption!)
+    await waitFor(() => expect(coinsNow()).toBe(57))
+    await settle()
+    await expect(pbRequests().filter(r => r === 'characters.update')).toHaveLength(1)
+    // The popover stays open under the view, so Esc closes the view alone and the focus goes back to the field.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog', { name: OGRE.caption! })).toBeNull())
+    await waitFor(() => expect(doc.activeElement).toBe(coins))
+    await expect(coins).toHaveValue(57)
+    await expect(pbRequests().filter(r => r === 'characters.update')).toHaveLength(1)
   },
 }

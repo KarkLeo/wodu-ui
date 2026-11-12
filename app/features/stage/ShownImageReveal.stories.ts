@@ -76,7 +76,13 @@ const wide = { url: drawPicture(WIDE_MAP.width, WIDE_MAP.height), caption: 'The 
 const tiny = { url: drawPicture(TINY_ICON.width, TINY_ICON.height), caption: 'A silver key' }
 
 export const PortraitPhone: Story = { args: { image: portrait }, play: ({ canvasElement }) => inDialog(canvasElement, SIZES.phone, PORTRAIT) }
-export const PortraitLandscapePhone: Story = { args: { image: portrait }, play: ({ canvasElement }) => inDialog(canvasElement, SIZES.landscape, PORTRAIT) }
+/** On a phone on its side the close button and the caption go beside the picture, which gets nearly the whole height. */
+export const PortraitLandscapePhone: Story = {
+  args: { image: portrait },
+  play: ({ canvasElement }) => inDialog(canvasElement, SIZES.landscape, PORTRAIT, async (img) => {
+    await expect(img.getBoundingClientRect().height).toBeGreaterThanOrEqual(300)
+  }),
+}
 export const PortraitDesktop: Story = { args: { image: portrait }, play: ({ canvasElement }) => inDialog(canvasElement, SIZES.desktop, PORTRAIT) }
 export const WideMapPhone: Story = { args: { image: wide }, play: ({ canvasElement }) => inDialog(canvasElement, SIZES.phone, WIDE_MAP) }
 export const WideMapLandscapePhone: Story = { args: { image: wide }, play: ({ canvasElement }) => inDialog(canvasElement, SIZES.landscape, WIDE_MAP) }
@@ -86,6 +92,12 @@ export const WideMapDesktop: Story = { args: { image: wide }, play: ({ canvasEle
 export const TinyIconPhone: Story = {
   args: { image: tiny },
   play: ({ canvasElement }) => inDialog(canvasElement, SIZES.phone, TINY_ICON, async (img) => {
+    await expect(Math.round(img.getBoundingClientRect().width)).toBe(TINY_ICON.width)
+  }),
+}
+export const TinyIconLandscapePhone: Story = {
+  args: { image: tiny },
+  play: ({ canvasElement }) => inDialog(canvasElement, SIZES.landscape, TINY_ICON, async (img) => {
     await expect(Math.round(img.getBoundingClientRect().width)).toBe(TINY_ICON.width)
   }),
 }
@@ -103,6 +115,50 @@ export const LongCaption: Story = {
     await inDialog(canvasElement, SIZES.landscape, PORTRAIT)
     await inDialog(canvasElement, SIZES.phone, PORTRAIT)
     await waitFor(() => expect(body(canvasElement).getByRole('dialog', { name: LONG_CAPTION })).toBeVisible())
+  },
+}
+
+/** 120 characters with no space on a landscape phone: the caption wraps and scrolls in its own column beside the picture. */
+const UNBROKEN = 'Marshlight'.repeat(12)
+export const UnbrokenCaptionLandscapePhone: Story = {
+  args: { image: { url: portrait.url, caption: UNBROKEN } },
+  play: ({ canvasElement }) => inDialog(canvasElement, SIZES.landscape, PORTRAIT, async (img) => {
+    const doc = canvasElement.ownerDocument
+    const title = doc.querySelector<HTMLElement>('.sir-title')!
+    const box = title.getBoundingClientRect()
+    await expect(UNBROKEN).toHaveLength(120)
+    await expect(box.left).toBeGreaterThanOrEqual(img.getBoundingClientRect().right)
+    await expect(box.width).toBeLessThanOrEqual(192.5)
+    await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth)
+    await expect(getComputedStyle(title).overflowY).toBe('auto')
+    await expect(box.bottom).toBeLessThanOrEqual(window.innerHeight)
+    await expect(img.getBoundingClientRect().height).toBeGreaterThanOrEqual(300)
+  }),
+}
+
+/** Without a caption the side column is the close button alone, so the picture keeps the rest of the width. */
+export const NoCaptionLandscapePhone: Story = {
+  args: { image: { url: wide.url, caption: null } },
+  play: ({ canvasElement }) => inDialog(canvasElement, SIZES.landscape, WIDE_MAP, async (img) => {
+    const close = body(canvasElement).getByRole('button', { name: 'Close' }).getBoundingClientRect()
+    const right = img.getBoundingClientRect().right
+    await expect(close.left).toBeGreaterThanOrEqual(right)
+    // The gap between the picture and the button, nothing more.
+    await expect(close.left - right).toBeLessThanOrEqual(12.5)
+  }),
+}
+
+/** Opened from the card's button, the close button has the focus; opened by itself, the panel does. */
+export const FocusOnOpen: Story = {
+  args: { image: portrait },
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const panel = await waitFor(() => doc.querySelector<HTMLElement>('.sir-panel') ?? Promise.reject(new Error('not open')))
+    await waitFor(() => expect(doc.activeElement).toBe(panel))
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body(canvasElement).queryByRole('dialog')).toBeNull())
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Card' }))
+    await waitFor(() => expect(doc.activeElement).toBe(body(canvasElement).getByRole('button', { name: 'Close' })))
   },
 }
 
