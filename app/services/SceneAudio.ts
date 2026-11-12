@@ -38,15 +38,32 @@ export interface SceneAudioDeps {
 }
 
 export const SCENE_FADE_SECONDS = 2
+/** The overlay's fade in and out, and the scene's fade under it and back. */
+export const OVERLAY_FADE_SECONDS = 1
 /** How long `unlock()` keeps its caller waiting; a resume still pending after that goes on in the background. */
 export const UNLOCK_WAIT_SECONDS = 1
 
+/** A sound the master plays over the scene. `key` is its identity: a new key restarts even the same `src`. */
+export interface OverlayRequest {
+  key: string
+  src: string
+  loop: boolean
+}
+
 export interface SceneAudio {
+  /** True while the scene or the overlay waits for an unlock. */
   readonly blocked: Readonly<Ref<boolean>>
   setVolume(level: number): void
-  /** Crossfades to `src` once it can play; null fades to silence. The latest call wins. */
+  /** Crossfades to `src` once it can play; null fades to silence. The latest call wins. While an overlay plays it is prepared silently and comes in when the overlay goes. */
   setScene(src: string | null): void
-  /** After a gesture: starts a refused scene and resumes an interrupted one where it stopped. */
+  /**
+   * Plays `overlay` over the scene; a different `key` restarts even the same src; null stops it.
+   * The scene falls silent only once the overlay plays, and comes back from where it paused when the overlay goes.
+   */
+  setOverlay(overlay: OverlayRequest | null): void
+  /** Called when a non-looping overlay finished by itself (not when it was stopped or replaced). Returns an unsubscribe. */
+  onOverlayEnded(listener: (key: string) => void): () => void
+  /** After a gesture: starts a refused scene or overlay and resumes an interrupted one where it stopped. */
   unlock(): Promise<void>
   /** Fades everything out and releases every track. */
   stop(): void
@@ -73,11 +90,15 @@ export interface Channel {
   hold(fade: number): void
   /** Ends a hold: a request prepared meanwhile comes in, otherwise the held track plays on from where it paused; both fade in over `fade`. */
   release(fade: number): void
-  /** After an unlock: plays a refused track and resumes an interrupted one. */
-  resume(): void
+  /** After an unlock: plays a refused track and resumes an interrupted one. A tap anywhere (`byTap`) leaves a deliberate outside pause alone. */
+  resume(byTap?: boolean): void
   stop(): void
   /** Called with the key of a non-looping track that finished by itself (not one stopped or replaced). */
   onEnded(listener: (key: string) => void): void
+  /** Called with the key of a request whose track has just started playing as the current one (while held: on release). */
+  onStarted(listener: (key: string) => void): void
+  /** Called each time the channel is left with no current track and none incoming. */
+  onIdle(listener: () => void): void
 }
 
 /** The channels of one output, with what they share: blocked, the gesture listener, the unlock. */
@@ -135,12 +156,18 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
   const blocked = ref(false)
   const tapHelps = ref(false)
   const endedListeners: Array<(key: string) => void> = []
+  const startedListeners: Array<(key: string) => void> = []
+  const idleListeners: Array<() => void> = []
+  let idle = true
 
   function sync() {
     const refused = !!incoming?.refused
     const stall = current?.stall ?? null
     blocked.value = !held && (refused || stall !== null)
     tapHelps.value = !held && (refused || stall === 'suspended' || stall === 'refused')
+    const wasIdle = idle
+    idle = !current && !incoming
+    if (idle && !wasIdle) idleListeners.forEach(listener => listener())
   }
 
   function fadeOut(track: Track, seconds: number) {
@@ -171,8 +198,11 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
   }
 
   function dropIncoming() {
-    if (incoming) book.release(incoming.track)
+    const p = incoming
     incoming = null
+    if (!p) return
+    safely(() => p.track.unpin())
+    book.release(p.track)
   }
 
   function fail() {
@@ -239,6 +269,7 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
     }
     if (previous) fadeOut(previous.track, fade)
     sync()
+    if (!held) startedListeners.forEach(listener => listener(p.req.key))
   }
 
   async function resumeCurrent(c: Playing, fade: number) {
@@ -291,6 +322,8 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
         () => {
           if (gen !== generation) return
           p.ready = true
+          // From here it may play at any moment, and a refused one waits for a tap: it keeps its element.
+          safely(() => track.pin())
           if (!held) return start(p, gen)
         },
         () => { if (gen === generation) fail() },
@@ -324,10 +357,10 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
       else if (c) safely(() => c.track.fadeTo(1, fade))
       sync()
     },
-    resume() {
+    resume(byTap = false) {
       if (held) return
       if (incoming?.ready && incoming.refused) void start(incoming, generation)
-      else if (current?.stall) void resumeCurrent(current, current.req.fade)
+      else if (current?.stall && !(byTap && current.stall === 'paused')) void resumeCurrent(current, current.req.fade)
     },
     stop() {
       generation++
@@ -340,6 +373,12 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
     },
     onEnded(listener) {
       endedListeners.push(listener)
+    },
+    onStarted(listener) {
+      startedListeners.push(listener)
+    },
+    onIdle(listener) {
+      idleListeners.push(listener)
     },
   }
 }
@@ -365,7 +404,7 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
   // Kept across gestures that did not help (a scroll's touchend may carry no activation); gone once nothing a tap fixes is left.
   watch(tapHelps, wanted => {
     if (wanted && !removeGesture) {
-      removeGesture = deps.addGestureListener(() => { void unlock() })
+      removeGesture = deps.addGestureListener(() => { void unlock(true) })
     } else if (!wanted && removeGesture) {
       removeGesture()
       removeGesture = null
@@ -373,9 +412,10 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
   }, { flush: 'sync' })
 
   // The resume may stay pending (WebKit outside activation); the channels go on whenever it settles, the caller does not wait for it.
-  function unlock(): Promise<void> {
+  // A tap anywhere unlocks for whichever channel asked for it, but never undoes a deliberate pause on another one.
+  function unlock(byTap: boolean): Promise<void> {
     const attempt = deps.unlock().then(
-      allowed => { if (allowed) channels.forEach(c => c.resume()) },
+      allowed => { if (allowed) channels.forEach(c => c.resume(byTap)) },
       e => { log.warn('unlock failed', e) },
     )
     return Promise.race([attempt, deps.wait(UNLOCK_WAIT_SECONDS)])
@@ -391,7 +431,7 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
     setVolume(level) {
       deps.setMasterVolume(Math.min(1, Math.max(0, level)))
     },
-    unlock,
+    unlock: () => unlock(false),
     stop() {
       channels.forEach(c => c.stop())
     },
@@ -401,12 +441,38 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
 export function createSceneAudio(deps: SceneAudioDeps): SceneAudio {
   const mixer = createAudioMixer(deps)
   const scene = mixer.channel()
+  const overlay = mixer.channel()
+  const endedListeners = new Set<(key: string) => void>()
+  // From the moment an overlay plays until the overlay channel has nothing left: a loading, failed or refused overlay
+  // leaves the scene alone, and a replacement keeps it held throughout.
+  let holding = false
+
+  overlay.onStarted(() => {
+    if (holding) return
+    holding = true
+    scene.hold(OVERLAY_FADE_SECONDS)
+  })
+  overlay.onIdle(() => {
+    if (!holding) return
+    holding = false
+    scene.release(OVERLAY_FADE_SECONDS)
+  })
+  overlay.onEnded(key => endedListeners.forEach(listener => listener(key)))
 
   return {
     blocked: mixer.blocked,
     setVolume: mixer.setVolume,
     setScene: src => scene.request(src === null ? null : { key: src, src, loop: true, fade: SCENE_FADE_SECONDS }),
+    setOverlay: next => overlay.request(next && { key: next.key, src: next.src, loop: next.loop, fade: OVERLAY_FADE_SECONDS }),
+    onOverlayEnded(listener) {
+      endedListeners.add(listener)
+      return () => { endedListeners.delete(listener) }
+    },
     unlock: mixer.unlock,
-    stop: mixer.stop,
+    stop() {
+      // Both channels stop: the scene is not to come back in the meantime.
+      holding = false
+      mixer.stop()
+    },
   }
 }

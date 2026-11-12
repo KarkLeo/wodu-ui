@@ -353,6 +353,20 @@ describe('webAudioDeps', () => {
       expect(elementOf(0).pauses).toBe(0)
     })
 
+    it('a track evicted while its element\'s play() is in flight rejects with AbortError instead of resolving', async () => {
+      const tracks = fill()
+      const el = elementOf(0)
+      let settleElement!: () => void
+      el.play = () => { el.plays.push(el.src); el.paused = false; return new Promise<void>(resolve => { settleElement = resolve }) }
+      let outcome: unknown = 'pending'
+      void tracks[0]!.play().then(() => { outcome = 'resolved' }, e => { outcome = e })
+      await flush()
+      expect(el.plays).toEqual(['s0.mp3'])
+      deps.createTrack('late.mp3', true)
+      settleElement(); await flush()
+      expect(outcome).toMatchObject({ name: 'AbortError' })
+    })
+
     it('an evicted track that is still audible is ramped to 0 over a few milliseconds before its element changes src', async () => {
       const tracks = fill()
       await tracks[3]!.play()
@@ -709,6 +723,51 @@ describe('webAudioDeps', () => {
       expect(() => deps.createTrack('late.mp3', true)).not.toThrow()
       runTimers(STEAL_RAMP_MS)
       expect(elementOf(3).src).toBe('late.mp3')
+    })
+  })
+
+  describe('the pool at the worst case of two channels', () => {
+    const el = (src: string) => FakeAudio.made.find(e => e.src === src)
+    const ready = async (src: string) => {
+      el(src)!.dispatch('canplaythrough')
+      await flush(); await flush()
+    }
+
+    // Live at once: the held scene, the scene's incoming (loading, then prepared), the overlay's current and incoming,
+    // and every overlay crossfaded away, none of whose fades is allowed to finish.
+    it(`with ${POOL_SIZE} elements, overlay crossfades never take the held scene, its incoming track or the overlay's current one`, async () => {
+      const audio = createSceneAudio(deps)
+      audio.setScene('a.mp3'); await ready('a.mp3')
+      expect(el('a.mp3')!.paused).toBe(false)
+      audio.setScene('b.mp3')
+      const survivors = (overlay: string | null) => {
+        expect(el('a.mp3')).toBeDefined()
+        expect(el('b.mp3')).toBeDefined()
+        if (overlay) expect(el(overlay)!.paused).toBe(false)
+      }
+      for (let i = 1; i <= 10; i++) {
+        audio.setOverlay({ key: `k${i}`, src: `o${i}.mp3`, loop: false })
+        runTimers(STEAL_RAMP_MS)
+        survivors(i > 1 ? `o${i - 1}.mp3` : null)
+        await ready(`o${i}.mp3`)
+        survivors(`o${i}.mp3`)
+        // Half way, the scene's incoming becomes ready while held: prepared, silent.
+        if (i === 5) {
+          await ready('b.mp3')
+          expect(el('b.mp3')!.paused).toBe(true)
+        }
+      }
+      expect(FakeAudio.made).toHaveLength(POOL_SIZE)
+      // An overlay incoming still loading while another plays: the fourth live track.
+      audio.setOverlay({ key: 'k11', src: 'o11.mp3', loop: false })
+      runTimers(STEAL_RAMP_MS)
+      survivors('o10.mp3')
+      expect(el('o11.mp3')).toBeDefined()
+      audio.setOverlay(null); await flush(); await flush()
+      expect(el('b.mp3')!.paused).toBe(false)
+      runTimers(1000); runTimers(2000); await flush()
+      expect(el('a.mp3')).toBeUndefined()
+      expect(el('b.mp3')!.paused).toBe(false)
     })
   })
 

@@ -287,7 +287,8 @@ export function webAudioDeps(env: WebAudioEnv = browserEnv()): SceneAudioDeps {
         if (!await resumeBounded(context)) throw new DOMException('Audio context is suspended', 'NotAllowedError')
         if (dead) throw new DOMException('Track was released', 'AbortError')
         await element.play()
-        if (dead) return
+        // Evicted while the element was starting: it now plays another track's src.
+        if (dead) throw new DOMException('Track was released', 'AbortError')
         playing = true
         stalled = null
       },

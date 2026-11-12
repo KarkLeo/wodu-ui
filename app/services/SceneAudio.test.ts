@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   createAudioMixer,
   createSceneAudio,
+  OVERLAY_FADE_SECONDS,
   SCENE_FADE_SECONDS,
   UNLOCK_WAIT_SECONDS,
   type AudioMixer,
@@ -741,5 +742,395 @@ describe('audio channels', () => {
     await advance()
     expect(ch.blocked.value).toBe(false)
     expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'fadeTo(1,1)'])
+  })
+
+  it('a tap that unlocks one channel leaves the other channel\'s deliberate outside pause alone; an explicit unlock() resumes it', async () => {
+    const one = mixer.channel()
+    const two = mixer.channel()
+    two.request(req('b')); track('b').resolveReady(); await flush()
+    track('b').interrupt('paused')
+    one.request(req('a')); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(h.gestures).toHaveLength(1)
+    h.gestures[0]!(); await flush()
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(two.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(0)
+    await mixer.unlock()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)', 'play', 'fadeTo(1,2)'])
+    expect(mixer.blocked.value).toBe(false)
+  })
+
+  it('a ready track is pinned before its play is attempted; a refused one stays pinned while it waits, and goes unpinned when dropped', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); await flush()
+    expect(track('a').pinned).toBe(false)
+    track('a').hangPlay(); track('a').resolveReady(); await flush()
+    expect(track('a').calls).toEqual(['play'])
+    expect(track('a').pinned).toBe(true)
+    track('a').settlePlay(); await flush()
+    ch.request(req('b')); track('b').refusePlay(); track('b').resolveReady(); await flush()
+    expect(ch.blocked.value).toBe(true)
+    expect(track('b').pinned).toBe(true)
+    ch.request(req('c')); await flush()
+    expect(track('b').calls).toEqual(['play', 'dispose'])
+    expect(track('b').pinned).toBe(false)
+  })
+
+  it('a track prepared while held is pinned', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    ch.hold(1); await advance()
+    ch.request(req('b')); track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual([])
+    expect(track('b').pinned).toBe(true)
+  })
+
+  it('onStarted reports the key once its track plays, not while it loads, fails or is refused; a held channel reports on release()', async () => {
+    const ch = mixer.channel()
+    const started: string[] = []
+    ch.onStarted(key => started.push(key))
+    ch.request(req('a')); await flush()
+    expect(started).toEqual([])
+    track('a').rejectReady(); await flush()
+    ch.request(req('b')); track('b').refusePlay(); track('b').resolveReady(); await flush()
+    expect(started).toEqual([])
+    await mixer.unlock()
+    expect(started).toEqual(['b'])
+    ch.hold(1)
+    ch.request(req('c')); track('c').resolveReady(); await flush()
+    expect(started).toEqual(['b'])
+    ch.release(1); await flush()
+    expect(started).toEqual(['b', 'c'])
+  })
+
+  it('onIdle fires each time the channel is left with no current and no incoming track', async () => {
+    const ch = mixer.channel()
+    let idle = 0
+    ch.onIdle(() => { idle++ })
+    ch.request(req('a')); track('a').rejectReady(); await flush()
+    expect(idle).toBe(1)
+    ch.request(req('b', 'b', false)); track('b').resolveReady(); await flush()
+    ch.request(req('c')); await flush()
+    track('c').rejectReady(); await flush()
+    expect(idle).toBe(1)
+    track('b').finish(); await flush()
+    expect(idle).toBe(2)
+    ch.request(req('d')); track('d').resolveReady(); await flush()
+    ch.request(null); await flush()
+    expect(idle).toBe(3)
+    ch.stop()
+    expect(idle).toBe(3)
+  })
+})
+
+describe('the overlay', () => {
+  let h: Harness
+  let audio: SceneAudio
+  let ended: string[]
+
+  const track = (name: string) => {
+    const found = h.tracks.filter(t => t.src === `${name}.mp3`).at(-1)
+    if (!found) throw new Error(`no track ${name}`)
+    return found
+  }
+  const advance = async () => {
+    h.waits.splice(0).forEach(w => w.resolve())
+    await flush()
+  }
+  const ov = (key: string, name = key, loop = false) => ({ key, src: `${name}.mp3`, loop })
+  const playScene = async (name: string) => {
+    audio.setScene(`${name}.mp3`); track(name).resolveReady(); await flush()
+  }
+  const playOverlay = async (key: string, name = key) => {
+    audio.setOverlay(ov(key, name)); track(name).resolveReady(); await flush()
+  }
+  const plays = (name: string) => track(name).calls.filter(c => c === 'play').length
+  // Audible: its last fade went to 1, and nothing paused or released it since.
+  const audible = () => h.tracks
+    .filter(t => t.calls.filter(c => c.startsWith('fadeTo') || c === 'pause' || c === 'dispose').at(-1)?.startsWith('fadeTo(1,'))
+    .map(t => t.src)
+
+  beforeEach(() => {
+    warn.mockClear()
+    h = harness()
+    audio = createSceneAudio(h.deps)
+    ended = []
+    audio.onOverlayEnded(key => ended.push(key))
+  })
+
+  it('exposes a 1 second overlay fade constant', () => {
+    expect(OVERLAY_FADE_SECONDS).toBe(1)
+  })
+
+  it('when the overlay is ready: the scene fades to 0 over 1 s and pauses, the overlay plays and fades in over 1 s', async () => {
+    await playScene('a')
+    audio.setOverlay(ov('k', 'o')); await flush()
+    expect(track('o').loop).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    track('o').resolveReady(); await flush()
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)'])
+    expect(h.waits.map(w => w.seconds)).toEqual([1])
+    await advance()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'pause'])
+    expect(audible()).toEqual(['o.mp3'])
+  })
+
+  it('an overlay still loading leaves the scene playing untouched', async () => {
+    await playScene('a')
+    audio.setOverlay(ov('k', 'o')); await flush()
+    expect(track('o').calls).toEqual([])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(h.waits).toHaveLength(0)
+  })
+
+  it('an overlay that fails to load leaves the scene playing untouched', async () => {
+    await playScene('a')
+    audio.setOverlay(ov('k', 'o')); track('o').rejectReady(); await flush()
+    expect(track('o').calls).toEqual(['dispose'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(h.waits).toHaveLength(0)
+    expect(audio.blocked.value).toBe(false)
+  })
+
+  it('an overlay whose play fails, or that the browser refuses, leaves the scene playing untouched; a refused one blocks', async () => {
+    await playScene('a')
+    audio.setOverlay(ov('k1', 'o')); track('o').failPlay(); track('o').resolveReady(); await flush()
+    expect(track('o').calls).toEqual(['play', 'dispose'])
+    audio.setOverlay(ov('k2', 'p')); track('p').refusePlay(); track('p').resolveReady(); await flush()
+    expect(track('p').calls).toEqual(['play'])
+    expect(audio.blocked.value).toBe(true)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(h.waits).toHaveLength(0)
+  })
+
+  it('setOverlay(null): the overlay fades out over 1 s and is disposed, the scene track plays from where it paused and fades to 1', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    audio.setOverlay(null); await flush()
+    expect(track('o').calls.at(-1)).toBe('fadeTo(0,1)')
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'pause', 'play', 'fadeTo(1,1)'])
+    expect(h.tracks).toHaveLength(2)
+    await advance()
+    expect(track('o').calls.slice(-2)).toEqual(['pause', 'dispose'])
+    expect(ended).toEqual([])
+    expect(audible()).toEqual(['a.mp3'])
+  })
+
+  it('a non-looping overlay that finishes: disposed, scene resumes, onOverlayEnded fires with its key', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    const sceneAtEnd: string[][] = []
+    audio.onOverlayEnded(() => sceneAtEnd.push([...track('a').calls]))
+    track('o').finish(); await flush()
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)', 'dispose'])
+    expect(track('a').calls.slice(-2)).toEqual(['play', 'fadeTo(1,1)'])
+    expect(ended).toEqual(['k'])
+    // The scene is on its way back before the listener hears of the end.
+    expect(sceneAtEnd[0]!.filter(c => c === 'play')).toHaveLength(2)
+    track('o').finish(); await flush()
+    expect(ended).toEqual(['k'])
+    expect(audible()).toEqual(['a.mp3'])
+  })
+
+  it('onOverlayEnded returns an unsubscribe', async () => {
+    const heard: string[] = []
+    const off = audio.onOverlayEnded(key => heard.push(key))
+    off()
+    await playOverlay('k', 'o')
+    track('o').finish(); await flush()
+    expect(heard).toEqual([])
+    expect(ended).toEqual(['k'])
+  })
+
+  it('a stopped or replaced overlay does not fire onOverlayEnded', async () => {
+    await playOverlay('k1', 'o')
+    await playOverlay('k2', 'p')
+    track('o').finish()
+    audio.setOverlay(null); await flush()
+    track('p').finish(); await flush()
+    await playOverlay('k3', 'q')
+    audio.stop()
+    track('q').finish(); await flush()
+    expect(ended).toEqual([])
+  })
+
+  it('a new key with the same src restarts: the old track is disposed, a new one created; the scene stays held', async () => {
+    await playScene('a'); await playOverlay('k1', 'o'); await advance()
+    const [, first] = h.tracks
+    audio.setOverlay(ov('k2', 'o')); await flush()
+    expect(h.tracks).toHaveLength(3)
+    const second = h.tracks[2]!
+    expect(second.src).toBe('o.mp3')
+    second.resolveReady(); await flush()
+    expect(second.calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(first!.calls.at(-1)).toBe('fadeTo(0,1)')
+    await advance()
+    expect(first!.calls.slice(-2)).toEqual(['pause', 'dispose'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'pause'])
+    expect(ended).toEqual([])
+  })
+
+  it('a replacement during the scene\'s hold fade keeps the scene held: it never comes back between the two', async () => {
+    await playScene('a'); await playOverlay('k1', 'o')
+    await playOverlay('k2', 'p')
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)'])
+    expect(track('o').calls.at(-1)).toBe('fadeTo(0,1)')
+    await advance()
+    expect(track('a').calls.at(-1)).toBe('pause')
+    expect(audible()).toEqual(['p.mp3'])
+  })
+
+  it('a replacement that fails to load leaves the playing overlay and the held scene as they are', async () => {
+    await playScene('a'); await playOverlay('k1', 'o'); await advance()
+    audio.setOverlay(ov('k2', 'p')); track('p').rejectReady(); await flush()
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(track('a').calls.at(-1)).toBe('pause')
+  })
+
+  it('the same key again does nothing', async () => {
+    await playOverlay('k', 'o')
+    audio.setOverlay(ov('k', 'o')); await flush()
+    expect(h.tracks).toHaveLength(1)
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)'])
+  })
+
+  it('setScene during an overlay: the old scene track is disposed, the new one is prepared but neither played nor faded in; it comes in when the overlay ends', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    audio.setScene('b.mp3'); track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual([])
+    await advance()
+    expect(track('a').calls.at(-1)).toBe('dispose')
+    track('o').finish(); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(plays('a')).toBe(1)
+    expect(audible()).toEqual(['b.mp3'])
+  })
+
+  it('setScene during an overlay: the new scene comes in when the overlay is stopped too', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    audio.setScene('b.mp3'); track('b').resolveReady(); await flush()
+    audio.setOverlay(null); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(plays('a')).toBe(1)
+  })
+
+  it('setScene(null) during an overlay: nothing resumes when the overlay ends', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    audio.setScene(null); await flush(); await advance()
+    audio.setOverlay(null); await flush(); await advance()
+    expect(plays('a')).toBe(1)
+    expect(h.tracks).toHaveLength(2)
+    expect(audible()).toEqual([])
+  })
+
+  it('stop during the overlay fade-in and start during its fade-out end with one audible track', async () => {
+    await playScene('a'); await playOverlay('k1', 'o')
+    audio.setOverlay(null); await flush()
+    await advance()
+    expect(track('o').calls.slice(-2)).toEqual(['pause', 'dispose'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'fadeTo(1,1)'])
+    expect(audible()).toEqual(['a.mp3'])
+
+    await playOverlay('k2', 'p')
+    audio.setOverlay(null); await flush()
+    await playOverlay('k3', 'q')
+    await advance()
+    expect(track('p').calls.slice(-2)).toEqual(['pause', 'dispose'])
+    expect(track('a').calls.at(-1)).toBe('pause')
+    expect(audible()).toEqual(['q.mp3'])
+  })
+
+  it('with no scene sound an overlay just plays and ends in silence', async () => {
+    await playOverlay('k', 'o')
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)'])
+    track('o').finish(); await flush()
+    expect(ended).toEqual(['k'])
+    expect(h.tracks).toHaveLength(1)
+    expect(audible()).toEqual([])
+  })
+
+  it('a scene asked for during an overlay with no scene sound comes in when the overlay ends', async () => {
+    await playOverlay('k', 'o')
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    expect(track('a').calls).toEqual([])
+    track('o').finish(); await flush()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,1)'])
+  })
+
+  it('unlock() after a refused overlay play starts the overlay, not the scene', async () => {
+    await playScene('a')
+    audio.setOverlay(ov('k', 'o')); track('o').refusePlay(); track('o').resolveReady(); await flush()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('o').calls).toEqual(['play', 'play', 'fadeTo(1,1)'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)'])
+  })
+
+  it('a tap after a refused overlay play starts the overlay and holds the scene', async () => {
+    await playScene('a')
+    audio.setOverlay(ov('k', 'o')); track('o').refusePlay(); track('o').resolveReady(); await flush()
+    expect(h.gestures).toHaveLength(1)
+    h.gestures[0]!(); await flush()
+    expect(track('o').calls).toEqual(['play', 'play', 'fadeTo(1,1)'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)'])
+  })
+
+  it('unlock() with both the scene and the overlay refused ends with the overlay audible and the scene held', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    audio.setOverlay(ov('k', 'o')); track('o').refusePlay(); track('o').resolveReady(); await flush()
+    await audio.unlock()
+    await advance()
+    expect(track('o').calls).toEqual(['play', 'play', 'fadeTo(1,1)'])
+    expect(track('a').calls.at(-1)).toBe('pause')
+    expect(audible()).toEqual(['o.mp3'])
+    track('o').finish(); await flush()
+    expect(audible()).toEqual(['a.mp3'])
+  })
+
+  it('an overlay that errors mid-play is dropped and the scene comes back, without onOverlayEnded', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    track('o').interrupt('error'); await flush()
+    expect(track('o').calls.at(-1)).toBe('dispose')
+    expect(track('a').calls.slice(-2)).toEqual(['play', 'fadeTo(1,1)'])
+    expect(ended).toEqual([])
+    expect(audio.blocked.value).toBe(false)
+  })
+
+  it('an outside pause of the overlay blocks it without the tap listener and keeps the scene held; an explicit unlock() resumes the overlay', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    track('o').interrupt('paused')
+    expect(audio.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(0)
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)', 'play', 'fadeTo(1,1)'])
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'pause'])
+  })
+
+  it('a suspended context blocks the overlay with the tap listener and keeps the scene held; a tap resumes the overlay', async () => {
+    await playScene('a'); await playOverlay('k', 'o'); await advance()
+    track('o').interrupt('suspended')
+    expect(audio.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(1)
+    h.gestures[0]!(); await flush()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)', 'play', 'fadeTo(1,1)'])
+    expect(plays('a')).toBe(1)
+  })
+
+  it('stop() disposes the overlay too, and leaves neither channel held', async () => {
+    await playScene('a'); await playOverlay('k', 'o')
+    audio.stop(); await flush()
+    expect(track('o').calls.at(-1)).toBe('fadeTo(0,1)')
+    await advance()
+    expect(track('o').calls.slice(-2)).toEqual(['pause', 'dispose'])
+    expect(track('a').calls.at(-1)).toBe('dispose')
+    expect(plays('a')).toBe(1)
+    expect(ended).toEqual([])
+    audio.setScene('b.mp3'); track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
+    await playOverlay('k', 'p')
+    expect(track('b').calls.at(-1)).toBe('fadeTo(0,1)')
   })
 })
