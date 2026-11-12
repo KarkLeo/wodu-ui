@@ -9,8 +9,12 @@ import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
 import { closeMedia } from '@/transport/media'
 import { useMediaSession } from '@/composables/useMediaSession'
+import { connection } from '@/transport/connection'
+import SceneSheet from './SceneSheet.vue'
+import { soundFile } from '@/stories/scenes'
 import { useStageControl } from '@/composables/useStageControl'
 import { clearPbRequests, pbRequests, resetRecords, seedRecords, storedRecords } from '../../../.storybook/mocks/pb'
+import { holdUploads, sentForms } from '../../../.storybook/mocks/upload'
 
 // Story-only harness: the session and the master's two switches have no screen yet.
 const Harness = defineComponent({
@@ -159,5 +163,53 @@ export const JoinedGameWithoutStage: Story = {
     await loadGame(olden.id)
     await expect(useGamesStore().byId(olden.id)).toBeTruthy()
     await expect(useStageStore().stageOf(olden.id).scene).toBeNull()
+  },
+}
+
+// Story-only harness: the session with a scene sheet open on it, as the Scenes panel has it.
+const SheetHarness = defineComponent({
+  components: { SceneSheet },
+  setup() {
+    const media = useMediaStore()
+    media.clearAll()
+    useStageStore().clearAll()
+    useMediaSession()
+    onUnmounted(() => {
+      connection.value = 'ok'
+      closeMedia()
+    })
+    return { gameId: crookhollow.id }
+  },
+  template: '<SceneSheet :open="true" :game-id="gameId" />',
+})
+
+/** The connection check going to `checking` and back does not cancel an upload under way: the sheet keeps its progress and closes when it is done. */
+export const UploadSurvivesAConnectionBlip: Story = {
+  decorators: [asMaster],
+  loaders: [seed, atRoute(`/games/${crookhollow.id}`)],
+  render: () => ({ components: { SheetHarness }, template: '<SheetHarness />' }),
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const user = userEvent.setup({ applyAccept: false })
+    await waitFor(() => expect(useMediaStore().scenes.status).toBe('ready'))
+    const release = holdUploads()
+    try {
+      await user.type(await body.findByRole('textbox', { name: 'Name' }), 'Cellar')
+      await user.upload(body.getByLabelText('Sound', { selector: 'input' }), soundFile())
+      await user.click(body.getByRole('button', { name: 'Add' }))
+      await waitFor(() => expect(body.getAllByRole('progressbar')).toHaveLength(1))
+      connection.value = 'checking'
+      await flush()
+      await expect(body.getAllByRole('progressbar')).toHaveLength(1)
+      connection.value = 'ok'
+      await flush()
+      await expect(body.getAllByRole('progressbar')).toHaveLength(1)
+    } finally {
+      release()
+    }
+    await waitFor(() => expect(body.queryByRole('dialog')).toBeNull())
+    await expect(sentForms()).toHaveLength(1)
+    await expect(useMediaStore().scenes.list.map(s => s.name)).toContain('Cellar')
+    await expect(body.queryByRole('alert')).toBeNull()
   },
 }

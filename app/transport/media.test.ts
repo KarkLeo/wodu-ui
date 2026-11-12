@@ -205,6 +205,37 @@ describe('createScene', () => {
   })
 })
 
+describe('an upload and a re-open of the same game', () => {
+  it('is not aborted by the re-open that follows a connection blip, and its result is stored', async () => {
+    const gate = deferred()
+    sendImpl = async (s) => {
+      await gate.promise
+      if (s.signal!.aborted) throw Object.assign(new Error('abort'), { status: 0, isAbort: true })
+      return row('sc-1', { sound: 'sound.mp3' })
+    }
+    const { createScene, openMedia, media } = await load()
+    await openMedia(GAME)
+    const done = createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') })
+    await flush()
+    await openMedia(GAME)
+    expect(sent[0]!.signal!.aborted).toBe(false)
+    gate.resolve()
+    await expect(done).resolves.toMatchObject({ id: 'sc-1' })
+    expect(media.scenes.list.map(s => s.id)).toContain('sc-1')
+  })
+
+  it('is aborted when another game opens', async () => {
+    sendImpl = s => new Promise((_res, rej) => {
+      s.signal!.addEventListener('abort', () => rej(Object.assign(new Error('abort'), { status: 0, isAbort: true })))
+    })
+    const { createScene, openMedia } = await load()
+    const done = createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') })
+    await flush()
+    await openMedia('game-2')
+    await expect(done).rejects.toMatchObject({ kind: 'aborted' })
+  })
+})
+
 describe('updateScene', () => {
   it('sends a File as the file, null as an empty value and leaves undefined out', async () => {
     sendImpl = async () => row('sc-1', { image: 'image.png' })

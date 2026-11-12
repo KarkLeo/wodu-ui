@@ -22,23 +22,33 @@ export function retryMedia() {
 }
 
 /**
- * Call once, in `app.vue`. While the open table is a game I master and the server is reachable, the
- * scenes are open (loaded and live); otherwise they are closed. A player's client never opens them.
+ * Call once, in `app.vue`. While the open table is a game I master, the scenes are open (loaded and live);
+ * otherwise they are closed. A player's client never opens them.
+ *
+ * The connection only gates opening: a blip (`checking`, `down`) neither aborts an upload under way nor drops a
+ * list that is loaded, and the return of `ok` re-opens the same game in place, which also restores the
+ * subscription a reload after an outage drops.
  */
 export function useMediaSession() {
   const { gameId } = useTable()
   const target = computed(() => {
     const id = gameId.value
     if (!id || mode.value !== 'online' || !currentUser.value) return null
-    if (!onlineDataReady.value || connection.value !== 'ok') return null
+    if (!onlineDataReady.value) return null
     return isGameMaster(id) ? id : null
   })
   sessionTarget = target
-  watch(target, (id) => {
+  const open = (id: string) => openMedia(id).catch((err: unknown) => log.warn('open failed', { err }))
+  watch(target, (id, previous) => {
     if (!id) {
       closeMedia()
       return
     }
-    openMedia(id).catch((err: unknown) => log.warn('open failed', { err }))
+    // Another game: the old one's uploads end now, even if the new one cannot be opened yet.
+    if (previous && previous !== id) closeMedia()
+    if (connection.value === 'ok') open(id)
   }, { immediate: true })
+  watch(connection, (state) => {
+    if (state === 'ok' && target.value) open(target.value)
+  })
 }
