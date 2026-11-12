@@ -741,3 +741,56 @@ export const LazyFieldCommitsLikeABlur: Story = {
     await expect(pbRequests().filter(r => r === 'characters.update')).toHaveLength(1)
   },
 }
+
+/**
+ * After the first close the focus sits on the card's button; the next picture the master shows must still not take the
+ * keys: the view is classified by who opened it, not by where the focus was.
+ */
+export const SecondRevealAfterACloseKeepsTheKeys: Story = {
+  decorators: baseDecorators(asPlayer),
+  loaders: [playerRoute],
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    await settle()
+    show(PLAYER_GAME, BRIDGE)
+    await visibleDialog(canvasElement, BRIDGE.caption!)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(dialog(canvasElement)).toBeNull())
+    await waitFor(() => expect(doc.activeElement).toBe(cardButton(canvasElement, /^Open: The old bridge/)))
+    show(PLAYER_GAME, OGRE)
+    await visibleDialog(canvasElement, OGRE.caption!)
+    await waitFor(() => expect(doc.activeElement).toBe(doc.querySelector('.sir-panel')))
+    await userEvent.keyboard(' ')
+    await userEvent.keyboard('{Enter}')
+    await settle()
+    await expect(body(canvasElement).queryByRole('dialog', { name: OGRE.caption! })).not.toBeNull()
+  },
+}
+
+/** The field the focus came from was hidden meanwhile: closing gives the focus to the card's button, not to the page. */
+let hideField: () => void = () => {}
+export const HiddenOriginFallsBackToTheCard: Story = {
+  decorators: baseDecorators(asPlayer),
+  loaders: [playerRoute],
+  render: () => ({
+    components: { Table },
+    setup() {
+      const fieldShown = ref(true)
+      hideField = () => { fieldShown.value = false }
+      return { fieldShown }
+    },
+    template: '<Table /><div v-show="fieldShown"><input aria-label="Scratch field"></div>',
+  }),
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const field = within(canvasElement).getByRole('textbox', { name: 'Scratch field' })
+    field.focus()
+    show(PLAYER_GAME, OGRE)
+    await visibleDialog(canvasElement, OGRE.caption!)
+    hideField()
+    await settle(50)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(dialog(canvasElement)).toBeNull())
+    await waitFor(() => expect(doc.activeElement).toBe(cardButton(canvasElement, /^Open: Brakk/)))
+  },
+}

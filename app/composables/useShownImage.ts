@@ -17,6 +17,8 @@ export interface ShownImage {
 
 // One state per app: the card, the tray and the reveal all read it.
 const revealed = ref(false)
+// Who opened the view this time: the card's own button (a person asked for it), not the reveal of a newly shown picture.
+const openedFromCard = ref(false)
 
 /** The key seen last at the open table: `undefined` until the first value (a first value of null included). */
 let seen: string | null | undefined
@@ -26,6 +28,7 @@ function resetSeen(): void {
   seen = undefined
   openGame = null
   revealed.value = false
+  openedFromCard.value = false
 }
 
 /** For stories: forget everything seen and close the large view. */
@@ -40,6 +43,8 @@ export function resetShownImage(): void {
 export function useShownImage(): {
   image: ComputedRef<ShownImage | null>
   revealed: Ref<boolean>
+  /** The view was opened from the card's button, by the person; false when it opened by itself. */
+  openedFromCard: Readonly<Ref<boolean>>
   open(): void
   close(): void
 } {
@@ -58,7 +63,12 @@ export function useShownImage(): {
   return {
     image,
     revealed,
-    open() { if (image.value) revealed.value = true },
+    openedFromCard,
+    open() {
+      if (!image.value) return
+      openedFromCard.value = true
+      revealed.value = true
+    },
     close() { revealed.value = false },
   }
 }
@@ -84,7 +94,10 @@ export function useShownImageReveal(): void {
         revealed.value = false
       }
       if (!game) return
-      if (shouldReveal(seen, key, isGameMaster(game))) revealed.value = true
+      if (shouldReveal(seen, key, isGameMaster(game))) {
+        openedFromCard.value = false
+        revealed.value = true
+      }
       seen = key
       if (key === null) revealed.value = false
     },

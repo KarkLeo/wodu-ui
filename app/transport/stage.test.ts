@@ -7,6 +7,7 @@ const creates: Array<Record<string, unknown>> = []
 let updateImpl: (id: string, body: { data: Stage }) => Promise<unknown>
 let createImpl: (body: Record<string, unknown>) => Promise<unknown>
 let stays = true
+let online = true
 let reportThrows = false
 const failures: Array<{ err: unknown; message: string }> = []
 
@@ -34,7 +35,10 @@ vi.mock('@/transport/pb', () => ({
 }))
 vi.mock('./onlineOps', () => ({
   call: <T>(op: () => Promise<T>) => op(),
-  requireOnlineUser: () => 'user-1',
+  requireOnlineUser: () => {
+    if (!online) throw new Error('needs a signed-in online session')
+    return 'user-1'
+  },
   staysCurrent: () => () => stays,
 }))
 vi.mock('./mode', () => ({ modeSession: () => 1 }))
@@ -81,6 +85,7 @@ async function load({ rowSeen = true } = {}) {
 }
 
 beforeEach(() => {
+  online = true
   lists.length = 0
   listImpl = async () => []
   updates.length = 0
@@ -390,6 +395,56 @@ describe('a remote change skipped during a write', () => {
     const { publishStage, receiveStage } = await load()
     const done = publishStage(stage('s1'))
     receiveStage('update', row(stage('s1')))
+    gate.resolve()
+    await done
+    await flush()
+    expect(lists).toHaveLength(0)
+  })
+
+  it('a live row applied while the re-read is on its way wins over the read\'s answer', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage, store } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s9')))
+    const answer = deferred()
+    listImpl = () => answer.promise as Promise<unknown[]>
+    gate.resolve()
+    await done
+    await flush()
+    expect(lists).toHaveLength(1)
+    // Newer than anything the read can bring back.
+    receiveStage('update', row(stage('s7')))
+    expect(store.stageOf(GAME).sound?.id).toBe('s7')
+    answer.resolve([row(stage('s9'))])
+    await flush()
+    expect(store.stageOf(GAME).sound?.id).toBe('s7')
+  })
+
+  it('a mode switch while the re-read is on its way applies nothing', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage, store } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s9')))
+    const answer = deferred()
+    listImpl = () => answer.promise as Promise<unknown[]>
+    gate.resolve()
+    await done
+    await flush()
+    stays = false
+    answer.resolve([row(stage('s9'))])
+    await flush()
+    expect(store.stageOf(GAME).sound?.id).toBe('s1')
+  })
+
+  it('no re-read is sent once the session is no longer online', async () => {
+    const gate = deferred()
+    updateImpl = () => gate.promise
+    const { publishStage, receiveStage } = await load()
+    const done = publishStage(stage('s1'))
+    receiveStage('update', row(stage('s9')))
+    online = false
     gate.resolve()
     await done
     await flush()

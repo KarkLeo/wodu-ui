@@ -39,6 +39,13 @@ export function forgetStageRows(): void {
 // aside so it could not undo the newer optimistic value. Once the writer settles, that game's row is read once.
 const skipped = new Set<string>()
 
+// How many stage values were applied per game (a publish, a rollback, a realtime row, a snapshot). A re-read whose answer
+// comes back after another value was applied is older than what is shown, and is dropped.
+const applied = new Map<string, number>()
+function noteApplied(gameId: string): void {
+  applied.set(gameId, (applied.get(gameId) ?? 0) + 1)
+}
+
 // The same stage, whatever order its keys were built in.
 function sameStage(a: Stage, b: Stage): boolean {
   return JSON.stringify(checkStage(a, a.id)) === JSON.stringify(checkStage(b, b.id))
@@ -54,9 +61,14 @@ function setAside(row: StageRow): void {
 /** Reads the game's row once and applies it, as a load, when it differs from what is shown; never loops, never toasts. */
 async function reread(gameId: string): Promise<void> {
   const current = staysCurrent()
+  const before = applied.get(gameId) ?? 0
   try {
+    // Online and signed in, or nothing is sent.
+    requireOnlineUser()
     const rows = await call(() => pb.collection('stages').getFullList<StageRow>({ filter: pb.filter('id = {:id}', { id: gameId }) }))
     if (!current() || !useGamesStore().byId(gameId)) return
+    // Something newer was applied while the read was on its way: it wins.
+    if ((applied.get(gameId) ?? 0) !== before) return
     // Another write began meanwhile: the read waits for it in turn.
     if (writer.busy(gameId)) {
       skipped.add(gameId)
@@ -66,12 +78,16 @@ async function reread(gameId: string): Promise<void> {
     const store = useStageStore()
     if (!row) {
       rowSeen.delete(gameId)
+      noteApplied(gameId)
       store.remove(gameId)
       return
     }
     rowSeen.add(gameId)
     const stage = stageFromRow(row)
-    if (stage && !sameStage(stage, store.stageOf(gameId))) store.set(stage, 'load')
+    if (stage && !sameStage(stage, store.stageOf(gameId))) {
+      noteApplied(gameId)
+      store.set(stage, 'load')
+    }
   } catch (err) {
     log.debug('re-reading the stage after a write failed', { gameId, err })
   }
@@ -114,10 +130,15 @@ const quiet = new Map<string, boolean>()
 // told "failed" when a later value folded into the same chain fails (and the stage then shows the last confirmed value).
 // Accepted: the panels follow the stage store, not this promise, and the stage writer's one toast says what happened.
 const writer = serialWriter<Stage>({
-  show: stage => useStageStore().set(stage),
+  show: (stage) => {
+    noteApplied(stage.id)
+    useStageStore().set(stage)
+  },
   // A game forgotten meanwhile must not get its stage back.
   restore: (_key, stage) => {
-    if (useGamesStore().byId(stage.id)) useStageStore().set(stage)
+    if (!useGamesStore().byId(stage.id)) return
+    noteApplied(stage.id)
+    useStageStore().set(stage)
   },
   send,
   message: key => (quiet.get(key) ? null : t('errors.stageFailed')),
@@ -165,11 +186,14 @@ export function receiveStage(action: string, row: StageRow, source: StageSource 
     return
   }
   if (action === 'delete') {
+    noteApplied(row.id)
     store.remove(row.id)
     return
   }
   const stage = stageFromRow(row)
-  if (stage) store.set(stage, source)
+  if (!stage) return
+  noteApplied(row.id)
+  store.set(stage, source)
 }
 
 /**
@@ -190,9 +214,13 @@ export function applyStages(rows: StageRow[]): void {
       continue
     }
     const stage = stageFromRow(row)
-    if (stage) store.set(stage, 'load')
+    if (!stage) continue
+    noteApplied(row.id)
+    store.set(stage, 'load')
   }
   for (const id of Object.keys(store.byGame)) {
-    if (!seen.has(id) && !writer.busy(id)) store.remove(id)
+    if (seen.has(id) || writer.busy(id)) continue
+    noteApplied(id)
+    store.remove(id)
   }
 }

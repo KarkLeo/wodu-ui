@@ -9,6 +9,8 @@ import { t } from '@/locales'
 const props = defineProps<{
   /** The shown image, or null when there is none. */
   image: { url: string; caption: string | null } | null
+  /** This opening was asked for from the card's button; otherwise the view opened by itself. */
+  fromCard?: boolean
 }>()
 const open = defineModel<boolean>('open', { required: true })
 
@@ -31,14 +33,16 @@ const visible = computed(() => open.value && props.image !== null)
 
 // Where the focus was before the view opened. Opened by itself (the master showed a picture), the view must not take the
 // keys of someone typing in a sheet: no control gets the focus, the panel itself does, so a Space or an Enter does
-// nothing. Opened from the card's own button, the close button takes it as usual. Closing gives the focus back to that
-// element wherever it is, when it is still there; without one, to the card's picture button when the card is shown,
-// otherwise it stays on the page. Nothing scrolls on the way: on a phone the tray would jump to the card.
+// nothing. Opened from the card's own button, the close button takes it as usual. Who opened it is told by the source
+// (`fromCard`), never by where the focus is: after a close the focus sits on the card's button, and the next picture
+// shown must still not take the keys. Closing gives the focus back to that element wherever it is, when it is still
+// there and can take it; otherwise to the card's picture button when the card is shown, otherwise it stays on the page.
+// Nothing scrolls on the way: on a phone the tray would jump to the card.
 let before: HTMLElement | null = null
 function rememberFocus(event: Event) {
   const active = document.activeElement
   before = active instanceof HTMLElement && active !== document.body ? active : null
-  if (before?.closest('[data-shown-image-open]')) return
+  if (props.fromCard) return
   event.preventDefault()
   ;(event.target as HTMLElement | null)?.focus({ preventScroll: true })
 }
@@ -48,7 +52,8 @@ function returnFocus(event: Event) {
   before = null
   if (back?.isConnected) {
     back.focus({ preventScroll: true })
-    return
+    // Hidden meanwhile (a closed popover, `display: none`): it could not take the focus.
+    if (document.activeElement === back) return
   }
   const card = document.querySelector<HTMLElement>('[data-shown-image-open]')
   if (card && card.getClientRects().length > 0) card.focus({ preventScroll: true })

@@ -399,117 +399,117 @@ export const SoundTurnedOnLateSkipsTheOneShot: Story = {
     await settle()
     const restore = advanceClock(4000)
     try {
+        stages.set(withScene(stages.stageOf(PLAYER_GAME), SCENES[1]!))
+        await settle()
+        // 4 s after the sound arrived the scene changed (a fresh store time); sound on 8 s after the arrival.
+        restore()
+        const later = advanceClock(8000)
+        try {
+          useMediaPrefsStore().sound = 'on'
+          await settle(400)
+        } finally {
+          later()
+        }
+      } finally {
+        restore()
+      }
+      await expect(overlayUrls()).toEqual([])
+      await expect(stages.stageOf(PLAYER_GAME).sound).not.toBeNull()
+    },
+  }
+
+  /** A one-shot found stale on load, then a live scene change, then sound on: still found, still not played. */
+  export const FoundStaleOneShotIsNotMadeLiveByASceneChange: Story = {
+    decorators: [withStageOnLoad(PLAYER_GAME, () => stageSound({ startedAt: secondsFromNow(-60) })), withMediaPrefs({ sound: 'off' }), asPlayer],
+    loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
+    play: async () => {
+      const stages = useStageStore()
+      await settle()
       stages.set(withScene(stages.stageOf(PLAYER_GAME), SCENES[1]!))
       await settle()
-      // 4 s after the sound arrived the scene changed (a fresh store time); sound on 8 s after the arrival.
-      restore()
-      const later = advanceClock(8000)
+      useMediaPrefsStore().sound = 'on'
+      await settle(400)
+      await expect(overlayUrls()).toEqual([])
+    },
+  }
+
+  export const SoundTurnedOnSoonStillPlays: Story = {
+    decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'off' }), asPlayer],
+    loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
+    play: async () => {
+      show(PLAYER_GAME, stageSound())
+      await settle(400)
+      useMediaPrefsStore().sound = 'on'
+      await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
+    },
+  }
+
+  /** The clear's write fails and the rollback brings the key back: the finished sound is not played again. */
+  export const FailedClearDoesNotReplay: Story = {
+    decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
+    loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
+    play: async () => {
+      await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
+      const sound = stageSound()
+      show(MASTER_GAME, sound)
+      await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
+      failWrites('stages')
       try {
-        useMediaPrefsStore().sound = 'on'
-        await settle(400)
+        fireOverlayEnded(overlayKey(sound))
+        // One write, an update or (on a fresh page that has not seen the row) a create.
+        await waitFor(() => expect(stageWrites()).toHaveLength(1))
+        await settle(500)
+        // Rolled back: the key is in the stage again, and was not played a second time.
+        await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
+        await expect(overlayUrls()).toEqual([soundUrl()])
+        await expect(useToastsStore().items).toHaveLength(0)
       } finally {
-        later()
+        failWrites(null)
       }
-    } finally {
-      restore()
-    }
-    await expect(overlayUrls()).toEqual([])
-    await expect(stages.stageOf(PLAYER_GAME).sound).not.toBeNull()
-  },
-}
+    },
+  }
 
-/** A one-shot found stale on load, then a live scene change, then sound on: still found, still not played. */
-export const FoundStaleOneShotIsNotMadeLiveByASceneChange: Story = {
-  decorators: [withStageOnLoad(PLAYER_GAME, () => stageSound({ startedAt: secondsFromNow(-60) })), withMediaPrefs({ sound: 'off' }), asPlayer],
-  loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
-  play: async () => {
-    const stages = useStageStore()
-    await settle()
-    stages.set(withScene(stages.stageOf(PLAYER_GAME), SCENES[1]!))
-    await settle()
-    useMediaPrefsStore().sound = 'on'
-    await settle(400)
-    await expect(overlayUrls()).toEqual([])
-  },
-}
+  /**
+   * A failed clear is tried once more after the grace, then not again by itself (no loop); the connection coming back
+   * tries once more, and with the server answering again that one clears it.
+   */
+  export const FailedClearIsRetriedOnceAndOnReconnect: Story = {
+    decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
+    loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
+    play: async () => {
+      await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
+      const sound = stageSound()
+      show(MASTER_GAME, sound)
+      await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
+      failWrites('stages')
+      try {
+        fireOverlayEnded(overlayKey(sound))
+        await waitFor(() => expect(stageWrites()).toHaveLength(1))
+        await waitFor(() => expect(stageWrites()).toHaveLength(2))
+        await settle(STORY_GRACE_MS + 800)
+        await expect(stageWrites()).toHaveLength(2)
+        await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
+        await expect(useToastsStore().items).toHaveLength(0)
+        failWrites(null)
+        connection.value = 'checking'
+        await settle(50)
+        connection.value = 'ok'
+        await waitFor(() => expect(storedSound()).toBeNull())
+        await expect(useStageStore().stageOf(MASTER_GAME).sound).toBeNull()
+        await expect(overlayUrls()).toEqual([soundUrl()])
+      } finally {
+        failWrites(null)
+        connection.value = 'ok'
+      }
+    },
+  }
 
-export const SoundTurnedOnSoonStillPlays: Story = {
-  decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'off' }), asPlayer],
-  loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
-  play: async () => {
-    show(PLAYER_GAME, stageSound())
-    await settle(400)
-    useMediaPrefsStore().sound = 'on'
-    await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
-  },
-}
-
-/** The clear's write fails and the rollback brings the key back: the finished sound is not played again. */
-export const FailedClearDoesNotReplay: Story = {
-  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
-  loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
-  play: async () => {
-    await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
-    const sound = stageSound()
-    show(MASTER_GAME, sound)
-    await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
-    failWrites('stages')
-    try {
-      fireOverlayEnded(overlayKey(sound))
-      // One write, an update or (on a fresh page that has not seen the row) a create.
-      await waitFor(() => expect(stageWrites()).toHaveLength(1))
-      await settle(500)
-      // Rolled back: the key is in the stage again, and was not played a second time.
-      await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
-      await expect(overlayUrls()).toEqual([soundUrl()])
-      await expect(useToastsStore().items).toHaveLength(0)
-    } finally {
-      failWrites(null)
-    }
-  },
-}
-
-/**
- * A failed clear is tried once more after the grace, then not again by itself (no loop); the connection coming back
- * tries once more, and with the server answering again that one clears it.
- */
-export const FailedClearIsRetriedOnceAndOnReconnect: Story = {
-  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
-  loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
-  play: async () => {
-    await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
-    const sound = stageSound()
-    show(MASTER_GAME, sound)
-    await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
-    failWrites('stages')
-    try {
-      fireOverlayEnded(overlayKey(sound))
-      await waitFor(() => expect(stageWrites()).toHaveLength(1))
-      await waitFor(() => expect(stageWrites()).toHaveLength(2))
-      await settle(STORY_GRACE_MS + 800)
-      await expect(stageWrites()).toHaveLength(2)
-      await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
-      await expect(useToastsStore().items).toHaveLength(0)
-      failWrites(null)
-      connection.value = 'checking'
-      await settle(50)
-      connection.value = 'ok'
-      await waitFor(() => expect(storedSound()).toBeNull())
-      await expect(useStageStore().stageOf(MASTER_GAME).sound).toBeNull()
-      await expect(overlayUrls()).toEqual([soundUrl()])
-    } finally {
-      failWrites(null)
-      connection.value = 'ok'
-    }
-  },
-}
-
-/**
- * A clear that comes due while another is on its way is not dropped: the first cue's clear is held on the network, the
- * master plays a second cue and it ends too; once the first write is over, the second is cleared (it has an unknown
- * duration and plays here, so no clock would ever clear it).
- */
-export const ClearDueDuringAnotherIsNotDropped: Story = {
+  /**
+   * A clear that comes due while another is on its way is not dropped: the first cue's clear is held on the network, the
+   * master plays a second cue and it ends too; once the first write is over, the second is cleared (it has an unknown
+   * duration and plays here, so no clock would ever clear it).
+   */
+  export const ClearDueDuringAnotherIsNotDropped: Story = {
   decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
   loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
   play: async () => {
@@ -526,27 +526,31 @@ export const ClearDueDuringAnotherIsNotDropped: Story = {
     }
     const create = hold(rows.create)
     const update = hold(rows.update)
-    spyOn(rows, 'create').mockImplementation(create)
-    spyOn(rows, 'update').mockImplementation(update)
-    const first = stageSound()
-    show(MASTER_GAME, first)
-    await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(first)))
-    fireOverlayEnded(overlayKey(first))
-    // The first clear is on its way, held.
-    await waitFor(() => expect(calls).toBe(1))
-    await expect(stages.stageOf(MASTER_GAME).sound).toBeNull()
-    const second = stageSound({ startedAt: secondsFromNow(1) }, 'story-sound-second')
-    void publishStage({ ...stages.stageOf(MASTER_GAME), sound: second })
-    await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(second)))
-    fireOverlayEnded(overlayKey(second))
-    // Its clear comes due while the first is still held.
-    await settle(STORY_GRACE_MS + 500)
-    await expect(stages.stageOf(MASTER_GAME).sound).toEqual(second)
-    release()
-    // At once, not by a timer: the waiting clear runs when the first one is over.
-    await waitFor(() => expect(storedSound()).toBeNull(), { timeout: 3000 })
-    await expect(stages.stageOf(MASTER_GAME).sound).toBeNull()
-    await expect(useToastsStore().items).toHaveLength(0)
+    const spies = [spyOn(rows, 'create').mockImplementation(create), spyOn(rows, 'update').mockImplementation(update)]
+    try {
+      const first = stageSound()
+      show(MASTER_GAME, first)
+      await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(first)))
+      fireOverlayEnded(overlayKey(first))
+      // The first clear is on its way, held.
+      await waitFor(() => expect(calls).toBe(1))
+      await expect(stages.stageOf(MASTER_GAME).sound).toBeNull()
+      const second = stageSound({ startedAt: secondsFromNow(1) }, 'story-sound-second')
+      void publishStage({ ...stages.stageOf(MASTER_GAME), sound: second })
+      await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(second)))
+      fireOverlayEnded(overlayKey(second))
+      // Its clear comes due while the first is still held.
+      await settle(STORY_GRACE_MS + 500)
+      await expect(stages.stageOf(MASTER_GAME).sound).toEqual(second)
+      release()
+      // At once, not by a timer: the waiting clear runs when the first one is over.
+      await waitFor(() => expect(storedSound()).toBeNull(), { timeout: 3000 })
+      await expect(stages.stageOf(MASTER_GAME).sound).toBeNull()
+      await expect(useToastsStore().items).toHaveLength(0)
+    } finally {
+      release()
+      for (const spy of spies) spy.mockRestore()
+    }
   },
 }
 
@@ -641,16 +645,22 @@ export const DeleteOfAnOverCueRefusedByTheStage: Story = {
     // Over here: the row offers Play again, while the stage still holds the cue.
     await expect(await canvas.findByRole('button', { name: 'Play Bell' })).toBeVisible()
     await expect(stages.stageOf(MASTER_GAME).sound).toEqual(cue)
-    spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
-    spyOn(pb.collection('stages'), 'create').mockRejectedValue(new ClientResponseError({ status: 500 }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Delete Bell' }))
-    const confirm = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }))
-    await waitFor(() => expect(useToastsStore().items.length).toBeGreaterThan(0))
-    await settle(300)
-    await expect(useToastsStore().items.map(t => t.text)).toEqual(['The change did not reach the table. Try again.'])
-    await expect(pbRequests()).not.toContain('sounds.delete')
-    await expect(canvas.getByRole('button', { name: 'Play Bell' })).toBeVisible()
+    const spies = [
+      spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 })),
+      spyOn(pb.collection('stages'), 'create').mockRejectedValue(new ClientResponseError({ status: 500 })),
+    ]
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Delete Bell' }))
+      const confirm = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+      await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }))
+      await waitFor(() => expect(useToastsStore().items.length).toBeGreaterThan(0))
+      await settle(300)
+      await expect(useToastsStore().items.map(t => t.text)).toEqual(['The change did not reach the table. Try again.'])
+      await expect(pbRequests()).not.toContain('sounds.delete')
+      await expect(canvas.getByRole('button', { name: 'Play Bell' })).toBeVisible()
+    } finally {
+      for (const spy of spies) spy.mockRestore()
+    }
   },
 }
 

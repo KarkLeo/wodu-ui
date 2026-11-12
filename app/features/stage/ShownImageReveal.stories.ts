@@ -10,13 +10,19 @@ const meta = {
   tags: ['no-visual'],
   parameters: { layout: 'fullscreen' },
   args: { open: true, image: null },
+  // The card's button opens the view as the card does (from the card); the first opening, from `args.open`, is the reveal's.
   render: (args) => ({
     components: { ShownImageReveal },
     setup() {
       const open = ref(args.open)
-      return { args, open }
+      const fromCard = ref(false)
+      const openFromCard = () => {
+        fromCard.value = true
+        open.value = true
+      }
+      return { args, open, fromCard, openFromCard }
     },
-    template: '<button type="button" data-shown-image-open @click="open = true">Card</button><ShownImageReveal v-model:open="open" :image="args.image" /><p>{{ open ? "open" : "closed" }}</p>',
+    template: '<button type="button" data-shown-image-open @click="openFromCard">Card</button><ShownImageReveal v-model:open="open" :image="args.image" :from-card="fromCard" /><p>{{ open ? "open" : "closed" }}</p>',
   }),
 } satisfies Meta<typeof ShownImageReveal>
 
