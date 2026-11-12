@@ -36,11 +36,11 @@ export const Default: Story = {
     await expect(canvasElement.querySelector('li')).not.toHaveAttribute('aria-current')
     await expect(canvas.queryByText('Plays for everyone')).toBeNull()
     const play = canvas.getByRole('button', { name: 'Play Tavern brawl' })
-    await expect(play).toHaveAttribute('aria-pressed', 'false')
+    await expect(play).not.toHaveAttribute('aria-pressed')
     await userEvent.click(play)
     await expect(args.onPlay).toHaveBeenCalledTimes(1)
-    await expect(canvas.getByRole('switch', { name: 'Loop' })).not.toBeChecked()
-    await userEvent.click(canvas.getByRole('switch', { name: 'Loop' }))
+    await expect(canvas.getByRole('switch', { name: 'Loop: Tavern brawl' })).not.toBeChecked()
+    await userEvent.click(canvas.getByRole('switch', { name: 'Loop: Tavern brawl' }))
     await expect(args['onToggle-loop']).toHaveBeenCalledWith(true)
     await userEvent.click(canvas.getByRole('button', { name: 'Edit Tavern brawl' }))
     await expect(args.onEdit).toHaveBeenCalledTimes(1)
@@ -58,7 +58,8 @@ export const Playing: Story = {
     await expect(canvas.getByText('Plays for everyone')).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Play Tavern brawl' })).toBeNull()
     const stop = canvas.getByRole('button', { name: 'Stop Tavern brawl' })
-    await expect(stop).toHaveAttribute('aria-pressed', 'true')
+    await expect(stop).not.toHaveAttribute('aria-pressed')
+    await expect(stop).toHaveClass('t-accent')
     await userEvent.click(stop)
     await expect(args.onStop).toHaveBeenCalledTimes(1)
     await expect(args.onPlay).not.toHaveBeenCalled()
@@ -69,7 +70,7 @@ export const Playing: Story = {
 export const Looping: Story = {
   args: { sound: hearth },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('switch', { name: 'Loop' })).toBeChecked()
+    await expect(within(canvasElement).getByRole('switch', { name: 'Loop: Hum and hearth' })).toBeChecked()
   },
 }
 
@@ -89,15 +90,18 @@ export const LoopFromTheNextPlay: Story = {
   },
 }
 
-/** While the loop is being saved the switch shows the asked value and does not answer. */
+/** While the loop is being saved the switch shows the asked value and stays usable; edit and delete wait. */
 export const SavingTheLoop: Story = {
   args: { loop: true, loopSaving: true },
-  play: async ({ canvasElement, args }) => {
-    const toggle = within(canvasElement).getByRole('switch', { name: 'Loop' })
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const toggle = canvas.getByRole('switch', { name: 'Loop: Tavern brawl' })
     await expect(toggle).toBeChecked()
-    await expect(toggle).toBeDisabled()
-    await userEvent.click(toggle, { pointerEventsCheck: 0 })
-    await expect(args['onToggle-loop']).not.toHaveBeenCalled()
+    await expect(toggle).toBeEnabled()
+    await expect(toggle).toHaveAttribute('aria-busy', 'true')
+    await expect(canvas.getByRole('button', { name: 'Edit Tavern brawl' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Delete Tavern brawl' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Play Tavern brawl' })).toBeEnabled()
   },
 }
 
@@ -122,6 +126,34 @@ export const LongName: Story = {
       const box = control.getBoundingClientRect()
       await expect(box.right).toBeLessThanOrEqual(row.right + 0.5)
       await expect(box.width).toBeGreaterThan(20)
+    }
+  },
+}
+
+/** In a narrow card the length, the "plays for everyone" pill and the note wrap instead of overlapping the controls or leaving the row. */
+export const NarrowCardsKeepTheMetaInside: Story = {
+  args: { sound: { ...brawl, name: 'The long and winding road through the Mourning Marshes toward the drowned bell tower' }, playing: true, loopNextPlay: true },
+  play: async ({ canvasElement }) => {
+    const list = canvasElement.querySelector('ul')!
+    const li = canvasElement.querySelector('li')!
+    for (const width of [331, 345, 360, 380]) {
+      list.style.width = `${width}px`
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+      const row = li.getBoundingClientRect()
+      const text = li.querySelector('.sr-text')!.getBoundingClientRect()
+      const actions = li.querySelector('.sr-actions')!.getBoundingClientRect()
+      const apart = text.bottom <= actions.top + 0.5 || text.right <= actions.left + 0.5
+      await expect(apart).toBe(true)
+      for (const part of li.querySelectorAll<HTMLElement>('.sr-duration, .pill, .sr-note, .sr-actions > *, .icon-btn')) {
+        const box = part.getBoundingClientRect()
+        await expect(box.right).toBeLessThanOrEqual(row.right + 0.5)
+        await expect(box.left).toBeGreaterThanOrEqual(row.left - 0.5)
+      }
+      const meta = li.querySelector('.sr-meta')!.getBoundingClientRect()
+      const pill = li.querySelector('.pill')!.getBoundingClientRect()
+      await expect(pill.right).toBeLessThanOrEqual(meta.right + 0.5)
+      const duration = li.querySelector('.sr-duration')!.getBoundingClientRect()
+      await expect(duration.right <= pill.left + 0.5 || duration.bottom <= pill.top + 0.5).toBe(true)
     }
   },
 }

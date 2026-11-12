@@ -18,7 +18,7 @@ const meta = {
       watch(() => args.modelValue, (v) => { value.value = v })
       return { args, value }
     },
-    template: `<Switch v-model="value" :label="args.label" :disabled="args.disabled" :hide-label="args.hideLabel"
+    template: `<Switch v-model="value" :label="args.label" :disabled="args.disabled" :busy="args.busy" :hide-label="args.hideLabel"
       @update:model-value="args['onUpdate:modelValue']" />`,
   }),
 } satisfies Meta<typeof Switch>
@@ -102,4 +102,18 @@ export const CustomContent: Story = {
 export const LongLabel: Story = {
   args: { label: 'Show the scene image to every player at the table, not only to the ones who are connected' },
   decorators: [() => ({ template: '<div style="max-width: 280px"><story /></div>' })],
+}
+
+/** A change is being saved: announced as busy, yet still usable and focused. */
+export const Busy: Story = {
+  args: { busy: true },
+  play: async ({ canvasElement, args }) => {
+    const toggle = within(canvasElement).getByRole('switch', { name: 'Play on scene change' })
+    toggle.focus()
+    await expect(toggle).toHaveAttribute('aria-busy', 'true')
+    await expect(toggle).toBeEnabled()
+    await userEvent.keyboard(' ')
+    await expect(args['onUpdate:modelValue']).toHaveBeenCalledWith(true)
+    await expect(document.activeElement).toBe(toggle)
+  },
 }

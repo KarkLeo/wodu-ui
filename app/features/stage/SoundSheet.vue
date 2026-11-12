@@ -8,6 +8,7 @@ import StateNote from '@/components/ui/StateNote.vue'
 import Switch from '@/components/ui/Switch.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { AUDIO_MAX_BYTES, AUDIO_TYPES, MEDIA_LIMITS, SOUND_NAME_MAX, checkSoundDraft, checkUpload } from '@/domain/stage'
+import { useMediaStore } from '@/stores/media'
 import { createSound, MediaWriteError, updateSound } from '@/transport/media'
 import type { Sound } from '@/types/stage'
 import { audioDuration } from '@/utils/audioDuration'
@@ -36,6 +37,8 @@ const loop = ref(false)
 let duration: Promise<number | null> = Promise.resolve(null)
 const fileError = ref('')
 const saving = ref(false)
+// Saving has begun but the file's length is still being read: the upload has not started.
+const reading = ref(false)
 const progress = ref(0)
 type Failure = 'limitReached' | 'limitMayHaveChanged' | 'notMaster' | 'saveFailed'
 const failure = ref<Failure | null>(null)
@@ -53,6 +56,7 @@ function reset() {
   duration = Promise.resolve(null)
   fileError.value = ''
   saving.value = false
+  reading.value = false
   failure.value = null
 }
 
@@ -120,18 +124,28 @@ const failureText = computed(() => {
 async function submit() {
   if (!canSave.value) return
   const mine = attempt
+  const picked = file.value
+  if (!props.sound && !picked) return
+  // The entry as it is now: a loop switch or the master's other device may have changed it since the sheet opened.
+  const media = useMediaStore()
+  const current = props.sound && media.gameId === props.gameId ? media.sounds.list.find(s => s.id === props.sound!.id) : undefined
+  if (props.sound && !current) {
+    open.value = false
+    return
+  }
   failure.value = null
   fileError.value = ''
   saving.value = true
   progress.value = 0
   const onProgress = (fraction: number) => { if (mine === attempt) progress.value = fraction }
   try {
-    if (props.sound) {
-      await updateSound(props.gameId, { id: props.sound.id, name: name.value, loop: props.sound.loop, duration: props.sound.duration })
-    } else {
-      const picked = file.value
-      if (!picked) return
+    if (current) {
+      await updateSound(props.gameId, { id: current.id, name: name.value, loop: current.loop, duration: current.duration })
+    } else if (picked) {
+      reading.value = true
       const length = await duration
+      if (mine !== attempt) return
+      reading.value = false
       await createSound(props.gameId, { id: draftId, name: name.value, loop: loop.value, duration: length }, picked, onProgress)
     }
     if (mine !== attempt) return
@@ -140,6 +154,7 @@ async function submit() {
   } catch (err) {
     if (mine !== attempt) return
     saving.value = false
+    reading.value = false
     if (err instanceof MediaWriteError) {
       // The session ended under the upload: there is nobody to tell.
       if (err.kind === 'aborted') return
@@ -173,7 +188,7 @@ async function submit() {
           :accept="[...AUDIO_TYPES]"
           :hint="t('stage.sounds.form.fileHint', { mb: AUDIO_MAX_BYTES / MB })"
           :error="fileError || undefined"
-          :progress="saving ? progress : null"
+          :progress="saving && !reading ? progress : null"
           @update:model-value="pickFile"
         />
         <TextField
@@ -186,7 +201,8 @@ async function submit() {
         <Switch v-if="!sound" v-model="loop" :label="t('stage.sounds.form.loop')" :disabled="saving" />
       </fieldset>
 
-      <StateNote v-if="missing && !saving" :id="missingId" size="sm" inline align="start">{{ missing }}</StateNote>
+      <StateNote v-if="reading" size="sm" inline align="start" role="status">{{ t('stage.sounds.form.reading') }}</StateNote>
+      <StateNote v-else-if="missing && !saving" :id="missingId" size="sm" inline align="start">{{ missing }}</StateNote>
 
       <div v-if="failure" class="ss-failure">
         <FormError role="alert">{{ failureText }}</FormError>

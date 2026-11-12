@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<{
   busy?: boolean
   /** The loop value to show while a change is being saved; the stored one otherwise. */
   loop?: boolean
-  /** The loop change is being saved. */
+  /** The loop change is being saved: edit and delete wait for it, so a late answer cannot meet a changed or deleted sound. */
   loopSaving?: boolean
   /** The sound plays now with the loop value it started with, and the stored one differs. */
   loopNextPlay?: boolean
@@ -72,7 +72,7 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
         ref="playRef"
         variant="round"
         size="lg"
-        :pressed="playing"
+        :tone="playing ? 'accent' : 'neutral'"
         :label="playing ? t('stage.sounds.row.stop', { name: sound.name }) : t('stage.sounds.row.play', { name: sound.name })"
         :disabled="busy"
         @click="toggle"
@@ -89,12 +89,12 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
         <span v-if="loopNextPlay" class="sr-note">{{ t('stage.sounds.row.loopNextPlay') }}</span>
       </div>
       <div class="sr-actions">
-        <Switch v-model="loopModel" :label="t('stage.sounds.row.loop')" :disabled="loopSaving" hide-label />
+        <Switch v-model="loopModel" :label="t('stage.sounds.row.loop', { name: sound.name })" :busy="loopSaving" :disabled="busy" hide-label />
         <IconButton
           ref="editRef"
           variant="square"
           :label="t('stage.sounds.row.edit', { name: sound.name })"
-          :disabled="busy"
+          :disabled="busy || loopSaving"
           @click="emit('edit')"
         >
           <IconEdit :size="14" />
@@ -104,7 +104,7 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
           variant="square"
           tone="danger"
           :label="t('stage.sounds.row.delete', { name: sound.name })"
-          :disabled="busy"
+          :disabled="busy || loopSaving"
           @click="emit('delete')"
         >
           <IconTrash :size="14" />
@@ -143,7 +143,7 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
   font-size: 14px;
   color: var(--vtt-text-primary);
 }
-.sr-meta { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sr-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; min-width: 0; }
 .sr-duration { font-family: var(--font-mono); font-size: 12px; color: var(--vtt-text-muted); }
 .sr-note { font-size: 11px; color: var(--vtt-text-muted); }
 .sr-actions { display: flex; align-items: center; gap: 8px; }

@@ -62,7 +62,8 @@ const loopSaving = reactive(new Map<string, boolean>())
 
 async function toggleLoop(sound: Sound, value: boolean) {
   const game = gameId.value
-  if (!game || loopSaving.has(sound.id)) return
+  // One save at a time per sound, and none while the sound's own delete, play or stop is under way.
+  if (!game || loopSaving.has(sound.id) || busy.has(sound.id)) return
   loopSaving.set(sound.id, value)
   try {
     await updateSound(game, { id: sound.id, name: sound.name, loop: value, duration: sound.duration })

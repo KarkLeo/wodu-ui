@@ -76,11 +76,12 @@ export const Default: Story = {
     await expect(canvas.getByRole('heading', { name: 'Sounds' })).toBeVisible()
     await expect(canvas.getByText('3 / 15')).toBeVisible()
     await expect(names(canvasElement)).toEqual(['Hum and hearth', 'Tavern brawl', 'Ogre roar'])
-    await expect(stopButton(canvasElement, 'Tavern brawl')).toHaveAttribute('aria-pressed', 'true')
-    await expect(playButton(canvasElement, 'Hum and hearth')).toHaveAttribute('aria-pressed', 'false')
+    await expect(stopButton(canvasElement, 'Tavern brawl')).toBeVisible()
+    await expect(playButton(canvasElement, 'Hum and hearth')).toBeVisible()
     await expect(canvas.getAllByRole('listitem').filter(li => li.getAttribute('aria-current') === 'true')).toHaveLength(1)
     await expect(canvas.getByText('Plays for everyone')).toBeVisible()
-    await expect(canvas.getAllByRole('switch', { name: 'Loop' })).toHaveLength(3)
+    for (const button of canvas.getAllByRole('button', { name: /^(Play|Stop) / })) await expect(button).not.toHaveAttribute('aria-pressed')
+    await expect(canvas.getAllByRole('switch', { name: /^Loop: / })).toHaveLength(3)
     await expect(canvas.getByRole('button', { name: 'Upload sound' })).toBeEnabled()
   },
 }
@@ -198,7 +199,7 @@ export const PlayPublishes: Story = {
     const sent = JSON.stringify([...update.mock.calls, ...create.mock.calls])
     await expect(sent).toContain(BRAWL.id)
     await expect(sent).not.toMatch(/Tavern brawl/)
-    await expect(stopButton(canvasElement, 'Tavern brawl')).toHaveAttribute('aria-pressed', 'true')
+    await expect(stopButton(canvasElement, 'Tavern brawl')).toBeVisible()
     await expect(within(canvasElement).getByText('Plays for everyone')).toBeVisible()
   },
 }
@@ -227,8 +228,8 @@ export const PlayingAnotherReplaces: Story = {
   },
 }
 
-/** Stopping and playing the same sound again is a new start: the second write has a later start time. */
-export const PlayAgainRestarts: Story = {
+/** There is no replay control: stopping clears the stage, and playing the same sound again is a new start with a later start time. */
+export const StopThenPlayStartsAgain: Story = {
   tags: ['no-visual'],
   decorators: [withSounds(), asMaster],
   loaders: [route],
@@ -236,8 +237,10 @@ export const PlayAgainRestarts: Story = {
     await user.click(playButton(canvasElement, 'Ogre roar'))
     await waitFor(() => expect(stageSound()?.id).toBe(ROAR.id))
     const first = stageSound()!.startedAt
+    await expect(within(canvasElement).queryByRole('button', { name: 'Replay Ogre roar' })).toBeNull()
     await user.click(stopButton(canvasElement, 'Ogre roar'))
     await waitFor(() => expect(stageSound()).toBeNull())
+    await expect(playButton(canvasElement, 'Ogre roar')).toBeEnabled()
     advanceClock(5000)
     await user.click(playButton(canvasElement, 'Ogre roar'))
     await waitFor(() => expect(stageSound()?.id).toBe(ROAR.id))
@@ -293,7 +296,7 @@ export const PlayFailed: Story = {
     await user.click(playButton(canvasElement, 'Tavern brawl'))
     await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
     await waitFor(() => expect(playButton(canvasElement, 'Tavern brawl')).toBeEnabled())
-    await expect(playButton(canvasElement, 'Tavern brawl')).toHaveAttribute('aria-pressed', 'false')
+    await expect(playButton(canvasElement, 'Tavern brawl')).toBeVisible()
     await expect(canvasElement.querySelector('li[aria-current]')).toBeNull()
     await new Promise(resolve => setTimeout(resolve, 100))
     await expect(toastTexts()).toEqual([STAGE_TOAST])
@@ -311,7 +314,7 @@ export const StopFailed: Story = {
     await user.click(stopButton(canvasElement, 'Tavern brawl'))
     await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
     await waitFor(() => expect(stopButton(canvasElement, 'Tavern brawl')).toBeEnabled())
-    await expect(stopButton(canvasElement, 'Tavern brawl')).toHaveAttribute('aria-pressed', 'true')
+    await expect(stopButton(canvasElement, 'Tavern brawl')).toBeVisible()
     await new Promise(resolve => setTimeout(resolve, 100))
     await expect(toastTexts()).toEqual([STAGE_TOAST])
   },
@@ -323,7 +326,7 @@ export const LoopToggleSavesData: Story = {
   decorators: [withSounds(), asMaster],
   loaders: [route],
   play: async ({ canvasElement }) => {
-    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop' })
+    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop: Tavern brawl' })
     await expect(toggle).not.toBeChecked()
     await user.click(toggle)
     await waitFor(() => expect(sentForms()).toHaveLength(1))
@@ -345,13 +348,13 @@ export const LoopOfThePlayingSoundWaits: Story = {
   decorators: [withSounds({ playing: HEARTH.id }), asMaster],
   loaders: [route],
   play: async ({ canvasElement }) => {
-    const toggle = rowOf(canvasElement, 'Hum and hearth').getByRole('switch', { name: 'Loop' })
+    const toggle = rowOf(canvasElement, 'Hum and hearth').getByRole('switch', { name: 'Loop: Hum and hearth' })
     await expect(toggle).toBeChecked()
     await expect(within(canvasElement).queryByText('The loop applies from the next play')).toBeNull()
     await user.click(toggle)
     await expect(await within(canvasElement).findByText('The loop applies from the next play')).toBeVisible()
     await expect(toggle).not.toBeChecked()
-    await expect(stopButton(canvasElement, 'Hum and hearth')).toHaveAttribute('aria-pressed', 'true')
+    await expect(stopButton(canvasElement, 'Hum and hearth')).toBeVisible()
     await expect(useStageStore().stageOf(crookhollow.id).sound?.loop).toBe(true)
     await expect(pbRequests().filter(r => r.startsWith('stages.'))).toEqual([])
     // Putting it back removes the note.
@@ -360,26 +363,95 @@ export const LoopOfThePlayingSoundWaits: Story = {
   },
 }
 
-/** While the loop is being saved the switch shows the asked value once and does not answer a second click. */
+/** While the loop is being saved the switch stays usable and focused, a second change is ignored, and the stored value is the one shown. */
 export const LoopSwitchWaitsForTheAnswer: Story = {
   tags: ['no-visual'],
   decorators: [withSounds(), asMaster],
   loaders: [route],
   play: async ({ canvasElement }) => {
     const release = holdUploads()
-    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop' })
+    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop: Tavern brawl' })
     try {
-      await user.click(toggle)
-      await waitFor(() => expect(toggle).toBeDisabled())
+      toggle.focus()
+      await user.keyboard(' ')
+      await waitFor(() => expect(toggle).toHaveAttribute('aria-busy', 'true'))
+      await expect(toggle).toBeEnabled()
       await expect(toggle).toBeChecked()
-      await expect(playButton(canvasElement, 'Tavern brawl')).toBeEnabled()
+      await expect(canvasElement.ownerDocument.activeElement).toBe(toggle)
+      // A second change while the first is in flight goes nowhere, and the switch keeps what was asked.
+      await user.keyboard(' ')
+      await user.click(toggle)
+      await expect(toggle).toBeChecked()
+      await expect(canvasElement.ownerDocument.activeElement).toBe(toggle)
       await expect(sentForms()).toHaveLength(1)
+      await expect(playButton(canvasElement, 'Tavern brawl')).toBeEnabled()
     } finally {
       release()
     }
-    await waitFor(() => expect(toggle).toBeEnabled())
+    await waitFor(() => expect(toggle).not.toHaveAttribute('aria-busy'))
     await expect(toggle).toBeChecked()
+    await expect(canvasElement.ownerDocument.activeElement).toBe(toggle)
     await expect(sentForms()).toHaveLength(1)
+    await expect(useMediaStore().sounds.list.find(s => s.id === BRAWL.id)?.loop).toBe(true)
+  },
+}
+
+/** While a loop save is in flight the row's edit and delete wait, so a late answer cannot meet a deleted sound. */
+export const EditAndDeleteWaitForTheLoopSave: Story = {
+  tags: ['no-visual'],
+  decorators: [withSounds(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const release = holdUploads()
+    const row = rowOf(canvasElement, 'Tavern brawl')
+    try {
+      await user.click(row.getByRole('switch', { name: 'Loop: Tavern brawl' }))
+      await waitFor(() => expect(row.getByRole('button', { name: 'Delete Tavern brawl' })).toBeDisabled())
+      await expect(row.getByRole('button', { name: 'Edit Tavern brawl' })).toBeDisabled()
+      await expect(rowOf(canvasElement, 'Ogre roar').getByRole('button', { name: 'Delete Ogre roar' })).toBeEnabled()
+    } finally {
+      release()
+    }
+    await waitFor(() => expect(row.getByRole('button', { name: 'Delete Tavern brawl' })).toBeEnabled())
+    await expect(row.getByRole('button', { name: 'Edit Tavern brawl' })).toBeEnabled()
+    await expect(toastTexts()).toEqual([])
+  },
+}
+
+/** While the sound's own delete is under way its loop switch does nothing, so no save follows it. */
+export const LoopSwitchIsOutWhileDeleting: Story = {
+  tags: ['no-visual'],
+  decorators: [withSounds(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    let release: () => void = () => {}
+    spyOn(pb.collection('sounds'), 'delete').mockImplementation(() => new Promise((resolve) => { release = () => resolve(true) }))
+    await user.click(rowOf(canvasElement, 'Ogre roar').getByRole('button', { name: 'Delete Ogre roar' }))
+    await user.click(within(await body(canvasElement).findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    const toggle = rowOf(canvasElement, 'Ogre roar').getByRole('switch', { name: 'Loop: Ogre roar' })
+    await waitFor(() => expect(toggle).toBeDisabled())
+    await expect(sentForms()).toHaveLength(0)
+    release()
+    await waitFor(() => expect(names(canvasElement)).toEqual(['Hum and hearth', 'Tavern brawl']))
+    await expect(sentForms()).toHaveLength(0)
+    await expect(toastTexts()).toEqual([])
+  },
+}
+
+/** A refused loop save keeps the focus on the switch, which returns to the stored value. */
+export const LoopSaveFailedKeepsFocus: Story = {
+  tags: ['no-visual'],
+  decorators: [withSounds(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    failUploadsWith(500)
+    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop: Tavern brawl' })
+    toggle.focus()
+    await user.keyboard(' ')
+    await waitFor(() => expect(toastTexts()).toEqual(['Couldn’t save the sound. Check your connection.']))
+    await waitFor(() => expect(toggle).not.toHaveAttribute('aria-busy'))
+    await expect(toggle).not.toBeChecked()
+    await expect(canvasElement.ownerDocument.activeElement).toBe(toggle)
   },
 }
 
@@ -390,7 +462,7 @@ export const LoopSaveFailed: Story = {
   loaders: [route],
   play: async ({ canvasElement }) => {
     failUploadsWith(500)
-    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop' })
+    const toggle = rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop: Tavern brawl' })
     await user.click(toggle)
     await waitFor(() => expect(toastTexts()).toEqual(['Couldn’t save the sound. Check your connection.']))
     await waitFor(() => expect(toggle).toBeEnabled())
@@ -407,7 +479,7 @@ export const LoopSaveNotMaster: Story = {
   play: async ({ canvasElement }) => {
     seedRecords('games', [{ id: crookhollow.id, name: crookhollow.name, master: 'user-seva', invite_code: crookhollow.inviteCode }])
     failUploadsWith(RECORDED.updateNotFound.status, RECORDED.updateNotFound.body)
-    await user.click(rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop' }))
+    await user.click(rowOf(canvasElement, 'Tavern brawl').getByRole('switch', { name: 'Loop: Tavern brawl' }))
     await waitFor(() => expect(toastTexts()).toEqual(['You are not the master of this game any more.']))
   },
 }
@@ -553,7 +625,7 @@ export const EditASound: Story = {
     await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(rowOf(canvasElement, 'Inn brawl').getByRole('button', { name: 'Edit Inn brawl' })))
     await expect(sentForms()[0]!.files).toEqual({})
     await expect(pbRequests().filter(r => r.startsWith('stages.'))).toEqual([])
-    await expect(stopButton(canvasElement, 'Inn brawl')).toHaveAttribute('aria-pressed', 'true')
+    await expect(stopButton(canvasElement, 'Inn brawl')).toBeVisible()
   },
 }
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { defineComponent } from 'vue'
 import { ref } from 'vue'
 import SoundSheet from './SoundSheet.vue'
 import { crookhollow, CROOKHOLLOW_META, PARTY } from '@/stories/fixtures'
@@ -289,5 +290,119 @@ export const NotMaster: Story = {
     await user.click(sheet.getByRole('button', { name: 'Save' }))
     await expect(await sheet.findByRole('alert')).toHaveTextContent('You are not the master of this game any more.')
     await expect(nameField(canvasElement)).toHaveValue('Tavern brawl')
+  },
+}
+
+/** The sheet was opened on a snapshot; the name is saved with the loop and length the entry has by then. */
+export const EditSendsTheCurrentLoop: Story = {
+  tags: ['no-visual'],
+  args: { sound: BRAWL },
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'Edit sound' })
+    useMediaStore().put('sounds', crookhollow.id, { ...BRAWL, loop: true, duration: 99 })
+    await user.type(nameField(canvasElement), '!')
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await closed(canvasElement)
+    await expect(sentData()).toEqual({ id: BRAWL.id, name: 'Tavern brawl!', loop: true, duration: 99 })
+    await expect(useMediaStore().sounds.list.find(s => s.id === BRAWL.id)).toMatchObject({ name: 'Tavern brawl!', loop: true })
+  },
+}
+
+/** A sound deleted meanwhile (here or on another device) is not written back: the sheet just closes. */
+export const EditOfAGoneSoundCloses: Story = {
+  tags: ['no-visual'],
+  args: { sound: BRAWL },
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'Edit sound' })
+    useMediaStore().remove('sounds', crookhollow.id, BRAWL.id)
+    await user.type(nameField(canvasElement), '!')
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await closed(canvasElement)
+    await expect(sentForms()).toHaveLength(0)
+    await expect(useMediaStore().sounds.list.map(s => s.id)).not.toContain(BRAWL.id)
+  },
+}
+
+// Stands in for the browser's audio element, whose length is read only when the story lets it.
+class SlowAudio {
+  static release: (() => void) | null = null
+  duration = 3
+  preload = ''
+  private listeners: Record<string, Array<() => void>> = {}
+  addEventListener(type: string, fn: () => void) { (this.listeners[type] ??= []).push(fn) }
+  removeAttribute() {}
+  set src(_: string) {
+    SlowAudio.release = () => { for (const fn of this.listeners.loadedmetadata ?? []) fn() }
+  }
+}
+
+/** Saving waits for the file's length: no idle progress bar, a short note instead, then the real upload. */
+export const ReadingTheFileBeforeTheUpload: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'New sound' })
+    const real = globalThis.Audio
+    globalThis.Audio = SlowAudio as unknown as typeof Audio
+    try {
+      await user.upload(fileInput(canvasElement), soundFile('hearth.mp3'))
+      await user.click(sheet.getByRole('button', { name: 'Upload' }))
+      await expect(await sheet.findByText('Reading the file…')).toBeVisible()
+      await expect(sheet.queryByRole('progressbar')).toBeNull()
+      await expect(sheet.getByRole('button', { name: 'Upload' })).toBeDisabled()
+      await expect(sentForms()).toHaveLength(0)
+      SlowAudio.release!()
+      await closed(canvasElement)
+    } finally {
+      globalThis.Audio = real
+    }
+    await expect(sheet.queryByText('Reading the file…')).toBeNull()
+    await expect(sentData().duration).toBe(3)
+  },
+}
+
+const Reopening = defineComponent({
+  components: { SoundSheet },
+  setup() {
+    const open = ref(true)
+    const sound = ref<typeof BRAWL | undefined>(undefined)
+    return { open, sound, BRAWL, show: (s?: typeof BRAWL) => { sound.value = s; open.value = true } }
+  },
+  template: `
+    <button type="button" @click="show()">New</button>
+    <button type="button" @click="show(BRAWL)">Edit</button>
+    <SoundSheet v-model:open="open" :game-id="'${crookhollow.id}'" :sound="sound" />`,
+})
+
+/** A sheet reopened for another sound (or a new one) shows none of the previous draft, error or file. */
+export const ReopenedShowsNoPreviousDraft: Story = {
+  tags: ['no-visual'],
+  render: () => ({ components: { Reopening }, template: '<Reopening />' }),
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement)
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'New sound' })
+    await user.upload(fileInput(canvasElement), soundFile('doc.pdf', 'application/pdf'))
+    await sheet.findByText('This is not an MP3, M4A or AAC sound.')
+    await user.upload(fileInput(canvasElement), soundFile('draft.mp3'))
+    await user.clear(nameField(canvasElement))
+    await user.type(nameField(canvasElement), 'Typed draft')
+    await user.click(sheet.getByRole('button', { name: 'Cancel' }))
+    await closed(canvasElement)
+    await user.click(page.getByRole('button', { name: 'Edit' }))
+    await sheet.findByRole('dialog', { name: 'Edit sound' })
+    await expect(nameField(canvasElement)).toHaveValue('Tavern brawl')
+    await expect(sheet.queryByText('This is not an MP3, M4A or AAC sound.')).toBeNull()
+    await expect(sheet.queryByText('draft.mp3')).toBeNull()
+    await user.click(sheet.getByRole('button', { name: 'Cancel' }))
+    await closed(canvasElement)
+    await user.click(page.getByRole('button', { name: 'New' }))
+    await sheet.findByRole('dialog', { name: 'New sound' })
+    await expect(nameField(canvasElement)).toHaveValue('')
+    await expect(sheet.queryByText('draft.mp3')).toBeNull()
+    await expect(sheet.getByRole('button', { name: 'Upload' })).toBeDisabled()
+    await expect(sheet.queryByRole('progressbar')).toBeNull()
   },
 }

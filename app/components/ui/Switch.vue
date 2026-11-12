@@ -5,6 +5,8 @@ defineProps<{
   /** The accessible name; also the visible text unless the default slot or `hideLabel` replaces it. */
   label: string
   disabled?: boolean
+  /** A change is being saved: announced, while the switch stays usable and keeps its focus. */
+  busy?: boolean
   hideLabel?: boolean
 }>()
 
@@ -13,7 +15,7 @@ const model = defineModel<boolean>({ required: true })
 
 <template>
   <label :class="['switch', { 'is-disabled': disabled }]">
-    <SwitchRoot v-model="model" class="switch-root" :disabled="disabled" :aria-label="label">
+    <SwitchRoot v-model="model" class="switch-root" :disabled="disabled" :aria-label="label" :aria-busy="busy || undefined">
       <SwitchThumb class="switch-thumb" />
     </SwitchRoot>
     <span v-if="$slots.default" class="switch-label"><slot /></span>
