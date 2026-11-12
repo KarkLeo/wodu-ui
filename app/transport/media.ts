@@ -1,3 +1,4 @@
+import { ClientResponseError } from 'pocketbase'
 import { pb, type GameRow, type SceneRow } from '@/transport/pb'
 import { guard } from './backend'
 import { call, requireOnlineUser, staysCurrent } from './onlineOps'
@@ -53,11 +54,11 @@ function statusOf(err: unknown): number | undefined {
   return typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: unknown }).status) : undefined
 }
 
-// PocketBase words a file refusal as `data.<field>.code`; a rule refusal has an empty `data`.
+// PocketBase words a file refusal as `data.<field>.code` inside the body, which the SDK keeps in `response`
+// (see `responseError.ts`); a rule refusal has an empty `data`.
 function fileRefusal(err: unknown): FileRefusal | null {
-  if (statusOf(err) !== 400 || typeof err !== 'object' || err === null) return null
-  const e = err as { data?: unknown; response?: { data?: unknown } }
-  const data = e.data ?? e.response?.data
+  if (!(err instanceof ClientResponseError) || err.status !== 400) return null
+  const data = err.response.data
   if (typeof data !== 'object' || data === null) return null
   for (const field of ['image', 'sound'] as const) {
     const code = (data as Record<string, { code?: unknown } | undefined>)[field]?.code

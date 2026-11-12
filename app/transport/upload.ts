@@ -1,6 +1,7 @@
 import { ClientResponseError } from 'pocketbase'
 import { pb } from '@/transport/pb'
 import { BOOTSTRAP_TIMEOUT_MS } from './connection'
+import { errorFromResponse, parseBody } from './responseError'
 
 /**
  * Multipart create or update through XMLHttpRequest, because fetch reports no upload progress. Sends the
@@ -38,8 +39,7 @@ export function sendForm<T>(
         xhr.abort()
       }, BOOTSTRAP_TIMEOUT_MS)
     }
-    const failure = (status: number, response: unknown, isAbort = false) =>
-      new ClientResponseError({ url, status, response: response as Record<string, unknown>, isAbort })
+    const failure = (status: number, isAbort = false) => new ClientResponseError({ url, status, response: {}, isAbort })
 
     xhr.open(method, url)
     if (pb.authStore.token) xhr.setRequestHeader('Authorization', pb.authStore.token)
@@ -53,17 +53,11 @@ export function sendForm<T>(
       arm()
     }
     xhr.onload = () => settle(() => {
-      let body: unknown = {}
-      try {
-        body = xhr.responseText ? JSON.parse(xhr.responseText) : {}
-      } catch {
-        body = {}
-      }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(body as T)
-      else reject(failure(xhr.status, body))
+      if (xhr.status >= 200 && xhr.status < 300) resolve(parseBody(xhr.responseText) as T)
+      else reject(errorFromResponse(url, xhr.status, xhr.responseText))
     })
-    xhr.onerror = () => settle(() => reject(failure(0, {})))
-    xhr.onabort = () => settle(() => reject(failure(0, {}, true)))
+    xhr.onerror = () => settle(() => reject(failure(0)))
+    xhr.onabort = () => settle(() => reject(failure(0, true)))
     signal?.addEventListener('abort', onAbort, { once: true })
     arm()
     xhr.send(form)

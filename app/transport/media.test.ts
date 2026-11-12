@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Scene } from '@/types/stage'
+import { RECORDED } from './recordedResponses'
+import { errorFromResponse } from './responseError'
 
 interface Call { collection: string; method: string; args: unknown[] }
 interface Sent { method: string; path: string; form: FormData; signal?: AbortSignal }
@@ -60,12 +62,9 @@ function deferred() {
   return { promise, resolve }
 }
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
-const httpError = (status: number) => Object.assign(new Error(`status ${status}`), { status })
-const refusal = (field: string, code: string) => Object.assign(new Error('status 400'), {
-  status: 400,
-  response: { data: { [field]: { code } } },
-  data: { [field]: { code } },
-})
+// Errors are built the way `sendForm` builds them, from what a real PocketBase answered.
+const httpError = (status: number) => errorFromResponse('', status, JSON.stringify({ data: {}, message: 'status', status }))
+const recorded = (key: keyof typeof RECORDED) => errorFromResponse('', RECORDED[key].status, RECORDED[key].body)
 const file = (name: string, type: string) => new File(['x'], name, { type })
 
 function row(id: string, over: Record<string, unknown> = {}) {
@@ -153,7 +152,7 @@ describe('createScene', () => {
   })
 
   it('raises limitMayHaveChanged when the server refuses while the local count is under the limit', async () => {
-    sendImpl = async () => { throw httpError(400) }
+    sendImpl = async () => { throw recorded('createDuplicateId') }
     const { createScene } = await load()
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
       .rejects.toMatchObject({ kind: 'limitMayHaveChanged' })
@@ -161,16 +160,16 @@ describe('createScene', () => {
 
   it('maps a refused file field to fileRefused with the field and the reason, not to a limit change', async () => {
     const { createScene } = await load()
-    sendImpl = async () => { throw refusal('sound', 'validation_invalid_mime_type') }
+    sendImpl = async () => { throw recorded('createTextAsSound') }
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
       .rejects.toMatchObject({ kind: 'fileRefused', field: 'sound', reason: 'type' })
-    sendImpl = async () => { throw refusal('image', 'validation_file_size_limit') }
+    sendImpl = async () => { throw recorded('createBigImage') }
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { image: file('a.png', 'image/png') }))
       .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'size' })
   })
 
   it('counts an empty-data 400 as done when the scene with that id is already in the store (answer lost, retried)', async () => {
-    sendImpl = async () => { throw httpError(400) }
+    sendImpl = async () => { throw recorded('createDuplicateId') }
     const { createScene, media } = await load()
     media.putScene(GAME, { id: 'sc-1', name: 'X', image: null, sound: 'sound.mp3' })
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
@@ -178,7 +177,7 @@ describe('createScene', () => {
   })
 
   it('counts an empty-data 400 as done when one read of that id finds the scene, and stores it', async () => {
-    sendImpl = async () => { throw httpError(400) }
+    sendImpl = async () => { throw recorded('createDuplicateId') }
     sceneGetImpl = async () => row('sc-1', { sound: 'sound.mp3', data: { id: 'sc-1', name: 'X' } })
     const { createScene, media } = await load()
     const scene = await createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') })
@@ -188,7 +187,7 @@ describe('createScene', () => {
   })
 
   it('raises limitMayHaveChanged only for an empty-data 400 with no such scene', async () => {
-    sendImpl = async () => { throw httpError(400) }
+    sendImpl = async () => { throw recorded('create21st') }
     const { createScene } = await load()
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
       .rejects.toMatchObject({ kind: 'limitMayHaveChanged' })
@@ -321,11 +320,28 @@ describe('updateScene', () => {
   })
 
   it('maps a refused file on update to fileRefused', async () => {
-    sendImpl = async () => { throw refusal('image', 'validation_invalid_mime_type') }
+    sendImpl = async () => { throw recorded('updateTextAsImage') }
     const { updateScene, media } = await load()
     media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png') }))
       .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'type' })
+  })
+
+  it('maps a refused sound on update to fileRefused on the sound field', async () => {
+    sendImpl = async () => { throw recorded('updateTextAsSound') }
+    const { updateScene, media } = await load()
+    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { sound: file('x.mp3', 'audio/mpeg') }))
+      .rejects.toMatchObject({ kind: 'fileRefused', field: 'sound', reason: 'type' })
+  })
+
+  it('keeps a 404 on update as what it was: a re-read of the game, not a file refusal', async () => {
+    sendImpl = async () => { throw recorded('updateNotFound') }
+    gameMaster = 'user-2'
+    const { updateScene, media } = await load()
+    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png') }))
+      .rejects.toMatchObject({ kind: 'notMaster' })
   })
 
   it('raises notMaster on a 404 when the game now has another master', async () => {

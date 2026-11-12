@@ -9,6 +9,7 @@ import { storyRouter } from '@/stories/router'
 import { withGameTable } from '@/stories/state'
 import { useMediaStore } from '@/stores/media'
 import { closeMedia } from '@/transport/media'
+import { RECORDED } from '@/transport/recordedResponses'
 import { seedRecords } from '../../../.storybook/mocks/pb'
 import { failUploadsWith, holdUploads, sentForms } from '../../../.storybook/mocks/upload'
 
@@ -320,7 +321,7 @@ export const LimitReached: Story = {
 /** A refused create while this device counts fewer than the limit: its own sentence, and what was typed stays. */
 export const LimitMayHaveChanged: Story = {
   play: async ({ canvasElement }) => {
-    failUploadsWith(400)
+    failUploadsWith(RECORDED.create21st.status, RECORDED.create21st.body)
     const sheet = body(canvasElement)
     await sheet.findByRole('dialog', { name: 'New scene' })
     await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Tavern')
@@ -336,7 +337,7 @@ export const LimitMayHaveChanged: Story = {
 /** The server reads the content, not the name: a file refused for its type is told under its own field, with the rest kept. */
 export const ServerRefusesTheFileType: Story = {
   play: async ({ canvasElement }) => {
-    failUploadsWith(400, { data: { image: { code: 'validation_invalid_mime_type' } } })
+    failUploadsWith(RECORDED.createTextAsImage.status, RECORDED.createTextAsImage.body)
     const sheet = body(canvasElement)
     await sheet.findByRole('dialog', { name: 'New scene' })
     await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Tavern')
@@ -349,12 +350,29 @@ export const ServerRefusesTheFileType: Story = {
   },
 }
 
+/** A sound the server refuses on an edit is told under the sound field, with the stored picture and the name left alone. */
+export const ServerRefusesTheSoundOnEdit: Story = {
+  args: { scene: TAVERN },
+  play: async ({ canvasElement }) => {
+    failUploadsWith(RECORDED.updateTextAsSound.status, RECORDED.updateTextAsSound.body)
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'Edit scene' })
+    await user.upload(soundInput(canvasElement), soundFile('cellar.mp3'))
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await expect(await sheet.findByText('This is not an MP3, M4A or AAC sound.')).toBeVisible()
+    await expect(sheet.queryByRole('alert')).toBeNull()
+    await expect(sheet.getByRole('textbox', { name: 'Name' })).toHaveValue('Tavern')
+    await expect(sheet.getByText('Picture attached')).toBeVisible()
+    await expect(sheet.getByText('cellar.mp3')).toBeVisible()
+  },
+}
+
 /** Someone else is the master now. */
 export const NotMaster: Story = {
   args: { scene: TAVERN },
   play: async ({ canvasElement }) => {
     seedRecords('games', [{ id: crookhollow.id, name: crookhollow.name, master: 'user-seva', invite_code: crookhollow.inviteCode }])
-    failUploadsWith(404)
+    failUploadsWith(RECORDED.updateNotFound.status, RECORDED.updateNotFound.body)
     const sheet = body(canvasElement)
     await sheet.findByRole('dialog', { name: 'Edit scene' })
     await user.click(sheet.getByRole('button', { name: 'Save' }))
