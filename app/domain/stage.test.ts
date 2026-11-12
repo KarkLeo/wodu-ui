@@ -7,7 +7,7 @@ import {
   withImage, withoutImage, withImageEdited, checkImageData, checkImageDraft, revealKey, shouldReveal, CAPTION_MAX,
   STALE_ONE_SHOT_SECONDS, ONE_SHOT_CLEAR_GRACE_SECONDS, ONE_SHOT_UNKNOWN_CLEAR_SECONDS,
 } from './stage'
-import type { Scene, StageImage, StageSound, TableImage } from '@/types/stage'
+import type { Scene, Stage, StageImage, StageSound, TableImage } from '@/types/stage'
 
 const tavern: Scene = { id: 'scene-tavern-0001', name: 'Tavern', image: 'image_ab12.webp', sound: 'sound_cd34.mp3' }
 const shown: StageImage = {
@@ -482,7 +482,7 @@ describe('overlay memory', () => {
 
 const T = '2026-11-12T11:00:00.000Z'
 const grum: TableImage = { id: 'i1', caption: 'Old Grum, the innkeeper', file: 'image_ab.webp' }
-const grumStage = () => ({ ...withSound(withScene(emptyStage('g1'), tavern), { id: 'k1', name: 'Rain', loop: true, duration: null, file: 'rain.mp3' }, T) })
+const stageWithSceneAndSound = () => withSound(withScene(emptyStage('g1'), tavern), { id: 'sound-record-0001', name: 'Rain', loop: true, duration: null, file: 'rain.mp3' }, T)
 
 describe('withImage', () => {
   it('with the caption', () => {
@@ -499,7 +499,7 @@ describe('withImage', () => {
     expect(withImage(emptyStage('g1'), { ...grum, caption: null }, true, T).image?.caption).toBeNull()
   })
   it('keeps scene and sound; withoutImage clears only the image', () => {
-    const before = grumStage()
+    const before = stageWithSceneAndSound()
     const next = withImage(before, grum, true, T)
     expect(next.scene).toBe(before.scene)
     expect(next.sound).toBe(before.sound)
@@ -541,7 +541,7 @@ describe('withImageEdited', () => {
     expect(withImageEdited(bare, { ...grum, caption: 'Added later' }).image?.caption).toBeNull()
   })
   it('does not touch the other slots', () => {
-    const before = withImage(grumStage(), grum, true, T)
+    const before = withImage(stageWithSceneAndSound(), grum, true, T)
     const next = withImageEdited(before, { ...grum, file: 'n.webp' })
     expect(next.scene).toBe(before.scene)
     expect(next.sound).toBe(before.sound)
@@ -616,5 +616,102 @@ describe('shouldReveal', () => {
   })
   it('the same image shown again after hiding reveals', () => {
     expect(shouldReveal(null, 'a:2', false)).toBe(true)
+  })
+})
+
+describe('blank captions are no caption', () => {
+  it('withImage puts null for an empty or blank caption, and trims a real one', () => {
+    expect(withImage(emptyStage('g1'), { ...grum, caption: '' }, true, T).image?.caption).toBeNull()
+    expect(withImage(emptyStage('g1'), { ...grum, caption: '   ' }, true, T).image?.caption).toBeNull()
+    expect(withImage(emptyStage('g1'), { ...grum, caption: '  Grum  ' }, true, T).image?.caption).toBe('Grum')
+  })
+  it('an edit of a stage with a blank caption stays null and never carries the new text', () => {
+    const blank: Stage = { ...emptyStage('g1'), image: { id: 'i1', file: { collection: 'images', record: 'i1', name: 'a.webp' }, caption: '  ', shownAt: T } }
+    const next = withImageEdited(blank, { ...grum, caption: 'Secret' })
+    expect(next.image?.caption).toBeNull()
+    expect(JSON.stringify(next)).not.toContain('Secret')
+    const viaWith = withImage(emptyStage('g1'), { ...grum, caption: ' ' }, true, T)
+    expect(JSON.stringify(withImageEdited(viaWith, { ...grum, caption: 'Secret' }))).not.toContain('Secret')
+  })
+  it('an edit to a blank caption removes a shown one', () => {
+    const live = withImage(emptyStage('g1'), grum, true, T)
+    expect(withImageEdited(live, { ...grum, caption: '   ' }).image?.caption).toBeNull()
+  })
+  it('checkStage maps a blank caption to null', () => {
+    const raw = { id: 'g1', scene: null, sound: null, image: { ...shown, caption: '   ' } }
+    expect(checkStage(raw, 'g1')?.image?.caption).toBeNull()
+  })
+})
+
+describe('checkStage bounds the caption players render', () => {
+  const withCaption = (caption: unknown) => checkStage({ id: 'g1', scene: null, sound: null, image: { ...shown, caption } }, 'g1')
+  it('cuts a caption over the limit to the limit, keeping the image', () => {
+    const out = withCaption('a'.repeat(CAPTION_MAX + 1))
+    expect(out?.image?.caption).toBe('a'.repeat(CAPTION_MAX))
+    expect(out?.image?.id).toBe(shown.id)
+  })
+  it('leaves a caption of exactly the limit alone, and trims before counting', () => {
+    expect(withCaption('a'.repeat(CAPTION_MAX))?.image?.caption).toBe('a'.repeat(CAPTION_MAX))
+    expect(withCaption(` ${'a'.repeat(CAPTION_MAX)} `)?.image?.caption).toBe('a'.repeat(CAPTION_MAX))
+  })
+  it('does not split an emoji when cutting', () => {
+    const out = withCaption(`${'a'.repeat(CAPTION_MAX - 1)}😀`)?.image?.caption
+    expect(out).toBe('a'.repeat(CAPTION_MAX - 1))
+  })
+  it('still drops the image slot for a caption that is not a string or null', () => {
+    expect(withCaption(5)?.image).toBeNull()
+  })
+})
+
+describe('stage round trip through checkStage', () => {
+  const rich: TableImage = { id: 'image-record-0001', caption: 'Old Grum, the innkeeper', file: 'image_ab.webp' }
+  const trip = (stage: Stage) => checkStage(JSON.parse(JSON.stringify(stage)), 'g1')
+  it('withImage with a caption, without one, and for an image with none', () => {
+    const base = stageWithSceneAndSound()
+    for (const next of [
+      withImage(base, rich, true, T),
+      withImage(base, rich, false, T),
+      withImage(base, { ...rich, caption: null }, true, T),
+    ]) expect(trip(next)).toEqual(next)
+  })
+  it('withImageEdited with a caption changed, removed and kept null', () => {
+    const live = withImage(emptyStage('g1'), rich, true, T)
+    const hidden = withImage(emptyStage('g1'), rich, false, T)
+    for (const next of [
+      withImageEdited(live, { ...rich, caption: 'Grum the younger', file: 'n.png' }),
+      withImageEdited(live, { ...rich, caption: null }),
+      withImageEdited(hidden, { ...rich, caption: 'Secret' }),
+    ]) expect(trip(next)).toEqual(next)
+  })
+})
+
+describe('withImageEdited identity and immutability', () => {
+  it('returns the same object when nothing would change', () => {
+    const live = withImage(emptyStage('g1'), grum, true, T)
+    expect(withImageEdited(live, grum)).toBe(live)
+    const hidden = withImage(emptyStage('g1'), grum, false, T)
+    expect(withImageEdited(hidden, { ...grum, caption: 'Other' })).toBe(hidden)
+    expect(withImageEdited(live, { ...grum, caption: '  Old Grum, the innkeeper ' })).toBe(live)
+  })
+  it('does not change its input', () => {
+    const empty = emptyStage('g1')
+    withImage(empty, grum, true, T)
+    expect(empty.image).toBeNull()
+    const live = withImage(emptyStage('g1'), grum, true, T)
+    const before = live.image
+    withImageEdited(live, { ...grum, file: 'new.png', caption: 'New' })
+    expect(live.image).toBe(before)
+    expect(live.image?.file.name).toBe('image_ab.webp')
+    expect(live.image?.caption).toBe('Old Grum, the innkeeper')
+  })
+})
+
+describe('caption length counting', () => {
+  // UTF-16 units, like the sibling name checks: the UI counter must count the same way.
+  it('61 astral emoji are 122 units: refused and flagged', () => {
+    const caption = '😀'.repeat(61)
+    expect(checkImageData({ id: 'i1', caption })).toBeNull()
+    expect(checkImageDraft({ caption, hasFile: true })).toEqual(['captionTooLong'])
+    expect(checkImageData({ id: 'i1', caption: '😀'.repeat(60) })).not.toBeNull()
   })
 })

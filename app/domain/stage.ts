@@ -1,6 +1,7 @@
 import type {
   FileRef, MediaCollection, Scene, Sound, Stage, StageImage, StageScene, StageSound, TableImage,
 } from '@/types/stage'
+import { cutText } from '@/utils/text'
 
 export const MEDIA_LIMITS = { scenes: 20, sounds: 15, images: 30 } as const
 export const IMAGE_MAX_BYTES = 2097152
@@ -64,13 +65,19 @@ export function withoutSound(stage: Stage): Stage {
   return { ...stage, sound: null }
 }
 
+/** What players render: trimmed, a blank one is none, and never longer than `CAPTION_MAX`. */
+function stageCaption(raw: string | null): string | null {
+  const text = raw === null ? '' : cutText(raw.trim(), CAPTION_MAX)
+  return text === '' ? null : text
+}
+
 export function withImage(stage: Stage, image: TableImage, withCaption: boolean, shownAt: string): Stage {
   return {
     ...stage,
     image: {
       id: image.id,
       file: { collection: 'images', record: image.id, name: image.file },
-      caption: withCaption ? image.caption : null,
+      caption: withCaption ? stageCaption(image.caption) : null,
       shownAt,
     },
   }
@@ -88,13 +95,11 @@ export function withoutImage(stage: Stage): Stage {
 export function withImageEdited(stage: Stage, image: TableImage): Stage {
   const shown = stage.image
   if (!shown || shown.id !== image.id) return stage
+  const caption = stageCaption(shown.caption) === null ? null : stageCaption(image.caption)
+  if (shown.file.name === image.file && shown.caption === caption) return stage
   return {
     ...stage,
-    image: {
-      ...shown,
-      file: { collection: 'images', record: image.id, name: image.file },
-      caption: shown.caption === null ? null : image.caption,
-    },
+    image: { ...shown, file: { collection: 'images', record: image.id, name: image.file }, caption },
   }
 }
 
@@ -130,7 +135,7 @@ function checkStageImage(v: unknown): StageImage | null {
   const file = checkFileRef(v.file)
   if (!file || !nonEmpty(v.shownAt)) return null
   if (v.caption !== null && v.caption !== undefined && typeof v.caption !== 'string') return null
-  return { id: v.id, file, caption: typeof v.caption === 'string' ? v.caption : null, shownAt: v.shownAt }
+  return { id: v.id, file, caption: typeof v.caption === 'string' ? stageCaption(v.caption) : null, shownAt: v.shownAt }
 }
 
 function checkStageSound(v: unknown): StageSound | null {
