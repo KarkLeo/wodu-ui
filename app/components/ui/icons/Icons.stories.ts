@@ -29,6 +29,7 @@ import IconLock from './IconLock.vue'
 import IconMenu from './IconMenu.vue'
 import IconMinus from './IconMinus.vue'
 import IconMusic from './IconMusic.vue'
+import IconPlay from './IconPlay.vue'
 import IconPlus from './IconPlus.vue'
 import IconReroll from './IconReroll.vue'
 import IconSearch from './IconSearch.vue'
@@ -36,6 +37,7 @@ import IconSkull from './IconSkull.vue'
 import IconShield from './IconShield.vue'
 import IconStar from './IconStar.vue'
 import IconStarBold from './IconStarBold.vue'
+import IconStop from './IconStop.vue'
 import IconSwords from './IconSwords.vue'
 import IconTool from './IconTool.vue'
 import IconTrash from './IconTrash.vue'
@@ -75,6 +77,7 @@ const icons = {
   IconMenu,
   IconMinus,
   IconMusic,
+  IconPlay,
   IconPlus,
   IconReroll,
   IconSearch,
@@ -82,6 +85,7 @@ const icons = {
   IconShield,
   IconStar,
   IconStarBold,
+  IconStop,
   IconSwords,
   IconTool,
   IconTrash,

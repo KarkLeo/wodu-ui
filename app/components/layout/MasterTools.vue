@@ -35,7 +35,8 @@ const encounter = useEncounterStore()
 const media = useMediaStore()
 const encounterPanel = useToolPanel('encounter')
 const scenesPanel = useToolPanel('scenes')
-const { activeSceneId } = useStageControl()
+const soundsPanel = useToolPanel('sounds')
+const { activeSceneId, playingSoundId } = useStageControl()
 const { tableRoute } = useTable()
 const layout = useGameLayout()
 
@@ -50,6 +51,12 @@ const activeSceneName = computed(() => {
   return media.scenes.list.find(s => s.id === activeSceneId.value)?.name ?? ''
 })
 const sceneIsOn = computed(() => activeSceneId.value !== null)
+
+const playingSoundName = computed(() => {
+  if (!playingSoundId.value || media.gameId !== props.game.id) return ''
+  return media.sounds.list.find(s => s.id === playingSoundId.value)?.name ?? ''
+})
+const soundIsPlaying = computed(() => playingSoundId.value !== null)
 
 // A library row on its own screen goes back to the table; elsewhere it opens its library.
 function openLibrary(name: 'game-monsters' | 'game-items') {
@@ -84,6 +91,16 @@ const rows = computed<ToolRow[]>(() => [
     on: scenesPanel.open.value,
     status: !sceneIsOn.value ? undefined : activeSceneName.value || t('games.tools.sceneOnStatus'),
     onClick: scenesPanel.toggle,
+  },
+  {
+    key: 'sounds',
+    label: t('stage.sounds.title'),
+    ariaLabel: !soundIsPlaying.value ? undefined
+      : playingSoundName.value ? t('games.tools.soundsOn', { name: playingSoundName.value }) : t('games.tools.soundOnUnnamed'),
+    kind: 'toggle',
+    on: soundsPanel.open.value,
+    status: !soundIsPlaying.value ? undefined : playingSoundName.value || t('games.tools.soundOnStatus'),
+    onClick: soundsPanel.toggle,
   },
 ])
 </script>

@@ -361,6 +361,32 @@ export const MasterCardsInOrder: Story = {
   },
 }
 
+const withScenesAndSoundsOpen: Decorator = (story) => ({
+  components: { story },
+  setup() {
+    const panels = useToolPanelsStore()
+    panels.clearAll()
+    panels.toggle('sounds')
+    panels.toggle('scenes')
+  },
+  template: '<story />',
+})
+
+/** The Sounds card follows the Scenes card, whichever was opened first. */
+export const SoundsCardFollowsScenes: Story = {
+  tags: ['no-visual'],
+  decorators: [withScenesAndSoundsOpen, crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id}`)],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(columns(canvasElement)).toHaveLength(3))
+    await expect(within(columns(canvasElement)[0] as HTMLElement).getByRole('heading', { name: 'Scenes' })).toBeVisible()
+    await expect(within(columns(canvasElement)[1] as HTMLElement).getByRole('heading', { name: 'Sounds' })).toBeVisible()
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Close sounds' }))
+    await expect(useToolPanelsStore().open.sounds).toBe(false)
+    await waitFor(() => expect(columns(canvasElement)).toHaveLength(2))
+  },
+}
+
 /** A card's own button closes it and leaves the others. */
 export const ClosingAMasterCard: Story = {
   tags: ['no-visual'],

@@ -169,7 +169,7 @@ export const GameAsPlayer: Story = {
   },
 }
 
-/** A player has no master tools, so no Scenes row either; neither has a masterless game. */
+/** A player has no master tools, so no Scenes or Sounds row either; neither has a masterless game. */
 export const PlayerHasNoScenesRow: Story = {
   tags: ['no-visual'],
   decorators: [oldenTable],
@@ -179,6 +179,7 @@ export const PlayerHasNoScenesRow: Story = {
     await expect(await row(canvasElement, oda.name)).toBeVisible()
     await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
     await expect(canvas.queryByRole('button', { name: /^Scenes/ })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Sounds/ })).toBeNull()
   },
 }
 
@@ -490,7 +491,7 @@ const landscapePhone: Decorator = (story) => ({
   template: '<div data-small-phone style="width: 667px; height: 375px; display: flex; flex-direction: column"><story /></div>',
 })
 
-/** Four rows, the list, the head and the footer share the frame: the tools scroll inside themselves, the list keeps a row. */
+/** Five rows, the list, the head and the footer share the frame: the tools scroll inside themselves, the list keeps a row. */
 const budgetKept = async (canvasElement: HTMLElement, { overflows }: { overflows: boolean }) => {
   const canvas = within(canvasElement)
   const group = await canvas.findByRole('group', { name: 'Master' })
@@ -502,7 +503,7 @@ const budgetKept = async (canvasElement: HTMLElement, { overflows }: { overflows
   await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
   const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
   await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
-  for (const name of ['Encounter', 'Monsters', 'Items', 'Scenes']) await expect(within(group).getByRole('button', { name })).toBeInTheDocument()
+  for (const name of ['Encounter', 'Monsters', 'Items', 'Scenes', 'Sounds']) await expect(within(group).getByRole('button', { name })).toBeInTheDocument()
   const scroller = group.querySelector('.mt-rows') as HTMLElement
   await expect(scroller.clientHeight).toBeGreaterThan(0)
   const tools = canvasElement.querySelector('.gl-panel-tools') as HTMLElement
@@ -521,7 +522,7 @@ export const ToolsStayVisibleWithManyCharacters: Story = {
   play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: false }),
 }
 
-/** A landscape phone is too short for four rows, the list and the footer: the tools scroll inside themselves. */
+/** A landscape phone is too short for five rows, the list and the footer: the tools scroll inside themselves. */
 export const ToolsStayVisibleOnALandscapePhone: Story = {
   tags: ['no-visual'],
   decorators: [withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
