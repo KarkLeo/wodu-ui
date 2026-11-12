@@ -3,6 +3,7 @@ import { createAudioMixer, createSceneAudio, type Interruption, type SceneAudioD
 import {
   CURVE_POINTS,
   equalPowerCurve,
+  ONE_SHOT_READY_FALLBACK_SECONDS,
   POOL_SIZE,
   READY_FALLBACK_SECONDS,
   RESUME_GRACE_MS,
@@ -425,6 +426,28 @@ describe('webAudioDeps', () => {
       elementOf(2).dispatch('error')
       await expect(c.ready).rejects.toThrow()
     })
+
+    it('a one-shot is ready on canplay or after its shorter fallback; a loop waits for canplaythrough', async () => {
+      expect(ONE_SHOT_READY_FALLBACK_SECONDS).toBe(1.5)
+      const shot = deps.createTrack('a.mp3', false)
+      expect([...timers.values()].map(t => t.ms)).toEqual([ONE_SHOT_READY_FALLBACK_SECONDS * 1000])
+      elementOf(0).dispatch('canplay')
+      await expect(shot.ready).resolves.toBeUndefined()
+      expect(timers.size).toBe(0)
+      const late = deps.createTrack('b.mp3', false)
+      runTimers(ONE_SHOT_READY_FALLBACK_SECONDS * 1000)
+      await expect(late.ready).resolves.toBeUndefined()
+      let loopReady = false
+      const loop = deps.createTrack('c.mp3', true)
+      void loop.ready.then(() => { loopReady = true })
+      elementOf(2).dispatch('canplay')
+      await flush()
+      expect(loopReady).toBe(false)
+      expect([...timers.values()].map(t => t.ms)).toEqual([READY_FALLBACK_SECONDS * 1000])
+      elementOf(2).dispatch('canplaythrough')
+      await flush()
+      expect(loopReady).toBe(true)
+    })
   })
 
   describe('unlock', () => {
@@ -502,6 +525,28 @@ describe('webAudioDeps', () => {
       el.play = () => { el.plays.push(el.src); return Promise.reject(new DOMException('aborted', 'AbortError')) }
       await deps.unlock()
       expect(el.plays).toEqual(['a.mp3', 'a.mp3'])
+    })
+
+    it('primed() is true once an unlock has primed every element of the pool, and stays so', async () => {
+      expect(deps.primed()).toBe(false)
+      FakeAudio.allowPlay = false
+      await deps.unlock()
+      expect(deps.primed()).toBe(false)
+      FakeAudio.allowPlay = true
+      await deps.unlock()
+      expect(deps.primed()).toBe(true)
+      await deps.unlock()
+      expect(deps.primed()).toBe(true)
+    })
+
+    it('primed() is false while an element whose play was in flight is left for a later unlock', async () => {
+      const a = deps.createTrack('a.mp3', true)
+      const el = elementOf(0)
+      el.play = () => { el.plays.push(el.src); el.paused = false; return new Promise<void>(() => {}) }
+      void a.play()
+      await flush()
+      await deps.unlock()
+      expect(deps.primed()).toBe(false)
     })
 
     it('waits for resume() however long it takes: no grace bound in the gesture path', async () => {
@@ -728,7 +773,9 @@ describe('webAudioDeps', () => {
 
   describe('the pool at the worst case of two channels', () => {
     const el = (src: string) => FakeAudio.made.find(e => e.src === src)
+    // As a browser does: canplay first (a one-shot is ready), then canplaythrough (a loop is).
     const ready = async (src: string) => {
+      el(src)!.dispatch('canplay')
       el(src)!.dispatch('canplaythrough')
       await flush(); await flush()
     }

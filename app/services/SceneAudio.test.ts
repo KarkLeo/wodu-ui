@@ -39,7 +39,8 @@ interface FakeTrack extends Track {
   pinned: boolean
 }
 
-function makeFakeTrack(src: string, loop: boolean): FakeTrack {
+/** `allowed` models the browser: false makes a play() without its own override refuse, as an unprimed element would. */
+function makeFakeTrack(src: string, loop: boolean, allowed: () => boolean = () => true): FakeTrack {
   let resolveReady!: () => void
   let rejectReady!: (e: Error) => void
   const ready = new Promise<void>((res, rej) => {
@@ -78,7 +79,7 @@ function makeFakeTrack(src: string, loop: boolean): FakeTrack {
       calls.push('play')
       const mode = playMode
       playMode = 'ok'
-      if (mode === 'refuse') return Promise.reject(new DOMException('gesture needed', 'NotAllowedError'))
+      if (mode === 'refuse' || (mode === 'ok' && !allowed())) return Promise.reject(new DOMException('gesture needed', 'NotAllowedError'))
       if (mode === 'fail') return Promise.reject(new DOMException('bad media', 'NotSupportedError'))
       if (mode === 'hang') return new Promise<void>(resolve => { settle = resolve })
       return Promise.resolve()
@@ -109,6 +110,11 @@ interface Harness {
   /** The document-gesture listeners installed and not yet removed. */
   gestures: Array<() => void>
   gestureInstalls: number
+  /** Models WebKit: an element plays without a gesture only after the pool was primed inside one. */
+  needsPriming: boolean
+  /** Whether an unlock primes the pool (false: the gesture carried no activation). */
+  primeWorks: boolean
+  primedPool: boolean
   deps: SceneAudioDeps
 }
 
@@ -123,11 +129,14 @@ function harness(): Harness {
     unlockCalls: 0,
     gestures: [],
     gestureInstalls: 0,
+    needsPriming: false,
+    primeWorks: true,
+    primedPool: false,
     deps: undefined as unknown as SceneAudioDeps,
   }
   h.deps = {
     createTrack(src, loop) {
-      const t = makeFakeTrack(src, loop)
+      const t = makeFakeTrack(src, loop, () => !h.needsPriming || h.primedPool)
       h.tracks.push(t)
       return t
     },
@@ -135,9 +144,11 @@ function harness(): Harness {
     setMasterVolume: level => { h.masterVolumes.push(level) },
     unlock() {
       h.unlockCalls++
+      if (h.primeWorks) h.primedPool = true
       if (!h.unlockHangs) return Promise.resolve(h.unlockResult)
       return new Promise<boolean>(resolve => { h.answerUnlock.push(resolve) })
     },
+    primed: () => h.primedPool,
     // Like the shell's: fires on every gesture until removed.
     addGestureListener(callback) {
       h.gestureInstalls++
@@ -1210,5 +1221,106 @@ describe('the overlay', () => {
     expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
     await playOverlay('k', 'p')
     expect(track('b').calls.at(-1)).toBe('fadeTo(0,1)')
+  })
+})
+
+describe('arming', () => {
+  let h: Harness
+  let audio: SceneAudio
+
+  const track = (name: string) => {
+    const found = h.tracks.filter(t => t.src === `${name}.mp3`).at(-1)
+    if (!found) throw new Error(`no track ${name}`)
+    return found
+  }
+
+  beforeEach(() => {
+    h = harness()
+    h.needsPriming = true
+    audio = createSceneAudio(h.deps)
+  })
+
+  it('not armed: no gesture listener, and an overlay on an unprimed pool is refused', async () => {
+    expect(h.gestureInstalls).toBe(0)
+    audio.setOverlay({ key: 'k', src: 'o.mp3', loop: false }); track('o').resolveReady(); await flush()
+    expect(track('o').calls).toEqual(['play'])
+    expect(audio.blocked.value).toBe(true)
+  })
+
+  it('armed, the first gesture primes the pool once and the listener goes', async () => {
+    audio.arm()
+    expect(h.gestures).toHaveLength(1)
+    h.gestures[0]!()
+    await flush()
+    expect(h.unlockCalls).toBe(1)
+    expect(h.gestures).toHaveLength(0)
+    expect(h.gestureInstalls).toBe(1)
+  })
+
+  it('arming twice installs one listener', () => {
+    audio.arm()
+    audio.arm()
+    expect(h.gestureInstalls).toBe(1)
+    expect(h.gestures).toHaveLength(1)
+  })
+
+  it('a gesture that primes nothing keeps the listener for the next one', async () => {
+    audio.arm()
+    h.primeWorks = false
+    h.gestures[0]!()
+    await flush()
+    expect(h.gestures).toHaveLength(1)
+    h.primeWorks = true
+    h.gestures[0]!()
+    await flush()
+    expect(h.unlockCalls).toBe(2)
+    expect(h.gestures).toHaveLength(0)
+  })
+
+  it('a refused resume keeps the listener even when the elements were primed', async () => {
+    audio.arm()
+    h.unlockResult = false
+    h.gestures[0]!()
+    await flush()
+    expect(h.gestures).toHaveLength(1)
+  })
+
+  it('arming after the pool was primed (the prompt\'s button) installs nothing', async () => {
+    await audio.unlock()
+    audio.arm()
+    expect(h.gestureInstalls).toBe(0)
+  })
+
+  it('arm, a gesture, then an overlay plays without a refusal', async () => {
+    audio.arm()
+    h.gestures[0]!()
+    await flush()
+    audio.setOverlay({ key: 'k', src: 'o.mp3', loop: false }); track('o').resolveReady(); await flush()
+    expect(track('o').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(audio.blocked.value).toBe(false)
+    expect(h.gestures).toHaveLength(0)
+  })
+
+  it('a gesture while armed never resumes a deliberate outside pause', async () => {
+    h.needsPriming = false
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').interrupt('paused')
+    audio.arm()
+    h.gestures[0]!()
+    await flush()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(audio.blocked.value).toBe(true)
+  })
+
+  it('the listener outlives the scope that first used the mixer', async () => {
+    const { effectScope } = await import('vue')
+    const scope = effectScope()
+    let late!: SceneAudio
+    scope.run(() => { late = createSceneAudio(h.deps) })
+    scope.stop()
+    h.needsPriming = false
+    late.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    expect(late.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(1)
   })
 })

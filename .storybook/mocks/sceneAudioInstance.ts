@@ -9,6 +9,7 @@ export type SceneAudioCall =
   | { method: 'setOverlay'; overlay: OverlayRequest | null }
   | { method: 'setVolume'; level: number }
   | { method: 'unlock' }
+  | { method: 'arm' }
   | { method: 'stop' }
 
 export const sceneAudioCalls: SceneAudioCall[] = []
@@ -45,6 +46,7 @@ const mock: SceneAudio = {
     sceneAudioCalls.push({ method: 'unlock' })
     blockedMock.value = false
   },
+  arm() { sceneAudioCalls.push({ method: 'arm' }) },
   stop() { sceneAudioCalls.push({ method: 'stop' }) },
 }
 

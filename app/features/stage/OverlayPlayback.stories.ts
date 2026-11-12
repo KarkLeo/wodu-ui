@@ -118,6 +118,34 @@ const stageWrites = () => pbRequests().filter(r => r.startsWith('stages.') && !r
 const storedSound = () => (storedRecords('stages')[0]?.data as { sound: unknown } | undefined)?.sound
 const settle = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
 
+const armCalls = () => sceneAudioCalls.filter(c => c.method === 'arm')
+
+/** Sound on at an open table: the audio service is armed, so the first tap primes it before any sound arrives. */
+export const SoundOnArmsTheAudio: Story = {
+  decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), asPlayer],
+  loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
+  play: async () => {
+    await waitFor(() => expect(armCalls().length).toBeGreaterThan(0))
+    await expect(overlayUrls()).toEqual([])
+  },
+}
+
+/** Sound off or not chosen yet: nothing is armed (the prompt's button primes an `unset` device); turning it on arms. */
+export const SoundOffOrUnsetDoesNotArm: Story = {
+  decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'unset' }), asPlayer],
+  loaders: [seed(null), atRoute(`/games/${PLAYER_GAME}`)],
+  play: async () => {
+    const prefs = useMediaPrefsStore()
+    await settle()
+    await expect(armCalls()).toEqual([])
+    prefs.sound = 'off'
+    await settle()
+    await expect(armCalls()).toEqual([])
+    prefs.sound = 'on'
+    await waitFor(() => expect(armCalls()).toHaveLength(1))
+  },
+}
+
 /** A sound that arrives while the table is open reaches the audio service under its key; a player writes nothing. */
 export const PlayerGetsALiveSound: Story = {
   decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), asPlayer],

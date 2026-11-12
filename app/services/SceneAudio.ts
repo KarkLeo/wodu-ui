@@ -1,4 +1,4 @@
-import { computed, ref, readonly, shallowReactive, watch, type Ref } from 'vue'
+import { computed, effectScope, ref, readonly, shallowReactive, watch, type Ref } from 'vue'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('audio')
@@ -33,6 +33,8 @@ export interface SceneAudioDeps {
   setMasterVolume(level: number): void
   /** Called inside a user gesture: primes the pooled elements, resumes the context, and resolves true when audio may play. Not bounded by a timer. */
   unlock(): Promise<boolean>
+  /** Every pooled element has played inside a gesture once, so each may play without one from now on. */
+  primed(): boolean
   /** Calls `callback` from inside every user gesture anywhere on the page until the returned remover is called. */
   addGestureListener(callback: () => void): () => void
 }
@@ -66,6 +68,11 @@ export interface SceneAudio {
   onOverlayEnded(listener: (key: string) => void): () => void
   /** After a gesture: starts a refused scene or overlay and resumes an interrupted one where it stopped. */
   unlock(): Promise<void>
+  /**
+   * Until the pool has been primed this page session, the next activating event anywhere primes it, so a later sound
+   * plays without a tap. Harmless to call again; it never resumes a deliberate outside pause.
+   */
+  arm(): void
   /** Fades everything out and releases every track. */
   stop(): void
 }
@@ -109,6 +116,8 @@ export interface AudioMixer {
   channel(): Channel
   setVolume(level: number): void
   unlock(): Promise<void>
+  /** See `SceneAudio.arm`. */
+  arm(): void
   stop(): void
 }
 
@@ -387,10 +396,11 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
 
 export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
   const channels = shallowReactive<Channel[]>([])
-  const blocked = computed(() => channels.some(c => c.blocked.value))
-  const tapHelps = computed(() => channels.some(c => c.tapHelps.value))
   const live = new Set<Track>()
   let removeGesture: (() => void) | null = null
+  const armed = ref(false)
+  // The pool played inside a gesture and the context runs: nothing is left for arming to do this page session.
+  const primed = ref(false)
 
   const book: TrackBook = {
     create(src, loop) {
@@ -403,21 +413,32 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
     },
   }
 
-  // Kept across gestures that did not help (a scroll's touchend may carry no activation); gone once nothing a tap fixes is left.
-  watch(tapHelps, wanted => {
-    if (wanted && !removeGesture) {
-      removeGesture = deps.addGestureListener(() => { void unlock(true) })
-    } else if (!wanted && removeGesture) {
-      removeGesture()
-      removeGesture = null
-    }
-  }, { flush: 'sync' })
+  // The app's one mixer is made on first use, perhaps inside a component: a detached scope keeps its listener alive
+  // when that component unmounts.
+  const { blocked } = effectScope(true).run(() => {
+    const tapHelps = computed(() => channels.some(c => c.tapHelps.value))
+    // Kept across gestures that did not help (a scroll's touchend may carry no activation); gone once nothing a tap
+    // fixes is left and arming has nothing left to prime.
+    const wanted = computed(() => tapHelps.value || (armed.value && !primed.value))
+    watch(wanted, want => {
+      if (want && !removeGesture) {
+        removeGesture = deps.addGestureListener(() => { void unlock(true) })
+      } else if (!want && removeGesture) {
+        removeGesture()
+        removeGesture = null
+      }
+    }, { flush: 'sync' })
+    return { blocked: computed(() => channels.some(c => c.blocked.value)) }
+  })!
 
   // The resume may stay pending (WebKit outside activation); the channels go on whenever it settles, the caller does not wait for it.
   // A tap anywhere unlocks for whichever channel asked for it, but never undoes a deliberate pause on another one.
   function unlock(byTap: boolean): Promise<void> {
     const attempt = deps.unlock().then(
-      allowed => { if (allowed) channels.forEach(c => c.resume(byTap)) },
+      allowed => {
+        if (allowed && deps.primed()) primed.value = true
+        if (allowed) channels.forEach(c => c.resume(byTap))
+      },
       e => { log.warn('unlock failed', e) },
     )
     return Promise.race([attempt, deps.wait(UNLOCK_WAIT_SECONDS)])
@@ -434,6 +455,9 @@ export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
       deps.setMasterVolume(Math.min(1, Math.max(0, level)))
     },
     unlock: () => unlock(false),
+    arm() {
+      armed.value = true
+    },
     stop() {
       channels.forEach(c => c.stop())
     },
@@ -479,6 +503,7 @@ export function createSceneAudio(deps: SceneAudioDeps): SceneAudio {
       }
     },
     unlock: mixer.unlock,
+    arm: mixer.arm,
     stop() {
       // Both channels stop: the scene is not to come back in the meantime (the overlay stops first).
       holding = false

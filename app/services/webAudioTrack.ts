@@ -1,6 +1,12 @@
 import type { Interruption, SceneAudioDeps, Track } from './SceneAudio'
 
+/** A looping track counts as ready after this long without `canplaythrough` (iPhones may never fire it before play). */
 export const READY_FALLBACK_SECONDS = 6
+/**
+ * A one-shot counts as ready on `canplay`, or after this long without one: a cue is timed to the master's click, and
+ * play() resolves only once playback really starts, so waiting for the whole file to be buffered only makes it late.
+ */
+export const ONE_SHOT_READY_FALLBACK_SECONDS = 1.5
 export const RESUME_GRACE_MS = 250
 /** Elements made once and reused: WebKit lets an element play without a gesture only after one played inside a gesture. */
 export const POOL_SIZE = 6
@@ -158,7 +164,8 @@ export function webAudioDeps(env: WebAudioEnv = browserEnv()): SceneAudioDeps {
   // Must run synchronously inside the gesture: WebKit blesses an element on a play() called there. Whether it did is
   // known only from the outcome: a refusal leaves the slot unprimed for the next unlock, and the AbortError from the
   // pause right after an allowed play counts as primed.
-  function prime(slot: Slot) {
+  // Returns the play's outcome, so an unlock can tell when it has primed what it could.
+  function prime(slot: Slot): Promise<void> | undefined {
     if (slot.primed) return
     const { element } = slot
     // Playing, or a play() of the service's in flight, which a pause here would abort.
@@ -171,8 +178,9 @@ export function webAudioDeps(env: WebAudioEnv = browserEnv()): SceneAudioDeps {
       element.loop = false
       element.src = SILENT_SRC
     }
+    let outcome: Promise<void> | undefined
     try {
-      Promise.resolve(element.play()).then(
+      outcome = Promise.resolve(element.play()).then(
         () => { slot.primed = true },
         e => { if (!isRefusal(e)) slot.primed = true },
       )
@@ -183,6 +191,7 @@ export function webAudioDeps(env: WebAudioEnv = browserEnv()): SceneAudioDeps {
       element.removeAttribute('src')
       element.load()
     }
+    return outcome
   }
 
   function createTrack(src: string, loop: boolean): Track {
@@ -226,10 +235,11 @@ export function webAudioDeps(env: WebAudioEnv = browserEnv()): SceneAudioDeps {
     const ready = new Promise<void>((resolve, reject) => { settle = { resolve, reject } })
     ready.catch(() => {})
     // iPhones ignore preload and may never fire canplaythrough before play().
-    const readyTimer = env.setTimeout(() => settle.resolve(), READY_FALLBACK_SECONDS * 1000)
+    const fallback = loop ? READY_FALLBACK_SECONDS : ONE_SHOT_READY_FALLBACK_SECONDS
+    const readyTimer = env.setTimeout(() => settle.resolve(), fallback * 1000)
 
     function begin() {
-      on('canplaythrough', () => {
+      on(loop ? 'canplaythrough' : 'canplay', () => {
         env.clearTimeout(readyTimer)
         settle.resolve()
       })
@@ -332,16 +342,21 @@ export function webAudioDeps(env: WebAudioEnv = browserEnv()): SceneAudioDeps {
     },
     // Every call primes what is still unprimed and asks for a resume inside its own gesture, even while an earlier
     // resume is still pending: that one may never settle outside activation.
+    // It settles once the priming plays have had their outcome too, so `primed()` is current when it does.
     async unlock() {
       const { context } = graph()
       while (slots.length < POOL_SIZE) makeSlot()
-      slots.forEach(prime)
-      if (isRunning(context)) return true
-      try {
-        await context.resume()
-      } catch { /* refused: the state says so */ }
+      const outcomes = slots.map(prime)
+      let resumed: Promise<unknown> | undefined
+      if (!isRunning(context)) {
+        try {
+          resumed = Promise.resolve(context.resume()).catch(() => { /* refused: the state says so */ })
+        } catch { /* resume() threw synchronously: the state says so */ }
+      }
+      await Promise.all([...outcomes, resumed])
       return isRunning(context)
     },
+    primed: () => slots.length === POOL_SIZE && slots.every(s => s.primed),
     // Not one-shot: an event that turns out to carry no activation (the touchend of a scroll) must not use the listener up.
     addGestureListener(callback) {
       const types = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']
