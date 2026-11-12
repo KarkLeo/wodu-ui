@@ -899,7 +899,7 @@ export const messages: Messages = {
       mute: 'Звук',
       volume: 'Гучність',
       background: 'Тло сцени',
-      promptUnset: 'Майстер увімкнув звук',
+      promptUnset: 'За столом грає звук',
       promptBlocked: 'Браузер призупинив звук',
       turnOn: 'Увімкнути звук',
       noSound: 'Без звуку',

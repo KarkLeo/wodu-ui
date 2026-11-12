@@ -2,11 +2,13 @@ import { defineComponent } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import GameLayout from '@/components/layout/GameLayout.vue'
+import DiceDrawer from '@/components/DiceDrawer.vue'
+import PartyView from '@/features/in-game/PartyView.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import SoundPrompt from './SoundPrompt.vue'
 import { useStagePlayback } from '@/composables/useStagePlayback'
 import { emptyStage } from '@/domain/stage'
-import { crookhollow, CROOKHOLLOW_META, PARTY } from '@/stories/fixtures'
+import { brann, wren, crookhollow, CROOKHOLLOW_META, PARTY } from '@/stories/fixtures'
 import {
   controlDecode, sceneCalls, sceneSoundUrl, sceneUrls, showScene, withLiveScene, withMediaPrefs,
 } from '@/stories/playback'
@@ -81,7 +83,7 @@ export const OffMeansNoRequests: Story = {
     await expect(filesInTheDom(canvasElement)).toEqual([])
     await expect(filesRequested()).toBe(requestsBefore)
     // Off is not unheard: the prompt does not come back for a device that said no.
-    await expect(within(canvasElement).queryByText('The master turned sound on')).toBeNull()
+    await expect(within(canvasElement).queryByText('The table has sound')).toBeNull()
   },
 }
 
@@ -160,12 +162,12 @@ export const PromptThenPlay: Story = {
   decorators: [withLiveScene(TAVERN), withMediaPrefs({ background: false })],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText('The master turned sound on')).toBeVisible()
+    await expect(await canvas.findByText('The table has sound')).toBeVisible()
     await expect(sceneUrls()).toEqual([])
     await userEvent.click(canvas.getByRole('button', { name: 'Turn sound on' }))
     await waitFor(() => expect(sceneUrls()).toEqual([sceneSoundUrl(TAVERN)]))
     await expect(sceneAudioCalls.filter(c => c.method === 'unlock')).toHaveLength(1)
-    await waitFor(() => expect(canvas.queryByText('The master turned sound on')).toBeNull())
+    await waitFor(() => expect(canvas.queryByText('The table has sound')).toBeNull())
     await expect(emptyStage(crookhollow.id).sound).toBeNull()
   },
 }
@@ -178,7 +180,7 @@ export const AsksOverTheScene: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(await canvas.findByText('The master turned sound on')).toBeVisible()
+    await expect(await canvas.findByText('The table has sound')).toBeVisible()
     await expect(sceneUrls()).toEqual([])
     await waitFor(
       () => expect(canvasElement.querySelector<HTMLElement>('[data-layer="base"]')!.style.backgroundImage).toContain('/api/files/scenes/'),
@@ -195,4 +197,70 @@ export const BlockedOverTheScene: Story = {
     await expect(await canvas.findByText('Sound is paused by the browser')).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'No sound' })).toBeNull()
   },
+}
+
+// The prompt over a table with sheets: the same wiring as the Table above, with the party and the dice bar.
+const SheetsTable = defineComponent({
+  components: { GameLayout, PlayersPanel, SoundPrompt, PartyView, DiceDrawer },
+  setup() {
+    const { backdropUrl } = useStagePlayback()
+    return { backdropUrl }
+  },
+  template: `
+    <GameLayout :backdrop-url="backdropUrl">
+      <PartyView />
+      <SoundPrompt />
+      <template #left><PlayersPanel /></template>
+      <template #right><DiceDrawer /></template>
+    </GameLayout>`,
+})
+
+const rect = (el: Element) => el.getBoundingClientRect()
+const overlaps = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+
+async function promptKeepsClear(canvasElement: HTMLElement, size: [number, number]) {
+  const setViewport = (globalThis as { __setStoryViewport?: (width: number, height: number) => Promise<void> }).__setStoryViewport
+  // Only the test runner can resize the browser; in Storybook itself the viewport toolbar does that.
+  if (!setViewport) return
+  await setViewport(...size)
+  try {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText('The table has sound')).toBeVisible()
+    const card = canvasElement.querySelector('.sp-card')!
+    await waitFor(() => expect(getComputedStyle(canvasElement.querySelector('.gl-center')!).paddingBottom).not.toBe('0px'))
+    const prompt = rect(card)
+    for (const selector of ['.drawer-input-bar', '.party-dots']) {
+      for (const el of canvasElement.querySelectorAll(selector)) {
+        if (rect(el).height > 0) await expect(overlaps(prompt, rect(el))).toBe(false)
+      }
+    }
+    // The sheets end above the prompt, so the last row of a sheet is reached by scrolling its own column.
+    const columns = canvasElement.querySelectorAll('.sheet-column')
+    await expect(columns.length).toBeGreaterThan(0)
+    for (const column of columns) await expect(rect(column).bottom).toBeLessThanOrEqual(prompt.top + 1)
+    const body = canvasElement.querySelector<HTMLElement>('.sheet-column-body')!
+    body.scrollTop = body.scrollHeight
+    await expect(body.scrollTop + body.clientHeight).toBeGreaterThanOrEqual(body.scrollHeight - 1)
+    // Answered: the room is given back.
+    await userEvent.click(canvas.getByRole('button', { name: 'No sound' }))
+    await waitFor(() => expect(getComputedStyle(canvasElement.querySelector('.gl-center')!).paddingBottom).toBe('0px'))
+  } finally {
+    await setViewport(1280, 720)
+  }
+}
+
+/** A 600 px high desktop window: the prompt sits between the panels, clear of the dice bar, and the sheets end above it. */
+export const PromptKeepsClearOnAShortDesktop: Story = {
+  render: () => ({ ...SheetsTable }),
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  decorators: [withLiveScene(TAVERN), withMediaPrefs({ background: false })],
+  play: ({ canvasElement }) => promptKeepsClear(canvasElement, [1280, 600]),
+}
+
+/** A 375 x 667 phone: the prompt stays clear of the tray's page dots, and the sheets end above it. */
+export const PromptKeepsClearOnASmallPhone: Story = {
+  render: () => ({ ...SheetsTable }),
+  loaders: [atRoute(`/games/${crookhollow.id}/party/${brann.id},${wren.id}`)],
+  decorators: [withLiveScene(TAVERN), withMediaPrefs({ background: false })],
+  play: ({ canvasElement }) => promptKeepsClear(canvasElement, [375, 667]),
 }

@@ -14,12 +14,23 @@ const log = createLogger('scene-backdrop')
 const FADE_MS = 2000
 
 // `base` is what is on screen; `incoming` is decoded and fading in over it. At most these two exist.
+// A fade is never interrupted: while one runs, a new request only records the newest target. When the fade
+// ends, the backdrop fades on from what is then shown to the newest target, so every picture a viewer sees
+// arrives by a full fade and nothing is ever cut. Superseded targets are never shown, and their loads stop.
 const base = ref(bgUrl)
 const incoming = ref<string | null>(null)
 const fading = ref(false)
-const incomingEl = ref<HTMLElement | null>(null)
+// A new element per fade, so the one that just finished is never reused (it would run its transition backwards).
+const fadeId = ref(0)
 
+let target: string = bgUrl
+// The target whose picture has decoded and is ready to fade in.
+let decodedTarget: string | null = null
+// The target being decoded right now, if any.
+let preparing: string | null = null
 let request = 0
+// The picture being decoded: its download is stopped when a newer request, or the unmount, replaces it.
+let pending: HTMLImageElement | null = null
 let promote: ReturnType<typeof setTimeout> | undefined
 let failed: string | null = null
 
@@ -27,61 +38,92 @@ function reduceMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-function settle(keepIncoming = true) {
-  clearTimeout(promote)
-  if (keepIncoming && incoming.value !== null) base.value = incoming.value
-  incoming.value = null
-  fading.value = false
+function cancelPending() {
+  if (!pending) return
+  pending.src = ''
+  pending = null
 }
 
-// Mid-fade, the layer that shows more is what the eye sees: keeping it means the screen jumps by at most half a fade.
-function incomingShowsMore(): boolean {
-  const el = incomingEl.value
-  return fading.value && el !== null && Number(getComputedStyle(el).opacity) >= 0.5
-}
-
-async function decoded(src: string): Promise<boolean> {
+async function decoded(src: string, token: number): Promise<boolean> {
   const img = new Image()
+  pending = img
   img.src = src
   try {
     await img.decode()
+    if (pending === img) pending = null
     return true
   } catch (err) {
-    // One line per picture, however often the same address is asked for again.
-    if (failed !== src) log.warn('picture could not be decoded, keeping the current one', { err })
-    failed = src
+    if (pending === img) pending = null
+    // A request that was replaced is not a failure. One line per picture, however often the same address is asked for again.
+    if (token === request) {
+      if (failed !== src) log.warn('picture could not be decoded, keeping the current one', { err })
+      failed = src
+    }
     return false
   }
 }
 
-watch(() => props.url ?? bgUrl, async (next) => {
-  const mine = ++request
-  if (next === base.value && incoming.value === null) return
-  // Back to what is already showing under a fade: drop the fade.
-  if (next === base.value) {
-    clearTimeout(promote)
-    incoming.value = null
-    fading.value = false
-    return
-  }
-  if (!(await decoded(next)) || mine !== request) return
-  // A fade still running is cut short, keeping the layer that shows more; the new picture fades in over it.
-  settle(incomingShowsMore())
+function startFade(src: string) {
   if (reduceMotion()) {
-    base.value = next
+    base.value = src
     return
   }
-  incoming.value = next
+  fadeId.value++
+  incoming.value = src
   // The layer needs one frame at opacity 0 before the transition has anything to run from.
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (mine !== request) return
+    if (incoming.value !== src) return
     fading.value = true
     promote = setTimeout(settle, FADE_MS + 50)
   }))
+}
+
+// Decodes the newest target; once it is ready and no fade is running, the fade to it starts.
+async function prepare() {
+  const wanted = target
+  const token = ++request
+  preparing = wanted
+  const ok = await decoded(wanted, token)
+  if (token !== request) return
+  preparing = null
+  if (!ok) return
+  decodedTarget = wanted
+  advance()
+}
+
+function advance() {
+  if (incoming.value !== null || target === base.value || decodedTarget !== target) return
+  startFade(target)
+}
+
+function settle() {
+  clearTimeout(promote)
+  if (incoming.value !== null) base.value = incoming.value
+  incoming.value = null
+  fading.value = false
+  // A newer target arrived during the fade: continue from what is shown now.
+  if (target === base.value) return
+  if (decodedTarget === target) advance()
+  else if (preparing !== target) void prepare()
+}
+
+watch(() => props.url ?? bgUrl, (next) => {
+  if (next === target && (decodedTarget === next || next === base.value)) return
+  target = next
+  decodedTarget = null
+  preparing = null
+  cancelPending()
+  request++
+  if (next === base.value && incoming.value === null) return
+  // Under a fade, the newest target is decoded in the meantime unless it is what the fade is heading to
+  // (or back to what already shows): the end of the fade decides what comes next.
+  if (next === incoming.value || next === base.value) return
+  void prepare()
 }, { immediate: true })
 
 onBeforeUnmount(() => {
   request++
+  cancelPending()
   clearTimeout(promote)
 })
 </script>
@@ -91,7 +133,7 @@ onBeforeUnmount(() => {
     <div class="sb-layer" data-layer="base" :style="{ backgroundImage: `url(${base})` }" />
     <div
       v-if="incoming !== null"
-      ref="incomingEl"
+      :key="fadeId"
       :class="['sb-layer', 'sb-incoming', { 'is-visible': fading }]"
       data-layer="incoming"
       :style="{ backgroundImage: `url(${incoming})` }"

@@ -61,7 +61,9 @@ export function sceneSoundUrl(scene: Scene): string {
 export function controlDecode(auto = false) {
   const original = HTMLImageElement.prototype.decode
   const pending = new Map<string, { resolve: () => void; reject: () => void }[]>()
+  const images: HTMLImageElement[] = []
   HTMLImageElement.prototype.decode = function (this: HTMLImageElement) {
+    images.push(this)
     if (auto) return Promise.resolve()
     const src = this.src
     return new Promise<void>((resolve, reject) => {
@@ -73,6 +75,8 @@ export function controlDecode(auto = false) {
   return {
     release(src: string) { pending.get(src)?.forEach(p => p.resolve()); pending.delete(src) },
     fail(src: string) { pending.get(src)?.forEach(p => p.reject()); pending.delete(src) },
+    /** Every picture asked to decode, in order, with whatever `src` it holds now (cleared when its load was cancelled). */
+    images,
     waiting: (src: string) => (pending.get(src)?.length ?? 0) > 0,
     restore() { HTMLImageElement.prototype.decode = original },
   }

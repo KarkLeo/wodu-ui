@@ -330,6 +330,8 @@ const { game } = useTable()
   overflow-x: auto;
   background: transparent;
   z-index: 1;
+  /* Room a bottom prompt (SoundPrompt) asks for while it shows. */
+  padding-bottom: var(--gl-bottom-inset, 0px);
 }
 
 

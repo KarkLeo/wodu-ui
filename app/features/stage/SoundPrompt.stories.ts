@@ -32,20 +32,20 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const asked = (canvas: ReturnType<typeof within>) => canvas.queryByText('The master turned sound on')
+const asked = (canvas: ReturnType<typeof within>) => canvas.queryByText('The table has sound')
 
 /** The master turned on a scene with sound and this device has not chosen: both answers are offered, and each is remembered. */
 export const AsksOnce: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const prefs = useMediaPrefsStore()
-    await expect(await canvas.findByText('The master turned sound on')).toBeVisible()
+    await expect(await canvas.findByText('The table has sound')).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'No sound' }))
     await expect(prefs.sound).toBe('off')
     await waitFor(() => expect(asked(canvas)).toBeNull())
 
     prefs.sound = 'unset'
-    await expect(await canvas.findByText('The master turned sound on')).toBeVisible()
+    await expect(await canvas.findByText('The table has sound')).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Turn sound on' }))
     await expect(prefs.sound).toBe('on')
     await expect(sceneAudioCalls.filter(c => c.method === 'unlock')).toHaveLength(1)
@@ -102,6 +102,6 @@ export const IsAPoliteStatus: Story = {
   play: async ({ canvasElement }) => {
     const region = await within(canvasElement).findByRole('status')
     await expect(region).toHaveAttribute('aria-live', 'polite')
-    await expect(within(region).getByText('The master turned sound on')).toBeVisible()
+    await expect(within(region).getByText('The table has sound')).toBeVisible()
   },
 }

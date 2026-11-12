@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import AlertBanner from '@/components/ui/AlertBanner.vue'
 import Button from '@/components/ui/Button.vue'
 import { useSoundSwitch, useStageTarget } from '@/composables/useStagePlayback'
@@ -15,6 +15,31 @@ const { blocked, turnSoundOn, turnSoundOff } = useSoundSwitch()
 const asking = computed(() => wantsSound.value && prefs.sound === 'unset')
 const paused = computed(() => wantsSound.value && prefs.sound === 'on' && blocked.value)
 
+// While it shows, the page above it gives up that much room (GameLayout pads its scroll area by this), so a
+// sheet's last row and the tray's page dots stay clear of the prompt and reachable.
+const INSET = '--gl-bottom-inset'
+const card = ref<HTMLElement | null>(null)
+let observer: ResizeObserver | undefined
+
+function release() {
+  observer?.disconnect()
+  observer = undefined
+  document.documentElement.style.removeProperty(INSET)
+}
+
+watch(card, (el) => {
+  release()
+  if (!el) return
+  const apply = () => document.documentElement.style.setProperty(
+    INSET,
+    `calc(${el.offsetHeight}px + var(--s-4) * 2 + env(safe-area-inset-bottom, 0px))`,
+  )
+  observer = new ResizeObserver(apply)
+  observer.observe(el)
+  apply()
+}, { flush: 'post' })
+onBeforeUnmount(release)
+
 // The tap is the browser's gesture, so turning on is called straight from the click.
 function turnOn() {
   void turnSoundOn()
@@ -23,7 +48,7 @@ function turnOn() {
 
 <template>
   <div class="sound-prompt" role="status" aria-live="polite">
-    <div v-if="asking || paused" class="sp-card">
+    <div v-if="asking || paused" ref="card" class="sp-card">
       <AlertBanner tone="accent" stacked :announce="false">
         {{ asking ? t('stage.sound.promptUnset') : t('stage.sound.promptBlocked') }}
         <template #action>

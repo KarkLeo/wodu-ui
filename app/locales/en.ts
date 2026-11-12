@@ -897,7 +897,7 @@ export const messages = {
       mute: 'Sound',
       volume: 'Volume',
       background: 'Scene background',
-      promptUnset: 'The master turned sound on',
+      promptUnset: 'The table has sound',
       promptBlocked: 'Sound is paused by the browser',
       turnOn: 'Turn sound on',
       noSound: 'No sound',
