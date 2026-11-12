@@ -7,8 +7,14 @@ export function audioDuration(file: File): Promise<number | null> {
     let audio: HTMLAudioElement
     try {
       url = URL.createObjectURL(file)
+    } catch {
+      resolve(null)
+      return
+    }
+    try {
       audio = new Audio()
     } catch {
+      URL.revokeObjectURL(url)
       resolve(null)
       return
     }

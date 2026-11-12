@@ -249,3 +249,66 @@ describe('realtime echo', () => {
     expect(store.byGame.other).toBeUndefined()
   })
 })
+
+describe('quiet publishes', () => {
+  it('a quiet publish that fails alone shows no toast', async () => {
+    updateImpl = async () => { throw httpError(500) }
+    const { publishStage } = await load()
+    await expect(publishStage(stage('s1'), { quiet: true })).rejects.toMatchObject({ status: 500 })
+    expect(failures).toHaveLength(0)
+  })
+
+  it('a user publish with a quiet clear coalesced into the same write still shows the toast', async () => {
+    const gate = deferred()
+    let n = 0
+    updateImpl = () => (n++ === 0 ? gate.promise : Promise.reject(httpError(500)))
+    const { publishStage } = await load()
+    const first = publishStage(stage('s1')).catch(() => {})
+    const second = publishStage(stage(null), { quiet: true }).catch(() => {})
+    gate.reject(httpError(500))
+    await Promise.all([first, second])
+    expect(failures).toHaveLength(1)
+  })
+
+  it('a quiet clear followed by a user publish shows the toast', async () => {
+    const gate = deferred()
+    let n = 0
+    updateImpl = () => (n++ === 0 ? gate.promise : Promise.reject(httpError(500)))
+    const { publishStage } = await load()
+    const first = publishStage(stage(null), { quiet: true }).catch(() => {})
+    const second = publishStage(stage('s1')).catch(() => {})
+    gate.reject(httpError(500))
+    await Promise.all([first, second])
+    expect(failures).toHaveLength(1)
+  })
+
+  it('a later publish after a quiet one has settled is judged by itself', async () => {
+    const { publishStage } = await load()
+    await publishStage(stage('s1'), { quiet: true })
+    updateImpl = async () => { throw httpError(500) }
+    await expect(publishStage(stage('s2'))).rejects.toBeDefined()
+    expect(failures).toHaveLength(1)
+  })
+})
+
+describe('where a stage value came from', () => {
+  const row = (data: Stage) => ({ id: data.id, game: data.id, data })
+  it('a snapshot and a joined game load; a realtime event and a publish are live', async () => {
+    const { applyStages, receiveStage, publishStage, store } = await load()
+    applyStages([row(stage('s1'))])
+    expect(store.arrivalOf(GAME)?.source).toBe('load')
+    receiveStage('update', row(stage('s2')))
+    expect(store.arrivalOf(GAME)?.source).toBe('live')
+    applyStages([row(stage('s2'))])
+    expect(store.arrivalOf(GAME)?.source).toBe('load')
+    await publishStage(stage('s3'))
+    expect(store.arrivalOf(GAME)?.source).toBe('live')
+  })
+
+  it('receiveStage can be told its value is a load (a game joined later)', async () => {
+    const { receiveStage, store } = await load()
+    receiveStage('update', row(stage('s1')), 'load')
+    expect(store.arrivalOf(GAME)?.source).toBe('load')
+  })
+})
+

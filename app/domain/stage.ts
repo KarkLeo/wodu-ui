@@ -160,10 +160,22 @@ export function shouldPlayOverlay(sound: StageSound, receivedLive: boolean, now:
   return now.getTime() - Date.parse(sound.startedAt) <= STALE_ONE_SHOT_SECONDS * 1000
 }
 
-/** Milliseconds until the master's client clears a one-shot overlay from the stage; null for a loop. */
-export function oneShotClearDelay(sound: StageSound, duration: number | null, now: Date): number | null {
+export const ONE_SHOT_CLEAR_GRACE_SECONDS = 3
+export const ONE_SHOT_UNKNOWN_CLEAR_SECONDS = 3600
+
+/**
+ * Milliseconds until the master's client clears a one-shot overlay from the stage by the clock; null for a loop.
+ * Clearing is bookkeeping and must never cut a sound the table still hears. While this device plays it the real
+ * clear comes from the end of the track, so this is only a backstop (duration plus the larger of 10 s and half
+ * of it); when this device does not play it, duration plus a grace. An unknown duration waits an hour, never the
+ * stale window, which only decides whether a device plays a found one-shot. 0 when overdue.
+ */
+export function oneShotClearDelay(sound: StageSound, duration: number | null, now: Date, playingHere = false): number | null {
   if (sound.loop) return null
-  const seconds = duration === null ? STALE_ONE_SHOT_SECONDS : duration
+  let seconds: number
+  if (duration === null) seconds = ONE_SHOT_UNKNOWN_CLEAR_SECONDS
+  else if (playingHere) seconds = duration + Math.max(10, duration / 2)
+  else seconds = duration + ONE_SHOT_CLEAR_GRACE_SECONDS
   const delay = Date.parse(sound.startedAt) + seconds * 1000 - now.getTime()
   return Number.isNaN(delay) ? 0 : Math.max(0, delay)
 }
@@ -197,29 +209,42 @@ export function fileUrl(base: string, ref: FileRef, thumb?: string): string {
   return thumb ? `${url}?thumb=${encodeURIComponent(thumb)}` : url
 }
 
-/** How a device came by an overlay, decided once, when it first saw the key, and kept while that key stays. */
-export interface OverlayArrival {
+/** What this device decided about playing the stage's overlay: once per key, then kept. */
+export interface OverlayDecision {
   key: string
-  /** False when the overlay was already in the stage as this table's stage was loaded. */
-  receivedLive: boolean
-  /** The moment of the decision: staleness is judged against it, never against a later clock. */
-  at: Date
+  /** `null` until a moment at which this device could play it (sound on). */
+  play: boolean | null
+}
+
+/** How the stage value holding the overlay came to this device, and when (this device's clock). */
+export interface OverlayArrival {
+  /** A realtime change or my own publish; false for a value applied by a load or a reload. */
+  live: boolean
+  firstSeen: Date
 }
 
 /**
- * The arrival to hold after the stage's overlay key became `key` (null: no overlay). A key seen before keeps its
- * decision, so a one-shot is neither stopped mid-play nor started late by the clock moving on; a new key is "found"
- * while the stage is not loaded yet (or was only just loaded) and live otherwise.
+ * The decision to hold after the stage's overlay (or none) changed. Made once per key, at the first moment sound
+ * is on, and never revised, so the clock moving on can neither stop a one-shot mid-play nor start a stale one.
+ * A loop always plays. A live one-shot plays while it is at most `STALE_ONE_SHOT_SECONDS` since this device first
+ * saw it (its own clock, whatever the master's says); a found one follows the `startedAt` rule.
  */
-export function nextOverlayArrival(
-  previous: OverlayArrival | null,
-  key: string | null,
-  loaded: boolean,
+export function nextOverlayDecision(
+  previous: OverlayDecision | null,
+  sound: StageSound | null,
+  arrival: OverlayArrival,
+  soundOn: boolean,
   now: Date,
-): OverlayArrival | null {
-  if (key === null) return null
-  if (previous?.key === key) return previous
-  return { key, receivedLive: loaded, at: now }
+): OverlayDecision | null {
+  if (!sound) return null
+  const key = overlayKey(sound)
+  if (previous?.key === key && previous.play !== null) return previous
+  if (!soundOn) return previous?.key === key ? previous : { key, play: null }
+  if (sound.loop) return { key, play: true }
+  const play = arrival.live
+    ? now.getTime() - arrival.firstSeen.getTime() <= STALE_ONE_SHOT_SECONDS * 1000
+    : shouldPlayOverlay(sound, false, now)
+  return { key, play }
 }
 
 export interface PlaybackPrefs {

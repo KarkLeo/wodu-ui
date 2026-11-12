@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
   checkUpload, neutralFileName, fileUrl, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
-  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, nextOverlayArrival, formatDuration, overlayKey,
-  oneShotClearDelay, SOUND_NAME_MAX, STALE_ONE_SHOT_SECONDS,
+  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, nextOverlayDecision, formatDuration, overlayKey,
+  oneShotClearDelay, SOUND_NAME_MAX, STALE_ONE_SHOT_SECONDS, ONE_SHOT_CLEAR_GRACE_SECONDS, ONE_SHOT_UNKNOWN_CLEAR_SECONDS,
 } from './stage'
 import type { Scene, StageImage, StageSound } from '@/types/stage'
 
@@ -299,26 +299,39 @@ describe('shouldPlayOverlay', () => {
 describe('oneShotClearDelay', () => {
   const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
   const at = (s: string) => new Date(s)
-  it('is null for a loop', () => {
-    expect(oneShotClearDelay(playing, 30, at('2026-11-12T10:00:00Z'))).toBeNull()
+  it('names its constants', () => {
+    expect(ONE_SHOT_CLEAR_GRACE_SECONDS).toBe(3)
+    expect(ONE_SHOT_UNKNOWN_CLEAR_SECONDS).toBe(3600)
   })
-  it('counts down the known duration and never goes below zero', () => {
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'))).toBe(20000)
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:01:00Z'))).toBe(0)
+  it('is null for a loop, whoever plays it', () => {
+    expect(oneShotClearDelay(playing, 30, at('2026-11-12T10:00:00Z'), false)).toBeNull()
+    expect(oneShotClearDelay(playing, 30, at('2026-11-12T10:00:00Z'), true)).toBeNull()
   })
-  it('is 0 for a duration of 0', () => {
-    expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'))).toBe(0)
+  it('without playing here counts duration plus the grace, never below zero', () => {
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'), false)).toBe(23000)
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:01:00Z'), false)).toBe(0)
+    expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'), false)).toBe(3000)
+  })
+  it('while playing here is only a backstop: duration plus the larger of 10 s and half of it', () => {
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'), true)).toBe(35000)
+    expect(oneShotClearDelay(oneShot, 100, at('2026-11-12T10:00:00Z'), true)).toBe(150000)
+    expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'), true)).toBe(10000)
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:05:00Z'), true)).toBe(0)
+  })
+  it('clears an unknown duration only after an hour, playing here or not', () => {
+    for (const playingHere of [false, true]) {
+      expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:09Z'), playingHere)).toBe(3591000)
+      expect(oneShotClearDelay(oneShot, null, at('2026-11-12T11:00:01Z'), playingHere)).toBe(0)
+    }
   })
   it('is 0, not NaN, for a startedAt that does not parse', () => {
-    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, 30, at('2026-11-12T10:00:00Z'))).toBe(0)
-    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, null, at('2026-11-12T10:00:00Z'))).toBe(0)
+    for (const duration of [30, null]) {
+      expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, duration, at('2026-11-12T10:00:00Z'), false)).toBe(0)
+      expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, duration, at('2026-11-12T10:00:00Z'), true)).toBe(0)
+    }
   })
   it('counts the whole duration for a startedAt in the future', () => {
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T09:59:50Z'))).toBe(40000)
-  })
-  it('falls back to the stale window for an unknown duration', () => {
-    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:02Z'))).toBe(3000)
-    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:09Z'))).toBe(0)
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T09:59:50Z'), false)).toBe(43000)
   })
 })
 
@@ -367,29 +380,51 @@ describe('overlayKey', () => {
   })
 })
 
-describe('nextOverlayArrival', () => {
-  const t0 = new Date('2026-11-12T10:00:00.000Z')
-  const t1 = new Date('2026-11-12T10:01:00.000Z')
+describe('nextOverlayDecision', () => {
+  const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
+  const loop = { ...playing, loop: true, startedAt: '2026-11-12T10:00:00.000Z' }
+  const at = (s: string) => new Date(s)
+  const seen = at('2026-11-12T10:00:00.000Z')
+  const live = { live: true, firstSeen: seen }
+  const found = { live: false, firstSeen: seen }
 
-  it('forgets the decision when there is no overlay', () => {
-    expect(nextOverlayArrival({ key: 'a:1', receivedLive: true, at: t0 }, null, true, t1)).toBeNull()
-    expect(nextOverlayArrival(null, null, false, t0)).toBeNull()
+  it('forgets everything when there is no overlay', () => {
+    const decided = nextOverlayDecision(null, oneShot, live, true, seen)
+    expect(nextOverlayDecision(decided, null, live, true, seen)).toBeNull()
   })
-
-  it('judges a new key once: found while the stage is not loaded, live afterwards', () => {
-    expect(nextOverlayArrival(null, 'a:1', false, t0)).toEqual({ key: 'a:1', receivedLive: false, at: t0 })
-    expect(nextOverlayArrival(null, 'a:1', true, t0)).toEqual({ key: 'a:1', receivedLive: true, at: t0 })
+  it('live and sound on at arrival: plays', () => {
+    expect(nextOverlayDecision(null, oneShot, live, true, seen)).toMatchObject({ key: overlayKey(oneShot), play: true })
   })
-
-  it('keeps the decision, and its moment, for the same key however the load state or the clock changed', () => {
-    const found = nextOverlayArrival(null, 'a:1', false, t0)
-    expect(nextOverlayArrival(found, 'a:1', true, t1)).toBe(found)
-    const live = nextOverlayArrival(null, 'a:1', true, t0)
-    expect(nextOverlayArrival(live, 'a:1', false, t1)).toBe(live)
+  it('live, sound off at arrival: undecided, then plays when turned on 2 s later', () => {
+    const waiting = nextOverlayDecision(null, oneShot, live, false, seen)
+    expect(waiting).toMatchObject({ play: null })
+    expect(nextOverlayDecision(waiting, oneShot, live, false, at('2026-11-12T10:00:30.000Z'))).toBe(waiting)
+    expect(nextOverlayDecision(waiting, oneShot, live, true, at('2026-11-12T10:00:02.000Z'))).toMatchObject({ play: true })
   })
-
+  it('live one-shot with sound turned on 60 s after it was first seen: not played; a loop is', () => {
+    const waiting = nextOverlayDecision(null, oneShot, live, false, seen)
+    expect(nextOverlayDecision(waiting, oneShot, live, true, at('2026-11-12T10:01:00.000Z'))).toMatchObject({ play: false })
+    const loopWaiting = nextOverlayDecision(null, loop, live, false, seen)
+    expect(nextOverlayDecision(loopWaiting, loop, live, true, at('2026-11-12T10:01:00.000Z'))).toMatchObject({ play: true })
+  })
+  it('the window is measured from the first-seen moment on this device, not from startedAt', () => {
+    const late = { live: true, firstSeen: at('2026-11-12T10:10:00.000Z') }
+    expect(nextOverlayDecision(null, oneShot, late, true, at('2026-11-12T10:10:02.000Z'))).toMatchObject({ play: true })
+  })
+  it('found on load follows the startedAt rule at the moment it can be decided', () => {
+    expect(nextOverlayDecision(null, oneShot, found, true, at('2026-11-12T10:00:03.000Z'))).toMatchObject({ play: true })
+    expect(nextOverlayDecision(null, oneShot, found, true, at('2026-11-12T10:00:30.000Z'))).toMatchObject({ play: false })
+    expect(nextOverlayDecision(null, loop, found, true, at('2026-11-12T11:00:00.000Z'))).toMatchObject({ play: true })
+  })
+  it('keeps a decision once made, however the arrival, the sound choice or the clock change', () => {
+    const played = nextOverlayDecision(null, oneShot, live, true, seen)
+    expect(nextOverlayDecision(played, oneShot, found, false, at('2026-11-12T12:00:00.000Z'))).toBe(played)
+    const skipped = nextOverlayDecision(null, oneShot, found, true, at('2026-11-12T10:05:00.000Z'))
+    expect(nextOverlayDecision(skipped, oneShot, live, true, seen)).toBe(skipped)
+  })
   it('decides again for another key, a replay included', () => {
-    const found = nextOverlayArrival(null, 'a:1', false, t0)
-    expect(nextOverlayArrival(found, 'a:2', true, t1)).toEqual({ key: 'a:2', receivedLive: true, at: t1 })
+    const played = nextOverlayDecision(null, oneShot, live, true, seen)
+    const replay = { ...oneShot, startedAt: '2026-11-12T10:02:00.000Z' }
+    expect(nextOverlayDecision(played, replay, { live: true, firstSeen: at('2026-11-12T10:02:00.000Z') }, true, at('2026-11-12T10:02:00.000Z'))).toMatchObject({ key: overlayKey(replay), play: true })
   })
 })

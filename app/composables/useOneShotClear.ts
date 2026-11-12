@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, watch } from 'vue'
 import { isGameMaster } from '@/composables/useRouteRecheck'
 import { useTable } from '@/composables/useTable'
-import { oneShotClearDelay, overlayKey, withoutSound } from '@/domain/stage'
+import { ONE_SHOT_CLEAR_GRACE_SECONDS, oneShotClearDelay, overlayKey, withoutSound } from '@/domain/stage'
 import { sceneAudio } from '@/services/sceneAudioInstance'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
@@ -12,17 +12,17 @@ import { createLogger } from '@/utils/logger'
 
 const log = createLogger('one-shot-clear')
 
-// The device's own end of a track comes a little after startedAt + duration (loading, fades): the timer is only
-// the fallback, and must not cut the tail off for the table.
-const GRACE_MS = 1500
-
 /**
  * The master's client takes a finished one-shot off the stage, so a device that opens the table later does not
- * find it. Players never publish. It clears when this device's audio reports the overlay ended, or by a timer
- * (sound off here, a refused or failed play, an overlay found already overdue), and only if the stage still
- * holds the same overlay. A failed clear is silent and not retried for that overlay.
+ * find it. It is bookkeeping and must never cut a sound the table still hears. Players never publish.
+ *
+ * `playingHere(key)` says whether this device has that overlay in its playback target. Then the clear comes from
+ * the end of the track, `ONE_SHOT_CLEAR_GRACE_SECONDS` later (so the table's devices finish too), with a clock
+ * backstop; otherwise (sound off, not played because overdue) the clock alone decides, with the same grace after
+ * the duration. An unknown duration waits an hour. Whatever fires, the stage is published without the sound only
+ * if it still holds the same overlay. A failed clear is silent and not retried for that overlay.
  */
-export function useOneShotClear() {
+export function useOneShotClear(playingHere: (key: string) => boolean) {
   const { gameId } = useTable()
   const stages = useStageStore()
   const media = useMediaStore()
@@ -34,15 +34,19 @@ export function useOneShotClear() {
     const sound = stages.stageOf(id).sound
     return sound ? { gameId: id, sound, key: overlayKey(sound) } : null
   })
-  // The duration comes from the sounds list: wait for it, or a long sound would be judged by the stale window.
-  const armedKey = computed(() => {
+  const durationOf = computed(() => {
     const now = current.value
     if (!now || media.gameId !== now.gameId) return null
-    const status = media.sounds.status
-    return status === 'ready' || status === 'failed' ? now.key : null
+    return media.sounds.list.find(s => s.id === now.sound.id)?.duration ?? null
+  })
+  // What the timer depends on, as one string: it is re-armed when any part changes, not only the key.
+  const armed = computed(() => {
+    const now = current.value
+    return now ? `${now.key}|${durationOf.value ?? ''}|${playingHere(now.key)}` : null
   })
 
-  let timer: ReturnType<typeof setTimeout> | undefined
+  const timers = new Set<ReturnType<typeof setTimeout>>()
+  let clockTimer: ReturnType<typeof setTimeout> | undefined
   let failedKey: string | null = null
 
   async function clearIfCurrent(key: string) {
@@ -56,20 +60,27 @@ export function useOneShotClear() {
     }
   }
 
-  watch(armedKey, (key) => {
-    clearTimeout(timer)
-    timer = undefined
+  watch(armed, () => {
+    clearTimeout(clockTimer)
+    clockTimer = undefined
     const now = current.value
-    if (!key || !now) return
-    const duration = media.sounds.list.find(s => s.id === now.sound.id)?.duration ?? null
-    const delay = oneShotClearDelay(now.sound, duration, new Date())
+    if (!now) return
+    const delay = oneShotClearDelay(now.sound, durationOf.value, new Date(), playingHere(now.key))
     if (delay === null) return
-    timer = setTimeout(() => void clearIfCurrent(key), delay + GRACE_MS)
+    clockTimer = setTimeout(() => void clearIfCurrent(now.key), delay)
   }, { immediate: true })
 
-  const stopListening = audio.onOverlayEnded(key => void clearIfCurrent(key))
+  const stopListening = audio.onOverlayEnded((key) => {
+    if (current.value?.key !== key) return
+    const timer = setTimeout(() => {
+      timers.delete(timer)
+      void clearIfCurrent(key)
+    }, ONE_SHOT_CLEAR_GRACE_SECONDS * 1000)
+    timers.add(timer)
+  })
   onScopeDispose(() => {
-    clearTimeout(timer)
+    clearTimeout(clockTimer)
+    timers.forEach(clearTimeout)
     stopListening()
   })
 }

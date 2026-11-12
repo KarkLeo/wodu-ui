@@ -96,6 +96,13 @@ function recorded<T extends Record<string, unknown>>(prefix: string, methods: T)
 // Server-generated ids for collections whose ids the client does not send (game_members).
 const serverId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 15)
 
+let failingWrites: string | null = null
+
+/** Makes create and update on one collection answer 500 until called with null; a story must put it back. */
+export function failWrites(name: string | null): void {
+  failingWrites = name
+}
+
 class MockResponseError extends Error {
   constructor(public status: number) {
     super(`mock ${status}`)
@@ -116,11 +123,13 @@ function collection(name = '') {
 function makeCollection(name: string) {
   const base = {
     create: async <T extends Record<string, unknown>>(body: T) => {
+      if (failingWrites === name) throw new MockResponseError(500)
       const row = { id: serverId(), ...body, created: stamp(), updated: stamp() }
       recordsOf(name).set(String(row.id), row)
       return row
     },
     update: async <T extends Record<string, unknown>>(id: string, body: T) => {
+      if (failingWrites === name) throw new MockResponseError(500)
       if (name === 'users' && authStore.record?.id === id) authStore.save(authStore.token, { ...authStore.record, ...body })
       // A stage row exists only after the master's first publish; the client creates it on this 404.
       if (name === 'stages' && !recordsOf(name).has(id)) throw new MockResponseError(404)

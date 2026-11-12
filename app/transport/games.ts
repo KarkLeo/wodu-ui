@@ -149,7 +149,7 @@ async function loadStage(gameId: string, current: () => boolean): Promise<void> 
       filter: pb.filter('id = {:id}', { id: gameId }),
     }), STAGE_TIMEOUT_MS)
     const row = rows.find(r => r.id === gameId)
-    if (row && current()) receiveStage('update', row)
+    if (row && current()) receiveStage('update', row, 'load')
   } catch (err) {
     log.debug('no stage for the joined game', { gameId, err })
   }

@@ -3,7 +3,7 @@ import { requireOnlineUser } from './onlineOps'
 import { serialWriter, WriteDropped } from './serialWriter'
 export { WriteDropped }
 import { checkStage } from '@/domain/stage'
-import { useStageStore } from '@/stores/stage'
+import { useStageStore, type StageSource } from '@/stores/stage'
 import { useGamesStore } from '@/stores/games'
 import type { Stage } from '@/types/stage'
 import { createLogger } from '@/utils/logger'
@@ -93,7 +93,8 @@ const writer = serialWriter<Stage>({
  */
 export async function publishStage(next: Stage, options: { quiet?: boolean } = {}): Promise<void> {
   requireOnlineUser()
-  quiet.set(next.id, options.quiet === true)
+  // Quiet only while every publish folded into the write is: a user's failure must not go unreported.
+  quiet.set(next.id, options.quiet === true && (!writer.busy(next.id) || quiet.get(next.id) === true))
   const prior = useStageStore().stageOf(next.id)
   await new Promise<void>((resolve, reject) => {
     const list = waiters.get(next.id) ?? []
@@ -104,7 +105,7 @@ export async function publishStage(next: Stage, options: { quiet?: boolean } = {
 }
 
 // While my own publish for a game is pending, an older echo of it must not undo the newer optimistic value.
-export function receiveStage(action: string, row: StageRow): void {
+export function receiveStage(action: string, row: StageRow, source: StageSource = 'live'): void {
   if (action === 'delete') rowSeen.delete(row.id)
   else rowSeen.add(row.id)
   const store = useStageStore()
@@ -114,7 +115,7 @@ export function receiveStage(action: string, row: StageRow): void {
     return
   }
   const stage = stageFromRow(row)
-  if (stage) store.set(stage)
+  if (stage) store.set(stage, source)
 }
 
 /**
@@ -131,7 +132,7 @@ export function applyStages(rows: StageRow[]): void {
     rowSeen.add(row.id)
     if (writer.busy(row.id) || !games.byId(row.id)) continue
     const stage = stageFromRow(row)
-    if (stage) store.set(stage)
+    if (stage) store.set(stage, 'load')
   }
   for (const id of Object.keys(store.byGame)) {
     if (!seen.has(id) && !writer.busy(id)) store.remove(id)
