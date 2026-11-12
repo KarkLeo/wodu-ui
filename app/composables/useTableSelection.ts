@@ -44,10 +44,3 @@ export function useTableSelection() {
 
   return { selection, selectMonster, selectCharacter }
 }
-
-/** Whether the encounter panel is on screen: the master's open tray at a game table. */
-export function useEncounterPanelShown() {
-  const encounter = useEncounterStore()
-  const { game } = useTable()
-  return computed(() => encounter.panelOpen && isMaster(game.value, currentUser.value?.id ?? null))
-}

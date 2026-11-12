@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { action } from 'storybook/actions'
-import type { Decorator, Loader } from '@storybook/vue3-vite'
+import type { Decorator } from '@storybook/vue3-vite'
 import { GameLayoutContextKey, type Side } from '@/components/layout/gameLayoutContext'
 import type { Character } from '@/types/character'
 import type { ChangeEntry } from '@/types/changeLog'
@@ -184,8 +184,11 @@ export const withNavigationNotice: Decorator = (story, context) => ({
   `,
 })
 
-/** Navigates the story router before render, so views reading useRoute() see their params on mount. */
-export function atRoute(path: string): Loader {
+/**
+ * Navigates the story router before render, so views reading useRoute() see their params on mount.
+ * It takes no context, so it fits the loaders of a story of a component with props as well.
+ */
+export function atRoute(path: string): () => Promise<Record<string, never>> {
   return async () => {
     await storyRouter.push(path)
     return {}

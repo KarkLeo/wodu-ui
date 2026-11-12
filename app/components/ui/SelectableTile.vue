@@ -10,8 +10,8 @@ const props = withDefaults(defineProps<{
   value?: string
   /** Colour of `value`. A selected tile always draws it in `accent`. */
   valueTone?: 'neutral' | 'muted' | 'accent'
-  /** `md` for a card with a glyph and a name, `sm` for a compact value tile. */
-  size?: 'md' | 'sm'
+  /** `md` for a card with a glyph and a name, `sm` for a compact value tile, `compact` for a picture with a line under it. */
+  size?: 'md' | 'sm' | 'compact'
 }>(), {
   selected: false,
   disabled: false,
@@ -74,6 +74,7 @@ button.sel-tile { cursor: pointer; }
 
 .sz-md { padding: 14px 14px 16px; }
 .sz-sm { padding: 10px 12px 12px; }
+.sz-compact { padding: 6px; gap: 6px; }
 
 .sel-tile-head {
   display: grid;

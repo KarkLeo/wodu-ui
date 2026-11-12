@@ -3,9 +3,8 @@ import { computed, watch, ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '@/stores/characters'
 import { useTable } from '@/composables/useTable'
-import { useEncounterPanelShown, useTableSelection } from '@/composables/useTableSelection'
-import { useEncounterStore } from '@/stores/encounter'
-import EncounterPanel from '@/features/encounter/EncounterPanel.vue'
+import { useTableSelection } from '@/composables/useTableSelection'
+import { useTrayCards } from '@/composables/useTrayCards'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
@@ -16,12 +15,11 @@ const route = useRoute()
 const router = useRouter()
 const store = useCharactersStore()
 const { gameId, partyRoute } = useTable()
-const encounter = useEncounterStore()
-const showEncounter = useEncounterPanelShown()
+const { cards, shown } = useTrayCards()
 const { selection, selectCharacter } = useTableSelection()
-// The panel's column comes first and counts as a card of the carousel.
-const cardCount = computed(() => ids.value.length + (showEncounter.value ? 1 : 0))
-const sheetOffset = computed(() => (showEncounter.value ? 1 : 0))
+// The shown image and the master's cards come first and count as cards of the carousel.
+const cardCount = computed(() => ids.value.length + cards.value.length)
+const sheetOffset = computed(() => cards.value.length)
 
 // In a game, a character that left it (taken out, its owner gone) drops out of the table at once,
 // before the route re-check rewrites the URL.
@@ -42,8 +40,8 @@ const ids = computed(() => {
 // or we entered the route with a fresh set of ids — activate the first one.
 watch(ids, (list) => {
   if (list.length === 0) {
-    // On the game route with only the panel open there is no sheet to keep in sync.
-    if (!showEncounter.value) store.setActive(null)
+    // On the game route with only cards open there is no sheet to keep in sync.
+    if (!shown.value) store.setActive(null)
     return
   }
   if (!store.activeId || !list.includes(store.activeId)) {
@@ -97,23 +95,42 @@ function scrollToIndex(i: number) {
   if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
 }
 
-// On a phone, opened from a later sheet, the panel would come up off-screen to the left.
-watch(showEncounter, (shown) => {
-  if (shown) nextTick(() => scrollToIndex(0))
+// On a phone, opened from a later sheet, a new card would come up off-screen to the left. The shown image's card is
+// the exception: it comes and goes on the master's click, so the tray never scrolls to it; the card the person was
+// looking at stays in view instead, whatever the insertion at the front did to the content.
+watch(() => cards.value.map(c => c.key), (keys, before) => {
+  const shownChanged = keys.includes('shown-image') !== before.includes('shown-image')
+  const anchor = shownChanged ? scrollerRef.value?.querySelectorAll('.sheet-column')[activeIndex.value] : undefined
+  const anchorLeft = anchor?.getBoundingClientRect().left
+  const added = keys.findIndex(k => k !== 'shown-image' && !before.includes(k))
+  nextTick(() => {
+    const root = scrollerRef.value
+    if (anchor?.isConnected && anchorLeft !== undefined && root && root.scrollWidth > root.clientWidth) {
+      const shift = anchor.getBoundingClientRect().left - anchorLeft
+      if (Math.abs(shift) > 0.5) root.scrollTo({ left: root.scrollLeft + shift, behavior: 'instant' })
+    }
+    if (added !== -1) scrollToIndex(added)
+    else recalcActive()
+  })
 })
 </script>
 
 <template>
   <div class="party-stage">
     <div class="party-center" ref="scrollerRef" @scroll.passive="recalcActive">
-      <article v-if="showEncounter" :ref="el => setItemRef(el as Element | null, 0)" class="sheet-column">
-        <div class="sheet-tools">
-          <IconButton :label="t('encounter.close')" @click.stop="encounter.togglePanel()">
+      <article
+        v-for="(card, i) in cards"
+        :key="card.key"
+        :ref="el => setItemRef(el as Element | null, i)"
+        class="sheet-column"
+      >
+        <div v-if="card.close" class="sheet-tools">
+          <IconButton :label="card.closeLabel ?? t('common.close')" @click.stop="card.close()">
             <IconClose :size="14" />
           </IconButton>
         </div>
         <div class="sheet-column-body">
-          <EncounterPanel />
+          <component :is="card.component" />
         </div>
       </article>
       <article

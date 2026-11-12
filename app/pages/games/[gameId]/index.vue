@@ -2,17 +2,17 @@
 import { definePageMeta } from '#imports'
 import CharacterListView from '@/features/character-list/CharacterListView.vue'
 import PartyView from '@/features/in-game/PartyView.vue'
-import { useEncounterPanelShown } from '@/composables/useTableSelection'
+import { useTrayCards } from '@/composables/useTrayCards'
 import { useRouteRecheck } from '@/composables/useRouteRecheck'
 
 definePageMeta({ name: 'game', middleware: 'game' })
 
 useRouteRecheck()
-// The master's open encounter panel takes the table's tray even with no sheet open.
-const showEncounter = useEncounterPanelShown()
+// The shown image and the master's open cards take the table's tray even with no sheet open.
+const { shown } = useTrayCards()
 </script>
 
 <template>
-  <PartyView v-if="showEncounter" />
+  <PartyView v-if="shown" />
   <CharacterListView v-else />
 </template>

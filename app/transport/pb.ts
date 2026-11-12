@@ -91,3 +91,18 @@ export interface EncounterHitRow {
   data: EncounterHit
   created: string
 }
+
+export interface StageRow {
+  id: string
+  game: string
+  data: unknown
+}
+
+/** A row of any media collection: the shared columns, plus one string column per file field. */
+export interface MediaRow {
+  id: string
+  game: string
+  data: unknown
+  [field: string]: unknown
+}
+

@@ -6,9 +6,14 @@ import IconDice from '@/components/ui/icons/IconDice.vue'
 import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import { t } from '@/locales'
-import bgUrl from '@/assets/bg.jpeg'
+import SceneBackdrop from './SceneBackdrop.vue'
 import { GameLayoutContextKey, type Side } from './gameLayoutContext'
 import { useTable } from '@/composables/useTable'
+
+withDefaults(defineProps<{
+  /** The live scene's picture; null is the default background. */
+  backdropUrl?: string | null
+}>(), { backdropUrl: null })
 
 const leftOpenMobile = ref(false)
 const rightOpenMobile = ref(false)
@@ -62,8 +67,9 @@ const { game } = useTable()
 <template>
   <div
     :class="['gl-shell', { 'is-left-collapsed': leftCollapsed, 'is-right-collapsed': rightCollapsed }]"
-    :style="{ '--gl-bg': `url(${bgUrl})` }"
   >
+    <SceneBackdrop :url="backdropUrl" />
+
     <!-- ── TOP BAR · DESKTOP ─────────────────────────────── -->
     <div class="gl-top">
       <div class="gl-top-title">
@@ -158,12 +164,6 @@ const { game } = useTable()
   position: relative;
   min-height: 100dvh;
   color: var(--vtt-text-primary);
-  background-image:
-    linear-gradient(to bottom, var(--vtt-sunken-a35), var(--vtt-sunken-a15) 40%, var(--vtt-sunken-a55)),
-    var(--gl-bg);
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   overflow: hidden;
 }
 .gl-shell.is-left-collapsed  { --gl-left-w: 56px; }
@@ -330,6 +330,8 @@ const { game } = useTable()
   overflow-x: auto;
   background: transparent;
   z-index: 1;
+  /* Room a bottom prompt (SoundPrompt) asks for while it shows. */
+  padding-bottom: var(--gl-bottom-inset, 0px);
 }
 
 
@@ -394,7 +396,6 @@ const { game } = useTable()
     --gl-top-h: 44px;
     --gl-inset-left: 0px;
     --gl-inset-right: 0px;
-    background-attachment: scroll;
   }
   .gl-top { display: none; }
   .gl-mob-topbar { display: grid; }

@@ -4,13 +4,14 @@ import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 import PlayersPanel from './PlayersPanel.vue'
 import {
   brann, wren, mirel, oda, sage, draftGear, PARTY,
-  crookhollow, olden, MEMBERS, CROOKHOLLOW_META, OLDEN_META,
+  crookhollow, olden, MEMBERS, CROOKHOLLOW_META, OLDEN_META, inGame,
 } from '@/stories/fixtures'
 import { atRoute, DESKTOP_VIEWPORT, inLayout, withGameTable, withStores } from '@/stories/state'
 import { storyRouter } from '@/stories/router'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useToastsStore } from '@/stores/toasts'
+import { useToolPanelsStore } from '@/stores/toolPanels'
 import { mode } from '@/transport/mode'
 import { useEncounterStore } from '@/stores/encounter'
 import { clearPbRequests, pb, pbRequests, signInMock } from '../../../.storybook/mocks/pb'
@@ -166,6 +167,50 @@ export const GameAsPlayer: Story = {
     await expect(await row(canvasElement, oda.name)).toHaveClass('is-selected')
     await expect(await row(canvasElement, wren.name)).toHaveTextContent(/you ·/)
     await expect(canvas.queryByRole('button', { name: new RegExp(brann.name) })).toBeNull()
+  },
+}
+
+/** A player has no master tools, so no Scenes, Sounds or Images row either; neither has a masterless game. */
+export const PlayerHasNoScenesRow: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}/party/${oda.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await row(canvasElement, oda.name)).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Scenes/ })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Sounds/ })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: /^Images/ })).toBeNull()
+  },
+}
+
+/** Master and player alike get the device's sound control at a game's table, in the footer block. */
+export const SoundControlAtAGameTable: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}/party/${oda.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const group = await canvas.findByRole('group', { name: 'Sound' })
+    await expect(group.closest('.gl-panel-foot')).not.toBeNull()
+    await expect(within(group).getByRole('switch', { name: 'Scene background' })).toBeVisible()
+  },
+}
+
+/** The offline table and the free-characters table have no scene to play, so no control. */
+export const NoSoundControlOfflineOrOutsideGames: Story = {
+  tags: ['no-visual'],
+  decorators: [offlineMode, withStores({ characters: [sage] })],
+  loaders: [atRoute('/offline')],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('button', { name: 'Home' })).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Sound' })).toBeNull()
+    await storyRouter.push(`/party/${sage.id}`)
+    mode.value = 'online'
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(canvas.queryByRole('group', { name: 'Sound' })).toBeNull()
   },
 }
 
@@ -382,5 +427,151 @@ export const PlayerSeesNoEncounter: Story = {
     const menu = within(await within(canvasElement.ownerDocument.body).findByRole('menu'))
     await expect(menu.queryByRole('menuitem', { name: 'Encounter' })).toBeNull()
     await expect(pbRequests().filter(r => r.includes('encounter'))).toEqual([])
+  },
+}
+
+// ── The master's tool rows ──────────────────────────────────────────────────
+
+/** The master gets the tool group under the list: after the last character, before "New character". */
+export const MasterSeesToolRows: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const group = await canvas.findByRole('group', { name: 'Master' })
+    await expect(within(group).getByRole('button', { name: 'Encounter' })).toBeVisible()
+    const last = await row(canvasElement, mirel.name)
+    const fresh = canvas.getByRole('button', { name: 'New character' })
+    await expect(last.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await expect(group.compareDocumentPosition(fresh) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  },
+}
+
+export const PlayerSeesNoTools: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText(olden.name)).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+  },
+}
+
+export const MasterlessSeesNoTools: Story = {
+  tags: ['no-visual'],
+  decorators: [masterlessTable],
+  loaders: [atRoute(`/games/${olden.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByText('This game has no master')).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+  },
+}
+
+export const OfflineSeesNoTools: Story = {
+  tags: ['no-visual'],
+  decorators: [offlineMode, withStores({ characters: [sage] })],
+  loaders: [atRoute('/offline')],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await row(canvasElement, sage.name)).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull()
+  },
+}
+
+const crowd = Array.from({ length: 12 }, (_, i) => ({ ...brann, id: `story-crowd-${i}`, name: `Crowd member ${i + 1}` }))
+const crowdMeta = Object.fromEntries(crowd.map(c => [c.id, inGame(crookhollow)]))
+const smallPhone: Decorator = (story) => ({
+  components: { story },
+  template: '<div data-small-phone style="width: 375px; height: 568px; display: flex; flex-direction: column"><story /></div>',
+})
+
+const landscapePhone: Decorator = (story) => ({
+  components: { story },
+  template: '<div data-small-phone style="width: 667px; height: 375px; display: flex; flex-direction: column"><story /></div>',
+})
+
+/** Six rows, the list, the head and the footer share the frame: the tools scroll inside themselves, the list keeps a row. */
+const budgetKept = async (canvasElement: HTMLElement, { overflows }: { overflows: boolean }) => {
+  const canvas = within(canvasElement)
+  const group = await canvas.findByRole('group', { name: 'Master' })
+  const frame = canvasElement.querySelector('[data-small-phone]')!.getBoundingClientRect()
+  const box = group.getBoundingClientRect()
+  await expect(box.top).toBeGreaterThanOrEqual(frame.top)
+  await expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
+  const list = canvasElement.querySelector('.gl-panel-list') as HTMLElement
+  await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
+  const firstRow = list.querySelector('.player-row')!.getBoundingClientRect()
+  await expect(list.clientHeight).toBeGreaterThanOrEqual(firstRow.height)
+  for (const name of ['Encounter', 'Monsters', 'Items', 'Scenes', 'Sounds', 'Images']) await expect(within(group).getByRole('button', { name })).toBeInTheDocument()
+  const scroller = group.querySelector('.mt-rows') as HTMLElement
+  await expect(scroller.clientHeight).toBeGreaterThan(0)
+  const tools = canvasElement.querySelector('.gl-panel-tools') as HTMLElement
+  // The cap is a share of the panel, whose height is definite here.
+  const panel = canvasElement.querySelector('.players-panel') as HTMLElement
+  await expect(tools.getBoundingClientRect().height).toBeLessThanOrEqual(panel.getBoundingClientRect().height * 0.45 + 1)
+  if (overflows) await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
+  else await expect(scroller.scrollHeight).toBeLessThanOrEqual(scroller.clientHeight)
+}
+
+/** Many characters: the list scrolls and the tool group stays in view above the footer. */
+export const ToolsStayVisibleWithManyCharacters: Story = {
+  tags: ['no-visual'],
+  decorators: [withGameTable(crookhollow, crowd, crowdMeta), smallPhone],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: false }),
+}
+
+/** A landscape phone is too short for six rows, the list and the footer: the tools scroll inside themselves. */
+export const ToolsStayVisibleOnALandscapePhone: Story = {
+  tags: ['no-visual'],
+  decorators: [withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: ({ canvasElement }) => budgetKept(canvasElement, { overflows: true }),
+}
+
+/** The last row, Images, is reachable by scrolling the tools, and its gold "on" bar and focus ring are not clipped. */
+export const LastToolRowReachableOnALandscapePhone: Story = {
+  tags: ['no-visual'],
+  decorators: [(story) => ({
+    components: { story },
+    setup() {
+      const panels = useToolPanelsStore()
+      panels.clearAll()
+      panels.open.images = true
+    },
+    template: '<story />',
+  }), withGameTable(crookhollow, crowd, crowdMeta), landscapePhone],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const group = await within(canvasElement).findByRole('group', { name: 'Master' })
+    const scroller = group.querySelector('.mt-rows') as HTMLElement
+    await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
+    const row = within(group).getByRole('button', { name: 'Images' })
+    await expect(row).toHaveAttribute('aria-pressed', 'true')
+    scroller.scrollTop = scroller.scrollHeight
+    const box = scroller.getBoundingClientRect()
+    const rect = row.getBoundingClientRect()
+    await expect(rect.bottom + 4).toBeLessThanOrEqual(box.bottom + 1)
+    await expect(rect.top).toBeGreaterThanOrEqual(box.top)
+    await expect(rect.left - 12).toBeGreaterThanOrEqual(box.left)
+  },
+}
+
+/** The tools follow the master: another master takes the game and the group goes, getting it back returns it. */
+export const ToolsFollowTheMaster: Story = {
+  tags: ['no-visual'],
+  decorators: [crookhollowTable],
+  loaders: [atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const games = useGamesStore()
+    await expect(await canvas.findByRole('group', { name: 'Master' })).toBeVisible()
+    games.upsertGame({ ...crookhollow, master: 'user-kostya' })
+    await waitFor(() => expect(canvas.queryByRole('group', { name: 'Master' })).toBeNull())
+    games.upsertGame(crookhollow)
+    await expect(await canvas.findByRole('group', { name: 'Master' })).toBeVisible()
   },
 }

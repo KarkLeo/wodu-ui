@@ -252,7 +252,7 @@ const TINT_ROWS: TintRow[] = [
 
   // Directly on the artwork: only the rendered audit can tell.
   { on: '.as-shell', fills: [['sunken-a55', 'sunken-a35', 'sunken-a82']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted', 'accent-deep', 'danger-bright'] },
-  { on: '.gl-shell', fills: [['sunken-a35', 'sunken-a15', 'sunken-a55']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted'] },
+  { on: '.sb-shade', fills: [['sunken-a35', 'sunken-a15', 'sunken-a55']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted'] },
   { on: '.gl-top', fills: [['sunken-a72', 'sunken-a00'], ['sunken-a35', 'sunken-a15', 'sunken-a55']], over: 'artwork', text: ['text-primary', 'text-secondary'] },
   { on: '.cl-shell', fills: [['sunken-a78', 'sunken-a62', 'sunken-a86']], over: 'artwork', text: ['text-primary', 'text-secondary', 'text-muted'] },
 

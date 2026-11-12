@@ -1,5 +1,5 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
-import { pb, type CharacterRow, type RollRow, type ChangeRow, type GameRow, type GameMemberRow } from '@/transport/pb'
+import { pb, type CharacterRow, type RollRow, type ChangeRow, type GameRow, type GameMemberRow, type StageRow } from '@/transport/pb'
 import { HISTORY_LIMIT } from './limits'
 import { mode } from './mode'
 import { currentUser, restoreSession, signedIn } from './auth'
@@ -16,10 +16,14 @@ import {
 } from './connection'
 import { isCharacterShape, isRollRecordShape, isChangeEntryShape } from './shapes'
 import { scope } from './scope'
+import { applyStages, forgetStageRows, receiveStage } from './stage'
 import { forgetGame, healStuckCharacters, loadGame, toGame, toMember } from './games'
 import { useCharactersStore } from '@/stores/characters'
 import { useGamesStore } from '@/stores/games'
 import { useEncounterStore } from '@/stores/encounter'
+import { useMediaStore } from '@/stores/media'
+import { useToolPanelsStore } from '@/stores/toolPanels'
+import { useStageStore } from '@/stores/stage'
 import { useLibraryStore } from '@/stores/library'
 import { useRollHistoryStore } from '@/stores/rollHistory'
 import { useChangeLogStore } from '@/stores/changeLog'
@@ -31,7 +35,9 @@ import { createLogger } from '@/utils/logger'
 const log = createLogger('transport:pb')
 const sseLog = createLogger('transport:sse')
 
-const COLLECTIONS = ['games', 'game_members', 'characters', 'roll_events', 'change_events'] as const
+const STAGES_TIMEOUT_MS = 4000
+
+const COLLECTIONS = ['games', 'game_members', 'characters', 'roll_events', 'change_events', 'stages'] as const
 
 export type BootstrapStatus = 'loading' | 'ready' | 'failed'
 export const bootstrapStatus: Ref<BootstrapStatus> = ref('loading')
@@ -124,16 +130,29 @@ async function fetchEvents(target: Scope) {
 
 type EventRows = Awaited<ReturnType<typeof fetchEvents>>
 
+// The stage is not needed to play: a missing collection or a refused list must not fail the start, and the table works
+// without it (no scene, no shown image until the next change arrives). A genuinely unreachable server fails the other
+// requests too, which report it.
+async function fetchStages(): Promise<StageRow[] | null> {
+  try {
+    return await withTimeout(pb.collection('stages').getFullList<StageRow>(), STAGES_TIMEOUT_MS)
+  } catch (err) {
+    log.warn('loading the stages failed, carrying on without them', { err })
+    return null
+  }
+}
+
 async function fetchInitialState() {
   log.info('loadInitialState: starting')
   const events = eventsGen
-  const [games, members, chars, { rolls, changes }] = await Promise.all([
+  const [games, members, chars, stages, { rolls, changes }] = await Promise.all([
     pb.collection('games').getFullList<GameRow>(),
     pb.collection('game_members').getFullList<GameMemberRow>({ expand: 'user' }),
     pb.collection('characters').getFullList<CharacterRow>(),
+    fetchStages(),
     fetchEvents(scope.value),
   ])
-  return { games, members, chars, rolls, changes, events }
+  return { games, members, chars, stages, rolls, changes, events }
 }
 
 type InitialState = Awaited<ReturnType<typeof fetchInitialState>>
@@ -161,6 +180,8 @@ function applyInitialState(state: InitialState) {
     validCharRows.map(r => r.data),
     validCharRows.map(r => ({ id: r.id, updated: r.updated, owner: r.owner, game: r.game })),
   )
+  // After the games are in the store; a failed list leaves the stages as they are.
+  if (state.stages) applyStages(state.stages)
   // The player switched tables while this was loading; that switch loads its own events.
   const events = state.events === eventsGen ? applyEvents(state) : 'skipped'
 
@@ -211,6 +232,13 @@ async function subscribeAll(gen: number) {
         })
       }
     }, { expand: 'user' }),
+
+    // Not essential: a server without the collection must not fail the whole subscription set-up.
+    pb.collection('stages').subscribe<StageRow>('*', (e) => {
+      sseLog.debug('stages', { action: e.action, id: e.record.id })
+      const { action, record } = e
+      onRealtime(() => receiveStage(action, record))
+    }).catch((err: unknown) => sseLog.warn('subscribing to stages failed, carrying on without them', { err })),
 
     pb.collection('characters').subscribe<CharacterRow>('*', (e) => {
       sseLog.debug('characters', { action: e.action, id: e.record.id })
@@ -427,6 +455,10 @@ export function stopOnline(): void {
   useGamesStore().clearAll()
   useLibraryStore().clearAll()
   useEncounterStore().clearAll()
+  useMediaStore().clearAll()
+  useToolPanelsStore().clearAll()
+  useStageStore().clearAll()
+  forgetStageRows()
   stopConnectionMonitor()
   playedLocally.clear()
   bootstrapStatus.value = 'loading'

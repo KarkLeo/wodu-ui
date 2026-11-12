@@ -34,6 +34,7 @@ export default defineConfig({
         plugins: [storybookTest({ configDir: '.storybook', storybookScript: 'npm run storybook -- --ci' })],
         test: {
           name: 'storybook',
+          setupFiles: ['.storybook/viewport.setup.ts'],
           browser: {
             enabled: true,
             headless: true,

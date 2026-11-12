@@ -11,7 +11,7 @@ const meta = {
   component: SelectableTile,
   args: { selected: false, disabled: false, static: false, size: 'md', onSelect: fn() },
   argTypes: {
-    size: { control: 'inline-radio', options: ['md', 'sm'] },
+    size: { control: 'inline-radio', options: ['md', 'sm', 'compact'] },
   },
   render: (args) => ({
     components: { SelectableTile },
@@ -172,5 +172,25 @@ export const PickOne: Story = {
     await userEvent.keyboard('{Enter}')
     await expect(group.getByRole('radio', { name: 'cleric' })).toBeChecked()
     await expect(group.getAllByRole('radio', { checked: true })).toHaveLength(1)
+  },
+}
+
+/** The compact size has room for a picture with one line under it, as in the master's image grid. */
+export const CompactWithPicture: Story = {
+  args: { size: 'compact', selected: true },
+  render: (args) => ({
+    components: { SelectableTile },
+    setup: () => ({ args }),
+    template: `
+      <SelectableTile v-bind="args" style="width: 130px">
+        <span style="display: block; aspect-ratio: 4 / 3; border-radius: var(--r-sm); background: var(--vtt-bg-sunken)" />
+        <span style="font-size: 12px; color: var(--vtt-text-secondary)">The old bridge</span>
+      </SelectableTile>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    const tile = within(canvasElement).getByRole('radio', { name: /The old bridge/ })
+    await expect(tile).toBeChecked()
+    await expect(getComputedStyle(tile).paddingLeft).toBe('6px')
   },
 }
