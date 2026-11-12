@@ -1,14 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   createAudioMixer,
   createSceneAudio,
-  IDLE_DELAY_SECONDS,
   SCENE_FADE_SECONDS,
+  UNLOCK_WAIT_SECONDS,
   type AudioMixer,
+  type Interruption,
   type SceneAudio,
   type SceneAudioDeps,
   type Track,
 } from './SceneAudio'
+
+const warn = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/logger', () => ({
+  createLogger: () => ({ debug: () => {}, info: () => {}, warn, error: () => {} }),
+}))
 
 interface FakeTrack extends Track {
   src: string
@@ -18,10 +24,18 @@ interface FakeTrack extends Track {
   rejectReady(): void
   refusePlay(): void
   failPlay(): void
-  /** The browser stopped it: an error after start, a pause from outside, the context leaving `running`. */
-  interrupt(): void
+  /** The next play() stays pending until `settlePlay()`. */
+  hangPlay(): void
+  settlePlay(): void
+  /** fadeTo, pause and dispose throw from now on, after recording the call. */
+  breakAutomation(): void
+  /** The browser stopped it; by default the context left `running`. */
+  interrupt(cause?: Interruption): void
+  /** The browser brought it back by itself after an interruption. */
+  resumeByItself(): void
   /** A non-looping track reached its end. */
   finish(): void
+  pinned: boolean
 }
 
 function makeFakeTrack(src: string, loop: boolean): FakeTrack {
@@ -33,19 +47,31 @@ function makeFakeTrack(src: string, loop: boolean): FakeTrack {
   })
   ready.catch(() => {})
   const calls: string[] = []
-  const interrupted: Array<() => void> = []
+  const interrupted: Array<(cause: Interruption) => void> = []
+  const resumed: Array<() => void> = []
   const ended: Array<() => void> = []
-  let playMode: 'ok' | 'refuse' | 'fail' = 'ok'
-  return {
+  let playMode: 'ok' | 'refuse' | 'fail' | 'hang' = 'ok'
+  let settle: (() => void) | null = null
+  let broken = false
+  const record = (call: string) => {
+    calls.push(call)
+    if (broken) throw new DOMException('overlaps a curve', 'NotSupportedError')
+  }
+  const t: FakeTrack = {
     src,
     loop,
     calls,
     ready,
+    pinned: false,
     resolveReady: () => resolveReady(),
     rejectReady: () => rejectReady(new Error('load failed')),
     refusePlay: () => { playMode = 'refuse' },
     failPlay: () => { playMode = 'fail' },
-    interrupt: () => interrupted.forEach(l => l()),
+    hangPlay: () => { playMode = 'hang' },
+    settlePlay: () => settle?.(),
+    breakAutomation: () => { broken = true },
+    interrupt: (cause = 'suspended') => interrupted.forEach(l => l(cause)),
+    resumeByItself: () => resumed.forEach(l => l()),
     finish: () => ended.forEach(l => l()),
     play() {
       calls.push('play')
@@ -53,14 +79,19 @@ function makeFakeTrack(src: string, loop: boolean): FakeTrack {
       playMode = 'ok'
       if (mode === 'refuse') return Promise.reject(new DOMException('gesture needed', 'NotAllowedError'))
       if (mode === 'fail') return Promise.reject(new DOMException('bad media', 'NotSupportedError'))
+      if (mode === 'hang') return new Promise<void>(resolve => { settle = resolve })
       return Promise.resolve()
     },
-    pause() { calls.push('pause') },
-    fadeTo(level, seconds) { calls.push(`fadeTo(${level},${seconds})`) },
+    pause() { record('pause') },
+    fadeTo(level, seconds) { record(`fadeTo(${level},${seconds})`) },
     onEnded(listener) { ended.push(listener) },
     onInterrupted(listener) { interrupted.push(listener) },
-    dispose() { calls.push('dispose') },
+    onResumed(listener) { resumed.push(listener) },
+    pin() { t.pinned = true },
+    unpin() { t.pinned = false },
+    dispose() { record('dispose') },
   }
+  return t
 }
 
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve() }
@@ -70,8 +101,10 @@ interface Harness {
   waits: Array<{ seconds: number, resolve: () => void }>
   masterVolumes: number[]
   unlockResult: boolean
+  /** Set to make the next unlock() answer only when `answerUnlock(result)` is called. */
+  unlockHangs: boolean
+  answerUnlock: Array<(result: boolean) => void>
   unlockCalls: number
-  idleCalls: number
   /** The document-gesture listeners installed and not yet removed. */
   gestures: Array<() => void>
   gestureInstalls: number
@@ -84,8 +117,9 @@ function harness(): Harness {
     waits: [],
     masterVolumes: [],
     unlockResult: true,
+    unlockHangs: false,
+    answerUnlock: [],
     unlockCalls: 0,
-    idleCalls: 0,
     gestures: [],
     gestureInstalls: 0,
     deps: undefined as unknown as SceneAudioDeps,
@@ -98,18 +132,19 @@ function harness(): Harness {
     },
     wait: seconds => new Promise<void>(resolve => { h.waits.push({ seconds, resolve }) }),
     setMasterVolume: level => { h.masterVolumes.push(level) },
-    unlock: async () => { h.unlockCalls++; return h.unlockResult },
-    idle: () => { h.idleCalls++ },
-    // Like the shell's: fires once, then is gone.
+    unlock() {
+      h.unlockCalls++
+      if (!h.unlockHangs) return Promise.resolve(h.unlockResult)
+      return new Promise<boolean>(resolve => { h.answerUnlock.push(resolve) })
+    },
+    // Like the shell's: fires on every gesture until removed.
     addGestureListener(callback) {
       h.gestureInstalls++
-      const remove = () => {
-        const i = h.gestures.indexOf(fire)
+      h.gestures.push(callback)
+      return () => {
+        const i = h.gestures.indexOf(callback)
         if (i >= 0) h.gestures.splice(i, 1)
       }
-      const fire = () => { remove(); callback() }
-      h.gestures.push(fire)
-      return remove
     },
   }
   return h
@@ -132,8 +167,11 @@ describe('SceneAudio', () => {
     due.forEach(w => w.resolve())
     await flush()
   }
+  // The waits that end fades, without the bound every unlock() puts on its own wait.
+  const fadeWaits = () => waits.filter(w => w.seconds !== UNLOCK_WAIT_SECONDS)
 
   beforeEach(() => {
+    warn.mockClear()
     h = harness()
     tracks = h.tracks
     waits = h.waits
@@ -282,7 +320,7 @@ describe('SceneAudio', () => {
     expect(track('b').calls).toEqual([])
     track('b').resolveReady(); await flush()
     expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
-    expect(waits).toHaveLength(0)
+    expect(fadeWaits()).toHaveLength(0)
   })
 
   it('unlock() after the replacement is ready and refused plays it exactly once, never fading it out', async () => {
@@ -292,7 +330,7 @@ describe('SceneAudio', () => {
     await audio.unlock()
     await audio.unlock()
     expect(track('b').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
-    expect(waits).toHaveLength(0)
+    expect(fadeWaits()).toHaveLength(0)
   })
 
   it('setting the current src while another scene is loading drops the loading one and leaves the current untouched', async () => {
@@ -385,27 +423,23 @@ describe('SceneAudio', () => {
     expect(track('a').calls.at(-1)).toBe('fadeTo(0,2)')
   })
 
-  it('while blocked, one document gesture is listened for and unlocks; the listener goes when nothing is blocked', async () => {
+  it('while a refused play waits, every document gesture unlocks; the listener stays across a failed gesture and goes once playback starts', async () => {
     expect(h.gestureInstalls).toBe(0)
     audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
     expect(h.gestures).toHaveLength(1)
-    h.gestures[0]!()
-    await flush()
-    expect(h.unlockCalls).toBe(1)
-    expect(audio.blocked.value).toBe(false)
-    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
-    expect(h.gestures).toHaveLength(0)
-    expect(h.gestureInstalls).toBe(1)
-  })
-
-  it('a gesture whose unlock the browser refuses listens again for the next one', async () => {
-    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
     h.unlockResult = false
     h.gestures[0]!()
     await flush()
     expect(audio.blocked.value).toBe(true)
     expect(h.gestures).toHaveLength(1)
-    expect(h.gestureInstalls).toBe(2)
+    h.unlockResult = true
+    h.gestures[0]!()
+    await flush()
+    expect(h.unlockCalls).toBe(2)
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+    expect(h.gestures).toHaveLength(0)
+    expect(h.gestureInstalls).toBe(1)
   })
 
   it('the gesture listener is removed when blocked clears another way (the prompt\'s button, a new scene)', async () => {
@@ -416,29 +450,114 @@ describe('SceneAudio', () => {
     expect(h.gestures).toHaveLength(0)
   })
 
-  it('after the last track has faded out and been released, idle() follows a short delay', async () => {
+  it('a suspended context brings the gesture listener; an outside pause blocks without it, and only an explicit unlock() resumes', async () => {
     audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
-    audio.setScene(null); await flush()
-    await advance(SCENE_FADE_SECONDS)
-    expect(h.idleCalls).toBe(0)
-    expect(waits.map(w => w.seconds)).toEqual([IDLE_DELAY_SECONDS])
-    await advance(IDLE_DELAY_SECONDS)
-    expect(h.idleCalls).toBe(1)
+    track('a').interrupt('paused')
+    expect(audio.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(0)
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'play', 'fadeTo(1,2)'])
+    track('a').interrupt('suspended')
+    expect(h.gestures).toHaveLength(1)
   })
 
-  it('a new request during the idle delay cancels idle()', async () => {
+  it('an outside pause whose resume is then refused does bring the gesture listener', async () => {
     audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
-    audio.stop(); await flush()
-    await advance(SCENE_FADE_SECONDS)
-    audio.setScene('b.mp3'); await flush()
-    await advance(IDLE_DELAY_SECONDS)
-    expect(h.idleCalls).toBe(0)
+    track('a').interrupt('paused')
+    track('a').refusePlay()
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(1)
   })
 
-  it('replacing a track that is still loading does not count as silence', async () => {
+  it('an error after start is not blocked: the track goes, it is logged once, and the same src can be asked for again', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').interrupt('error')
+    expect(audio.blocked.value).toBe(false)
+    expect(h.gestures).toHaveLength(0)
+    expect(track('a').calls.at(-1)).toBe('dispose')
+    expect(warn).toHaveBeenCalledTimes(1)
     audio.setScene('a.mp3'); await flush()
+    expect(tracks).toHaveLength(2)
+  })
+
+  it('a track the browser brings back by itself clears blocked without another play', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').interrupt()
+    expect(audio.blocked.value).toBe(true)
+    track('a').resumeByItself()
+    expect(audio.blocked.value).toBe(false)
+    expect(h.gestures).toHaveLength(0)
+    await audio.unlock()
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)'])
+  })
+
+  it('unlock() settles in bounded time even if the context never resumes; a later unlock still works', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    h.unlockHangs = true
+    let settled = false
+    void audio.unlock().then(() => { settled = true })
+    await flush()
+    expect(settled).toBe(false)
+    expect(waits.map(w => w.seconds)).toContain(UNLOCK_WAIT_SECONDS)
+    await advance(UNLOCK_WAIT_SECONDS)
+    expect(settled).toBe(true)
+    expect(audio.blocked.value).toBe(true)
+    expect(h.gestures).toHaveLength(1)
+    h.unlockHangs = false
+    await audio.unlock()
+    expect(audio.blocked.value).toBe(false)
+    h.answerUnlock[0]!(true)
+    await flush()
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+  })
+
+  it('a resume that arrives after the bound still plays the waiting track', async () => {
+    audio.setScene('a.mp3'); track('a').refusePlay(); track('a').resolveReady(); await flush()
+    h.unlockHangs = true
+    const done = audio.unlock()
+    await advance(UNLOCK_WAIT_SECONDS)
+    await done
+    h.answerUnlock[0]!(true)
+    await flush()
+    expect(audio.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'play', 'fadeTo(1,2)'])
+  })
+
+  it('the current track is pinned; one fading out or still incoming is not', async () => {
+    audio.setScene('a.mp3'); await flush()
+    expect(track('a').pinned).toBe(false)
+    track('a').resolveReady(); await flush()
+    expect(track('a').pinned).toBe(true)
     audio.setScene('b.mp3'); await flush()
-    expect(waits).toHaveLength(0)
+    expect(track('b').pinned).toBe(false)
+    track('b').resolveReady(); await flush()
+    expect(track('a').pinned).toBe(false)
+    expect(track('b').pinned).toBe(true)
+    audio.stop()
+    expect(track('b').pinned).toBe(false)
+  })
+
+  it('a scene switch completes when the old track\'s fades, pause and dispose throw', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    track('a').breakAutomation()
+    expect(() => audio.setScene('b.mp3')).not.toThrow()
+    track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,2)'])
+    expect(track('a').calls.at(-1)).toBe('fadeTo(0,2)')
+    expect(fadeWaits().map(w => w.seconds)).toEqual([2])
+    await advance(2)
+    expect(track('a').calls.slice(-2)).toEqual(['pause', 'dispose'])
+    audio.setScene('a.mp3'); await flush()
+    expect(tracks).toHaveLength(3)
+  })
+
+  it('a new track whose fade in throws still becomes current and the old one still fades out', async () => {
+    audio.setScene('a.mp3'); track('a').resolveReady(); await flush()
+    audio.setScene('b.mp3'); track('b').breakAutomation(); track('b').resolveReady(); await flush()
+    expect(track('a').calls.at(-1)).toBe('fadeTo(0,2)')
+    expect(track('b').pinned).toBe(true)
   })
 })
 
@@ -590,18 +709,37 @@ describe('audio channels', () => {
     expect(ended).toEqual([])
   })
 
-  it('idle() waits for every channel to fall silent', async () => {
-    const one = mixer.channel()
-    const two = mixer.channel()
-    one.request(req('a')); track('a').resolveReady(); await flush()
-    two.request(req('b')); track('b').resolveReady(); await flush()
-    one.request(null); await flush()
+  it('a hold() while the incoming track\'s play() is still in flight keeps it silent once it plays', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').hangPlay(); track('a').resolveReady(); await flush()
+    ch.hold(1)
+    track('a').settlePlay(); await flush()
+    expect(track('a').calls).toEqual(['play', 'pause'])
+    expect(track('a').pinned).toBe(true)
+    ch.release(1); await flush()
+    expect(track('a').calls).toEqual(['play', 'pause', 'play', 'fadeTo(1,1)'])
+  })
+
+  it('a request made before hold() that becomes ready during it waits, then comes in on release()', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    ch.request(req('b'))
+    ch.hold(1); await advance()
+    track('b').resolveReady(); await flush()
+    expect(track('b').calls).toEqual([])
+    ch.release(1); await flush()
+    expect(track('b').calls).toEqual(['play', 'fadeTo(1,1)'])
+    expect(track('a').calls.at(-1)).toBe('fadeTo(0,1)')
+  })
+
+  it('a release during a hold fade completes when the held track\'s automation throws', async () => {
+    const ch = mixer.channel()
+    ch.request(req('a')); track('a').resolveReady(); await flush()
+    track('a').breakAutomation()
+    expect(() => ch.hold(1)).not.toThrow()
+    expect(() => ch.release(1)).not.toThrow()
     await advance()
-    await advance()
-    expect(h.idleCalls).toBe(0)
-    mixer.stop(); await flush()
-    await advance()
-    await advance()
-    expect(h.idleCalls).toBe(1)
+    expect(ch.blocked.value).toBe(false)
+    expect(track('a').calls).toEqual(['play', 'fadeTo(1,2)', 'fadeTo(0,1)', 'fadeTo(1,1)'])
   })
 })

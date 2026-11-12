@@ -1,5 +1,12 @@
 import { computed, ref, readonly, shallowReactive, watch, type Ref } from 'vue'
+import { createLogger } from '@/utils/logger'
 
+const log = createLogger('audio')
+
+/** Why a track stopped being audible: a pause from outside, the context leaving `running`, a media error after start. */
+export type Interruption = 'paused' | 'suspended' | 'error'
+
+/** No method throws. */
 export interface Track {
   /** Resolves when the track can play through; rejects when it cannot load. */
   readonly ready: Promise<void>
@@ -10,8 +17,13 @@ export interface Track {
   fadeTo(level: number, seconds: number): void
   /** Fires once when a non-looping track finishes by itself. */
   onEnded(listener: () => void): void
-  /** Fires when the track stops being audible for a reason the service did not ask for: an error after start, a pause from outside, the context leaving `running`. */
-  onInterrupted(listener: () => void): void
+  /** Fires when the track stops being audible for a reason the service did not ask for. */
+  onInterrupted(listener: (cause: Interruption) => void): void
+  /** Fires when the browser brings an interrupted track back by itself. */
+  onResumed(listener: () => void): void
+  /** A pinned track (a channel's current or held one) keeps its element when the pool runs out. */
+  pin(): void
+  unpin(): void
   dispose(): void
 }
 
@@ -19,24 +31,22 @@ export interface SceneAudioDeps {
   createTrack(src: string, loop: boolean): Track
   wait(seconds: number): Promise<void>
   setMasterVolume(level: number): void
-  /** Called inside a user gesture: resumes the context, primes the pooled elements, and resolves true when audio may play. Not bounded by a timer. */
+  /** Called inside a user gesture: primes the pooled elements, resumes the context, and resolves true when audio may play. Not bounded by a timer. */
   unlock(): Promise<boolean>
-  /** Suspends the context when nothing is playing and nothing is wanted. */
-  idle(): void
-  /** Calls `callback` once, from inside the next user gesture anywhere on the page; returns the remover. */
+  /** Calls `callback` from inside every user gesture anywhere on the page until the returned remover is called. */
   addGestureListener(callback: () => void): () => void
 }
 
 export const SCENE_FADE_SECONDS = 2
-/** How long the mixer stays silent before it lets the context sleep, so a quick next request does not thrash. */
-export const IDLE_DELAY_SECONDS = 2
+/** How long `unlock()` keeps its caller waiting; a resume still pending after that goes on in the background. */
+export const UNLOCK_WAIT_SECONDS = 1
 
 export interface SceneAudio {
   readonly blocked: Readonly<Ref<boolean>>
   setVolume(level: number): void
   /** Crossfades to `src` once it can play; null fades to silence. The latest call wins. */
   setScene(src: string | null): void
-  /** After a gesture: clears `blocked`, starts a refused scene and resumes an interrupted one where it stopped. */
+  /** After a gesture: starts a refused scene and resumes an interrupted one where it stopped. */
   unlock(): Promise<void>
   /** Fades everything out and releases every track. */
   stop(): void
@@ -53,8 +63,10 @@ export interface ChannelRequest {
 
 /** One sound slot: at most one audible track plus one incoming track. */
 export interface Channel {
-  /** A refused or interrupted track waits for a gesture. Never true while held. */
+  /** A refused or interrupted track waits for an unlock. Never true while held. */
   readonly blocked: Readonly<Ref<boolean>>
+  /** Blocked for a reason any tap can fix (a refused play, a suspended context), not by a deliberate pause from outside. */
+  readonly tapHelps: Readonly<Ref<boolean>>
   /** The latest call wins; the same key again does nothing; null fades to silence. */
   request(next: ChannelRequest | null): void
   /** Fades the playing track out over `fade` and pauses it in place. A request meanwhile is prepared but kept silent. */
@@ -68,7 +80,7 @@ export interface Channel {
   onEnded(listener: (key: string) => void): void
 }
 
-/** The channels of one output, with the state they share: blocked, the gesture listener, idling. */
+/** The channels of one output, with what they share: blocked, the gesture listener, the unlock. */
 export interface AudioMixer {
   /** True while any channel is blocked. */
   readonly blocked: Readonly<Ref<boolean>>
@@ -81,8 +93,8 @@ export interface AudioMixer {
 interface Playing {
   track: Track
   req: ChannelRequest
-  /** Interrupted, or its resume was refused: waits for an unlock. */
-  stalled: boolean
+  /** Why it waits for an unlock: interrupted from outside, by the context, or a resume the browser refused. */
+  stall: 'paused' | 'suspended' | 'refused' | null
   /** Paused by a hold. */
   paused: boolean
 }
@@ -103,6 +115,15 @@ interface TrackBook {
 
 const isRefusal = (e: unknown) => e instanceof DOMException && e.name === 'NotAllowedError'
 
+// A track that throws must not stop a transition half way: the state machine carries on as if the call had worked.
+function safely(call: () => void) {
+  try {
+    call()
+  } catch (e) {
+    log.warn('track call failed', e)
+  }
+}
+
 // Every awaited step checks `generation`, so only the latest request touches tracks.
 function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
   let generation = 0
@@ -112,23 +133,41 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
   let held = false
   let holdToken = 0
   const blocked = ref(false)
+  const tapHelps = ref(false)
   const endedListeners: Array<(key: string) => void> = []
 
   function sync() {
-    blocked.value = !held && (!!incoming?.refused || !!current?.stalled)
+    const refused = !!incoming?.refused
+    const stall = current?.stall ?? null
+    blocked.value = !held && (refused || stall !== null)
+    tapHelps.value = !held && (refused || stall === 'suspended' || stall === 'refused')
   }
 
   function fadeOut(track: Track, seconds: number) {
-    track.fadeTo(0, seconds)
+    safely(() => track.unpin())
+    safely(() => track.fadeTo(0, seconds))
     void deps.wait(seconds).then(() => {
-      track.pause()
+      safely(() => track.pause())
       book.release(track)
     })
+  }
+
+  function makeCurrent(p: Pending): Playing {
+    safely(() => p.track.pin())
+    return { track: p.track, req: p.req, stall: null, paused: false }
   }
 
   function dropCurrent(seconds: number) {
     if (current) fadeOut(current.track, seconds)
     current = null
+  }
+
+  // The track is gone for good: its key may be asked for again.
+  function forgetCurrent(c: Playing) {
+    current = null
+    if (requested === c.req.key) requested = null
+    safely(() => c.track.unpin())
+    book.release(c.track)
   }
 
   function dropIncoming() {
@@ -143,19 +182,31 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
   }
 
   function watchTrack(track: Track) {
-    track.onInterrupted(() => {
-      if (current?.track !== track) return
-      current.stalled = true
+    track.onInterrupted(cause => {
+      const c = current
+      if (c?.track !== track) return
+      if (cause === 'error') {
+        // A tap cannot fix broken media: nothing is current, and the same src may be asked for again.
+        log.warn(`playback failed: ${c.req.src}`)
+        forgetCurrent(c)
+      } else {
+        c.stall = cause
+      }
+      sync()
+    })
+    track.onResumed(() => {
+      const c = current
+      if (c?.track !== track || !c.stall) return
+      c.stall = null
+      if (held && c.paused) safely(() => track.pause())
       sync()
     })
     track.onEnded(() => {
-      if (current?.track !== track) return
-      const { key } = current.req
-      current = null
-      if (requested === key) requested = null
-      book.release(track)
+      const c = current
+      if (c?.track !== track) return
+      forgetCurrent(c)
       sync()
-      endedListeners.forEach(listener => listener(key))
+      endedListeners.forEach(listener => listener(c.req.key))
     })
   }
 
@@ -179,46 +230,42 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
     if (gen !== generation || incoming !== p) return
     const previous = current
     incoming = null
-    current = { track: p.track, req: p.req, stalled: false, paused: false }
+    current = makeCurrent(p)
     if (held) {
-      p.track.pause()
+      safely(() => p.track.pause())
       current.paused = true
     } else {
-      p.track.fadeTo(1, fade)
+      safely(() => p.track.fadeTo(1, fade))
     }
     if (previous) fadeOut(previous.track, fade)
     sync()
   }
 
   async function resumeCurrent(c: Playing, fade: number) {
-    c.stalled = false
+    c.stall = null
     sync()
     try {
       await c.track.play()
     } catch (e) {
       if (current !== c) return
-      if (isRefusal(e)) {
-        c.stalled = true
-      } else {
-        current = null
-        if (requested === c.req.key) requested = null
-        book.release(c.track)
-      }
+      if (isRefusal(e)) c.stall = 'refused'
+      else forgetCurrent(c)
       sync()
       return
     }
     if (current !== c) return
     if (held) {
-      c.track.pause()
+      safely(() => c.track.pause())
       c.paused = true
       return
     }
     c.paused = false
-    c.track.fadeTo(1, fade)
+    safely(() => c.track.fadeTo(1, fade))
   }
 
   return {
     blocked: readonly(blocked),
+    tapHelps: readonly(tapHelps),
     request(next) {
       const key = next?.key ?? null
       if (key === requested) return
@@ -255,10 +302,10 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
       const token = ++holdToken
       const c = current
       if (c && !c.paused) {
-        c.track.fadeTo(0, fade)
+        safely(() => c.track.fadeTo(0, fade))
         void deps.wait(fade).then(() => {
           if (token !== holdToken || current !== c) return
-          c.track.pause()
+          safely(() => c.track.pause())
           c.paused = true
         })
       }
@@ -273,14 +320,14 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
         return
       }
       const c = current
-      if (c && (c.paused || c.stalled)) void resumeCurrent(c, fade)
-      else c?.track.fadeTo(1, fade)
+      if (c && (c.paused || c.stall)) void resumeCurrent(c, fade)
+      else if (c) safely(() => c.track.fadeTo(1, fade))
       sync()
     },
     resume() {
       if (held) return
       if (incoming?.ready && incoming.refused) void start(incoming, generation)
-      else if (current?.stalled) void resumeCurrent(current, current.req.fade)
+      else if (current?.stall) void resumeCurrent(current, current.req.fade)
     },
     stop() {
       generation++
@@ -300,54 +347,39 @@ function createChannel(deps: SceneAudioDeps, book: TrackBook): Channel {
 export function createAudioMixer(deps: SceneAudioDeps): AudioMixer {
   const channels = shallowReactive<Channel[]>([])
   const blocked = computed(() => channels.some(c => c.blocked.value))
+  const tapHelps = computed(() => channels.some(c => c.tapHelps.value))
   const live = new Set<Track>()
-  let idleToken = 0
   let removeGesture: (() => void) | null = null
 
   const book: TrackBook = {
     create(src, loop) {
-      idleToken++
       const track = deps.createTrack(src, loop)
       live.add(track)
       return track
     },
     release(track) {
-      if (!live.delete(track)) return
-      track.dispose()
-      if (live.size === 0) scheduleIdle()
+      if (live.delete(track)) safely(() => track.dispose())
     },
   }
 
-  // Checked a microtask later, so a track released and replaced in one step never counts as silence.
-  function scheduleIdle() {
-    const token = ++idleToken
-    queueMicrotask(() => {
-      if (token !== idleToken || live.size > 0) return
-      void deps.wait(IDLE_DELAY_SECONDS).then(() => {
-        if (token === idleToken && live.size === 0) deps.idle()
-      })
-    })
-  }
-
-  function listenForGesture() {
-    if (blocked.value && !removeGesture) {
-      removeGesture = deps.addGestureListener(() => {
-        removeGesture = null
-        void unlock()
-      })
-    } else if (!blocked.value && removeGesture) {
+  // Kept across gestures that did not help (a scroll's touchend may carry no activation); gone once nothing a tap fixes is left.
+  watch(tapHelps, wanted => {
+    if (wanted && !removeGesture) {
+      removeGesture = deps.addGestureListener(() => { void unlock() })
+    } else if (!wanted && removeGesture) {
       removeGesture()
       removeGesture = null
     }
-  }
+  }, { flush: 'sync' })
 
-  async function unlock() {
-    const allowed = await deps.unlock()
-    if (allowed) channels.forEach(c => c.resume())
-    listenForGesture()
+  // The resume may stay pending (WebKit outside activation); the channels go on whenever it settles, the caller does not wait for it.
+  function unlock(): Promise<void> {
+    const attempt = deps.unlock().then(
+      allowed => { if (allowed) channels.forEach(c => c.resume()) },
+      e => { log.warn('unlock failed', e) },
+    )
+    return Promise.race([attempt, deps.wait(UNLOCK_WAIT_SECONDS)])
   }
-
-  watch(blocked, listenForGesture, { flush: 'sync' })
 
   return {
     blocked,
