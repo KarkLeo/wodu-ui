@@ -548,6 +548,50 @@ export const TrayStaysWhereItIs: Story = {
   },
 }
 
+/**
+ * On a phone, closing the large view gives the focus back to the card's picture button without scrolling the tray to
+ * it: the person stays on the sheet they were looking at (the walk found the tray jumping to the card).
+ */
+let openReveal: () => void = () => {}
+export const ClosingTheRevealLeavesTheTray: Story = {
+  decorators: baseDecorators(asMaster),
+  render: () => ({
+    components: { PartyView, ShownImageHost },
+    setup() {
+      useShownImageReveal()
+      openReveal = useShownImage().open
+    },
+    template: '<PartyView /><ShownImageHost />',
+  }),
+  loaders: [atRoute(`/games/${MASTER_GAME}/party/${PARTY[0]!.id},${PARTY[2]!.id}`)],
+  play: async ({ canvasElement }) => {
+    if (!setViewport) return
+    await setViewport(375, 667)
+    try {
+      await waitFor(() => expect(canvasElement.querySelectorAll('.sheet-column')).toHaveLength(2))
+      canvasElement.querySelectorAll('.sheet-column')[1]!.scrollIntoView({ inline: 'center', block: 'nearest' })
+      await settle()
+      const watched = canvasElement.querySelectorAll('.sheet-column')[1]!
+      show(MASTER_GAME, BRIDGE)
+      const button = await findCardButton(canvasElement, /^Open: The old bridge/)
+      await settle(900)
+      const before = leftOf(watched)
+      await expect(before).toBeGreaterThanOrEqual(0)
+      await expect(before).toBeLessThan(window.innerWidth)
+      // What the reveal does on a player's device.
+      openReveal()
+      await visibleDialog(canvasElement, BRIDGE.caption!)
+      await userEvent.click(within(body(canvasElement).getByRole('dialog', { name: BRIDGE.caption! })).getByRole('button', { name: 'Close' }))
+      await waitFor(() => expect(dialog(canvasElement)).toBeNull())
+      await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(button))
+      await settle(600)
+      await expect(Math.abs(leftOf(watched) - before)).toBeLessThan(2)
+    } finally {
+      await setViewport(1280, 720)
+    }
+  },
+}
+
 /** The reveal over a real open sheet: it opens above it, Esc closes it first and focus returns into the sheet. */
 export const RevealOverAnOpenSheet: Story = {
   decorators: baseDecorators(asPlayer),

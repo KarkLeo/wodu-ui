@@ -30,7 +30,8 @@ function onLoad() {
 const visible = computed(() => open.value && props.image !== null)
 
 // Where the focus was before the view opened, so closing it returns there when that is an element of a sheet that is
-// still open (the reveal can open above one); otherwise to the card's picture button, otherwise to the page.
+// still open (the reveal can open above one); otherwise to the card's picture button, otherwise to the page. The card
+// is focused without scrolling: on a phone the tray would otherwise jump from the sheet the person was on to the card.
 let before: HTMLElement | null = null
 function rememberFocus() {
   before = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -39,7 +40,7 @@ function returnFocus(event: Event) {
   event.preventDefault()
   const inOpenDialog = before?.isConnected && before.closest('[role="dialog"]')
   if (before && inOpenDialog) before.focus()
-  else document.querySelector<HTMLElement>('[data-shown-image-open]')?.focus()
+  else document.querySelector<HTMLElement>('[data-shown-image-open]')?.focus({ preventScroll: true })
   before = null
 }
 </script>
