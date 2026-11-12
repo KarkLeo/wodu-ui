@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
   checkUpload, neutralFileName, fileUrl, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
-  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, formatDuration, overlayKey,
+  withSound, withoutSound, checkSoundData, checkSoundDraft, shouldPlayOverlay, nextOverlayArrival, formatDuration, overlayKey,
   oneShotClearDelay, SOUND_NAME_MAX, STALE_ONE_SHOT_SECONDS,
 } from './stage'
 import type { Scene, StageImage, StageSound } from '@/types/stage'
@@ -364,5 +364,32 @@ describe('overlayKey', () => {
   it('differs for the same sound started twice', () => {
     expect(overlayKey(playing)).toBe('k1:2026-11-12T10:00:00.000Z')
     expect(overlayKey(playing)).not.toBe(overlayKey({ ...playing, startedAt: '2026-11-12T10:05:00.000Z' }))
+  })
+})
+
+describe('nextOverlayArrival', () => {
+  const t0 = new Date('2026-11-12T10:00:00.000Z')
+  const t1 = new Date('2026-11-12T10:01:00.000Z')
+
+  it('forgets the decision when there is no overlay', () => {
+    expect(nextOverlayArrival({ key: 'a:1', receivedLive: true, at: t0 }, null, true, t1)).toBeNull()
+    expect(nextOverlayArrival(null, null, false, t0)).toBeNull()
+  })
+
+  it('judges a new key once: found while the stage is not loaded, live afterwards', () => {
+    expect(nextOverlayArrival(null, 'a:1', false, t0)).toEqual({ key: 'a:1', receivedLive: false, at: t0 })
+    expect(nextOverlayArrival(null, 'a:1', true, t0)).toEqual({ key: 'a:1', receivedLive: true, at: t0 })
+  })
+
+  it('keeps the decision, and its moment, for the same key however the load state or the clock changed', () => {
+    const found = nextOverlayArrival(null, 'a:1', false, t0)
+    expect(nextOverlayArrival(found, 'a:1', true, t1)).toBe(found)
+    const live = nextOverlayArrival(null, 'a:1', true, t0)
+    expect(nextOverlayArrival(live, 'a:1', false, t1)).toBe(live)
+  })
+
+  it('decides again for another key, a replay included', () => {
+    const found = nextOverlayArrival(null, 'a:1', false, t0)
+    expect(nextOverlayArrival(found, 'a:2', true, t1)).toEqual({ key: 'a:2', receivedLive: true, at: t1 })
   })
 })

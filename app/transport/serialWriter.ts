@@ -41,7 +41,8 @@ export function serialWriter<T>(opts: {
   show: (value: T) => void
   restore: (key: string, value: T) => void
   send: (key: string, value: T) => Promise<unknown>
-  message: () => string
+  /** The failure toast for `key`; null stays silent. */
+  message: (key: string) => string | null
   settled?: (key: string, error: unknown | null) => void
 }): Writer<T> {
   const chains = new Map<string, Chain<T>>()
@@ -66,7 +67,8 @@ export function serialWriter<T>(opts: {
           if (!current()) break
           if (chain.hasPending) continue
           if (chain.confirmed !== undefined) opts.restore(key, chain.confirmed)
-          reportWriteFailure(err, opts.message(), session)
+          const text = opts.message(key)
+          if (text !== null) reportWriteFailure(err, text, session)
         }
       }
     } catch (err) {

@@ -64,6 +64,9 @@ async function send(gameId: string, stage: Stage): Promise<void> {
 interface Waiter { resolve: () => void; reject: (err: unknown) => void }
 const waiters = new Map<string, Waiter[]>()
 
+// Games whose newest publish asked not to be reported when it fails.
+const quiet = new Map<string, boolean>()
+
 const writer = serialWriter<Stage>({
   show: stage => useStageStore().set(stage),
   // A game forgotten meanwhile must not get its stage back.
@@ -71,10 +74,11 @@ const writer = serialWriter<Stage>({
     if (useGamesStore().byId(stage.id)) useStageStore().set(stage)
   },
   send,
-  message: () => t('errors.stageFailed'),
+  message: key => (quiet.get(key) ? null : t('errors.stageFailed')),
   settled: (key, error) => {
     const list = waiters.get(key) ?? []
     waiters.delete(key)
+    quiet.delete(key)
     for (const w of list) {
       if (error === null) w.resolve()
       else w.reject(error)
@@ -87,8 +91,9 @@ const writer = serialWriter<Stage>({
  * failure restores the last confirmed stage and rethrows. Rejects with `WriteDropped` (not a failure: the
  * server may have accepted it) when the mode or the user changed before the write finished. Swallows nothing.
  */
-export async function publishStage(next: Stage): Promise<void> {
+export async function publishStage(next: Stage, options: { quiet?: boolean } = {}): Promise<void> {
   requireOnlineUser()
+  quiet.set(next.id, options.quiet === true)
   const prior = useStageStore().stageOf(next.id)
   await new Promise<void>((resolve, reject) => {
     const list = waiters.get(next.id) ?? []

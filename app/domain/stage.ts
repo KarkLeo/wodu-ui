@@ -197,6 +197,31 @@ export function fileUrl(base: string, ref: FileRef, thumb?: string): string {
   return thumb ? `${url}?thumb=${encodeURIComponent(thumb)}` : url
 }
 
+/** How a device came by an overlay, decided once, when it first saw the key, and kept while that key stays. */
+export interface OverlayArrival {
+  key: string
+  /** False when the overlay was already in the stage as this table's stage was loaded. */
+  receivedLive: boolean
+  /** The moment of the decision: staleness is judged against it, never against a later clock. */
+  at: Date
+}
+
+/**
+ * The arrival to hold after the stage's overlay key became `key` (null: no overlay). A key seen before keeps its
+ * decision, so a one-shot is neither stopped mid-play nor started late by the clock moving on; a new key is "found"
+ * while the stage is not loaded yet (or was only just loaded) and live otherwise.
+ */
+export function nextOverlayArrival(
+  previous: OverlayArrival | null,
+  key: string | null,
+  loaded: boolean,
+  now: Date,
+): OverlayArrival | null {
+  if (key === null) return null
+  if (previous?.key === key) return previous
+  return { key, receivedLive: loaded, at: now }
+}
+
 export interface PlaybackPrefs {
   sound: 'unset' | 'on' | 'off'
   background: boolean
