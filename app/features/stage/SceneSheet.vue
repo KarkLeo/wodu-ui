@@ -12,6 +12,7 @@ import {
 } from '@/domain/stage'
 import { createScene, republishScene, SceneWriteError, updateScene, type SceneFiles } from '@/transport/media'
 import type { Scene } from '@/types/stage'
+import { ImageFitError } from '@/utils/fitImage'
 import { createLogger } from '@/utils/logger'
 import { sceneThumbUrl } from './sceneThumb'
 import { t } from '@/locales'
@@ -170,6 +171,10 @@ async function submit() {
   } catch (err) {
     if (mine !== attempt) return
     saving.value = false
+    if (err instanceof ImageFitError) {
+      imageError.value = t(err.kind === 'decode' ? 'stage.scenes.form.imageUnreadable' : 'stage.scenes.form.imageCannotFit')
+      return
+    }
     if (err instanceof SceneWriteError) {
       // The session ended under the upload: there is nobody to tell.
       if (err.kind === 'aborted') return

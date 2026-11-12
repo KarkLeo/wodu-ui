@@ -152,6 +152,74 @@ export const BigImageIsFitted: Story = {
   },
 }
 
+/** Where the browser cannot write WebP (it hands back a PNG), the picture is fitted as a JPEG instead. */
+export const BigImageFallsBackToJpeg: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'New scene' })
+    const big = await noisePng()
+    const toBlob = HTMLCanvasElement.prototype.toBlob
+    HTMLCanvasElement.prototype.toBlob = function (callback, type, quality) {
+      toBlob.call(this, callback, type === 'image/webp' ? 'image/png' : type, quality)
+    }
+    try {
+      await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Map')
+      await user.upload(imageInput(canvasElement), big)
+      await user.click(sheet.getByRole('button', { name: 'Add' }))
+      await waitFor(() => expect(sentForms()).toHaveLength(1), { timeout: 20000 })
+    } finally {
+      HTMLCanvasElement.prototype.toBlob = toBlob
+    }
+    const image = sentForms()[0]!.files.image!
+    await expect(image.size).toBeLessThan(2097152)
+    await expect(image.type).toBe('image/jpeg')
+    await expect(image.name).toBe('image.jpg')
+    await closed(canvasElement)
+  },
+}
+
+/** A file the browser cannot decode says so under the picture, not "check your connection". */
+export const UndecodablePicture: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'New scene' })
+    const junk = new File([new Uint8Array(3 * 1024 * 1024)], 'broken.png', { type: 'image/png' })
+    await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Map')
+    await user.upload(imageInput(canvasElement), junk)
+    await user.click(sheet.getByRole('button', { name: 'Add' }))
+    await expect(await sheet.findByText('This picture could not be read.')).toBeVisible()
+    await expect(sheet.queryByText(/Check your connection/i)).toBeNull()
+    await expect(sentForms()).toHaveLength(0)
+    await expect(sheet.getByRole('textbox', { name: 'Name' })).toHaveValue('Map')
+    await expect(sheet.getByRole('button', { name: 'Add' })).toBeEnabled()
+  },
+}
+
+/** A picture that cannot be made small enough is told under the picture too. */
+export const PictureCannotBeFitted: Story = {
+  tags: ['no-visual'],
+  play: async ({ canvasElement }) => {
+    const sheet = body(canvasElement)
+    await sheet.findByRole('dialog', { name: 'New scene' })
+    const big = await noisePng()
+    const toBlob = HTMLCanvasElement.prototype.toBlob
+    HTMLCanvasElement.prototype.toBlob = function (callback, type) {
+      callback(new Blob([new Uint8Array(3 * 1024 * 1024)], { type: type ?? 'image/png' }))
+    }
+    try {
+      await user.type(sheet.getByRole('textbox', { name: 'Name' }), 'Map')
+      await user.upload(imageInput(canvasElement), big)
+      await user.click(sheet.getByRole('button', { name: 'Add' }))
+      await expect(await sheet.findByText('This picture could not be made small enough.', {}, { timeout: 15000 })).toBeVisible()
+    } finally {
+      HTMLCanvasElement.prototype.toBlob = toBlob
+    }
+    await expect(sentForms()).toHaveLength(0)
+  },
+}
+
 /** Editing shows the stored files; each can be removed, but not both. */
 export const EditStoredFiles: Story = {
   args: { scene: TAVERN },
