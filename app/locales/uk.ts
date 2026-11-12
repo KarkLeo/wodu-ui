@@ -1032,9 +1032,12 @@ export const messages: Messages = {
       tile: {
         noCaption: 'Без підпису',
         shown: 'Показано',
+        noCaptionAt: 'Без підпису, зображення {n} з {total}',
+        shownName: '{name}, показано',
       },
       actions: {
-        label: 'Вибране зображення',
+        labelCaption: 'Вибрано зображення: {caption}',
+        labelPosition: 'Вибрано зображення {n} з {total}',
         hint: 'Обери зображення, щоб показати його, змінити або видалити.',
         show: 'Показати',
         showWithoutCaption: 'Показати без підпису',
@@ -1047,6 +1050,10 @@ export const messages: Messages = {
         body: 'Зображення буде видалено разом із файлом.',
         bodyShown: 'Зображення зараз показано: воно сховається в усіх і буде видалене разом із файлом.',
         confirm: 'Видалити',
+      },
+      orphan: {
+        text: 'За столом показано зображення, якого вже немає в галереї.',
+        hide: 'Сховати',
       },
       form: {
         titleAdd: 'Нове зображення',

@@ -31,7 +31,9 @@ const file = ref<File | null>(null)
 // The stored picture the form will replace on save.
 const removeFile = ref(false)
 const fileError = ref('')
-const { saving, progress, failure, failureText, saved, republishing, sheetOpen, reset: resetSave, run, retryPublish } = useMediaSave('images', open)
+const { saving, progress, failure, failureText, saved, republishing, sheetOpen, reset: resetSave, run, retryPublish } = useMediaSave('images', open, {
+  publish: { failed: 'stage.images.form.publishFailed', stillFailed: 'stage.images.form.publishStillFailed' },
+})
 
 function reset() {
   resetSave()
@@ -53,7 +55,7 @@ const missing = computed(() => (problems.value.includes('noFile') ? t('stage.ima
 const missingId = `${uid}-missing`
 
 const stored = computed(() => (props.image && !removeFile.value && !file.value ? t('stage.images.form.imageAttached') : undefined))
-const storedThumb = computed(() => (stored.value && props.image ? imageThumbUrl(props.image, '72x72') : undefined))
+const storedThumb = computed(() => (stored.value && props.image ? imageThumbUrl(props.image) : undefined))
 const onTheTable = computed(() => props.image !== undefined && shownImageId.value === props.image.id)
 
 function pickFile(picked: File | null) {

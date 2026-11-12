@@ -36,7 +36,7 @@ let duration: Promise<number | null> = Promise.resolve(null)
 const fileError = ref('')
 // Saving has begun but the file's length is still being read: the upload has not started.
 const reading = ref(false)
-const { saving, progress, failure, failureText, sheetOpen, reset: resetSave, run } = useMediaSave('sounds', open)
+const { saving, progress, failure, failureText, sheetOpen, reset: resetSave, run } = useMediaSave('sounds', open, { onFailure: () => { reading.value = false } })
 
 function reset() {
   resetSave()
@@ -89,7 +89,6 @@ function pickFile(picked: File | null) {
 }
 
 function refused(err: unknown): boolean {
-  reading.value = false
   if (err instanceof MediaWriteError && err.kind === 'fileRefused') {
     fileError.value = t(err.refusal?.reason === 'size' ? 'stage.sounds.form.tooLarge' : 'stage.sounds.form.wrongType', { mb: AUDIO_MAX_BYTES / MB })
     return true

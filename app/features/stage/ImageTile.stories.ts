@@ -7,7 +7,7 @@ const meta = {
   title: 'Features/Stage/ImageTile',
   component: ImageTile,
   parameters: { layout: 'centered' },
-  args: { image: BRIDGE, selected: false, shown: false, onSelect: fn() },
+  args: { image: BRIDGE, selected: false, shown: false, position: 1, total: 3, onSelect: fn() },
   render: (args) => ({
     components: { ImageTile },
     setup: () => ({ args }),
@@ -69,7 +69,7 @@ export const LongCaption: Story = {
 /** The thumbnail has a fixed 4:3 frame whatever the picture inside it. */
 export const FixedFrame: Story = {
   play: async ({ canvasElement }) => {
-    const pic = canvasElement.querySelector('.it-pic') as HTMLElement
+    const pic = canvasElement.querySelector('.thumb') as HTMLElement
     const box = pic.getBoundingClientRect()
     await expect(Math.abs(box.width / box.height - 4 / 3)).toBeLessThan(0.02)
   },

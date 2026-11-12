@@ -35,7 +35,9 @@ const removeImage = ref(false)
 const removeSound = ref(false)
 const imageError = ref('')
 const soundError = ref('')
-const { saving, progress, failure, failureText, saved: savedScene, republishing, sheetOpen, reset: resetSave, run, retryPublish } = useMediaSave('scenes', open)
+const { saving, progress, failure, failureText, saved: savedScene, republishing, sheetOpen, reset: resetSave, run, retryPublish } = useMediaSave('scenes', open, {
+  publish: { failed: 'stage.scenes.form.publishFailed', stillFailed: 'stage.scenes.form.publishStillFailed' },
+})
 
 function reset() {
   resetSave()

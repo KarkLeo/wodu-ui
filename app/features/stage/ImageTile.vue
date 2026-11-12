@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import Pill from '@/components/ui/Pill.vue'
 import SelectableTile from '@/components/ui/SelectableTile.vue'
-import IconImage from '@/components/ui/icons/IconImage.vue'
+import Thumbnail from '@/components/ui/Thumbnail.vue'
 import { imageThumbUrl } from './imageThumb'
 import type { TableImage } from '@/types/stage'
 import { t } from '@/locales'
@@ -12,12 +12,17 @@ const props = defineProps<{
   selected: boolean
   /** The image shown at the table. */
   shown: boolean
+  /** Its place in the gallery, which names a tile that has no caption. */
+  position: number
+  total: number
 }>()
 defineEmits<{ (e: 'select'): void }>()
 
-const broken = ref(false)
-watch(() => props.image.file, () => { broken.value = false })
-const thumb = computed(() => (broken.value ? null : imageThumbUrl(props.image)))
+// A tile with no caption is told apart by its place, and the shown one says so.
+const label = computed(() => {
+  const name = props.image.caption || t('stage.images.tile.noCaptionAt', { n: props.position, total: props.total })
+  return props.shown ? t('stage.images.tile.shownName', { name }) : name
+})
 </script>
 
 <template>
@@ -25,14 +30,13 @@ const thumb = computed(() => (broken.value ? null : imageThumbUrl(props.image)))
     class="it"
     size="compact"
     :selected="selected"
+    :aria-label="label"
     :aria-current="shown ? 'true' : undefined"
     @select="$emit('select')"
   >
-    <span :class="['it-pic', { 'is-empty': !thumb }]">
-      <img v-if="thumb" :src="thumb" alt="" @error="broken = true">
-      <IconImage v-else :size="20" />
+    <Thumbnail class="it-pic" :src="imageThumbUrl(image)" aspect="4 / 3">
       <Pill v-if="shown" class="it-mark" tone="accent" size="sm" dot>{{ t('stage.images.tile.shown') }}</Pill>
-    </span>
+    </Thumbnail>
     <span :class="['it-caption', { 'is-none': !image.caption }]" :title="image.caption ?? undefined">
       {{ image.caption || t('stage.images.tile.noCaption') }}
     </span>
@@ -42,19 +46,7 @@ const thumb = computed(() => (broken.value ? null : imageThumbUrl(props.image)))
 <style scoped>
 /* A button is as wide as its content unless told: the caption must stay inside the cell. */
 .it { width: 100%; min-width: 0; }
-.it-pic {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border-radius: var(--r-sm);
-  background: var(--vtt-bg-sunken);
-}
-/* Cropped in the master's grid only; players see the whole picture. */
-.it-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.it-pic.is-empty { border: 1px dashed var(--vtt-border-strong); color: var(--vtt-text-muted); }
+.it-pic { width: 100%; }
 .it-mark { position: absolute; left: 4px; top: 4px; max-width: calc(100% - 8px); }
 .it-caption {
   display: block;

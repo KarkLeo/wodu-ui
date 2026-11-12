@@ -2,6 +2,7 @@
 import { computed, nextTick, ref } from 'vue'
 import FormField from './FormField.vue'
 import IconClose from './icons/IconClose.vue'
+import Thumbnail from './Thumbnail.vue'
 import { t } from '@/locales'
 
 const props = defineProps<{
@@ -101,7 +102,7 @@ function formatSize(bytes: number): string {
           </button>
         </div>
         <div v-else-if="currentName" class="file-row">
-          <img v-if="currentThumb" class="file-thumb" :src="currentThumb" alt="">
+          <Thumbnail v-if="currentThumb" class="file-thumb" :src="currentThumb" width="36px" height="36px" :icon-size="14" />
           <div class="file-text">
             <span class="file-name">{{ currentName }}</span>
           </div>
@@ -189,8 +190,6 @@ function formatSize(bytes: number): string {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  object-fit: cover;
-  border-radius: var(--r-sm);
 }
 .file-text { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .file-name {

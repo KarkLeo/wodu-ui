@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { ref, useId } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Pill from '@/components/ui/Pill.vue'
+import Thumbnail from '@/components/ui/Thumbnail.vue'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
-import IconImage from '@/components/ui/icons/IconImage.vue'
 import IconMusic from '@/components/ui/icons/IconMusic.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
 import { useBusyFocus } from '@/composables/useBusyFocus'
@@ -32,10 +32,6 @@ function toggle() {
 }
 
 const nameId = useId()
-const broken = ref(false)
-watch(() => props.scene.image, () => { broken.value = false })
-const thumb = computed(() => (broken.value ? null : sceneThumbUrl(props.scene)))
-
 const mainRef = ref<{ $el: HTMLElement } | null>(null)
 const editRef = ref<{ $el: HTMLElement } | null>(null)
 const deleteRef = ref<{ $el: HTMLElement } | null>(null)
@@ -47,10 +43,7 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
 <template>
   <li :class="['sr', { 'is-on': active }]" :aria-current="active ? 'true' : undefined">
     <div class="sr-inner">
-      <div :class="['sr-thumb', { 'is-empty': !thumb }]">
-        <img v-if="thumb" :src="thumb" alt="" @error="broken = true">
-        <IconImage v-else :size="16" />
-      </div>
+      <Thumbnail class="sr-thumb" :src="sceneThumbUrl(scene)" width="60px" height="38px" :icon-size="16" />
       <div class="sr-text">
         <span :id="nameId" class="sr-name">{{ scene.name }}</span>
         <span v-if="active || scene.sound" class="sr-meta">
@@ -114,21 +107,6 @@ defineExpose({ focusDelete: () => deleteRef.value?.$el.focus() })
   align-items: center;
   gap: 4px 10px;
   padding: 8px 10px;
-}
-.sr-thumb {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 38px;
-  overflow: hidden;
-  border-radius: var(--r-sm);
-  background: var(--vtt-bg-sunken);
-}
-.sr-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.sr-thumb.is-empty {
-  border: 1px dashed var(--vtt-border-strong);
-  color: var(--vtt-text-muted);
 }
 .sr-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sr-name {

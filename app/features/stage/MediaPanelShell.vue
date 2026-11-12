@@ -31,7 +31,7 @@ const text = (part: 'title' | 'count' | 'add' | 'loading' | 'loadFailed' | 'retr
   <section class="sp" :aria-label="text('title')">
     <header class="sp-head">
       <h2 class="sp-title">{{ text('title') }}</h2>
-      <span v-if="status === 'ready'" class="sp-count">{{ text('count', { count, max }) }}</span>
+      <span class="sp-count" aria-live="polite">{{ status === 'ready' ? text('count', { count, max }) : '' }}</span>
       <Button
         v-if="status === 'ready'"
         ref="addRef"
@@ -44,6 +44,8 @@ const text = (part: 'title' | 'count' | 'add' | 'loading' | 'loadFailed' | 'retr
         {{ text('add') }}
       </Button>
     </header>
+
+    <slot name="notice" />
 
     <div class="sp-body">
       <StateNote v-if="status === 'loading' || status === 'idle'" size="sm" role="status">{{ text('loading') }}</StateNote>

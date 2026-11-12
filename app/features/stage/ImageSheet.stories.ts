@@ -4,7 +4,7 @@ import { ClientResponseError } from 'pocketbase'
 import { ref } from 'vue'
 import ImageSheet from './ImageSheet.vue'
 import { crookhollow, CROOKHOLLOW_META, PARTY } from '@/stories/fixtures'
-import { BRIDGE, manyImages, MAP, withImages } from '@/stories/images'
+import { BRIDGE, manyImages, MAP, recordImageSources, withImages } from '@/stories/images'
 import { modalDocs } from '@/stories/docs'
 import { noisePng, pictureFile } from '@/stories/scenes'
 import { storyRouter } from '@/stories/router'
@@ -364,5 +364,23 @@ export const SessionEndsMidUpload: Story = {
     await waitFor(() => expect(sheet.queryByRole('progressbar')).toBeNull())
     await expect(sheet.queryByRole('alert')).toBeNull()
     await expect(sheet.getByRole('button', { name: 'Save' })).toBeEnabled()
+  },
+}
+
+/** The stored picture's preview asks for the one thumbnail the collection configures; any other size makes the server send the original. */
+export const StoredPreviewAsksForTheConfiguredThumbnail: Story = {
+  tags: ['no-visual'],
+  args: { image: BRIDGE },
+  loaders: [async () => ({ recorded: recordImageSources() })],
+  play: async ({ canvasElement, loaded }) => {
+    const recorded = (loaded as { recorded: ReturnType<typeof recordImageSources> }).recorded
+    try {
+      const sheet = body(canvasElement)
+      await sheet.findByRole('dialog', { name: 'Edit image' })
+      await waitFor(() => expect(recorded.urls.length).toBeGreaterThan(0))
+      for (const url of recorded.urls) await expect(url).toMatch(/\/api\/files\/images\/story-image-bridge\/image.jpg\?thumb=320x0$/)
+    } finally {
+      recorded.restore()
+    }
   },
 }

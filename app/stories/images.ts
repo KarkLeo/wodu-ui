@@ -67,3 +67,18 @@ export function withImages(seed: ImagesSeed = {}): Decorator {
     template: '<story />',
   })
 }
+
+/** Records the address of every `<img>` set while it is on (the stories have no server for files). Call `restore` when done. */
+export function recordImageSources(): { urls: string[]; restore(): void } {
+  const proto = HTMLImageElement.prototype
+  const original = Object.getOwnPropertyDescriptor(proto, 'src')!
+  const urls: string[] = []
+  Object.defineProperty(proto, 'src', {
+    ...original,
+    set(this: HTMLImageElement, value: string) {
+      urls.push(String(value))
+      original.set!.call(this, value)
+    },
+  })
+  return { urls, restore() { Object.defineProperty(proto, 'src', original) } }
+}

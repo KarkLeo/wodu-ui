@@ -22,7 +22,14 @@ export interface SaveContext {
  * progress, and a failure worded by the transport's kind. Each sheet keeps its own fields and what it does with
  * a refused file; the messages are `stage.<kind>.form.*`.
  */
-export function useMediaSave<K extends MediaKind>(kind: K, open: Ref<boolean>) {
+export interface MediaSaveOptions {
+  /** The messages of a kind whose entries can be on the table; a kind without them never reaches the table's republish. */
+  publish?: { failed: MessageKey; stillFailed: MessageKey }
+  /** Runs whenever a save fails or is refused, before it is worded: put the form's busy marks back. */
+  onFailure?: () => void
+}
+
+export function useMediaSave<K extends MediaKind>(kind: K, open: Ref<boolean>, options: MediaSaveOptions = {}) {
   type Entry = MediaEntries[K]
   const saving = ref(false)
   const progress = ref(0)
@@ -72,11 +79,12 @@ export function useMediaSave<K extends MediaKind>(kind: K, open: Ref<boolean>) {
     } catch (err) {
       if (stale()) return
       saving.value = false
+      options.onFailure?.()
       if (refused?.(err)) return
       if (err instanceof MediaWriteError) {
         // The session ended under the upload: there is nobody to tell.
         if (err.kind === 'aborted') return
-        if (err.kind === 'stagePublishFailed' && err.saved) {
+        if (err.kind === 'stagePublishFailed' && err.saved && options.publish) {
           saved.value = err.saved
           failure.value = 'publishFailed'
           return
@@ -115,8 +123,7 @@ export function useMediaSave<K extends MediaKind>(kind: K, open: Ref<boolean>) {
       case 'limitMayHaveChanged':
         return t(`${prefix}.${failure.value}`, { max: MEDIA_LIMITS[kind] })
       case 'publishFailed':
-        // Only a kind whose entries can be on the table words this.
-        return t((republishFailed.value ? `${prefix}.publishStillFailed` : `${prefix}.publishFailed`) as MessageKey)
+        return options.publish ? t(republishFailed.value ? options.publish.stillFailed : options.publish.failed) : ''
       case 'notMaster':
       case 'saveFailed':
         return t(`${prefix}.${failure.value}`)

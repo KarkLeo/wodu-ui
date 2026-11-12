@@ -6,7 +6,7 @@ import ImagesPanel from './ImagesPanel.vue'
 import { useMediaSession } from '@/composables/useMediaSession'
 import { useTrayCards } from '@/composables/useTrayCards'
 import { crookhollow, CROOKHOLLOW_META, olden, PARTY } from '@/stories/fixtures'
-import { BRIDGE, IMAGES, imageRow, manyImages, OGRE, withImages } from '@/stories/images'
+import { BRIDGE, IMAGES, imageRow, manyImages, MAP, OGRE, recordImageSources, withImages } from '@/stories/images'
 import { pictureFile } from '@/stories/scenes'
 import { atRoute, withGameTable } from '@/stories/state'
 import { useMediaStore } from '@/stores/media'
@@ -38,13 +38,13 @@ type Story = StoryObj<typeof meta>
 const body = (el: HTMLElement) => within(el.ownerDocument.body)
 const user = userEvent.setup({ applyAccept: false })
 const tile = (el: HTMLElement, caption: string | RegExp) => within(el).getByRole('radio', { name: caption })
-const tiles = (el: HTMLElement) => within(el).getAllByRole('radio')
+const tiles = (el: HTMLElement) => within(el).queryAllByRole('radio')
 const captions = (el: HTMLElement) => tiles(el).map(t => t.querySelector('.it-caption')?.textContent?.trim())
 const stageImage = () => (storedRecords('stages')[0]?.data as { image: Record<string, unknown> | null } | undefined)?.image
 const toastTexts = () => useToastsStore().items.map(t => t.text)
 const STAGE_TOAST = 'The change did not reach the table. Try again.'
 const closed = (el: HTMLElement) => waitFor(() => expect(body(el).queryByRole('dialog')).toBeNull())
-const bar = (el: HTMLElement) => within(el).queryByRole('group', { name: 'Selected image' })
+const bar = (el: HTMLElement) => within(el).queryByRole('group', { name: /^Selected image/ })
 const barButtons = (el: HTMLElement) => within(bar(el)!).getAllByRole('button').map(b => b.getAttribute('aria-label') ?? b.textContent?.trim())
 
 /** Three images, one shown at the table, with the count, the grid and nothing selected. */
@@ -410,9 +410,9 @@ export const DeleteShownHidesFirst: Story = {
     await expect(storedRecords('images').map(r => r.id)).not.toContain(BRIDGE.id)
     await expect(useStageStore().stageOf(crookhollow.id).image).toBeNull()
     await closed(canvasElement)
-    // The tile and its bar are gone: nothing is selected, and the focus goes to the upload button.
+    // The tile and its bar are gone: nothing is selected, and the focus goes to the tile that took its place.
     await expect(bar(canvasElement)).toBeNull()
-    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(within(canvasElement).getByRole('button', { name: 'Upload image' })))
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(tiles(canvasElement)[0]))
   },
 }
 
@@ -563,5 +563,173 @@ export const PlayerRequestsNothing: Story = {
     await expect(within(canvasElement).queryByRole('region', { name: 'Images' })).toBeNull()
     await expect(pbRequests().filter(r => r.startsWith('images.'))).toEqual([])
     await expect(useMediaStore().images.status).toBe('idle')
+  },
+}
+
+/** The control of the story above: the same harness at a table whose master I am does ask for the images. */
+export const MasterRequestsImages: Story = {
+  tags: ['no-visual'],
+  render: () => ({
+    components: {},
+    setup() {
+      useMediaSession()
+      useToolPanelsStore().open.images = true
+      onUnmounted(closeMedia)
+      return { cards: useTrayCards().cards }
+    },
+    template: '<div><component :is="c.component" v-for="c in cards" :key="c.key" /></div>',
+  }),
+  decorators: [withImages({ status: 'idle' }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(useMediaStore().images.status).toBe('ready'))
+    await expect(pbRequests().filter(r => r.startsWith('images.'))).not.toEqual([])
+    await expect(await within(canvasElement).findByRole('region', { name: 'Images' })).toBeVisible()
+    await waitFor(() => expect(tiles(canvasElement)).toHaveLength(3))
+  },
+}
+
+/** The tiles ask the server for the one thumbnail the collection configures, never another size (which would send the original). */
+export const TilesAskForTheConfiguredThumbnail: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages(), asMaster],
+  loaders: [route],
+  play: async () => {
+    const recorded = recordImageSources()
+    try {
+      useMediaStore().setList('images', crookhollow.id, [{ ...BRIDGE, file: 'image-other.jpg' }, { ...MAP, file: 'image-other.png' }, OGRE])
+      await waitFor(() => expect(recorded.urls.length).toBeGreaterThanOrEqual(2))
+      for (const url of recorded.urls) await expect(url).toMatch(/thumb=320x0$/)
+    } finally {
+      recorded.restore()
+    }
+  },
+}
+
+/** The action bar is named after the selected image: its caption, or its place when it has none. */
+export const BarIsNamedAfterTheImage: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await user.click(tile(canvasElement, /The old bridge/))
+    await expect(canvas.getByRole('group', { name: 'Selected image: The old bridge at dusk' })).toBeVisible()
+    await user.click(tile(canvasElement, /No caption/))
+    await expect(canvas.getByRole('group', { name: 'Selected image: image 2 of 3' })).toBeVisible()
+  },
+}
+
+/** Tiles without a caption are told apart by their place, and the shown one says so. */
+export const TilesAreNamedByPlaceAndShown: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages({ images: [MAP, { ...MAP, id: 'story-image-map-2' }, BRIDGE], shown: 'story-image-map-2' }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    await expect(tile(canvasElement, 'No caption, image 1 of 3')).toBeVisible()
+    await expect(tile(canvasElement, 'No caption, image 2 of 3, shown')).toBeVisible()
+    await expect(tile(canvasElement, 'The old bridge at dusk')).toBeVisible()
+  },
+}
+
+/** After deleting the selected tile the focus goes to the tile that took its place; the upload button only when none is left. */
+export const DeleteMovesFocusToTheGrid: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages({ images: [BRIDGE, MAP] }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const remove = async (caption: string | RegExp) => {
+      await user.click(tile(canvasElement, caption))
+      await user.click(within(bar(canvasElement)!).getByRole('button', { name: 'Delete' }))
+      await user.click(within(await body(canvasElement).findByRole('dialog')).getByRole('button', { name: 'Delete' }))
+      await closed(canvasElement)
+    }
+    await remove(/The old bridge/)
+    await waitFor(() => expect(tiles(canvasElement)).toHaveLength(1))
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(tile(canvasElement, /No caption/)))
+    await remove(/No caption/)
+    await waitFor(() => expect(tiles(canvasElement)).toHaveLength(0))
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(within(canvasElement).getByRole('button', { name: 'Upload image' })))
+  },
+}
+
+/** A refused "Show without caption" leaves the focus on that button. */
+export const FailedShowWithoutCaptionKeepsFocus: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages(), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    spyOn(pb.collection('stages'), 'create').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    await user.click(tile(canvasElement, /The old bridge/))
+    await user.click(within(bar(canvasElement)!).getByRole('button', { name: 'Show without caption' }))
+    await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    // The button may be a new element after the rollback: what counts is that the focus is on "Show without caption".
+    const plain = within(bar(canvasElement)!).getByRole('button', { name: 'Show without caption' })
+    await expect(plain).toBeEnabled()
+    await expect(canvasElement.ownerDocument.activeElement).toBe(plain)
+  },
+}
+
+const noticeText = 'An image that is no longer in the gallery is on the table.'
+
+/** The shown image is not in the gallery: a notice with Hide, so the master can always clear the table. */
+export const OrphanedShownImageCanBeHidden: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages({ shown: BRIDGE.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByText(noticeText)).toBeNull()
+    useMediaStore().setList('images', crookhollow.id, [MAP, OGRE])
+    const notice = await canvas.findByRole('alert')
+    await expect(notice).toHaveTextContent(noticeText)
+    await user.click(within(notice).getByRole('button', { name: 'Hide' }))
+    await waitFor(() => expect(stageImage()).toBeNull())
+    await waitFor(() => expect(canvas.queryByText(noticeText)).toBeNull())
+    await expect(toastTexts()).toEqual([])
+  },
+}
+
+/** The same notice when the list did not load at all. */
+export const OrphanNoticeWhenTheListFailed: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages({ images: [BRIDGE], shown: BRIDGE.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    useMediaStore().setList('images', crookhollow.id, [])
+    useMediaStore().setFailed('images', crookhollow.id)
+    await expect(await within(canvasElement).findByText(noticeText)).toBeVisible()
+    await expect(within(canvasElement).getByRole('button', { name: 'Hide' })).toBeEnabled()
+  },
+}
+
+/** A refused hide from the notice gives the stage writer's message alone, and the notice stays. */
+export const OrphanHideFailed: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages({ images: [BRIDGE, MAP], shown: BRIDGE.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    useMediaStore().setList('images', crookhollow.id, [MAP])
+    spyOn(pb.collection('stages'), 'update').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    spyOn(pb.collection('stages'), 'create').mockRejectedValue(new ClientResponseError({ status: 500 }))
+    const canvas = within(canvasElement)
+    await user.click(await canvas.findByRole('button', { name: 'Hide' }))
+    await waitFor(() => expect(toastTexts()).toEqual([STAGE_TOAST]))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(toastTexts()).toEqual([STAGE_TOAST])
+    await expect(canvas.getByText(noticeText)).toBeVisible()
+  },
+}
+
+/** No notice while the shown image is in the grid, or nothing is shown. */
+export const NoNoticeWhileTheShownImageIsListed: Story = {
+  tags: ['no-visual'],
+  decorators: [withImages({ shown: BRIDGE.id }), asMaster],
+  loaders: [route],
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByText(noticeText)).toBeNull()
+    await expect(within(canvasElement).queryByRole('alert')).toBeNull()
   },
 }

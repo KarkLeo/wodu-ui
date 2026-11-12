@@ -32,6 +32,7 @@ export const Ready: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('region', { name: 'Sounds' })).toBeVisible()
     await expect(canvas.getByText('2 / 15')).toBeVisible()
+    await expect(canvas.getByText('2 / 15')).toHaveAttribute('aria-live', 'polite')
     await expect(canvas.getByText('The entries')).toBeVisible()
     await expect(canvas.getByTestId('footer')).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Upload sound' }))

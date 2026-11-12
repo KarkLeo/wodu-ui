@@ -1030,9 +1030,12 @@ export const messages = {
       tile: {
         noCaption: 'No caption',
         shown: 'Shown',
+        noCaptionAt: 'No caption, image {n} of {total}',
+        shownName: '{name}, shown',
       },
       actions: {
-        label: 'Selected image',
+        labelCaption: 'Selected image: {caption}',
+        labelPosition: 'Selected image: image {n} of {total}',
         hint: 'Select an image to show it, edit it or delete it.',
         show: 'Show',
         showWithoutCaption: 'Show without caption',
@@ -1045,6 +1048,10 @@ export const messages = {
         body: 'The image is removed with its file.',
         bodyShown: 'The image is on the table now: it will be hidden for everyone, and removed with its file.',
         confirm: 'Delete',
+      },
+      orphan: {
+        text: 'An image that is no longer in the gallery is on the table.',
+        hide: 'Hide',
       },
       form: {
         titleAdd: 'New image',

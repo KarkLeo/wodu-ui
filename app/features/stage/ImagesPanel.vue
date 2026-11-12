@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
+import AlertBanner from '@/components/ui/AlertBanner.vue'
 import ConfirmSheet from '@/components/ui/ConfirmSheet.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import IconEdit from '@/components/ui/icons/IconEdit.vue'
 import IconTrash from '@/components/ui/icons/IconTrash.vue'
+import StateNote from '@/components/ui/StateNote.vue'
 import ImageSheet from './ImageSheet.vue'
 import ImageTile from './ImageTile.vue'
 import MediaPanelShell from './MediaPanelShell.vue'
@@ -43,6 +45,17 @@ const { tabIndexFor, onKeydown } = useRovingSelection<string | null>(
 )
 
 const isShown = computed(() => selected.value !== null && shownImageId.value === selected.value.id)
+// The shown image can be missing from the gallery (deleted elsewhere, or the list did not load): the master must still be able to clear the table.
+const orphanShown = computed(() =>
+  (status.value === 'ready' || status.value === 'failed') && shownImageId.value !== null && !images.value.some(i => i.id === shownImageId.value))
+const hideOrphan = () => (shownImageId.value ? change(shownImageId.value, hideImage, () => null) : Promise.resolve(true))
+const orphanBusy = computed(() => shownImageId.value !== null && busy.has(shownImageId.value))
+
+const selectedPosition = computed(() => images.value.findIndex(i => i.id === selectedId.value) + 1)
+const barLabel = computed(() => (selected.value?.caption
+  ? t('stage.images.actions.labelCaption', { caption: selected.value.caption })
+  : t('stage.images.actions.labelPosition', { n: selectedPosition.value, total: images.value.length })))
+
 const selectedBusy = computed(() => selected.value !== null && busy.has(selected.value.id))
 
 // The stage writer says by itself when a switch did not reach the table, so the panel adds nothing of its own;
@@ -57,11 +70,15 @@ const editRef = ref<{ $el: HTMLElement } | null>(null)
 const deleteRef = ref<{ $el: HTMLElement } | null>(null)
 useBusyFocus(() => selectedBusy.value, [mainRef, plainRef, editRef, deleteRef])
 
-// "Show without caption" is gone once the image is shown, and the focus goes to the one button left in its place.
-async function switched(done: Promise<boolean>) {
+// The show buttons follow the stage, so the pressed one may be replaced (rolled back after a refusal) or gone ("Show without caption"
+// once the image is shown): the focus goes to the button now in its place, or to the main one when there is none.
+async function switched(done: Promise<boolean>, pressed: 'main' | 'plain') {
   await done
   await nextTick()
-  if (!document.activeElement || document.activeElement === document.body) mainRef.value?.$el.focus()
+  const active = document.activeElement
+  if (active && active !== document.body) return
+  ;(pressed === 'plain' ? plainRef.value : null)?.$el.focus()
+  if (document.activeElement === document.body || !document.activeElement) mainRef.value?.$el.focus()
 }
 
 const sheetOpen = ref(false)
@@ -78,7 +95,7 @@ function edit(image: TableImage) {
   sheetOpen.value = true
 }
 
-const { open: deleteOpen, live: deletingShown, ask: askDelete, confirm: confirmDelete } = useMediaDelete<TableImage>({
+const { open: deleteOpen, live: deletingShown, ask, confirm: confirmDelete } = useMediaDelete<TableImage>({
   gameId: () => gameId.value,
   list: () => media.images.list,
   busy,
@@ -88,34 +105,58 @@ const { open: deleteOpen, live: deletingShown, ask: askDelete, confirm: confirmD
   notMasterKey: 'errors.imageNotMaster',
   failedKey: 'errors.imageDeleteFailed',
   focusEntry: () => deleteRef.value?.$el.focus(),
-  focusAdd: () => shell.value?.focusAdd(),
+  focusAdd: focusGrid,
 })
+
+// The tile that took the deleted one's place gets the focus; the upload button only when no tile is left.
+let deletedAt = 0
+const grid = ref<HTMLElement | null>(null)
+function askDelete(image: TableImage) {
+  deletedAt = images.value.findIndex(i => i.id === image.id)
+  ask(image)
+}
+function focusGrid() {
+  const tiles = grid.value?.querySelectorAll<HTMLElement>('[role="radio"]')
+  if (tiles?.length) tiles[Math.min(deletedAt, tiles.length - 1)]!.focus()
+  else shell.value?.focusAdd()
+}
 </script>
 
 <template>
   <MediaPanelShell ref="shell" kind="images" :status="status" :count="images.length" @add="add">
-    <div role="radiogroup" :aria-label="t('stage.images.title')" class="ip-grid">
+    <div ref="grid" role="radiogroup" :aria-label="t('stage.images.title')" class="ip-grid">
       <ImageTile
-        v-for="image in images"
+        v-for="(image, index) in images"
         :key="image.id"
         :image="image"
         :selected="selectedId === image.id"
         :shown="shownImageId === image.id"
+        :position="index + 1"
+        :total="images.length"
         :tabindex="tabIndexFor(image.id)"
         @select="selectedId = image.id"
         @keydown="onKeydown"
       />
     </div>
 
+    <template #notice>
+      <AlertBanner v-if="orphanShown" tone="warning" class="ip-orphan">
+        {{ t('stage.images.orphan.text') }}
+        <template #action>
+          <Button variant="ghost" size="sm" :disabled="orphanBusy" @click="hideOrphan">{{ t('stage.images.orphan.hide') }}</Button>
+        </template>
+      </AlertBanner>
+    </template>
+
     <template #footer>
       <div class="ip-bar">
-        <div v-if="selected" role="group" :aria-label="t('stage.images.actions.label')" class="ip-actions">
+        <div v-if="selected" role="group" :aria-label="barLabel" class="ip-actions">
           <Button
             ref="mainRef"
             :variant="isShown ? 'ghost' : 'primary'"
             size="sm"
             :disabled="selectedBusy"
-            @click="switched(isShown ? hide(selected) : show(selected, true))"
+            @click="switched(isShown ? hide(selected) : show(selected, true), 'main')"
           >
             {{ isShown ? t('stage.images.actions.hide') : t('stage.images.actions.show') }}
           </Button>
@@ -125,7 +166,7 @@ const { open: deleteOpen, live: deletingShown, ask: askDelete, confirm: confirmD
             variant="ghost"
             size="sm"
             :disabled="selectedBusy"
-            @click="switched(show(selected, false))"
+            @click="switched(show(selected, false), 'plain')"
           >
             {{ t('stage.images.actions.showWithoutCaption') }}
           </Button>
@@ -144,7 +185,7 @@ const { open: deleteOpen, live: deletingShown, ask: askDelete, confirm: confirmD
             <IconTrash :size="14" />
           </IconButton>
         </div>
-        <p v-else class="ip-hint">{{ t('stage.images.actions.hint') }}</p>
+        <StateNote v-else size="sm" inline align="start">{{ t('stage.images.actions.hint') }}</StateNote>
       </div>
     </template>
 
@@ -174,11 +215,5 @@ const { open: deleteOpen, live: deletingShown, ask: askDelete, confirm: confirmD
 }
 .ip-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .ip-spacer { flex: 1 1 0; }
-.ip-hint {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--vtt-text-muted);
-}
+.ip-orphan { margin: 8px 10px 0; }
 </style>

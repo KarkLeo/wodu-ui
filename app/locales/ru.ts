@@ -1032,9 +1032,12 @@ export const messages: Messages = {
       tile: {
         noCaption: 'Без подписи',
         shown: 'Показано',
+        noCaptionAt: 'Без подписи, изображение {n} из {total}',
+        shownName: '{name}, показано',
       },
       actions: {
-        label: 'Выбранное изображение',
+        labelCaption: 'Выбрано изображение: {caption}',
+        labelPosition: 'Выбрано изображение {n} из {total}',
         hint: 'Выбери изображение, чтобы показать его, изменить или удалить.',
         show: 'Показать',
         showWithoutCaption: 'Показать без подписи',
@@ -1047,6 +1050,10 @@ export const messages: Messages = {
         body: 'Изображение будет удалено вместе с файлом.',
         bodyShown: 'Изображение сейчас показано: оно скроется у всех и будет удалено вместе с файлом.',
         confirm: 'Удалить',
+      },
+      orphan: {
+        text: 'За столом показано изображение, которого уже нет в галерее.',
+        hide: 'Скрыть',
       },
       form: {
         titleAdd: 'Новое изображение',
