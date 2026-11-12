@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   emptyStage, withScene, withoutScene, checkStage, checkSceneData, checkSceneDraft,
-  checkUpload, neutralFileName, fileUrl, sameFile, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
+  checkUpload, neutralFileName, fileUrl, sameFile, playbackTarget, MEDIA_LIMITS, IMAGE_TYPES, AUDIO_TYPES,
 } from './stage'
 import type { Scene, StageImage, StageSound } from '@/types/stage'
 
@@ -155,5 +155,55 @@ describe('sameFile', () => {
     expect(sameFile(a, null)).toBe(false)
     expect(sameFile(null, a)).toBe(false)
     expect(sameFile(null, null)).toBe(true)
+  })
+})
+
+describe('playbackTarget', () => {
+  const base = 'https://api.test'
+  const onTavern = withScene(emptyStage('g1'), tavern)
+  const all = { sound: 'on', background: true } as const
+
+  it('builds the scene sound and backdrop URLs', () => {
+    expect(playbackTarget(onTavern, all, base)).toEqual({
+      sceneSound: 'https://api.test/api/files/scenes/s1/sound_cd34.mp3',
+      backdrop: 'https://api.test/api/files/scenes/s1/image_ab12.webp',
+      wantsSound: true,
+    })
+  })
+
+  it('gives no sound URL unless sound is on, but still wants sound', () => {
+    for (const sound of ['unset', 'off'] as const) {
+      const target = playbackTarget(onTavern, { sound, background: true }, base)
+      expect(target.sceneSound).toBeNull()
+      expect(target.wantsSound).toBe(true)
+      expect(target.backdrop).not.toBeNull()
+    }
+  })
+
+  it('gives no backdrop with the background off, and sound is unaffected', () => {
+    const target = playbackTarget(onTavern, { sound: 'on', background: false }, base)
+    expect(target.backdrop).toBeNull()
+    expect(target.sceneSound).not.toBeNull()
+  })
+
+  it('has nothing for a scene without a sound or an image', () => {
+    const rain = withScene(emptyStage('g1'), { ...tavern, image: null })
+    expect(playbackTarget(rain, all, base).backdrop).toBeNull()
+    const quiet = withScene(emptyStage('g1'), { ...tavern, sound: null })
+    expect(playbackTarget(quiet, all, base)).toMatchObject({ sceneSound: null, wantsSound: false })
+  })
+
+  it('has nothing for no stage, whatever the prefs', () => {
+    expect(playbackTarget(null, all, base)).toEqual({ sceneSound: null, backdrop: null, wantsSound: false })
+  })
+
+  it('wants sound when only an overlay sound plays', () => {
+    const stage = { ...emptyStage('g1'), sound: playing }
+    expect(playbackTarget(stage, { sound: 'unset', background: true }, base))
+      .toEqual({ sceneSound: null, backdrop: null, wantsSound: true })
+  })
+
+  it('wants no sound for an empty stage', () => {
+    expect(playbackTarget(emptyStage('g1'), all, base).wantsSound).toBe(false)
   })
 })

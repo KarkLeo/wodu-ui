@@ -894,6 +894,16 @@ export const messages: Messages = {
     },
   },
   stage: {
+    sound: {
+      group: 'Звук',
+      mute: 'Звук',
+      volume: 'Громкость',
+      background: 'Фон сцены',
+      promptUnset: 'Мастер включил звук',
+      promptBlocked: 'Браузер приостановил звук',
+      turnOn: 'Включить звук',
+      noSound: 'Без звука',
+    },
     scenes: {
       title: 'Сцены',
       close: 'Закрыть сцены',

@@ -12,10 +12,12 @@ import GameLayout from '@/components/layout/GameLayout.vue'
 import CabinetLayout from '@/features/cabinet/CabinetLayout.vue'
 import PlayersPanel from '@/components/layout/PlayersPanel.vue'
 import SignInView from '@/features/sign-in/SignInView.vue'
+import SoundPrompt from '@/features/stage/SoundPrompt.vue'
 import { mode } from '@/transport/mode'
 import { attempt, connection, probeNow, probing, reportNetworkProblem, retryNow } from '@/transport/connection'
 import { useEncounterSession } from '@/composables/useEncounterSession'
 import { useMediaSession } from '@/composables/useMediaSession'
+import { useStagePlayback } from '@/composables/useStagePlayback'
 import { useTable } from '@/composables/useTable'
 import { currentUser, signedIn } from '@/transport/auth'
 import { authGate } from '@/transport/authHelpers'
@@ -44,6 +46,7 @@ watch(tableScope, setScope, { immediate: true })
 
 useEncounterSession()
 useMediaSession()
+const { backdropUrl } = useStagePlayback()
 
 // An invite link opened while signed out shows the game's name above the sign-in form.
 const inviteGameName = ref<string | undefined>()
@@ -122,8 +125,9 @@ onBeforeUnmount(() => {
     <NuxtPage :page-key="pageKey" />
   </CabinetLayout>
 
-  <GameLayout v-else :inert="serverDown">
+  <GameLayout v-else :inert="serverDown" :backdrop-url="backdropUrl">
     <NuxtPage :page-key="pageKey" />
+    <SoundPrompt />
 
     <template #left>
       <PlayersPanel />

@@ -182,6 +182,35 @@ export const PlayerHasNoScenesRow: Story = {
   },
 }
 
+/** Master and player alike get the device's sound control at a game's table, in the footer block. */
+export const SoundControlAtAGameTable: Story = {
+  tags: ['no-visual'],
+  decorators: [oldenTable],
+  loaders: [atRoute(`/games/${olden.id}/party/${oda.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const group = await canvas.findByRole('group', { name: 'Sound' })
+    await expect(group.closest('.gl-panel-foot')).not.toBeNull()
+    await expect(within(group).getByRole('switch', { name: 'Scene background' })).toBeVisible()
+  },
+}
+
+/** The offline table and the free-characters table have no scene to play, so no control. */
+export const NoSoundControlOfflineOrOutsideGames: Story = {
+  tags: ['no-visual'],
+  decorators: [offlineMode, withStores({ characters: [sage] })],
+  loaders: [atRoute('/offline')],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('button', { name: 'Home' })).toBeVisible()
+    await expect(canvas.queryByRole('group', { name: 'Sound' })).toBeNull()
+    await storyRouter.push(`/party/${sage.id}`)
+    mode.value = 'online'
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await expect(canvas.queryByRole('group', { name: 'Sound' })).toBeNull()
+  },
+}
+
 /** Opening and closing sheets stays on the game's own party route. */
 export const GameOpenAndClose: Story = {
   tags: ['no-visual'],

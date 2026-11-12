@@ -133,3 +133,29 @@ export function sameFile(a: FileRef | null, b: FileRef | null): boolean {
   if (a === null || b === null) return a === b
   return a.collection === b.collection && a.record === b.record && a.name === b.name
 }
+
+export interface PlaybackPrefs {
+  sound: 'unset' | 'on' | 'off'
+  background: boolean
+}
+
+export interface PlaybackTarget {
+  /** The scene sound's URL, only while this device has sound on. */
+  sceneSound: string | null
+  /** The scene picture's URL, only while this device shows scene backgrounds. */
+  backdrop: string | null
+  /** The stage carries a sound, whatever this device's choice: it decides whether to ask. */
+  wantsSound: boolean
+}
+
+/** What one device fetches and plays for a stage: what is off gets no URL, so nothing is downloaded. */
+export function playbackTarget(stage: Stage | null, prefs: PlaybackPrefs, base: string): PlaybackTarget {
+  if (!stage) return { sceneSound: null, backdrop: null, wantsSound: false }
+  const sound = stage.scene?.sound ?? null
+  const image = stage.scene?.image ?? null
+  return {
+    sceneSound: prefs.sound === 'on' && sound ? fileUrl(base, sound) : null,
+    backdrop: prefs.background && image ? fileUrl(base, image) : null,
+    wantsSound: sound !== null || stage.sound !== null,
+  }
+}

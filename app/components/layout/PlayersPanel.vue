@@ -22,6 +22,7 @@ import GameMenu from './GameMenu.vue'
 import PanelFooter from './PanelFooter.vue'
 import MasterlessNotice from './MasterlessNotice.vue'
 import MasterTools from './MasterTools.vue'
+import SoundControl from '@/features/stage/SoundControl.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -197,6 +198,7 @@ async function startNew() {
         :icon-left="IconPlus"
         @click="startNew"
       >{{ t('characterList.new') }}</Button>
+      <SoundControl />
       <PanelFooter />
     </div>
   </div>
