@@ -6,7 +6,9 @@ import {
   oneShotClearDelay, SOUND_NAME_MAX,
   withImage, withoutImage, withImageEdited, checkImageData, checkImageDraft, revealKey, shouldReveal, CAPTION_MAX,
   STALE_ONE_SHOT_SECONDS, ONE_SHOT_CLEAR_GRACE_SECONDS, ONE_SHOT_UNKNOWN_CLEAR_SECONDS,
+  ONE_SHOT_CLEAR_MIN_TAIL_SECONDS, oneShotOverDelay, nextSoundArrival,
 } from './stage'
+import { ONE_SHOT_READY_FALLBACK_SECONDS, READY_FALLBACK_SECONDS } from '@/services/webAudioTrack'
 import type { Scene, Stage, StageImage, StageSound, TableImage } from '@/types/stage'
 
 const tavern: Scene = { id: 'scene-tavern-0001', name: 'Tavern', image: 'image_ab12.webp', sound: 'sound_cd34.mp3' }
@@ -220,37 +222,23 @@ describe('playbackTarget', () => {
   describe('overlay', () => {
     const oneShot: StageSound = { ...playing, loop: false }
     const withOverlay = (sound: StageSound) => ({ ...emptyStage('g1'), sound })
-    const live = (now: string) => ({ receivedLive: true, now: new Date(now) })
     const url = 'https://api.test/api/files/sounds/sound-record-0001/rain.mp3'
 
-    it('plays a looping sound with sound on, keyed by id and start', () => {
-      expect(playbackTarget(withOverlay(playing), all, base, { receivedLive: false, now: new Date('2026-11-12T12:00:00Z') }).overlay)
-        .toEqual({ key: overlayKey(playing), src: url, loop: true })
+    it('hands over the stage\'s sound with sound on, keyed by id and start; the memory decides whether it plays', () => {
+      expect(playbackTarget(withOverlay(playing), all, base).overlay).toEqual({ key: overlayKey(playing), src: url, loop: true })
+      expect(playbackTarget(withOverlay(oneShot), all, base).overlay).toEqual({ key: overlayKey(oneShot), src: url, loop: false })
     })
 
     it('is null with sound off or unset', () => {
       for (const sound of ['unset', 'off'] as const) {
-        const target = playbackTarget(withOverlay(playing), { sound, background: true }, base, live('2026-11-12T10:00:01Z'))
+        const target = playbackTarget(withOverlay(playing), { sound, background: true }, base)
         expect(target.overlay).toBeNull()
         expect(target.wantsSound).toBe(true)
       }
     })
 
-    it('is null for a stale one-shot found on load, played when received live', () => {
-      const late = new Date('2026-11-12T10:10:00Z')
-      expect(playbackTarget(withOverlay(oneShot), all, base, { receivedLive: false, now: late }).overlay).toBeNull()
-      expect(playbackTarget(withOverlay(oneShot), all, base, { receivedLive: true, now: late }).overlay)
-        .toEqual({ key: overlayKey(oneShot), src: url, loop: false })
-    })
-
-    it('still wants sound for a stale one-shot that is not played, even with sound on', () => {
-      const target = playbackTarget(withOverlay(oneShot), all, base, { receivedLive: false, now: new Date('2026-11-12T10:10:00Z') })
-      expect(target.overlay).toBeNull()
-      expect(target.wantsSound).toBe(true)
-    })
-
     it('is null without a sound on the stage', () => {
-      expect(playbackTarget(onTavern, all, base, live('2026-11-12T10:00:01Z')).overlay).toBeNull()
+      expect(playbackTarget(onTavern, all, base).overlay).toBeNull()
     })
   })
 })
@@ -280,21 +268,19 @@ describe('withSound', () => {
 describe('shouldPlayOverlay', () => {
   const at = (s: string) => new Date(s)
   const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
-  it('plays loops always, one-shots only live or fresh', () => {
+  it('plays loops always, one-shots only while fresh', () => {
     expect(STALE_ONE_SHOT_SECONDS).toBe(5)
-    expect(shouldPlayOverlay({ ...oneShot, loop: true }, false, at('2026-11-12T11:00:00Z'))).toBe(true)
-    expect(shouldPlayOverlay(oneShot, true, at('2026-11-12T11:00:00Z'))).toBe(true)
-    expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T10:00:05Z'))).toBe(true)
-    expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T10:00:06Z'))).toBe(false)
+    expect(shouldPlayOverlay({ ...oneShot, loop: true }, at('2026-11-12T11:00:00Z'))).toBe(true)
+    expect(shouldPlayOverlay(oneShot, at('2026-11-12T10:00:05Z'))).toBe(true)
+    expect(shouldPlayOverlay(oneShot, at('2026-11-12T10:00:06Z'))).toBe(false)
   })
   it('plays a one-shot whose startedAt is in the future', () => {
-    expect(shouldPlayOverlay(oneShot, false, at('2026-11-12T09:00:00Z'))).toBe(true)
+    expect(shouldPlayOverlay(oneShot, at('2026-11-12T09:00:00Z'))).toBe(true)
   })
-  it('does not play a one-shot whose startedAt does not parse, unless it arrived live or loops', () => {
+  it('does not play a one-shot whose startedAt does not parse, unless it loops', () => {
     const broken = { ...oneShot, startedAt: 'yesterday-ish' }
-    expect(shouldPlayOverlay(broken, false, at('2026-11-12T10:00:00Z'))).toBe(false)
-    expect(shouldPlayOverlay(broken, true, at('2026-11-12T10:00:00Z'))).toBe(true)
-    expect(shouldPlayOverlay({ ...broken, loop: true }, false, at('2026-11-12T10:00:00Z'))).toBe(true)
+    expect(shouldPlayOverlay(broken, at('2026-11-12T10:00:00Z'))).toBe(false)
+    expect(shouldPlayOverlay({ ...broken, loop: true }, at('2026-11-12T10:00:00Z'))).toBe(true)
   })
 })
 
@@ -302,38 +288,76 @@ describe('oneShotClearDelay', () => {
   const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
   const at = (s: string) => new Date(s)
   it('names its constants', () => {
-    expect(ONE_SHOT_CLEAR_GRACE_SECONDS).toBe(3)
+    expect(ONE_SHOT_CLEAR_GRACE_SECONDS).toBe(15)
+    expect(ONE_SHOT_CLEAR_MIN_TAIL_SECONDS).toBe(30)
     expect(ONE_SHOT_UNKNOWN_CLEAR_SECONDS).toBe(3600)
+  })
+  it('gives a device that starts late its whole cue: the grace outlasts both ready fallbacks with room to spare', () => {
+    expect(ONE_SHOT_CLEAR_GRACE_SECONDS - (READY_FALLBACK_SECONDS + ONE_SHOT_READY_FALLBACK_SECONDS)).toBeGreaterThanOrEqual(5)
   })
   it('is null for a loop, whoever plays it', () => {
     expect(oneShotClearDelay(playing, 30, at('2026-11-12T10:00:00Z'), false)).toBeNull()
     expect(oneShotClearDelay(playing, 30, at('2026-11-12T10:00:00Z'), true)).toBeNull()
   })
-  it('without playing here counts duration plus the grace, never below zero', () => {
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'), false)).toBe(23000)
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:01:00Z'), false)).toBe(0)
-    expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'), false)).toBe(3000)
-  })
-  it('while playing here is only a backstop: duration plus the larger of 10 s and half of it', () => {
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'), true)).toBe(35000)
-    expect(oneShotClearDelay(oneShot, 100, at('2026-11-12T10:00:00Z'), true)).toBe(150000)
-    expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'), true)).toBe(10000)
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:05:00Z'), true)).toBe(0)
-  })
-  it('clears an unknown duration only after an hour, playing here or not', () => {
+  it('with a known duration counts duration plus the larger of 30 s and half of it, playing here (a backstop) or not', () => {
     for (const playingHere of [false, true]) {
-      expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:09Z'), playingHere)).toBe(3591000)
-      expect(oneShotClearDelay(oneShot, null, at('2026-11-12T11:00:01Z'), playingHere)).toBe(0)
+      expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:00:10Z'), playingHere)).toBe(50000)
+      expect(oneShotClearDelay(oneShot, 100, at('2026-11-12T10:00:00Z'), playingHere)).toBe(150000)
+      expect(oneShotClearDelay(oneShot, 0, at('2026-11-12T10:00:00Z'), playingHere)).toBe(30000)
+      expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T10:05:00Z'), playingHere)).toBe(0)
     }
+  })
+  it('with an unknown duration has no backstop while playing here, and waits an hour otherwise', () => {
+    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:09Z'), true)).toBeNull()
+    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T10:00:09Z'), false)).toBe(3591000)
+    expect(oneShotClearDelay(oneShot, null, at('2026-11-12T11:00:01Z'), false)).toBe(0)
   })
   it('is 0, not NaN, for a startedAt that does not parse', () => {
-    for (const duration of [30, null]) {
-      expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, duration, at('2026-11-12T10:00:00Z'), false)).toBe(0)
-      expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, duration, at('2026-11-12T10:00:00Z'), true)).toBe(0)
-    }
+    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, 30, at('2026-11-12T10:00:00Z'), false)).toBe(0)
+    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, 30, at('2026-11-12T10:00:00Z'), true)).toBe(0)
+    expect(oneShotClearDelay({ ...oneShot, startedAt: 'yesterday-ish' }, null, at('2026-11-12T10:00:00Z'), false)).toBe(0)
   })
   it('counts the whole duration for a startedAt in the future', () => {
-    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T09:59:50Z'), false)).toBe(43000)
+    expect(oneShotClearDelay(oneShot, 30, at('2026-11-12T09:59:50Z'), false)).toBe(70000)
+  })
+})
+
+describe('oneShotOverDelay', () => {
+  const oneShot = { ...playing, loop: false, startedAt: '2026-11-12T10:00:00.000Z' }
+  const at = (s: string) => new Date(s)
+  it('is the time left until startedAt plus the duration, never below zero', () => {
+    expect(oneShotOverDelay(oneShot, 30, at('2026-11-12T10:00:10Z'))).toBe(20000)
+    expect(oneShotOverDelay(oneShot, 30, at('2026-11-12T10:01:00Z'))).toBe(0)
+    expect(oneShotOverDelay(oneShot, 30, at('2026-11-12T09:59:50Z'))).toBe(40000)
+  })
+  it('is null for a loop or an unknown duration: never over by the clock', () => {
+    expect(oneShotOverDelay(playing, 30, at('2026-11-12T12:00:00Z'))).toBeNull()
+    expect(oneShotOverDelay(oneShot, null, at('2026-11-12T12:00:00Z'))).toBeNull()
+  })
+  it('is 0 for a startedAt that does not parse', () => {
+    expect(oneShotOverDelay({ ...oneShot, startedAt: 'yesterday-ish' }, 30, at('2026-11-12T10:00:00Z'))).toBe(0)
+  })
+})
+
+describe('nextSoundArrival', () => {
+  const oneShot = { ...playing, loop: false }
+  const other = { ...oneShot, startedAt: '2026-11-12T10:00:07.000Z' }
+  const withSoundSlot = (sound: StageSound | null) => ({ ...emptyStage('g1'), sound })
+  const first = { source: 'live' as const, at: 1000 }
+  it('records the first value of a game', () => {
+    expect(nextSoundArrival(undefined, withSoundSlot(oneShot), undefined, 'load', 5)).toEqual({ source: 'load', at: 5 })
+  })
+  it('does not move when the sound slot keeps its key, whatever else changed', () => {
+    const before = withSoundSlot(oneShot)
+    const sceneOn = withScene(before, tavern)
+    expect(nextSoundArrival(before, sceneOn, first, 'live', 60000)).toBe(first)
+    expect(nextSoundArrival(sceneOn, { ...sceneOn, image: shown }, first, 'load', 90000)).toBe(first)
+  })
+  it('moves when the sound slot gets another key, or goes or comes back', () => {
+    const before = withSoundSlot(oneShot)
+    expect(nextSoundArrival(before, withSoundSlot(other), first, 'live', 7000)).toEqual({ source: 'live', at: 7000 })
+    expect(nextSoundArrival(before, withSoundSlot(null), first, 'live', 8000)).toEqual({ source: 'live', at: 8000 })
+    expect(nextSoundArrival(withSoundSlot(null), before, first, 'load', 9000)).toEqual({ source: 'load', at: 9000 })
   })
 })
 

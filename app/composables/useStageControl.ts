@@ -1,6 +1,7 @@
 import { computed, type ComputedRef } from 'vue'
+import { oneShotIsOver } from '@/composables/useOneShotClear'
 import { useTable } from '@/composables/useTable'
-import { withImage, withScene, withSound, withoutImage, withoutScene, withoutSound } from '@/domain/stage'
+import { overlayKey, withImage, withScene, withSound, withoutImage, withoutScene, withoutSound } from '@/domain/stage'
 import { useStageStore } from '@/stores/stage'
 import { publishStage } from '@/transport/stage'
 import type { Scene, Sound, TableImage } from '@/types/stage'
@@ -22,7 +23,13 @@ export function useStageControl(): {
 
   const activeSceneId = computed(() => (gameId.value ? stages.stageOf(gameId.value).scene?.id ?? null : null))
 
-  const playingSoundId = computed(() => (gameId.value ? stages.stageOf(gameId.value).sound?.id ?? null : null))
+  // A one-shot that is over on this device is not playing for the row, although the stage holds it until the clear:
+  // Play then plays it again at once instead of stopping something nobody hears.
+  const playingSoundId = computed(() => {
+    const sound = gameId.value ? stages.stageOf(gameId.value).sound : null
+    if (!sound || (!sound.loop && oneShotIsOver(overlayKey(sound)))) return null
+    return sound.id
+  })
 
   const shownImageId = computed(() => (gameId.value ? stages.stageOf(gameId.value).image?.id ?? null : null))
 

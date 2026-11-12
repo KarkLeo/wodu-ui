@@ -1,33 +1,34 @@
 import { defineStore } from 'pinia'
 import type { Stage } from '@/types/stage'
-import { emptyStage } from '@/domain/stage'
+import { emptyStage, nextSoundArrival, type SlotArrival } from '@/domain/stage'
 
-/** How a game's current stage value reached this device: `live` (a realtime change or my own publish) or `load` (a snapshot or a reload). */
-export type StageSource = 'live' | 'load'
+/** How a game's stage value reached this device: `live` (a realtime change or my own publish) or `load` (a snapshot or a reload). */
+export type StageSource = SlotArrival['source']
 
 export const useStageStore = defineStore('stage', {
   state: () => ({
     byGame: {} as Record<string, Stage>,
-    received: {} as Record<string, { source: StageSource; at: number }>,
+    // Per game, only for the sound slot (nothing reads the others): it moves only when the sound's key changes.
+    soundArrival: {} as Record<string, SlotArrival>,
   }),
   getters: {
     // A game the master never published to has no row: it shows nothing.
     stageOf: (state) => (gameId: string): Stage => state.byGame[gameId] ?? emptyStage(gameId),
-    arrivalOf: (state) => (gameId: string) => state.received[gameId],
+    soundArrivalOf: (state) => (gameId: string): SlotArrival | undefined => state.soundArrival[gameId],
   },
   actions: {
     set(stage: Stage, source: StageSource = 'live') {
       // Before the stage itself, so whoever reacts to the new value already finds where it came from.
-      this.received[stage.id] = { source, at: new Date().getTime() }
+      this.soundArrival[stage.id] = nextSoundArrival(this.byGame[stage.id], stage, this.soundArrival[stage.id], source, new Date().getTime())
       this.byGame[stage.id] = stage
     },
     remove(gameId: string) {
       delete this.byGame[gameId]
-      delete this.received[gameId]
+      delete this.soundArrival[gameId]
     },
     clearAll() {
       this.byGame = {}
-      this.received = {}
+      this.soundArrival = {}
     },
   },
 })

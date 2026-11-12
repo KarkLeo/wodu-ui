@@ -1,18 +1,22 @@
 import { defineComponent } from 'vue'
 import type { Decorator, Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, waitFor as waitForDefault } from 'storybook/test'
+import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
+import MasterTools from '@/components/layout/MasterTools.vue'
+import SoundsPanel from './SoundsPanel.vue'
 import { useMediaSession } from '@/composables/useMediaSession'
 import { useStagePlayback } from '@/composables/useStagePlayback'
 import { emptyStage, overlayKey, withScene } from '@/domain/stage'
 import { crookhollow, CROOKHOLLOW_META, olden, PARTY } from '@/stories/fixtures'
 import { withMediaPrefs } from '@/stories/playback'
 import { SCENES } from '@/stories/scenes'
+import { storyRouter } from '@/stories/router'
 import { atRoute, withGameTable } from '@/stories/state'
 import { useMediaPrefsStore } from '@/stores/mediaPrefs'
 import { useMediaStore } from '@/stores/media'
 import { useToastsStore } from '@/stores/toasts'
 import { useStageStore } from '@/stores/stage'
 import type { StageSound } from '@/types/stage'
+import { connection } from '@/transport/connection'
 import { closeMedia } from '@/transport/media'
 import { fireOverlayEnded, sceneAudioCalls } from '../../../.storybook/mocks/sceneAudioInstance'
 import { clearPbRequests, failWrites, pbRequests, resetRecords, signInMock, storedRecords } from '../../../.storybook/mocks/pb'
@@ -20,16 +24,33 @@ import { clearPbRequests, failWrites, pbRequests, resetRecords, signInMock, stor
 // A slow runner takes longer than the default second.
 const waitFor: typeof waitForDefault = (callback, options) => waitForDefault(callback, { timeout: 10000, ...options })
 
+// The real grace after a one-shot ended is 15 s; the stories use a shorter one through the composable's own option.
+const STORY_GRACE_SECONDS = 2.5
+const STORY_GRACE_MS = STORY_GRACE_SECONDS * 1000
+
 // What app.vue does for the table, without the layout: the playback and, for a master, the media session.
 const Table = defineComponent({
   setup() {
     useMediaStore().clearAll()
     useMediaSession()
-    useStagePlayback()
+    useStagePlayback({ clearGraceSeconds: STORY_GRACE_SECONDS })
     return { closeMedia }
   },
   unmounted() { closeMedia() },
   template: '<p>The table</p>',
+})
+
+// The same, with the master's Sounds panel and tools, whose rows follow what plays here.
+const TableWithSounds = defineComponent({
+  components: { MasterTools, SoundsPanel },
+  setup() {
+    useMediaStore().clearAll()
+    useMediaSession()
+    useStagePlayback({ clearGraceSeconds: STORY_GRACE_SECONDS })
+    return { game: crookhollow }
+  },
+  unmounted() { closeMedia() },
+  template: '<div style="width: 420px; height: 480px"><SoundsPanel /></div><div style="width: 280px"><MasterTools :game="game" /></div>',
 })
 
 const meta = {
@@ -175,6 +196,9 @@ export const ReplayGetsANewKeyAndStopSendsNull: Story = {
     show(PLAYER_GAME, again)
     await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(again)))
     await expect(overlayKey(again)).not.toBe(overlayKey(first))
+    // A direct switch: the service is never told null between the two keys, so the scene never comes back in between.
+    const keys = overlayCalls().map(o => o?.key ?? null)
+    await expect(keys.slice(keys.indexOf(overlayKey(first)))).toEqual([overlayKey(first), overlayKey(again)])
     show(PLAYER_GAME, null)
     await waitFor(() => expect(overlayCalls().at(-1)).toBeNull())
     await expect(stageWrites()).toEqual([])
@@ -208,9 +232,18 @@ export const FoundOnLoadStaleOneShotIsSkipped: Story = {
   play: async () => {
     await settle()
     await expect(overlayUrls()).toEqual([])
-    // Nothing starts it later, and a player never clears it.
+    // Nothing starts it later: not time, not an echo of the same stage arriving live, not sound turned off and on.
+    const stages = useStageStore()
+    const prefs = useMediaPrefsStore()
+    await settle(800)
+    stages.set(JSON.parse(JSON.stringify(stages.stageOf(PLAYER_GAME))), 'live')
+    prefs.sound = 'off'
+    await settle()
+    prefs.sound = 'on'
+    await settle(500)
     await expect(overlayUrls()).toEqual([])
-    await expect(useStageStore().stageOf(PLAYER_GAME).sound).not.toBeNull()
+    // And a player never clears it.
+    await expect(stages.stageOf(PLAYER_GAME).sound).not.toBeNull()
   },
 }
 
@@ -234,19 +267,28 @@ export const MasterClearsWhenTheOverlayEnds: Story = {
     await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(sound)))
     await expect(stageWrites()).toEqual([])
     fireOverlayEnded(overlayKey(sound))
+    // Not at once: the clear waits the grace after the end, so a device that started late still hears the whole cue.
+    await settle(STORY_GRACE_MS / 2)
+    await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
+    await expect(stageWrites()).toEqual([])
     await waitFor(() => expect(useStageStore().stageOf(MASTER_GAME).sound).toBeNull())
     await waitFor(() => expect(storedSound()).toBeNull())
   },
 }
 
-/** Sound off here: the timer from the sound's duration clears it. */
+/**
+ * Sound off here: the clock clears it, at its start plus the duration plus at least 30 s. Started 29 s ago with a
+ * duration of 0.2 s, the clear is due about 1.2 s from now: not at once, but soon.
+ */
 export const MasterClearsByTimerWithSoundOff: Story = {
   decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'off' }), asMaster],
   loaders: [seed(0.2), atRoute(`/games/${MASTER_GAME}`)],
   play: async () => {
     await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
-    show(MASTER_GAME, stageSound())
+    show(MASTER_GAME, stageSound({ startedAt: secondsFromNow(-29) }))
+    await settle(400)
     await expect(overlayUrls()).toEqual([])
+    await expect(stageWrites()).toEqual([])
     await waitFor(() => expect(storedSound()).toBeNull())
     await expect(useStageStore().stageOf(MASTER_GAME).sound).toBeNull()
   },
@@ -406,6 +448,41 @@ export const FailedClearDoesNotReplay: Story = {
   },
 }
 
+/**
+ * A failed clear is tried once more after the grace, then not again by itself (no loop); the connection coming back
+ * tries once more, and with the server answering again that one clears it.
+ */
+export const FailedClearIsRetriedOnceAndOnReconnect: Story = {
+  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
+  loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
+  play: async () => {
+    await waitFor(() => expect(useMediaStore().sounds.status).toBe('ready'))
+    const sound = stageSound()
+    show(MASTER_GAME, sound)
+    await waitFor(() => expect(overlayUrls()).toEqual([soundUrl()]))
+    failWrites('stages')
+    try {
+      fireOverlayEnded(overlayKey(sound))
+      await waitFor(() => expect(stageWrites()).toHaveLength(1))
+      await waitFor(() => expect(stageWrites()).toHaveLength(2))
+      await settle(STORY_GRACE_MS + 800)
+      await expect(stageWrites()).toHaveLength(2)
+      await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
+      await expect(useToastsStore().items).toHaveLength(0)
+      failWrites(null)
+      connection.value = 'checking'
+      await settle(50)
+      connection.value = 'ok'
+      await waitFor(() => expect(storedSound()).toBeNull())
+      await expect(useStageStore().stageOf(MASTER_GAME).sound).toBeNull()
+      await expect(overlayUrls()).toEqual([soundUrl()])
+    } finally {
+      failWrites(null)
+      connection.value = 'ok'
+    }
+  },
+}
+
 /** Playing here with an unknown duration: nothing clears until the track ends, and then only after the grace. */
 export const MasterPlayingAnUnknownDurationClearsOnlyAfterEnded: Story = {
   decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
@@ -419,7 +496,7 @@ export const MasterPlayingAnUnknownDurationClearsOnlyAfterEnded: Story = {
     await settle(1500)
     await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
     fireOverlayEnded(overlayKey(sound))
-    await settle(1500)
+    await settle(STORY_GRACE_MS / 2)
     await expect(useStageStore().stageOf(MASTER_GAME).sound).toEqual(sound)
     await waitFor(() => expect(storedSound()).toBeNull())
   },
@@ -439,5 +516,79 @@ export const FailedClearOfAnOverdueOneShotNeverPlaysIt: Story = {
     // Rolled back (the write failed), and the key came back as a live value without being played.
     await expect(useStageStore().stageOf(MASTER_GAME).sound).not.toBeNull()
     await expect(overlayUrls()).toEqual([])
+  },
+}
+
+/**
+ * The master's row is back to Play when the cue ends here, although the stage holds the sound until the clear; the
+ * Sounds row of the master's tools stops naming it. Play then plays it again at once, under a new key.
+ */
+export const RowIsBackToPlayWhenTheCueEnds: Story = {
+  render: () => ({ components: { TableWithSounds }, template: '<TableWithSounds />' }),
+  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'on' }), asMaster],
+  loaders: [seed(42), atRoute(`/games/${MASTER_GAME}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const stages = useStageStore()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Play Bell' }))
+    await waitFor(() => expect(stages.stageOf(MASTER_GAME).sound).not.toBeNull())
+    const first = stages.stageOf(MASTER_GAME).sound!
+    await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(first)))
+    await expect(await canvas.findByRole('button', { name: 'Stop Bell' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Sounds, Bell is playing' })).toBeVisible()
+    fireOverlayEnded(overlayKey(first))
+    await expect(await canvas.findByRole('button', { name: 'Play Bell' })).toBeVisible()
+    await expect(stages.stageOf(MASTER_GAME).sound).toEqual(first)
+    await expect(canvas.queryByRole('button', { name: 'Sounds, Bell is playing' })).toBeNull()
+    // The preview freezes the clock: a second later, so the new start is a new key.
+    const restore = advanceClock(1000)
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Play Bell' }))
+      await waitFor(() => expect(stages.stageOf(MASTER_GAME).sound?.startedAt).not.toBe(first.startedAt))
+      const again = stages.stageOf(MASTER_GAME).sound!
+      await waitFor(() => expect(overlayCalls().at(-1)?.key).toBe(overlayKey(again)))
+      await expect(await canvas.findByRole('button', { name: 'Stop Bell' })).toBeVisible()
+      await waitFor(() => expect((storedSound() as StageSound | undefined)?.startedAt).toBe(again.startedAt))
+    } finally {
+      restore()
+    }
+  },
+}
+
+/** Sound off here, a cue of 1 s: the row is back to Play once the duration has passed, long before the clear. */
+export const RowIsBackToPlayAfterTheDurationWithSoundOff: Story = {
+  render: () => ({ components: { TableWithSounds }, template: '<TableWithSounds />' }),
+  decorators: [withStageOnLoad(MASTER_GAME, null), withMediaPrefs({ sound: 'off' }), asMaster],
+  loaders: [seed(1), atRoute(`/games/${MASTER_GAME}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Play Bell' }))
+    await expect(await canvas.findByRole('button', { name: 'Stop Bell' })).toBeVisible()
+    await expect(overlayUrls()).toEqual([])
+    await expect(await canvas.findByRole('button', { name: 'Play Bell' }, { timeout: 3000 })).toBeVisible()
+    await expect(useStageStore().stageOf(MASTER_GAME).sound).not.toBeNull()
+  },
+}
+
+/**
+ * A one-shot reached this device live, a minute later a live scene change, and only then the table opens: the sound
+ * slot's arrival is the sound's own, not the scene change's, so the old one-shot is not played.
+ */
+export const StaleOneShotIsNotMadeFreshByALaterChange: Story = {
+  decorators: [withStageOnLoad(PLAYER_GAME, null), withMediaPrefs({ sound: 'on' }), asPlayer],
+  loaders: [seed(null), atRoute('/games')],
+  play: async () => {
+    const stages = useStageStore()
+    stages.set({ ...emptyStage(PLAYER_GAME), sound: stageSound() }, 'live')
+    const restore = advanceClock(60000)
+    try {
+      stages.set(withScene(stages.stageOf(PLAYER_GAME), SCENES[1]!), 'live')
+      await storyRouter.push(`/games/${PLAYER_GAME}`)
+      await settle(400)
+      await expect(overlayUrls()).toEqual([])
+      await expect(stages.stageOf(PLAYER_GAME).sound).not.toBeNull()
+    } finally {
+      restore()
+    }
   },
 }

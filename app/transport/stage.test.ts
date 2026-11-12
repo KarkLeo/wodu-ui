@@ -291,24 +291,35 @@ describe('quiet publishes', () => {
   })
 })
 
-describe('where a stage value came from', () => {
+describe('where the sound slot\'s value came from', () => {
   const row = (data: Stage) => ({ id: data.id, game: data.id, data })
-  it('a snapshot and a joined game load; a realtime event and a publish are live', async () => {
+  it('a snapshot and a joined game load; a realtime event and a publish are live; each only when the sound changed', async () => {
     const { applyStages, receiveStage, publishStage, store } = await load()
     applyStages([row(stage('s1'))])
-    expect(store.arrivalOf(GAME)?.source).toBe('load')
+    expect(store.soundArrivalOf(GAME)?.source).toBe('load')
     receiveStage('update', row(stage('s2')))
-    expect(store.arrivalOf(GAME)?.source).toBe('live')
-    applyStages([row(stage('s2'))])
-    expect(store.arrivalOf(GAME)?.source).toBe('load')
-    await publishStage(stage('s3'))
-    expect(store.arrivalOf(GAME)?.source).toBe('live')
+    expect(store.soundArrivalOf(GAME)?.source).toBe('live')
+    applyStages([row(stage('s3'))])
+    expect(store.soundArrivalOf(GAME)?.source).toBe('load')
+    await publishStage(stage('s4'))
+    expect(store.soundArrivalOf(GAME)?.source).toBe('live')
   })
 
   it('receiveStage can be told its value is a load (a game joined later)', async () => {
     const { receiveStage, store } = await load()
     receiveStage('update', row(stage('s1')), 'load')
-    expect(store.arrivalOf(GAME)?.source).toBe('load')
+    expect(store.soundArrivalOf(GAME)?.source).toBe('load')
+  })
+
+  it('a change of another slot, or a snapshot of the same sound, leaves the sound slot\'s arrival alone', async () => {
+    const { applyStages, receiveStage, store } = await load()
+    receiveStage('update', row(stage('s1')))
+    const first = store.soundArrivalOf(GAME)
+    const withScene: Stage = { ...stage('s1'), scene: { id: 'scene-1', image: null, sound: null } }
+    await new Promise(resolve => setTimeout(resolve, 5))
+    receiveStage('update', row(withScene))
+    expect(store.soundArrivalOf(GAME)).toEqual(first)
+    applyStages([row(withScene)])
+    expect(store.soundArrivalOf(GAME)).toEqual(first)
   })
 })
-

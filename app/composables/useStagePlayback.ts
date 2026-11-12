@@ -54,21 +54,40 @@ export function useSoundSwitch() {
   return { blocked: audio.blocked, turnSoundOn, turnSoundOff }
 }
 
+export interface StagePlaybackOptions {
+  /** How long after a one-shot ended here the master's client clears it; stories shorten it. */
+  clearGraceSeconds?: number
+}
+
 /**
  * Call once, in `app.vue`: forwards the target to the audio service (the scene sound and the master's overlay
  * only when their URL or key changes, the volume when it changes; no stage to play means silence), lets the
  * master's client clear a finished one-shot, and exposes the backdrop.
  */
-export function useStagePlayback() {
+export function useStagePlayback(options: StagePlaybackOptions = {}) {
   const prefs = useMediaPrefsStore()
   const audio = sceneAudio()
   const memory = shallowRef<OverlayMemory>({})
   const { stage, target, backdropUrl, wantsSound } = useStageTarget(memory)
   const stages = useStageStore()
 
+  // The overlay key last handed to the service (`undefined` until the first hand-over).
+  let handed: string | null | undefined
+  function handOverlay() {
+    const next = target.value.overlay
+    const key = next?.key ?? null
+    if (key === handed) return
+    // A one-shot that stopped being the target (replaced, stopped, sound off) is done, so a rollback never restarts it.
+    if (handed) memory.value = endOverlay(memory.value, handed)
+    handed = key
+    audio.setOverlay(next)
+  }
+
   // Every overlay key seen at an open table gets one record, at its first sight (how it arrived, when, and in the end
   // whether this device plays it), kept while the table is open even when the stage's sound goes to null: a rollback,
   // an echo or a snapshot never makes a key new, and nothing is read from the store later than that first sight.
+  // One watcher updates the memory and only then hands the overlay over, so a direct switch from one key to another
+  // never passes through null on its way.
   let openGame: string | null = null
   watch(
     [() => stage.value?.id ?? null, () => (stage.value?.sound ? overlayKey(stage.value.sound) : null), () => prefs.sound === 'on'],
@@ -78,34 +97,31 @@ export function useStagePlayback() {
         openGame = game
       }
       const now = new Date().getTime()
-      const received = game ? stages.arrivalOf(game) : undefined
-      memory.value = nextOverlayMemory(memory.value, stage.value?.sound ?? null, received ?? { source: 'load', at: now }, soundOn, now)
+      const arrival = game ? stages.soundArrivalOf(game) : undefined
+      memory.value = nextOverlayMemory(memory.value, stage.value?.sound ?? null, arrival ?? { source: 'load', at: now }, soundOn, now)
+      handOverlay()
     },
     { immediate: true, flush: 'sync' },
   )
   // A one-shot that ran to its end here is never played again.
   const stopListening = audio.onOverlayEnded((key) => {
     memory.value = endOverlay(memory.value, key, true)
+    handOverlay()
   })
   onScopeDispose(stopListening)
 
   // Sync, so that turning sound on inside a click starts the scene before the unlock that follows it.
   watch(() => target.value.sceneSound, src => audio.setScene(src), { immediate: true, flush: 'sync' })
-  watch(
-    () => target.value.overlay?.key ?? null,
-    (key, previous) => {
-      // A one-shot that stopped being the target (replaced, stopped, sound off) is done, so a rollback never restarts it.
-      if (previous) memory.value = endOverlay(memory.value, previous)
-      audio.setOverlay(key ? target.value.overlay : null)
-    },
-    { immediate: true, flush: 'sync' },
-  )
   watch(() => prefs.volume, level => audio.setVolume(level), { immediate: true })
   // With sound on, the first tap anywhere primes the pool, so the first sound plays without one; the listener runs in
   // the capture phase, before the master's own Play. An `unset` device is primed by the prompt's button instead.
   watch(() => prefs.sound === 'on' && stage.value !== null, (on) => { if (on) audio.arm() }, { immediate: true, flush: 'sync' })
 
-  useOneShotClear(key => target.value.overlay?.key === key || playedToTheEnd(memory.value, key))
+  useOneShotClear({
+    playingHere: key => target.value.overlay?.key === key || playedToTheEnd(memory.value, key),
+    endedHere: key => playedToTheEnd(memory.value, key),
+    graceSeconds: options.clearGraceSeconds,
+  })
 
   return { backdropUrl, wantsSound, ...useSoundSwitch() }
 }

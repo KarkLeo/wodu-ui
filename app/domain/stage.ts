@@ -211,29 +211,66 @@ export function checkImageDraft(draft: { caption: string; hasFile: boolean }): A
 }
 
 /** Whether a client that finds this overlay in the stage should play it: always while looping, otherwise only if fresh. */
-export function shouldPlayOverlay(sound: StageSound, receivedLive: boolean, now: Date): boolean {
-  if (sound.loop || receivedLive) return true
+export function shouldPlayOverlay(sound: StageSound, now: Date): boolean {
+  if (sound.loop) return true
   return now.getTime() - Date.parse(sound.startedAt) <= STALE_ONE_SHOT_SECONDS * 1000
 }
 
-export const ONE_SHOT_CLEAR_GRACE_SECONDS = 3
+/** After a one-shot ended on the master's device, how long its clear waits, so a device that started later ends too. */
+export const ONE_SHOT_CLEAR_GRACE_SECONDS = 15
+/** The least time the clock leaves after a one-shot's duration before it clears: durations can be under-reported. */
+export const ONE_SHOT_CLEAR_MIN_TAIL_SECONDS = 30
 export const ONE_SHOT_UNKNOWN_CLEAR_SECONDS = 3600
 
 /**
- * Milliseconds until the master's client clears a one-shot overlay from the stage by the clock; null for a loop.
- * Clearing is bookkeeping and must never cut a sound the table still hears. While this device plays it the real
- * clear comes from the end of the track, so this is only a backstop (duration plus the larger of 10 s and half
- * of it); when this device does not play it, duration plus a grace. An unknown duration waits an hour, never the
- * stale window, which only decides whether a device plays a found one-shot. 0 when overdue.
+ * Milliseconds until the master's client clears a one-shot overlay from the stage by the clock; null for no clock
+ * clear. Clearing is bookkeeping and must never cut or swallow a sound a device still plays or is about to start
+ * (a slow download, a slow write, an under-reported duration, a skewed clock), so it is late: with a known duration,
+ * duration plus the larger of `ONE_SHOT_CLEAR_MIN_TAIL_SECONDS` and half of it. While this device plays it, that is
+ * only a backstop to the end of the track (plus `ONE_SHOT_CLEAR_GRACE_SECONDS`), and an unknown duration has none;
+ * otherwise an unknown duration waits an hour. 0 when overdue.
  */
 export function oneShotClearDelay(sound: StageSound, duration: number | null, now: Date, playingHere = false): number | null {
   if (sound.loop) return null
   let seconds: number
-  if (duration === null) seconds = ONE_SHOT_UNKNOWN_CLEAR_SECONDS
-  else if (playingHere) seconds = duration + Math.max(10, duration / 2)
-  else seconds = duration + ONE_SHOT_CLEAR_GRACE_SECONDS
+  if (duration !== null) seconds = duration + Math.max(ONE_SHOT_CLEAR_MIN_TAIL_SECONDS, duration / 2)
+  else if (playingHere) return null
+  else seconds = ONE_SHOT_UNKNOWN_CLEAR_SECONDS
   const delay = Date.parse(sound.startedAt) + seconds * 1000 - now.getTime()
   return Number.isNaN(delay) ? 0 : Math.max(0, delay)
+}
+
+/**
+ * Milliseconds until a one-shot this device does not play is over by the clock (its `startedAt` plus its duration),
+ * for the master's row; null for a loop or an unknown duration, which are never over by time. 0 when over.
+ */
+export function oneShotOverDelay(sound: StageSound, duration: number | null, now: Date): number | null {
+  if (sound.loop || duration === null) return null
+  const delay = Date.parse(sound.startedAt) + duration * 1000 - now.getTime()
+  return Number.isNaN(delay) ? 0 : Math.max(0, delay)
+}
+
+/** How the stage's sound slot reached this device: `live` (a realtime change or my own publish) or a load. */
+export interface SlotArrival {
+  source: 'live' | 'load'
+  /** This device's clock (ms). */
+  at: number
+}
+
+/**
+ * The sound slot's arrival after a game's stage went from `previous` to `next`: it moves only when the slot's own key
+ * changed (or there was none yet), so a scene or picture change never makes an old one-shot look fresh.
+ */
+export function nextSoundArrival(
+  previous: Stage | undefined,
+  next: Stage,
+  arrival: SlotArrival | undefined,
+  source: SlotArrival['source'],
+  at: number,
+): SlotArrival {
+  const key = (stage: Stage | undefined) => (stage?.sound ? overlayKey(stage.sound) : null)
+  if (arrival && previous && key(previous) === key(next)) return arrival
+  return { source, at }
 }
 
 export function formatDuration(seconds: number | null): string {
@@ -317,7 +354,7 @@ export function nextOverlayMemory(
   if (play === null && canPlay) {
     if (record.loop) play = true
     else if (record.source === 'live') play = now - record.firstSeen <= STALE_ONE_SHOT_SECONDS * 1000
-    else play = shouldPlayOverlay(sound, false, new Date(now))
+    else play = shouldPlayOverlay(sound, new Date(now))
   }
   if (memory[key] && play === record.play) return memory
   return { ...memory, [key]: { ...record, play } }
@@ -354,17 +391,12 @@ export interface PlaybackTarget {
   backdrop: string | null
   /** The stage carries a sound, whatever this device's choice: it decides whether to ask. */
   wantsSound: boolean
-  /** The single sound the master played, only while this device has sound on and it is worth playing. */
+  /** The single sound the master played, only while this device has sound on; the overlay memory decides whether it plays. */
   overlay: { key: string; src: string; loop: boolean } | null
 }
 
 /** What one device fetches and plays for a stage: what is off gets no URL, so nothing is downloaded. */
-export function playbackTarget(
-  stage: Stage | null,
-  prefs: PlaybackPrefs,
-  base: string,
-  arrival: { receivedLive: boolean; now: Date } = { receivedLive: true, now: new Date() },
-): PlaybackTarget {
+export function playbackTarget(stage: Stage | null, prefs: PlaybackPrefs, base: string): PlaybackTarget {
   if (!stage) return { sceneSound: null, backdrop: null, wantsSound: false, overlay: null }
   const sound = stage.scene?.sound ?? null
   const image = stage.scene?.image ?? null
@@ -372,7 +404,7 @@ export function playbackTarget(
     sceneSound: prefs.sound === 'on' && sound ? fileUrl(base, sound) : null,
     backdrop: prefs.background && image ? fileUrl(base, image) : null,
     wantsSound: sound !== null || stage.sound !== null,
-    overlay: stage.sound && prefs.sound === 'on' && shouldPlayOverlay(stage.sound, arrival.receivedLive, arrival.now)
+    overlay: stage.sound && prefs.sound === 'on'
       ? { key: overlayKey(stage.sound), src: fileUrl(base, stage.sound.file), loop: stage.sound.loop }
       : null,
   }
