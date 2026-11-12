@@ -689,6 +689,8 @@ export const OrphanedShownImageCanBeHidden: Story = {
     await waitFor(() => expect(stageImage()).toBeNull())
     await waitFor(() => expect(canvas.queryByText(noticeText)).toBeNull())
     await expect(toastTexts()).toEqual([])
+    // The notice and its button are gone: the focus goes to the panel's upload button, not to the page.
+    await waitFor(() => expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Upload image' })))
   },
 }
 

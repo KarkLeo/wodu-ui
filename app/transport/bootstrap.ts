@@ -130,8 +130,9 @@ async function fetchEvents(target: Scope) {
 
 type EventRows = Awaited<ReturnType<typeof fetchEvents>>
 
-// The stage is decoration: a missing collection or a refused list must not fail the start. A genuinely
-// unreachable server fails the other requests too, which report it.
+// The stage is not needed to play: a missing collection or a refused list must not fail the start, and the table works
+// without it (no scene, no shown image until the next change arrives). A genuinely unreachable server fails the other
+// requests too, which report it.
 async function fetchStages(): Promise<StageRow[] | null> {
   try {
     return await withTimeout(pb.collection('stages').getFullList<StageRow>(), STAGES_TIMEOUT_MS)

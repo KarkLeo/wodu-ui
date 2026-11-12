@@ -29,7 +29,7 @@ export const useMediaStore = defineStore('media', {
         useToolPanelsStore().clearAll()
       }
       this.gameId = gameId
-      // A kind nobody loads yet stays idle.
+      // Only the kinds being loaded move; a story may load one alone.
       for (const kind of kinds) {
         if (this[kind].status !== 'ready') this[kind].status = 'loading'
       }

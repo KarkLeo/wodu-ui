@@ -48,7 +48,6 @@ const isShown = computed(() => selected.value !== null && shownImageId.value ===
 // The shown image can be missing from the gallery (deleted elsewhere, or the list did not load): the master must still be able to clear the table.
 const orphanShown = computed(() =>
   (status.value === 'ready' || status.value === 'failed') && shownImageId.value !== null && !images.value.some(i => i.id === shownImageId.value))
-const hideOrphan = () => (shownImageId.value ? change(shownImageId.value, hideImage, () => null) : Promise.resolve(true))
 const orphanBusy = computed(() => shownImageId.value !== null && busy.has(shownImageId.value))
 
 const selectedPosition = computed(() => images.value.findIndex(i => i.id === selectedId.value) + 1)
@@ -64,6 +63,15 @@ const show = (image: TableImage, withCaption: boolean) => change(image.id, () =>
 const hide = (image: TableImage) => change(image.id, hideImage, () => null)
 
 const shell = ref<{ focusAdd: () => void } | null>(null)
+
+// Once hidden, the notice goes with the button the focus was on: it moves to the upload button instead of the page.
+async function hideOrphan() {
+  const id = shownImageId.value
+  if (!id || !(await change(id, hideImage, () => null))) return
+  await nextTick()
+  const active = document.activeElement
+  if (!active || active === document.body) shell.value?.focusAdd()
+}
 const mainRef = ref<{ $el: HTMLElement } | null>(null)
 const plainRef = ref<{ $el: HTMLElement } | null>(null)
 const editRef = ref<{ $el: HTMLElement } | null>(null)

@@ -140,8 +140,8 @@ export async function loadGame(gameId: string): Promise<void> {
   await loadStage(gameId, current)
 }
 
-// Stages load at bootstrap, so a game joined later needs its own. The stage is decoration: no row yet, a
-// refused request or a timeout simply means nothing is shown.
+// Stages load at bootstrap, so a game joined later needs its own. The table does not depend on it: no row yet, a
+// refused request or a timeout simply means nothing is shown until the next change arrives.
 async function loadStage(gameId: string, current: () => boolean): Promise<void> {
   try {
     // A list, not getOne: a game with no row is an ordinary answer here, and a 404 is logged as a console error.

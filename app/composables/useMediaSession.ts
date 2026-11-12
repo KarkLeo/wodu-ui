@@ -13,17 +13,21 @@ const log = createLogger('media-session')
 
 let sessionTarget: ComputedRef<string | null> | null = null
 
-/** Try again after a load the server refused; with the connection itself in trouble the session reopens on its own. */
+/**
+ * Try again after a load the server refused, of any kind; with the connection itself in trouble the session reopens on
+ * its own. A retry while a load of the same game runs shares that load.
+ */
 export function retryMedia() {
   // The session's own target, so a game I do not master (any more) is never opened.
   const id = sessionTarget?.value
-  if (!id || useMediaStore().scenes.status === 'loading') return
+  const media = useMediaStore()
+  if (!id || ![media.scenes, media.sounds, media.images].some(slot => slot.status === 'failed')) return
   openMedia(id).catch((err: unknown) => log.warn('retry failed', { err }))
 }
 
 /**
- * Call once, in `app.vue`. While the open table is a game I master, the scenes are open (loaded and live);
- * otherwise they are closed. A player's client never opens them.
+ * Call once, in `app.vue`. While the open table is a game I master, its scenes, sounds and images are open (loaded
+ * and live); otherwise they are closed. A player's client never opens them.
  *
  * The connection only gates opening: a blip (`checking`, `down`) neither aborts an upload under way nor drops a
  * list that is loaded, and the return of `ok` re-opens the same game in place, which also restores the
