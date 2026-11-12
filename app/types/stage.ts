@@ -1,4 +1,5 @@
 export type MediaCollection = 'scenes' | 'sounds' | 'images'
+export type MediaKind = MediaCollection
 
 export interface FileRef {
   collection: MediaCollection
@@ -12,6 +13,18 @@ export interface Scene {
   name: string
   image: string | null
   sound: string | null
+}
+
+/** Temporary stand-in for the sound and image entries; the Sounds and Shown-images steps replace it with the real types. */
+export interface UntypedMediaEntry {
+  id: string
+}
+
+/** The entry each kind keeps in the master's store. */
+export interface MediaEntries {
+  scenes: Scene
+  sounds: UntypedMediaEntry
+  images: UntypedMediaEntry
 }
 
 export interface StageScene {

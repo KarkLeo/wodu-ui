@@ -98,6 +98,14 @@ export interface StageRow {
   data: unknown
 }
 
+/** A row of any media collection: the shared columns, plus one string column per file field. */
+export interface MediaRow {
+  id: string
+  game: string
+  data: unknown
+  [field: string]: unknown
+}
+
 export interface SceneRow {
   id: string
   game: string

@@ -97,7 +97,7 @@ const holdingOtherGame: Decorator = (story) => ({
     const media = useMediaStore()
     media.clearAll()
     media.startLoading(olden.id)
-    media.setScenes(olden.id, structuredClone(SCENES))
+    media.setList('scenes', olden.id, structuredClone(SCENES))
   },
   template: '<story />',
 })

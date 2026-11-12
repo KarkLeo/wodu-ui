@@ -10,7 +10,7 @@ import {
   AUDIO_MAX_BYTES, AUDIO_TYPES, IMAGE_MAX_BYTES, IMAGE_TYPES, MEDIA_LIMITS, SCENE_NAME_MAX,
   checkSceneDraft, checkUpload,
 } from '@/domain/stage'
-import { createScene, republishScene, SceneWriteError, updateScene, type SceneFiles } from '@/transport/media'
+import { createScene, republishScene, MediaWriteError, updateScene, type SceneFiles } from '@/transport/media'
 import type { Scene } from '@/types/stage'
 import { ImageFitError } from '@/utils/fitImage'
 import { createLogger } from '@/utils/logger'
@@ -175,7 +175,7 @@ async function submit() {
       imageError.value = t(err.kind === 'decode' ? 'stage.scenes.form.imageUnreadable' : 'stage.scenes.form.imageCannotFit')
       return
     }
-    if (err instanceof SceneWriteError) {
+    if (err instanceof MediaWriteError) {
       // The session ended under the upload: there is nobody to tell.
       if (err.kind === 'aborted') return
       if (err.kind === 'fileRefused') {
@@ -187,8 +187,8 @@ async function submit() {
         else soundError.value = text
         return
       }
-      if (err.kind === 'stagePublishFailed' && err.scene) {
-        savedScene.value = err.scene
+      if (err.kind === 'stagePublishFailed' && err.saved) {
+        savedScene.value = err.saved as Scene
         failure.value = 'publishFailed'
         return
       }

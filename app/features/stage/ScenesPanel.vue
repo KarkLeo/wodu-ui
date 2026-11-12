@@ -13,7 +13,7 @@ import { useTable } from '@/composables/useTable'
 import { MEDIA_LIMITS } from '@/domain/stage'
 import { useMediaStore } from '@/stores/media'
 import { useToastsStore } from '@/stores/toasts'
-import { deleteScene, SceneWriteError } from '@/transport/media'
+import { deleteScene, MediaWriteError } from '@/transport/media'
 import type { Scene } from '@/types/stage'
 import { createLogger } from '@/utils/logger'
 import { t } from '@/locales'
@@ -98,7 +98,7 @@ async function confirmDelete() {
   const wasLive = activeSceneId.value === scene.id
   const done = await change(scene, () => deleteScene(game, scene.id), (err) => {
     // The session ended under the write: nobody is left to tell.
-    if (err instanceof SceneWriteError) {
+    if (err instanceof MediaWriteError) {
       if (err.kind === 'aborted') return null
       if (err.kind === 'notMaster') return t('errors.sceneNotMaster')
     }

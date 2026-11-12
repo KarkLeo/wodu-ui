@@ -1,16 +1,27 @@
 import { defineStore } from 'pinia'
-import type { Scene } from '@/types/stage'
+import type { MediaEntries, MediaKind } from '@/types/stage'
 import type { LibraryStatus } from './library'
 import { useToolPanelsStore } from './toolPanels'
 
-/** The master's scenes for the open game: one game at a time, loaded and kept live by `transport/media.ts`. */
+export interface Slot<T> {
+  status: LibraryStatus
+  list: T[]
+}
+
+const KINDS: readonly MediaKind[] = ['scenes', 'sounds', 'images']
+
+const empty = (): Slot<never> => ({ status: 'idle', list: [] })
+
+/** The master's scenes, sounds and images for the open game: one game at a time, loaded and kept live by `transport/media.ts`. */
 export const useMediaStore = defineStore('media', {
   state: () => ({
     gameId: null as string | null,
-    scenes: { status: 'idle' as LibraryStatus, list: [] as Scene[] },
+    scenes: empty() as Slot<MediaEntries['scenes']>,
+    sounds: empty() as Slot<MediaEntries['sounds']>,
+    images: empty() as Slot<MediaEntries['images']>,
   }),
   actions: {
-    // Reloading the same game keeps its list on screen; another game starts empty.
+    // Reloading the same game keeps its lists on screen; another game starts empty.
     startLoading(gameId: string) {
       // Another game's table opens: its cards start closed, as the encounter panel does.
       if (this.gameId !== gameId) {
@@ -18,34 +29,39 @@ export const useMediaStore = defineStore('media', {
         useToolPanelsStore().clearAll()
       }
       this.gameId = gameId
-      if (this.scenes.status !== 'ready') this.scenes.status = 'loading'
+      for (const kind of KINDS) {
+        if (this[kind].status !== 'ready') this[kind].status = 'loading'
+      }
     },
-    setScenes(gameId: string, list: Scene[]) {
+    setList<K extends MediaKind>(kind: K, gameId: string, list: MediaEntries[K][]) {
       if (this.gameId !== gameId) return
-      this.scenes.list = list
-      this.scenes.status = 'ready'
+      const slot = this[kind] as Slot<MediaEntries[K]>
+      slot.list = list
+      slot.status = 'ready'
     },
-    setFailed(gameId: string) {
+    setFailed(kind: MediaKind, gameId: string) {
       if (this.gameId !== gameId) return
-      if (this.scenes.status !== 'ready') this.scenes.status = 'failed'
+      if (this[kind].status !== 'ready') this[kind].status = 'failed'
     },
     // A late answer for a game that is no longer the open one must not touch the list.
-    putScene(gameId: string, scene: Scene) {
+    put<K extends MediaKind>(kind: K, gameId: string, entry: MediaEntries[K]) {
       if (this.gameId !== gameId) return
-      const idx = this.scenes.list.findIndex(s => s.id === scene.id)
-      if (idx === -1) this.scenes.list.push(scene)
-      else this.scenes.list[idx] = scene
+      const list = this[kind].list as MediaEntries[K][]
+      const idx = list.findIndex(e => e.id === entry.id)
+      if (idx === -1) list.push(entry)
+      else list[idx] = entry
     },
-    removeScene(gameId: string, id: string) {
+    remove(kind: MediaKind, gameId: string, id: string) {
       if (this.gameId !== gameId) return
-      this.scenes.list = this.scenes.list.filter(s => s.id !== id)
+      const slot: Slot<{ id: string }> = this[kind]
+      slot.list = slot.list.filter(e => e.id !== id)
     },
     clearGame(gameId: string) {
       if (this.gameId === gameId) this.clearAll()
     },
     clearAll() {
       this.gameId = null
-      this.scenes = { status: 'idle', list: [] }
+      for (const kind of KINDS) this[kind] = empty()
     },
   },
 })

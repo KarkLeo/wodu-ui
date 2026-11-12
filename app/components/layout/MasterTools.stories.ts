@@ -253,7 +253,7 @@ const sceneOn: Decorator = (story) => ({
     const media = useMediaStore()
     media.clearAll()
     media.startLoading(crookhollow.id)
-    media.setScenes(crookhollow.id, [scene])
+    media.setList('scenes', crookhollow.id, [scene])
     useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
   },
   template: '<story />',
@@ -296,7 +296,7 @@ const sceneOnUnlisted: Decorator = (story) => ({
     const media = useMediaStore()
     media.clearAll()
     media.startLoading(crookhollow.id)
-    media.setScenes(crookhollow.id, [])
+    media.setList('scenes', crookhollow.id, [])
     useStageStore().set(withScene(emptyStage(crookhollow.id), scene))
   },
   template: '<story />',
@@ -332,7 +332,7 @@ export const ScenesRowListStillLoading: Story = {
     const canvas = within(canvasElement)
     const row = await canvas.findByRole('button', { name: 'Scenes, a scene is on' })
     await expect(row.querySelector('.lr-subtitle')).toHaveTextContent('A scene is on')
-    useMediaStore().setScenes(crookhollow.id, [scene])
+    useMediaStore().setList('scenes', crookhollow.id, [scene])
     await expect(await canvas.findByRole('button', { name: `Scenes, ${scene.name} is on` })).toBeVisible()
   },
 }

@@ -16,6 +16,7 @@ let deleteImpl: () => Promise<unknown>
 let gameMaster = 'user-1'
 let listRows: unknown[] = []
 let listFails = false
+let soundsListFails = false
 let sceneGetImpl: (id: string) => Promise<unknown>
 
 vi.mock('@/transport/pb', () => ({
@@ -27,6 +28,7 @@ vi.mock('@/transport/pb', () => ({
         if (collection === 'stages' && method === 'update') return stageUpdateImpl()
         if (collection === 'scenes' && method === 'delete') return deleteImpl()
         if (collection === 'scenes' && method === 'getFullList') return listFails ? Promise.reject(new Error('refused')) : Promise.resolve(listRows)
+        if (collection === 'sounds' && method === 'getFullList') return soundsListFails ? Promise.reject(new Error('refused')) : Promise.resolve([])
         if (collection === 'scenes' && method === 'getOne') return sceneGetImpl(String(args[0]))
         if (collection === 'games' && method === 'getOne') {
           return Promise.resolve({ id: 'game-1', name: 'G', master: gameMaster, invite_code: 'ABCD2345' })
@@ -97,6 +99,7 @@ beforeEach(() => {
   gameMaster = 'user-1'
   listRows = []
   listFails = false
+  soundsListFails = false
   sceneGetImpl = async () => { throw httpError(404) }
   sendImpl = async s => row(String(s.form.get('id') ?? 'sc-1'), { image: 'image.jpg', sound: 'sound.mp3' })
   stageUpdateImpl = async () => ({})
@@ -171,7 +174,7 @@ describe('createScene', () => {
   it('counts an empty-data 400 as done when the scene with that id is already in the store (answer lost, retried)', async () => {
     sendImpl = async () => { throw recorded('createDuplicateId') }
     const { createScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'X', image: null, sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'X', image: null, sound: 'sound.mp3' })
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
       .resolves.toEqual({ id: 'sc-1', name: 'X', image: null, sound: 'sound.mp3' })
   })
@@ -196,7 +199,7 @@ describe('createScene', () => {
   it('refuses locally, with nothing sent, when the list is already at the limit', async () => {
     const { createScene, media } = await load()
     const { MEDIA_LIMITS } = await import('@/domain/stage')
-    for (let i = 0; i < MEDIA_LIMITS.scenes; i++) media.putScene(GAME, { id: `s${i}`, name: 'n', image: null, sound: 'sound.mp3' })
+    for (let i = 0; i < MEDIA_LIMITS.scenes; i++) media.put('scenes', GAME, { id: `s${i}`, name: 'n', image: null, sound: 'sound.mp3' })
     await expect(createScene(GAME, { id: 'sc-1', name: 'X' }, { sound: file('a.mp3', 'audio/mpeg') }))
       .rejects.toMatchObject({ kind: 'limitReached' })
     expect(sent).toHaveLength(0)
@@ -282,7 +285,7 @@ describe('updateScene', () => {
   it('sends a File as the file, null as an empty value and leaves undefined out', async () => {
     sendImpl = async () => row('sc-1', { image: 'image.png' })
     const { updateScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: 'sound.mp3' })
     await updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png'), sound: null })
     const { method, path, form } = sent[0]!
     expect(method).toBe('PATCH')
@@ -299,7 +302,7 @@ describe('updateScene', () => {
   it('re-publishes the live scene with its new stored names', async () => {
     sendImpl = async () => row('sc-1', { image: 'image.png', sound: '' })
     const { updateScene, media, stages } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: 'sound.mp3' })
     const { withScene } = await import('@/domain/stage')
     stages.set(withScene(stages.stageOf(GAME), { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: 'sound.mp3' }))
     await updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png'), sound: null })
@@ -314,7 +317,7 @@ describe('updateScene', () => {
 
   it('does not touch the stage when the scene is not the live one', async () => {
     const { updateScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await updateScene(GAME, { id: 'sc-1', name: 'New' }, {})
     expect(stagePublishes()).toHaveLength(0)
   })
@@ -322,7 +325,7 @@ describe('updateScene', () => {
   it('maps a refused file on update to fileRefused', async () => {
     sendImpl = async () => { throw recorded('updateTextAsImage') }
     const { updateScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png') }))
       .rejects.toMatchObject({ kind: 'fileRefused', field: 'image', reason: 'type' })
   })
@@ -330,7 +333,7 @@ describe('updateScene', () => {
   it('maps a refused sound on update to fileRefused on the sound field', async () => {
     sendImpl = async () => { throw recorded('updateTextAsSound') }
     const { updateScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { sound: file('x.mp3', 'audio/mpeg') }))
       .rejects.toMatchObject({ kind: 'fileRefused', field: 'sound', reason: 'type' })
   })
@@ -339,7 +342,7 @@ describe('updateScene', () => {
     sendImpl = async () => { throw recorded('updateNotFound') }
     gameMaster = 'user-2'
     const { updateScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, { image: file('x.png', 'image/png') }))
       .rejects.toMatchObject({ kind: 'notMaster' })
   })
@@ -348,7 +351,7 @@ describe('updateScene', () => {
     sendImpl = async () => { throw httpError(404) }
     gameMaster = 'user-2'
     const { updateScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
+    media.put('scenes', GAME, { id: 'sc-1', name: 'Old', image: 'image.jpg', sound: null })
     await expect(updateScene(GAME, { id: 'sc-1', name: 'New' }, {})).rejects.toMatchObject({ kind: 'notMaster' })
   })
 })
@@ -357,7 +360,7 @@ describe('deleteScene', () => {
   async function withLiveScene() {
     const ctx = await load()
     const scene = { id: 'sc-1', name: 'Crypt', image: 'image.jpg', sound: null }
-    ctx.media.putScene(GAME, scene)
+    ctx.media.put('scenes', GAME, scene)
     const { withScene } = await import('@/domain/stage')
     ctx.stages.set(withScene(ctx.stages.stageOf(GAME), scene))
     return ctx
@@ -385,7 +388,7 @@ describe('deleteScene', () => {
 
   it('does not publish for a scene that is not live', async () => {
     const { deleteScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
     await deleteScene(GAME, 'sc-2')
     expect(stagePublishes()).toHaveLength(0)
     expect(sceneDeletes()).toHaveLength(1)
@@ -395,7 +398,7 @@ describe('deleteScene', () => {
   it('counts a 404 as done while the user is still the master', async () => {
     deleteImpl = async () => { throw httpError(404) }
     const { deleteScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
     await deleteScene(GAME, 'sc-2')
     expect(media.scenes.list).toEqual([])
   })
@@ -404,7 +407,7 @@ describe('deleteScene', () => {
     deleteImpl = async () => { throw httpError(404) }
     gameMaster = 'user-2'
     const { deleteScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
     await expect(deleteScene(GAME, 'sc-2')).rejects.toMatchObject({ kind: 'notMaster' })
   })
 })
@@ -414,7 +417,7 @@ describe('writes that outlive their game or session', () => {
 
   async function liveContext() {
     const ctx = await load()
-    ctx.media.putScene(GAME, live)
+    ctx.media.put('scenes', GAME, live)
     const { withScene } = await import('@/domain/stage')
     ctx.stages.set(withScene(ctx.stages.stageOf(GAME), live))
     return ctx
@@ -487,12 +490,12 @@ describe('writes that outlive their game or session', () => {
     const gate = deferred()
     deleteImpl = () => gate.promise
     const { deleteScene, media } = await load()
-    media.putScene(GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
+    media.put('scenes', GAME, { id: 'sc-2', name: 'Other', image: null, sound: 'sound.mp3' })
     const done = deleteScene(GAME, 'sc-2')
     await flush()
     media.clearAll()
     media.startLoading('game-2')
-    media.putScene('game-2', { id: 'sc-2', name: 'Same id elsewhere', image: null, sound: 'sound.mp3' })
+    media.put('scenes', 'game-2', { id: 'sc-2', name: 'Same id elsewhere', image: null, sound: 'sound.mp3' })
     gate.resolve(true)
     await done
     expect(media.scenes.list).toHaveLength(1)
@@ -504,7 +507,7 @@ describe('the live scene after an update', () => {
 
   async function liveContext() {
     const ctx = await load()
-    ctx.media.putScene(GAME, live)
+    ctx.media.put('scenes', GAME, live)
     const { withScene } = await import('@/domain/stage')
     ctx.stages.set(withScene(ctx.stages.stageOf(GAME), live))
     return ctx
@@ -524,10 +527,10 @@ describe('the live scene after an update', () => {
     stageUpdateImpl = async () => { throw httpError(500) }
     const { updateScene, republishScene, media } = await liveContext()
     const err = await updateScene(GAME, { id: 'sc-1', name: 'Old' }, { image: file('x.jpg', 'image/jpeg') }).catch((e: unknown) => e)
-    expect(err).toMatchObject({ kind: 'stagePublishFailed', scene: { id: 'sc-1', image: 'image_new.jpg' } })
+    expect(err).toMatchObject({ kind: 'stagePublishFailed', saved: { id: 'sc-1', image: 'image_new.jpg' } })
     expect(media.scenes.list[0]!.image).toBe('image_new.jpg')
     stageUpdateImpl = async () => ({})
-    await republishScene(GAME, (err as { scene: Scene }).scene)
+    await republishScene(GAME, (err as { saved: Scene }).saved)
     const last = stagePublishes().at(-1)!
     expect((last.args[1] as { data: { scene: { image: { name: string } } } }).data.scene.image.name).toBe('image_new.jpg')
   })
@@ -559,5 +562,55 @@ describe('openMedia', () => {
     await openMedia(GAME)
     expect(media.scenes.status).toBe('failed')
     expect(calls.filter(c => c.method === 'unsubscribe').length).toBeGreaterThan(0)
+  })
+})
+
+// A second kind, registered only here: the production table wires scenes alone for now.
+function wireSounds(mediaKinds: Record<string, unknown>) {
+  mediaKinds.sounds = {
+    collection: 'sounds',
+    files: [{ name: 'file', kind: 'audio', required: true }],
+    limit: 15,
+    fromRow: (r: { id: string }) => ({ id: r.id }),
+    checkDraft: (d: { id: string }) => ({ id: d.id }),
+    stored: () => ({ file: null }),
+  }
+}
+
+describe('several kinds', () => {
+  it('a failed load of one kind fails only its slot', async () => {
+    const { openMedia, mediaKinds, media } = await load()
+    wireSounds(mediaKinds)
+    listRows = [row('a', { image: 'image.webp' })]
+    soundsListFails = true
+    await openMedia(GAME)
+    expect(media.scenes.status).toBe('ready')
+    expect(media.scenes.list.map(s => s.id)).toEqual(['a'])
+    expect(media.sounds.status).toBe('failed')
+    expect(calls.filter(c => c.collection === 'sounds' && c.method === 'unsubscribe')).toHaveLength(1)
+    expect(calls.filter(c => c.collection === 'scenes' && c.method === 'unsubscribe')).toHaveLength(0)
+  })
+
+  it('a late write for one kind cannot touch another kind or another game', async () => {
+    const { createMedia, mediaKinds, media } = await load()
+    wireSounds(mediaKinds)
+    media.put('scenes', GAME, { id: 'same', name: 'Scene', image: null, sound: 'sound.mp3' })
+    media.put('sounds', GAME, { id: 'same' })
+    media.remove('sounds', GAME, 'same')
+    expect(media.scenes.list.map(s => s.id)).toEqual(['same'])
+    expect(media.sounds.list).toEqual([])
+
+    const late = deferred()
+    sendImpl = async () => { await late.promise; return { id: 'snd-1', game: GAME, data: { id: 'snd-1' }, file: 'file.mp3' } }
+    const pending = createMedia('sounds', GAME, { id: 'snd-1' }, { file: file('a.mp3', 'audio/mpeg') })
+    await flush()
+    media.clearAll()
+    media.startLoading('game-2')
+    media.put('scenes', 'game-2', { id: 'other', name: 'Other', image: null, sound: 'sound.mp3' })
+    late.resolve()
+    await pending
+    expect(media.sounds.list).toEqual([])
+    expect(media.scenes.list.map(s => s.id)).toEqual(['other'])
+    expect(sent[0]!.path).toBe('/api/collections/sounds/records')
   })
 })

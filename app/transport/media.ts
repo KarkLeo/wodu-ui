@@ -1,53 +1,150 @@
 import { ClientResponseError } from 'pocketbase'
-import { pb, type GameRow, type SceneRow } from '@/transport/pb'
+import { pb, type GameRow, type MediaRow } from '@/transport/pb'
 import { guard } from './backend'
 import { call, requireOnlineUser, staysCurrent } from './onlineOps'
 import { publishStage, WriteDropped } from './stage'
 import { toGame } from './games'
 import { sendForm } from '@/transport/upload'
 import {
-  IMAGE_MAX_BYTES, MEDIA_LIMITS, checkSceneData, checkSceneDraft, checkUpload, neutralFileName,
+  IMAGE_MAX_BYTES, MEDIA_LIMITS, checkSceneData, checkSceneDraft, checkUpload, fileUrl, neutralFileName,
   withScene, withoutScene,
 } from '@/domain/stage'
 import { useGamesStore } from '@/stores/games'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
-import type { Scene, Stage } from '@/types/stage'
+import type { FileRef, MediaEntries, MediaKind, Scene, Stage } from '@/types/stage'
 import { fitImage } from '@/utils/fitImage'
 import { createLogger } from '@/utils/logger'
 
 const log = createLogger('transport:media')
 
-/** A file for each of the scene's two slots: a `File` replaces, `null` removes, `undefined` keeps. */
-export interface SceneFiles { image?: File | null; sound?: File | null }
+/** A file for each of a kind's file fields: a `File` replaces, `null` removes, `undefined` keeps. */
+export type MediaFiles = Record<string, File | null | undefined>
 
-export type SceneWriteKind = 'limitReached' | 'limitMayHaveChanged' | 'fileRefused' | 'notMaster' | 'stagePublishFailed' | 'aborted'
+/** A file for each of the scene's two slots. */
+export type SceneFiles = { image?: File | null; sound?: File | null }
+
+/** What the form sends for a kind: the id and the kind's own fields. */
+export type MediaDraft = { id: string; [field: string]: unknown }
+
+export type MediaWriteKind = 'limitReached' | 'limitMayHaveChanged' | 'fileRefused' | 'notMaster' | 'stagePublishFailed' | 'aborted'
 
 /** A file the server refused: which field, and whether for its type or its size. */
-export interface FileRefusal { field: 'image' | 'sound'; reason: 'type' | 'size' }
+export interface FileRefusal { field: string; reason: 'type' | 'size' }
 
 /**
  * The failures the form words differently; any other failure is thrown as it came.
  * `limitReached`: the local list is full, nothing was sent.
- * `limitMayHaveChanged`: a create was refused by a rule (empty `data` in the body, no such scene) while this device counted fewer scenes than the limit.
+ * `limitMayHaveChanged`: a create was refused by a rule (empty `data` in the body, no such entry) while this device counted fewer entries than the limit.
  * `fileRefused`: the server refused a file by its content; `field` and `reason` say which and why.
  * `notMaster`: the game's master is someone else now.
- * `stagePublishFailed`: the scene is saved (`scene`) but the table was not updated; `republishScene` retries that alone.
+ * `stagePublishFailed`: the entry is saved (`saved`) but the table was not updated; `republishMedia` retries that alone.
  * `aborted`: the upload was cancelled because the session or the game closed; the form can ignore it.
  */
-export class SceneWriteError extends Error {
+export class MediaWriteError extends Error {
   constructor(
-    public kind: SceneWriteKind,
+    public kind: MediaWriteKind,
     public override cause?: unknown,
-    public scene?: Scene,
+    public saved?: unknown,
     public refusal?: FileRefusal,
   ) {
     super(kind)
-    this.name = 'SceneWriteError'
+    this.name = 'MediaWriteError'
   }
 
-  get field(): FileRefusal['field'] | undefined { return this.refusal?.field }
+  get field(): string | undefined { return this.refusal?.field }
   get reason(): FileRefusal['reason'] | undefined { return this.refusal?.reason }
+}
+
+/** One file field of a kind's collection. */
+export interface FileField {
+  name: string
+  kind: 'image' | 'audio'
+  required: boolean
+}
+
+/** How a kind's entry is told apart on the stage: used to publish, re-publish and clear it. */
+export interface LiveHooks<E> {
+  /** Is the entry with this id the one shown at the table? */
+  isLive(stage: Stage, id: string): boolean
+  /** Does the stage already point at the entry's stored files? */
+  inSync(stage: Stage, entry: E): boolean
+  publish(stage: Stage, entry: E): Stage
+  clear(stage: Stage): Stage
+}
+
+/** Everything the generic path needs to know about one kind. */
+export interface MediaKindSpec<E extends { id: string }> {
+  collection: MediaKind
+  files: readonly FileField[]
+  limit: number
+  /** The entry a row stands for; null when it fails the shape check. */
+  fromRow(row: MediaRow): E | null
+  /** The `data` to store, or null when the draft is invalid. `has` says which file fields end up with a file. */
+  checkDraft(draft: MediaDraft, has: Record<string, boolean>): { id: string } | null
+  /** The stored file name of each file field, null when absent. */
+  stored(entry: E): Record<string, string | null>
+  live?: LiveHooks<E>
+}
+
+type KindTable = { [K in MediaKind]?: MediaKindSpec<MediaEntries[K]> }
+
+function sceneFromRow(row: MediaRow): Scene | null {
+  const data = checkSceneData(row.data)
+  if (!data || data.id !== row.id) {
+    log.warn('dropping a scene that fails the shape check', { id: row.id })
+    return null
+  }
+  return {
+    id: row.id,
+    name: data.name,
+    image: typeof row.image === 'string' && row.image ? row.image : null,
+    sound: typeof row.sound === 'string' && row.sound ? row.sound : null,
+  }
+}
+
+function sceneInSync(stage: Stage, scene: Scene): boolean {
+  return (stage.scene?.image?.name ?? null) === scene.image && (stage.scene?.sound?.name ?? null) === scene.sound
+}
+
+/** The kinds this transport handles. A kind joins by one entry here; the form and the panel come with it. */
+export const mediaKinds: KindTable = {
+  scenes: {
+    collection: 'scenes',
+    files: [{ name: 'image', kind: 'image', required: false }, { name: 'sound', kind: 'audio', required: false }],
+    limit: MEDIA_LIMITS.scenes,
+    fromRow: sceneFromRow,
+    checkDraft: (draft, has) => {
+      const name = typeof draft.name === 'string' ? draft.name : ''
+      const problems = checkSceneDraft({ name, hasImage: !!has.image, hasSound: !!has.sound })
+      const data = checkSceneData({ id: draft.id, name })
+      return problems.length ? null : data
+    },
+    stored: scene => ({ image: scene.image, sound: scene.sound }),
+    live: {
+      isLive: (stage, id) => stage.scene?.id === id,
+      inSync: sceneInSync,
+      publish: withScene,
+      clear: withoutScene,
+    },
+  },
+}
+
+function specOf<K extends MediaKind>(kind: K): MediaKindSpec<MediaEntries[K]> {
+  const spec = mediaKinds[kind]
+  if (!spec) throw new Error(`media kind not wired: ${kind}`)
+  return spec as MediaKindSpec<MediaEntries[K]>
+}
+
+const listOf = <K extends MediaKind>(kind: K): MediaEntries[K][] => useMediaStore()[kind].list as MediaEntries[K][]
+
+function wiredKinds(): MediaKind[] {
+  return (Object.keys(mediaKinds) as MediaKind[]).filter(k => mediaKinds[k])
+}
+
+/** Where the server serves a stored file at the size of a thumbnail. */
+export function mediaThumb(ref: FileRef, size: string): string {
+  return fileUrl(pb.baseURL, ref, size)
 }
 
 function statusOf(err: unknown): number | undefined {
@@ -56,11 +153,11 @@ function statusOf(err: unknown): number | undefined {
 
 // PocketBase words a file refusal as `data.<field>.code` inside the body, which the SDK keeps in `response`
 // (see `responseError.ts`); a rule refusal has an empty `data`.
-function fileRefusal(err: unknown): FileRefusal | null {
+function fileRefusal(spec: MediaKindSpec<{ id: string }>, err: unknown): FileRefusal | null {
   if (!(err instanceof ClientResponseError) || err.status !== 400) return null
   const data = err.response.data
   if (typeof data !== 'object' || data === null) return null
-  for (const field of ['image', 'sound'] as const) {
+  for (const { name: field } of spec.files) {
     const code = (data as Record<string, { code?: unknown } | undefined>)[field]?.code
     if (code === 'validation_invalid_mime_type') return { field, reason: 'type' }
     if (code === 'validation_file_size_limit') return { field, reason: 'size' }
@@ -68,40 +165,34 @@ function fileRefusal(err: unknown): FileRefusal | null {
   return null
 }
 
-const ROWS = '/api/collections/scenes/records'
-
-export function sceneFromRow(row: SceneRow): Scene | null {
-  const data = checkSceneData(row.data)
-  if (!data || data.id !== row.id) {
-    log.warn('dropping a scene that fails the shape check', { id: row.id })
-    return null
-  }
-  return { id: row.id, name: data.name, image: row.image || null, sound: row.sound || null }
-}
-
 let openGen = 0
-let held: (() => void)[] | null = null
+// Per kind, the events that arrive while that kind's list loads; null once it has loaded.
+const held = new Map<MediaKind, (() => void)[] | null>()
 
 // Events that arrive while the list loads are replayed on top of it.
-function onEvent(gen: number, apply: () => void) {
+function onEvent(gen: number, kind: MediaKind, apply: () => void) {
   if (gen !== openGen) return
-  if (held) held.push(apply)
+  const queue = held.get(kind)
+  if (queue) queue.push(apply)
   else apply()
 }
 
 // A player's client never subscribes, so it never sends an unsubscribe either.
-let listening = false
+const listening = new Set<MediaKind>()
+
+function unsubscribeKind(kind: MediaKind) {
+  if (!listening.delete(kind)) return
+  // Fails whenever the network has just dropped, which is a normal way to get here.
+  pb.collection(kind).unsubscribe('*').catch((err: unknown) => log.debug('unsubscribe failed', { kind, err }))
+}
 
 function unsubscribeOwn() {
-  if (!listening) return
-  listening = false
-  // Fails whenever the network has just dropped, which is a normal way to get here.
-  pb.collection('scenes').unsubscribe('*').catch((err: unknown) => log.debug('unsubscribe failed', { err }))
+  for (const kind of [...listening]) unsubscribeKind(kind)
 }
 
 /**
- * Master: subscribes to the game's scenes, then loads them. Events that arrive during the load are held and
- * replayed on top of it. A failure leaves the store `failed` and is not rethrown.
+ * Master: subscribes to the game's media, then loads them, each wired kind on its own. Events that arrive
+ * during a load are held and replayed on top of it. A failure leaves that kind's slot `failed` and is not rethrown.
  */
 export function openMedia(gameId: string): Promise<void> {
   if (inflight?.gameId === gameId) return inflight.promise
@@ -131,77 +222,94 @@ async function run(gameId: string): Promise<void> {
   abortUploads(gameId)
   unsubscribeOwn()
   store.startLoading(gameId)
-  held = []
-  listening = true
+  const kinds = wiredKinds()
+  held.clear()
+  for (const kind of kinds) held.set(kind, [])
   try {
-    await call(() => pb.collection('scenes').subscribe<SceneRow>('*', (e) => {
+    await Promise.all(kinds.map(kind => loadKind(kind, gameId, gen, open)))
+  } finally {
+    if (gen === openGen) held.clear()
+  }
+}
+
+async function loadKind<K extends MediaKind>(kind: K, gameId: string, gen: number, open: () => boolean): Promise<void> {
+  const spec = specOf(kind)
+  const store = useMediaStore()
+  listening.add(kind)
+  try {
+    await call(() => pb.collection(kind).subscribe<MediaRow>('*', (e) => {
       if (e.record.game !== gameId || store.gameId !== gameId) return
       if (e.action === 'delete') {
-        onEvent(gen, () => store.removeScene(gameId, e.record.id))
+        onEvent(gen, kind, () => store.remove(kind, gameId, e.record.id))
         return
       }
-      const scene = sceneFromRow(e.record)
-      if (scene) onEvent(gen, () => store.putScene(gameId, scene))
+      const entry = spec.fromRow(e.record)
+      if (entry) onEvent(gen, kind, () => store.put(kind, gameId, entry))
     }))
     if (!open()) return
-    const rows = await call(() => pb.collection('scenes').getFullList<SceneRow>({
+    const rows = await call(() => pb.collection(kind).getFullList<MediaRow>({
       filter: pb.filter('game = {:g}', { g: gameId }),
       sort: 'created',
     }))
     if (!open()) return
-    store.setScenes(gameId, rows.map(sceneFromRow).filter((s): s is Scene => s !== null))
-    const events = held ?? []
-    held = null
+    store.setList(kind, gameId, rows.map(r => spec.fromRow(r)).filter((e): e is MediaEntries[K] => e !== null))
+    const events = held.get(kind) ?? []
+    held.set(kind, null)
     for (const apply of events) apply()
   } catch (err) {
-    log.warn('open failed', { gameId, err })
+    log.warn('open failed', { kind, gameId, err })
     // The list did not load, so nothing is listened to until a retry replaces it.
     if (open()) {
-      store.setFailed(gameId)
-      unsubscribeOwn()
+      store.setFailed(kind, gameId)
+      unsubscribeKind(kind)
     }
-  } finally {
-    if (gen === openGen) held = null
   }
 }
 
 /** Stops listening; the store keeps its data, which a reopen of the same game refreshes in place. */
 export function closeMedia(): void {
   openGen += 1
-  held = null
+  held.clear()
   inflight = null
   abortUploads()
   unsubscribeOwn()
 }
 
+type ReadyFiles = Record<string, File | null | undefined>
+
+async function checkedFiles(spec: MediaKindSpec<{ id: string }>, files: MediaFiles): Promise<ReadyFiles> {
+  const out: ReadyFiles = {}
+  for (const field of spec.files) {
+    const given = files[field.name]
+    const file = given && field.kind === 'image' ? await fitImage(given, IMAGE_MAX_BYTES) : given
+    if (file && checkUpload(field.kind, file) !== 'ok') throw new Error(`invalid ${field.name}`)
+    out[field.name] = file
+  }
+  return out
+}
+
 // The form checks first, so a failure here is a developer error.
-function checkedName(name: string, id: string, hasImage: boolean, hasSound: boolean): { id: string; name: string } {
-  const problems = checkSceneDraft({ name, hasImage, hasSound })
-  const data = checkSceneData({ id, name })
-  if (problems.length || !data) throw new Error(`invalid scene: ${problems.join(', ') || 'id'}`)
+function checkedData(spec: MediaKindSpec<{ id: string }>, draft: MediaDraft, has: Record<string, boolean>): { id: string } {
+  const missing = spec.files.filter(f => f.required && !has[f.name]).map(f => f.name)
+  const data = spec.checkDraft(draft, has)
+  if (missing.length || !data) throw new Error(`invalid ${spec.collection} entry: ${missing.join(', ') || 'draft'}`)
   return data
 }
 
-async function checkedFiles(files: SceneFiles): Promise<{ image: File | null | undefined; sound: File | null | undefined }> {
-  const image = files.image ? await fitImage(files.image, IMAGE_MAX_BYTES) : files.image
-  if (image && checkUpload('image', image) !== 'ok') throw new Error('invalid image')
-  if (files.sound && checkUpload('audio', files.sound) !== 'ok') throw new Error('invalid sound')
-  return { image, sound: files.sound }
-}
-
-function addFiles(form: FormData, files: { image: File | null | undefined; sound: File | null | undefined }) {
-  for (const [field, file, kind] of [['image', files.image, 'image'], ['sound', files.sound, 'audio']] as const) {
+function addFiles(form: FormData, spec: MediaKindSpec<{ id: string }>, files: ReadyFiles) {
+  for (const field of spec.files) {
+    const file = files[field.name]
     if (file === undefined) continue
     // An empty value clears a file field.
-    if (file === null) form.append(field, '')
-    else form.append(field, file, neutralFileName(kind, file.type))
+    if (file === null) form.append(field.name, '')
+    else form.append(field.name, file, neutralFileName(field.kind, file.type))
   }
 }
 
-function savedScene(row: SceneRow): Scene {
-  const scene = sceneFromRow(row)
-  if (!scene) throw new Error('the server answered with a scene that fails the shape check')
-  return scene
+function savedEntry<K extends MediaKind>(spec: MediaKindSpec<MediaEntries[K]>, row: MediaRow): MediaEntries[K] {
+  const entry = spec.fromRow(row)
+  if (!entry) throw new Error('the server answered with an entry that fails the shape check')
+  return entry
 }
 
 async function upload(
@@ -210,83 +318,88 @@ async function upload(
   path: string,
   form: FormData,
   onProgress?: (fraction: number) => void,
-): Promise<SceneRow> {
+): Promise<MediaRow> {
   const entry = { gameId, controller: new AbortController() }
   uploads.add(entry)
   try {
-    return await guard(() => sendForm<SceneRow>(method, path, form, onProgress, entry.controller.signal))
+    return await guard(() => sendForm<MediaRow>(method, path, form, onProgress, entry.controller.signal))
   } catch (err) {
-    if (entry.controller.signal.aborted) throw new SceneWriteError('aborted', err)
+    if (entry.controller.signal.aborted) throw new MediaWriteError('aborted', err)
     throw err
   } finally {
     uploads.delete(entry)
   }
 }
 
-/** Master: adds a scene. Files go up under neutral names; the image is shrunk to fit first. */
-export async function createScene(
+const rowsPath = (kind: MediaKind) => `/api/collections/${kind}/records`
+
+/** Master: adds an entry. Files go up under neutral names; an image is shrunk to fit first. */
+export async function createMedia<K extends MediaKind>(
+  kind: K,
   gameId: string,
-  draft: { id: string; name: string },
-  files: SceneFiles,
+  draft: MediaDraft,
+  files: MediaFiles,
   onProgress?: (fraction: number) => void,
-): Promise<Scene> {
+): Promise<MediaEntries[K]> {
   requireOnlineUser()
   const current = staysCurrent()
+  const spec = specOf(kind)
   const store = useMediaStore()
-  if (store.scenes.list.length >= MEDIA_LIMITS.scenes) throw new SceneWriteError('limitReached')
-  const data = checkedName(draft.name, draft.id, !!files.image, !!files.sound)
-  const ready = await checkedFiles(files)
+  if (store[kind].list.length >= spec.limit) throw new MediaWriteError('limitReached')
+  const data = checkedData(spec, draft, Object.fromEntries(spec.files.map(f => [f.name, !!files[f.name]])))
+  const ready = await checkedFiles(spec, files)
   const form = new FormData()
   form.append('id', data.id)
   form.append('game', gameId)
   form.append('data', JSON.stringify(data))
-  addFiles(form, ready)
-  let row: SceneRow
+  addFiles(form, spec, ready)
+  let row: MediaRow
   try {
-    row = await upload(gameId, 'POST', ROWS, form, onProgress)
+    row = await upload(gameId, 'POST', rowsPath(kind), form, onProgress)
   } catch (err) {
-    const refused = fileRefusal(err)
-    if (refused) throw new SceneWriteError('fileRefused', err, undefined, refused)
+    const refused = fileRefusal(spec, err)
+    if (refused) throw new MediaWriteError('fileRefused', err, undefined, refused)
     if (statusOf(err) === 400) {
-      // A create whose answer was lost and is retried under the same id is refused because the scene exists.
-      const existing = await existingScene(gameId, data.id, current)
+      // A create whose answer was lost and is retried under the same id is refused because the entry exists.
+      const existing = await existingEntry(kind, gameId, data.id, current)
       if (existing) return existing
-      if (store.scenes.list.length < MEDIA_LIMITS.scenes) throw new SceneWriteError('limitMayHaveChanged', err)
+      if (store[kind].list.length < spec.limit) throw new MediaWriteError('limitMayHaveChanged', err)
     }
     throw err
   }
-  const scene = savedScene(row)
-  if (current()) store.putScene(gameId, scene)
-  return scene
+  const entry = savedEntry(spec, row)
+  if (current()) store.put(kind, gameId, entry)
+  return entry
 }
 
-// The scene with this id, from the store or from one read; null when there is none.
-async function existingScene(gameId: string, id: string, current: () => boolean): Promise<Scene | null> {
+// The entry with this id, from the store or from one read; null when there is none.
+async function existingEntry<K extends MediaKind>(kind: K, gameId: string, id: string, current: () => boolean): Promise<MediaEntries[K] | null> {
+  const spec = specOf(kind)
   const store = useMediaStore()
-  const known = store.gameId === gameId ? store.scenes.list.find(s => s.id === id) : undefined
+  const known = store.gameId === gameId ? listOf(kind).find(e => e.id === id) : undefined
   if (known) return known
-  let row: SceneRow
+  let row: MediaRow
   try {
-    row = await call(() => pb.collection('scenes').getOne<SceneRow>(id))
+    row = await call(() => pb.collection(kind).getOne<MediaRow>(id))
   } catch {
     return null
   }
   if (row.game !== gameId) return null
-  const scene = sceneFromRow(row)
-  if (scene && current()) store.putScene(gameId, scene)
-  return scene
+  const entry = spec.fromRow(row)
+  if (entry && current()) store.put(kind, gameId, entry)
+  return entry
 }
 
 /**
- * The server answers 404 both for a scene that is already gone and for a player who is no longer the
- * master, so a 404 re-reads the game: still the master means the scene is gone; otherwise the game (with
+ * The server answers 404 both for an entry that is already gone and for a player who is no longer the
+ * master, so a 404 re-reads the game: still the master means the entry is gone; otherwise the game (with
  * its new master) goes into the store and the write fails as `notMaster`.
  */
 async function stillMaster(gameId: string, me: string, current: () => boolean, err: unknown): Promise<boolean> {
   const game = toGame(await call(() => pb.collection('games').getOne<GameRow>(gameId)))
   if (game.master === me) return true
   if (current()) useGamesStore().upsertGame(game)
-  throw new SceneWriteError('notMaster', err)
+  throw new MediaWriteError('notMaster', err)
 }
 
 // A write that outlives its game or session must not publish or edit anything for it.
@@ -294,89 +407,121 @@ function holds(gameId: string, current: () => boolean): boolean {
   return current() && useMediaStore().gameId === gameId
 }
 
-function pointsAt(stage: Stage, scene: Scene): boolean {
-  return (stage.scene?.image?.name ?? null) === scene.image && (stage.scene?.sound?.name ?? null) === scene.sound
+/**
+ * Master: renames an entry and changes its files. When it is the entry shown at the table and its stored files
+ * changed, the table gets the new ones; if that publish fails the entry is still saved, and the error is a
+ * `MediaWriteError('stagePublishFailed')` carrying it.
+ */
+export async function updateMedia<K extends MediaKind>(
+  kind: K,
+  gameId: string,
+  draft: MediaDraft,
+  files: MediaFiles,
+  onProgress?: (fraction: number) => void,
+): Promise<MediaEntries[K]> {
+  const me = requireOnlineUser()
+  const current = staysCurrent()
+  const spec = specOf(kind)
+  const store = useMediaStore()
+  const before = listOf(kind).find(e => e.id === draft.id)
+  const stored = before ? spec.stored(before) : null
+  // Without the entry in the store, an unchanged file is assumed to exist.
+  const has = Object.fromEntries(spec.files.map(f => [
+    f.name,
+    !!files[f.name] || (files[f.name] === undefined && (stored ? stored[f.name] !== null : true)),
+  ]))
+  const data = checkedData(spec, draft, has)
+  const ready = await checkedFiles(spec, files)
+  const form = new FormData()
+  form.append('data', JSON.stringify(data))
+  addFiles(form, spec, ready)
+  let row: MediaRow
+  try {
+    row = await upload(gameId, 'PATCH', `${rowsPath(kind)}/${encodeURIComponent(data.id)}`, form, onProgress)
+  } catch (err) {
+    const refused = fileRefusal(spec, err)
+    if (refused) throw new MediaWriteError('fileRefused', err, undefined, refused)
+    if (statusOf(err) === 404) await stillMaster(gameId, me, current, err)
+    throw err
+  }
+  const saved = savedEntry(spec, row)
+  if (!holds(gameId, current)) return saved
+  store.put(kind, gameId, saved)
+  const stage = useStageStore().stageOf(gameId)
+  if (spec.live?.isLive(stage, saved.id) && !spec.live.inSync(stage, saved)) await publishLive(kind, gameId, saved, current)
+  return saved
 }
 
-/**
- * Master: renames a scene and changes its files. When it is the scene shown at the table and its stored files
- * changed, the table gets the new ones; if that publish fails the scene is still saved, and the error is a
- * `SceneWriteError('stagePublishFailed')` carrying it.
- */
-export async function updateScene(
+async function publishLive<K extends MediaKind>(kind: K, gameId: string, entry: MediaEntries[K], current: () => boolean): Promise<void> {
+  const live = specOf(kind).live
+  if (!live) return
+  const stage = useStageStore().stageOf(gameId)
+  if (!live.isLive(stage, entry.id)) return
+  try {
+    await publishStage(live.publish(stage, entry))
+  } catch (err) {
+    // The mode or the user changed first: nothing to report to a form that is gone.
+    if (err instanceof WriteDropped || !current()) return
+    throw new MediaWriteError('stagePublishFailed', err, entry)
+  }
+}
+
+/** Master: retries the table's update alone after `stagePublishFailed`; does nothing once the entry is no longer the live one. */
+export async function republishMedia<K extends MediaKind>(kind: K, gameId: string, entry: MediaEntries[K]): Promise<void> {
+  requireOnlineUser()
+  const current = staysCurrent()
+  const live = specOf(kind).live
+  if (!live?.isLive(useStageStore().stageOf(gameId), entry.id)) return
+  await publishLive(kind, gameId, entry, current)
+}
+
+/** Master: deletes an entry. One shown at the table is taken off first, and kept if that fails. */
+export async function deleteMedia(kind: MediaKind, gameId: string, id: string): Promise<void> {
+  const me = requireOnlineUser()
+  const current = staysCurrent()
+  const live = specOf(kind).live
+  const stage = useStageStore().stageOf(gameId)
+  if (live?.isLive(stage, id)) {
+    if (!holds(gameId, current)) throw new MediaWriteError('aborted')
+    try {
+      await publishStage(live.clear(stage))
+    } catch (err) {
+      if (err instanceof WriteDropped) throw new MediaWriteError('aborted', err)
+      throw err
+    }
+    if (!holds(gameId, current)) throw new MediaWriteError('aborted')
+  }
+  try {
+    await call(() => pb.collection(kind).delete(id))
+  } catch (err) {
+    if (statusOf(err) !== 404) throw err
+    await stillMaster(gameId, me, current, err)
+  }
+  if (current()) useMediaStore().remove(kind, gameId, id)
+}
+
+export function createScene(
+  gameId: string,
+  draft: { id: string; name: string },
+  files: SceneFiles,
+  onProgress?: (fraction: number) => void,
+): Promise<Scene> {
+  return createMedia('scenes', gameId, draft, files, onProgress)
+}
+
+export function updateScene(
   gameId: string,
   scene: { id: string; name: string },
   files: SceneFiles,
   onProgress?: (fraction: number) => void,
 ): Promise<Scene> {
-  const me = requireOnlineUser()
-  const current = staysCurrent()
-  const store = useMediaStore()
-  const before = store.scenes.list.find(s => s.id === scene.id)
-  const keeps = (field: 'image' | 'sound') => files[field] === undefined && (before ? before[field] !== null : true)
-  const data = checkedName(scene.name, scene.id, !!files.image || keeps('image'), !!files.sound || keeps('sound'))
-  const ready = await checkedFiles(files)
-  const form = new FormData()
-  form.append('data', JSON.stringify(data))
-  addFiles(form, ready)
-  let row: SceneRow
-  try {
-    row = await upload(gameId, 'PATCH', `${ROWS}/${encodeURIComponent(data.id)}`, form, onProgress)
-  } catch (err) {
-    const refused = fileRefusal(err)
-    if (refused) throw new SceneWriteError('fileRefused', err, undefined, refused)
-    if (statusOf(err) === 404) await stillMaster(gameId, me, current, err)
-    throw err
-  }
-  const saved = savedScene(row)
-  if (!holds(gameId, current)) return saved
-  store.putScene(gameId, saved)
-  const stage = useStageStore().stageOf(gameId)
-  if (stage.scene?.id === saved.id && !pointsAt(stage, saved)) await publishLive(gameId, saved, current)
-  return saved
+  return updateMedia('scenes', gameId, scene, files, onProgress)
 }
 
-async function publishLive(gameId: string, scene: Scene, current: () => boolean): Promise<void> {
-  const stage = useStageStore().stageOf(gameId)
-  if (stage.scene?.id !== scene.id) return
-  try {
-    await publishStage(withScene(stage, scene))
-  } catch (err) {
-    // The mode or the user changed first: nothing to report to a form that is gone.
-    if (err instanceof WriteDropped || !current()) return
-    throw new SceneWriteError('stagePublishFailed', err, scene)
-  }
+export function republishScene(gameId: string, scene: Scene): Promise<void> {
+  return republishMedia('scenes', gameId, scene)
 }
 
-/** Master: retries the table's update alone after `stagePublishFailed`; does nothing once the scene is no longer the live one. */
-export async function republishScene(gameId: string, scene: Scene): Promise<void> {
-  requireOnlineUser()
-  const current = staysCurrent()
-  const stage = useStageStore().stageOf(gameId)
-  if (stage.scene?.id !== scene.id) return
-  await publishLive(gameId, scene, current)
-}
-
-/** Master: deletes a scene. A scene shown at the table is taken off first, and kept if that fails. */
-export async function deleteScene(gameId: string, id: string): Promise<void> {
-  const me = requireOnlineUser()
-  const current = staysCurrent()
-  const stage = useStageStore().stageOf(gameId)
-  if (stage.scene?.id === id) {
-    if (!holds(gameId, current)) throw new SceneWriteError('aborted')
-    try {
-      await publishStage(withoutScene(stage))
-    } catch (err) {
-      if (err instanceof WriteDropped) throw new SceneWriteError('aborted', err)
-      throw err
-    }
-    if (!holds(gameId, current)) throw new SceneWriteError('aborted')
-  }
-  try {
-    await call(() => pb.collection('scenes').delete(id))
-  } catch (err) {
-    if (statusOf(err) !== 404) throw err
-    await stillMaster(gameId, me, current, err)
-  }
-  if (current()) useMediaStore().removeScene(gameId, id)
+export function deleteScene(gameId: string, id: string): Promise<void> {
+  return deleteMedia('scenes', gameId, id)
 }
