@@ -24,16 +24,11 @@ export interface Sound {
   file: string
 }
 
-/** Temporary stand-in for the image entry; the Shown-images step replaces it with the real type. */
-export interface UntypedMediaEntry {
-  id: string
-}
-
 /** The entry each kind keeps in the master's store. */
 export interface MediaEntries {
   scenes: Scene
   sounds: Sound
-  images: UntypedMediaEntry
+  images: TableImage
 }
 
 /** `file` is the stored file name on the record; an image always has its file. */

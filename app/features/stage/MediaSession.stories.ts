@@ -25,13 +25,16 @@ const Harness = defineComponent({
     useMediaSession()
     // The next story starts with nothing listening, as a fresh page would.
     onUnmounted(closeMedia)
-    const { activeSceneId, turnOnScene, turnOffScene, playingSoundId, playSound, stopSound } = useStageControl()
+    const { activeSceneId, turnOnScene, turnOffScene, playingSoundId, playSound, stopSound, shownImageId, showImage, hideImage } = useStageControl()
     return {
-      media, activeSceneId, playingSoundId,
+      media, activeSceneId, playingSoundId, shownImageId,
       on: () => turnOnScene(media.scenes.list[0]!),
       off: () => turnOffScene(),
       play: () => playSound(media.sounds.list[0]!),
       stop: () => stopSound(),
+      showWith: () => showImage(media.images.list[0]!, true),
+      showWithout: () => showImage(media.images.list[0]!, false),
+      hide: () => hideImage(),
     }
   },
   template: `
@@ -42,6 +45,12 @@ const Harness = defineComponent({
       <p data-testid="sounds-status">{{ media.sounds.status }}</p>
       <p data-testid="sounds-count">{{ media.sounds.list.length }}</p>
       <p data-testid="playing">{{ playingSoundId ?? 'none' }}</p>
+      <p data-testid="images-status">{{ media.images.status }}</p>
+      <p data-testid="images-count">{{ media.images.list.length }}</p>
+      <p data-testid="shown">{{ shownImageId ?? 'none' }}</p>
+      <button type="button" @click="showWith">Show with caption</button>
+      <button type="button" @click="showWithout">Show without caption</button>
+      <button type="button" @click="hide">Hide image</button>
       <button type="button" @click="on">On</button>
       <button type="button" @click="off">Off</button>
       <button type="button" @click="play">Play</button>
@@ -61,6 +70,7 @@ type Story = StoryObj<typeof meta>
 
 const SCENE_ID = 'story-scene-crypt'
 const SOUND_ID = 'story-sound-rain-01'
+const IMAGE_ID = 'story-image-map-001'
 
 const seed = async () => {
   clearPbRequests()
@@ -72,6 +82,10 @@ const seed = async () => {
   resetRecords('sounds', [
     { id: SOUND_ID, game: crookhollow.id, data: { id: SOUND_ID, name: 'Rain', loop: true, duration: 42 }, file: 'sound.mp3' },
     { id: 'story-sound-other-1', game: olden.id, data: { id: 'story-sound-other-1', name: 'Bell', loop: false }, file: 'sound.m4a' },
+  ])
+  resetRecords('images', [
+    { id: IMAGE_ID, game: crookhollow.id, data: { id: IMAGE_ID, caption: 'The old map' }, file: 'image.png' },
+    { id: 'story-image-other-1', game: olden.id, data: { id: 'story-image-other-1' }, file: 'image.jpg' },
   ])
 }
 
@@ -109,7 +123,21 @@ export const MasterOpensTheSounds: Story = {
   },
 }
 
-/** A player's client never asks for the scenes. */
+/** The same open loads and listens to the images once, and only this game's. */
+export const MasterOpensTheImages: Story = {
+  decorators: [asMaster],
+  loaders: [seed, atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(() => expect(canvas.getByTestId('images-status')).toHaveTextContent('ready'))
+    await expect(canvas.getByTestId('images-count')).toHaveTextContent('1')
+    await flush()
+    await expect(requestsFor('images').filter(r => r === 'images.getFullList')).toHaveLength(1)
+    await expect(requestsFor('images').filter(r => r === 'images.subscribe')).toHaveLength(1)
+  },
+}
+
+/** A player's client never asks for the scenes, sounds or images. */
 export const PlayerNeverOpensThem: Story = {
   decorators: [asPlayer],
   loaders: [seed, atRoute(`/games/${olden.id}`)],
@@ -120,6 +148,8 @@ export const PlayerNeverOpensThem: Story = {
     await expect(requestsFor('scenes')).toEqual([])
     await expect(canvas.getByTestId('sounds-status')).toHaveTextContent('idle')
     await expect(requestsFor('sounds')).toEqual([])
+    await expect(canvas.getByTestId('images-status')).toHaveTextContent('idle')
+    await expect(requestsFor('images')).toEqual([])
   },
 }
 
@@ -200,6 +230,46 @@ export const PlayPlayAgainAndStop: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Stop' }))
     await waitFor(() => expect(soundOnStage()).toBeNull())
     await expect(canvas.getByTestId('playing')).toHaveTextContent('none')
+  },
+}
+
+/** Show writes the stage's image with the file reference and the chosen caption; showing again is a new reveal; hide clears it. */
+export const ShowShowAgainAndHide: Story = {
+  decorators: [asMaster],
+  loaders: [seed, atRoute(`/games/${crookhollow.id}`)],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const onStage = () => (storedRecords('stages')[0]?.data as { image: { caption: string | null; shownAt: string } | null } | undefined)?.image
+    await waitFor(() => expect(canvas.getByTestId('images-count')).toHaveTextContent('1'))
+    await userEvent.click(canvas.getByRole('button', { name: 'Show with caption' }))
+    await waitFor(() => expect(onStage()).toBeTruthy())
+    const first = onStage()!
+    await expect(first).toEqual({
+      id: IMAGE_ID,
+      file: { collection: 'images', record: IMAGE_ID, name: 'image.png' },
+      caption: 'The old map',
+      shownAt: expect.any(String),
+    })
+    await expect(canvas.getByTestId('shown')).toHaveTextContent(IMAGE_ID)
+    // The preview freezes the clock; the master shows it again a second later, this time without its caption.
+    const Frozen = globalThis.Date
+    globalThis.Date = class extends Frozen {
+      constructor(...args: ConstructorParameters<DateConstructor> | []) {
+        if (args.length === 0) super(Frozen.now() + 1000)
+        else super(...(args as ConstructorParameters<DateConstructor>))
+      }
+    } as DateConstructor
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Show without caption' }))
+      await waitFor(() => expect(onStage()!.shownAt > first.shownAt).toBe(true))
+    } finally {
+      globalThis.Date = Frozen
+    }
+    await expect(onStage()!.caption).toBeNull()
+    await expect(JSON.stringify(storedRecords('stages')[0]!.data)).not.toContain('The old map')
+    await userEvent.click(canvas.getByRole('button', { name: 'Hide image' }))
+    await waitFor(() => expect(onStage()).toBeNull())
+    await expect(canvas.getByTestId('shown')).toHaveTextContent('none')
   },
 }
 

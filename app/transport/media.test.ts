@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { Scene, Sound } from '@/types/stage'
+import type { Scene, Sound, TableImage } from '@/types/stage'
 import { RECORDED } from './recordedResponses'
 import { errorFromResponse } from './responseError'
 
@@ -20,6 +20,10 @@ let soundsListFails = false
 let soundRows: unknown[] = []
 let sceneGetImpl: (id: string) => Promise<unknown>
 let soundGetImpl: (id: string) => Promise<unknown>
+let imageRows: unknown[] = []
+let imageGetImpl: (id: string) => Promise<unknown>
+let fitImpl: (f: File) => Promise<File>
+const fitCalls: Array<[File, number]> = []
 
 vi.mock('@/transport/pb', () => ({
   pb: {
@@ -28,9 +32,11 @@ vi.mock('@/transport/pb', () => ({
       get: (_t, method: string) => (...args: unknown[]) => {
         calls.push({ collection, method, args })
         if (collection === 'stages' && method === 'update') return stageUpdateImpl()
-        if ((collection === 'scenes' || collection === 'sounds') && method === 'delete') return deleteImpl()
+        if ((collection === 'scenes' || collection === 'sounds' || collection === 'images') && method === 'delete') return deleteImpl()
         if (collection === 'scenes' && method === 'getFullList') return listFails ? Promise.reject(new Error('refused')) : Promise.resolve(listRows)
         if (collection === 'sounds' && method === 'getFullList') return soundsListFails ? Promise.reject(new Error('refused')) : Promise.resolve(soundRows)
+        if (collection === 'images' && method === 'getFullList') return Promise.resolve(imageRows)
+        if (collection === 'images' && method === 'getOne') return imageGetImpl(String(args[0]))
         if (collection === 'scenes' && method === 'getOne') return sceneGetImpl(String(args[0]))
         if (collection === 'sounds' && method === 'getOne') return soundGetImpl(String(args[0]))
         if (collection === 'games' && method === 'getOne') {
@@ -40,6 +46,9 @@ vi.mock('@/transport/pb', () => ({
       },
     }),
   },
+}))
+vi.mock('@/utils/fitImage', () => ({
+  fitImage: (f: File, max: number) => { fitCalls.push([f, max]); return fitImpl(f) },
 }))
 vi.mock('./onlineOps', () => ({
   call: <T>(op: () => Promise<T>) => op(),
@@ -72,6 +81,10 @@ const httpError = (status: number) => errorFromResponse('', status, JSON.stringi
 const recorded = (key: keyof typeof RECORDED) => errorFromResponse('', RECORDED[key].status, RECORDED[key].body)
 const file = (name: string, type: string) => new File(['x'], name, { type })
 
+function imageRow(id: string, over: Record<string, unknown> = {}) {
+  return { id, game: GAME, data: { id, caption: `Caption ${id}` }, file: 'image.jpg', ...over }
+}
+
 function soundRow(id: string, over: Record<string, unknown> = {}) {
   return { id, game: GAME, data: { id, name: `Sound ${id}`, loop: false, duration: 12 }, file: 'sound.mp3', ...over }
 }
@@ -92,11 +105,12 @@ async function load() {
   const { applyStages } = await import('./stage')
   applyStages([{ id: GAME, game: GAME, data: { id: GAME, scene: null, image: null, sound: null } }])
   const media = useMediaStore()
-  media.startLoading(GAME, ['scenes', 'sounds'])
+  media.startLoading(GAME, ['scenes', 'sounds', 'images'])
   return { ...transport, media, stages: useStageStore() }
 }
 
 const stagePublishes = () => calls.filter(c => c.collection === 'stages' && c.method === 'update')
+const imageDeletes = () => calls.filter(c => c.collection === 'images' && c.method === 'delete')
 const soundDeletes = () => calls.filter(c => c.collection === 'sounds' && c.method === 'delete')
 const sceneDeletes = () => calls.filter(c => c.collection === 'scenes' && c.method === 'delete')
 
@@ -109,6 +123,10 @@ beforeEach(() => {
   listFails = false
   soundsListFails = false
   soundRows = []
+  imageRows = []
+  fitCalls.length = 0
+  fitImpl = async f => f
+  imageGetImpl = async () => { throw httpError(404) }
   sceneGetImpl = async () => { throw httpError(404) }
   soundGetImpl = async () => { throw httpError(404) }
   sendImpl = async s => row(String(s.form.get('id') ?? 'sc-1'), { image: 'image.jpg', sound: 'sound.mp3' })
@@ -775,5 +793,220 @@ describe('sounds', () => {
     deleteImpl = async () => { throw httpError(404) }
     await expect(deleteSound(GAME, 'snd-1')).rejects.toMatchObject({ kind: 'notMaster' })
     expect(calls.filter(c => c.collection === 'games' && c.method === 'getOne')).toHaveLength(2)
+  })
+})
+
+describe('images', () => {
+  const draft = { id: 'img-1', caption: ' A map ' }
+  const IMG: TableImage = { id: 'img-1', caption: 'A map', file: 'image.jpg' }
+  const SHOWN_AT = '2026-11-12T10:00:00.000Z'
+
+  async function shown(withCaption: boolean, image: TableImage = IMG) {
+    const ctx = await load()
+    ctx.media.put('images', GAME, image)
+    const { withImage } = await import('@/domain/stage')
+    ctx.stages.set(withImage(ctx.stages.stageOf(GAME), image, withCaption, SHOWN_AT))
+    return ctx
+  }
+  const lastStageImage = () => (stagePublishes().at(-1)!.args[1] as { data: { image: { file: { name: string }; caption: string | null; shownAt: string } } }).data.image
+
+  it('lists the game, maps a row to a TableImage and drops one that fails the shape check', async () => {
+    imageRows = [
+      imageRow('a', { data: { id: 'a', caption: '  Trimmed  ' } }),
+      imageRow('b', { data: { id: 'other', caption: 'Wrong id' } }),
+      imageRow('c', { data: { id: 'c' } }),
+      imageRow('d', { data: { id: 'd', caption: '   ' } }),
+      imageRow('e', { data: { id: 'e', caption: 'x'.repeat(121) } }),
+      imageRow('f', { file: '' }),
+    ]
+    const { openMedia, media } = await load()
+    await openMedia(GAME)
+    expect(media.images.status).toBe('ready')
+    expect(media.images.list).toEqual<TableImage[]>([
+      { id: 'a', caption: 'Trimmed', file: 'image.jpg' },
+      { id: 'c', caption: null, file: 'image.jpg' },
+      { id: 'd', caption: null, file: 'image.jpg' },
+    ])
+    expect(calls.filter(c => c.collection === 'images' && c.method === 'subscribe')).toHaveLength(1)
+  })
+
+  it('create uploads under image.<ext> with the trimmed caption in the data', async () => {
+    sendImpl = async s => imageRow(String(s.form.get('id')), { data: JSON.parse(String(s.form.get('data'))) })
+    const { createImage, media } = await load()
+    const image = await createImage(GAME, draft, file('Holiday (1).PNG', 'image/png'))
+    const { method, path, form } = sent[0]!
+    expect(method).toBe('POST')
+    expect(path).toBe('/api/collections/images/records')
+    expect(form.get('game')).toBe(GAME)
+    expect(JSON.parse(String(form.get('data')))).toEqual({ id: 'img-1', caption: 'A map' })
+    expect((form.get('file') as File).name).toBe('image.png')
+    expect(image).toEqual(IMG)
+    expect(media.images.list).toEqual([IMG])
+  })
+
+  it('create fits the image first and uploads the fitted file under its neutral name', async () => {
+    const big = file('huge.bmp', 'image/bmp')
+    fitImpl = async () => file('whatever.webp', 'image/webp')
+    sendImpl = async s => imageRow(String(s.form.get('id')))
+    const { createImage } = await load()
+    const { IMAGE_MAX_BYTES } = await import('@/domain/stage')
+    await createImage(GAME, { id: 'img-1', caption: null }, big)
+    expect(fitCalls).toEqual([[big, IMAGE_MAX_BYTES]])
+    expect((sent[0]!.form.get('file') as File).name).toBe('image.webp')
+  })
+
+  it('create refuses a caption that is too long before any request', async () => {
+    const { createImage } = await load()
+    await expect(createImage(GAME, { id: 'img-1', caption: 'x'.repeat(121) }, file('a.png', 'image/png'))).rejects.toThrow(/invalid images entry/)
+    expect(sent).toHaveLength(0)
+  })
+
+  it('the 31st image is limitReached before any request', async () => {
+    const { createImage, media } = await load()
+    for (let i = 0; i < 30; i++) media.put('images', GAME, { id: `i${i}`, caption: null, file: 'image.jpg' })
+    await expect(createImage(GAME, draft, file('a.png', 'image/png'))).rejects.toMatchObject({ kind: 'limitReached' })
+    expect(sent).toHaveLength(0)
+  })
+
+  it('saving the shown image with a new file re-publishes it with the new file, the same shownAt and the new caption', async () => {
+    sendImpl = async () => imageRow('img-1', { data: { id: 'img-1', caption: 'Better map' }, file: 'image_new.png' })
+    const { updateImage, stages } = await shown(true)
+    await updateImage(GAME, { id: 'img-1', caption: 'Better map' }, file('b.png', 'image/png'))
+    expect(stagePublishes()).toHaveLength(1)
+    expect(lastStageImage()).toEqual({
+      id: 'img-1', file: { collection: 'images', record: 'img-1', name: 'image_new.png' }, caption: 'Better map', shownAt: SHOWN_AT,
+    })
+    expect(stages.stageOf(GAME).image?.shownAt).toBe(SHOWN_AT)
+  })
+
+  it('saving the image shown without a caption never puts the caption on the stage', async () => {
+    sendImpl = async () => imageRow('img-1', { data: { id: 'img-1', caption: 'Secret words' }, file: 'image_new.png' })
+    const { updateImage } = await shown(false)
+    await updateImage(GAME, { id: 'img-1', caption: 'Secret words' }, file('b.png', 'image/png'))
+    expect(lastStageImage()).toMatchObject({ file: { name: 'image_new.png' }, caption: null, shownAt: SHOWN_AT })
+    expect(JSON.stringify(stagePublishes().at(-1)!.args)).not.toContain('Secret words')
+  })
+
+  it('saving an image that is not shown writes no stage', async () => {
+    sendImpl = async () => imageRow('img-1', { file: 'image_new.png' })
+    const { updateImage, media } = await load()
+    media.put('images', GAME, IMG)
+    await updateImage(GAME, { id: 'img-1', caption: 'A map' }, file('b.png', 'image/png'))
+    expect(stagePublishes()).toHaveLength(0)
+    expect(media.images.list[0]!.file).toBe('image_new.png')
+  })
+
+  it('a save that changes nothing the stage shows writes no stage', async () => {
+    sendImpl = async () => imageRow('img-1', { data: { id: 'img-1', caption: 'New words' } })
+    const { updateImage, media } = await shown(false)
+    const saved = await updateImage(GAME, { id: 'img-1', caption: 'New words' })
+    expect(saved.caption).toBe('New words')
+    expect(media.images.list[0]!.caption).toBe('New words')
+    expect(stagePublishes()).toHaveLength(0)
+  })
+
+  it('update without a file sends the data only', async () => {
+    sendImpl = async () => imageRow('img-1')
+    const { updateImage, media } = await load()
+    media.put('images', GAME, IMG)
+    await updateImage(GAME, { id: 'img-1', caption: null })
+    expect([...sent[0]!.form.keys()]).toEqual(['data'])
+    expect(sent[0]!.path).toBe('/api/collections/images/records/img-1')
+  })
+
+  it('a failed publish after a save is stagePublishFailed with the saved image, and republishImage retries it', async () => {
+    sendImpl = async () => imageRow('img-1', { file: 'image_new.png' })
+    stageUpdateImpl = async () => { throw httpError(500) }
+    const { updateImage, republishImage, media } = await shown(true)
+    const err = await updateImage(GAME, { id: 'img-1', caption: 'A map' }, file('b.png', 'image/png')).catch((e: unknown) => e)
+    expect(err).toMatchObject({ kind: 'stagePublishFailed', saved: { id: 'img-1', file: 'image_new.png' } })
+    expect(media.images.list[0]!.file).toBe('image_new.png')
+    stageUpdateImpl = async () => ({})
+    await republishImage(GAME, (err as { saved: TableImage }).saved)
+    expect(lastStageImage()).toMatchObject({ file: { name: 'image_new.png' }, shownAt: SHOWN_AT })
+  })
+
+  it('deleting the shown image publishes the stage without it first, then deletes', async () => {
+    const { deleteImage, media, stages } = await shown(true)
+    await deleteImage(GAME, 'img-1')
+    const order = calls.filter(c => (c.collection === 'stages' && c.method === 'update')
+      || (c.collection === 'images' && c.method === 'delete')).map(c => c.collection)
+    expect(order).toEqual(['stages', 'images'])
+    expect((stagePublishes()[0]!.args[1] as { data: { image: unknown } }).data.image).toBeNull()
+    expect(stages.stageOf(GAME).image).toBeNull()
+    expect(media.images.list).toEqual([])
+  })
+
+  it('does not delete the shown image when taking it off the table fails', async () => {
+    stageUpdateImpl = async () => { throw httpError(500) }
+    const { deleteImage, media, stages } = await shown(true)
+    await expect(deleteImage(GAME, 'img-1')).rejects.toMatchObject({ status: 500 })
+    expect(imageDeletes()).toHaveLength(0)
+    expect(media.images.list).toHaveLength(1)
+    expect(stages.stageOf(GAME).image?.id).toBe('img-1')
+  })
+
+  it('deleting an image that is not shown publishes nothing', async () => {
+    const { deleteImage, media } = await load()
+    media.put('images', GAME, IMG)
+    await deleteImage(GAME, 'img-1')
+    expect(stagePublishes()).toHaveLength(0)
+    expect(imageDeletes()).toHaveLength(1)
+  })
+
+  const imageFileBody = (code: string) => JSON.stringify({
+    data: { file: { code, message: 'refused' } }, message: 'Failed to create record.', status: 400,
+  })
+
+  it('maps a refused file on create and update to fileRefused on the file field', async () => {
+    const { createImage, updateImage, media } = await load()
+    sendImpl = async () => { throw errorFromResponse('', 400, imageFileBody('validation_invalid_mime_type')) }
+    await expect(createImage(GAME, draft, file('a.png', 'image/png')))
+      .rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'type' })
+    sendImpl = async () => { throw errorFromResponse('', 400, imageFileBody('validation_file_size_limit')) }
+    media.put('images', GAME, IMG)
+    await expect(updateImage(GAME, draft, file('a.png', 'image/png'))).rejects.toMatchObject({ kind: 'fileRefused', field: 'file', reason: 'size' })
+  })
+
+  it('a 400 without a file code looks the image up by id and returns it when it exists', async () => {
+    sendImpl = async () => { throw recorded('createDuplicateId') }
+    imageGetImpl = async () => imageRow('img-1', { data: { id: 'img-1', caption: 'A map' } })
+    const { createImage, media } = await load()
+    const image = await createImage(GAME, draft, file('a.png', 'image/png'))
+    expect(image.id).toBe('img-1')
+    expect(media.images.list.map(i => i.id)).toEqual(['img-1'])
+    expect(calls.some(c => c.collection === 'images' && c.method === 'getOne' && c.args[0] === 'img-1')).toBe(true)
+  })
+
+  it('a 404 on update or delete re-reads the game', async () => {
+    gameMaster = 'user-2'
+    const { updateImage, deleteImage, media } = await load()
+    media.put('images', GAME, IMG)
+    sendImpl = async () => { throw recorded('updateNotFound') }
+    await expect(updateImage(GAME, draft)).rejects.toMatchObject({ kind: 'notMaster' })
+    deleteImpl = async () => { throw httpError(404) }
+    await expect(deleteImage(GAME, 'img-1')).rejects.toMatchObject({ kind: 'notMaster' })
+    expect(calls.filter(c => c.collection === 'games' && c.method === 'getOne')).toHaveLength(2)
+  })
+
+  it('a late answer for an image cannot touch another kind or another game', async () => {
+    const { createImage, media } = await load()
+    media.put('sounds', GAME, { id: 'same', name: 'Sound', loop: false, duration: null, file: 'sound.mp3' })
+    media.put('images', GAME, { id: 'same', caption: null, file: 'image.jpg' })
+    media.remove('images', GAME, 'same')
+    expect(media.sounds.list.map(x => x.id)).toEqual(['same'])
+    expect(media.images.list).toEqual([])
+
+    const late = deferred()
+    sendImpl = async () => { await late.promise; return imageRow('img-1') }
+    const pending = createImage(GAME, draft, file('a.png', 'image/png'))
+    await flush()
+    media.clearAll()
+    media.startLoading('game-2', ['scenes', 'sounds', 'images'])
+    media.put('sounds', 'game-2', { id: 'other', name: 'Other', loop: false, duration: null, file: 'sound.mp3' })
+    late.resolve()
+    await pending
+    expect(media.images.list).toEqual([])
+    expect(media.sounds.list.map(x => x.id)).toEqual(['other'])
   })
 })

@@ -6,13 +6,13 @@ import { publishStage, WriteDropped } from './stage'
 import { toGame } from './games'
 import { sendForm } from '@/transport/upload'
 import {
-  IMAGE_MAX_BYTES, MEDIA_LIMITS, checkSceneData, checkSceneDraft, checkSoundData, checkSoundDraft, checkUpload, fileUrl,
-  neutralFileName, withScene, withSound, withoutScene, withoutSound,
+  IMAGE_MAX_BYTES, MEDIA_LIMITS, checkImageData, checkImageDraft, checkSceneData, checkSceneDraft, checkSoundData, checkSoundDraft,
+  checkUpload, fileUrl, neutralFileName, withImageEdited, withScene, withSound, withoutImage, withoutScene, withoutSound,
 } from '@/domain/stage'
 import { useGamesStore } from '@/stores/games'
 import { useMediaStore } from '@/stores/media'
 import { useStageStore } from '@/stores/stage'
-import type { FileRef, MediaEntries, MediaKind, Scene, Sound, Stage } from '@/types/stage'
+import type { FileRef, MediaEntries, MediaKind, Scene, Sound, Stage, TableImage } from '@/types/stage'
 import { fitImage } from '@/utils/fitImage'
 import { createLogger } from '@/utils/logger'
 
@@ -41,11 +41,11 @@ export interface FileRefusal { field: string; reason: 'type' | 'size' }
  * `stagePublishFailed`: the entry is saved (`saved`) but the table was not updated; `republishMedia` retries that alone.
  * `aborted`: the upload was cancelled because the session or the game closed; the form can ignore it.
  */
-export class MediaWriteError extends Error {
+export class MediaWriteError<S = MediaEntries[MediaKind]> extends Error {
   constructor(
     public kind: MediaWriteKind,
     public override cause?: unknown,
-    public saved?: unknown,
+    public saved?: S,
     public refusal?: FileRefusal,
   ) {
     super(kind)
@@ -118,6 +118,15 @@ function soundFromRow(row: MediaRow): Sound | null {
   }
 }
 
+function imageFromRow(row: MediaRow): TableImage | null {
+  const data = checkImageData(row.data)
+  if (!data || data.id !== row.id || typeof row.file !== 'string' || !row.file) {
+    log.warn('dropping an image that fails the shape check', { id: row.id })
+    return null
+  }
+  return { id: row.id, caption: data.caption, file: row.file }
+}
+
 function sceneInSync(stage: Stage, scene: Scene): boolean {
   return (stage.scene?.image?.name ?? null) === scene.image && (stage.scene?.sound?.name ?? null) === scene.sound
 }
@@ -162,6 +171,25 @@ export const mediaKinds: KindTable = {
       inSync: () => true,
       publish: (stage, sound) => withSound(stage, sound, new Date().toISOString()),
       clear: withoutSound,
+    },
+  },
+  images: {
+    collection: 'images',
+    files: [{ name: 'file', kind: 'image', required: true }],
+    limit: MEDIA_LIMITS.images,
+    fromRow: imageFromRow,
+    checkDraft: (draft, has) => {
+      const caption = typeof draft.caption === 'string' ? draft.caption : ''
+      if (checkImageDraft({ caption, hasFile: !!has.file }).length) return null
+      return checkImageData({ id: draft.id, caption })
+    },
+    stored: image => ({ file: image.file }),
+    live: {
+      isLive: (stage, id) => stage.image?.id === id,
+      // An edit that changes nothing the stage shows (a caption edit while it is shown without one) publishes nothing.
+      inSync: (stage, image) => JSON.stringify(withImageEdited(stage, image)) === JSON.stringify(stage),
+      publish: withImageEdited,
+      clear: withoutImage,
     },
   },
 }
@@ -498,7 +526,7 @@ async function publishLive<K extends MediaKind>(kind: K, gameId: string, entry: 
   } catch (err) {
     // The mode or the user changed first: nothing to report to a form that is gone.
     if (err instanceof WriteDropped || !current()) return
-    throw new MediaWriteError('stagePublishFailed', err, entry)
+    throw new MediaWriteError<MediaEntries[K]>('stagePublishFailed', err, entry)
   }
 }
 
@@ -575,4 +603,23 @@ export function updateSound(gameId: string, sound: SoundDraft): Promise<Sound> {
 
 export function deleteSound(gameId: string, id: string): Promise<void> {
   return deleteMedia('sounds', gameId, id)
+}
+
+export type ImageDraft = { id: string; caption: string | null }
+
+export function createImage(gameId: string, draft: ImageDraft, file: File, onProgress?: (fraction: number) => void): Promise<TableImage> {
+  return createMedia('images', gameId, draft, { file }, onProgress)
+}
+
+/** Without a file the picture stays; saving the shown image re-publishes it only when what the table shows changed. */
+export function updateImage(gameId: string, image: ImageDraft, file?: File, onProgress?: (fraction: number) => void): Promise<TableImage> {
+  return updateMedia('images', gameId, image, file ? { file } : {}, onProgress)
+}
+
+export function republishImage(gameId: string, image: TableImage): Promise<void> {
+  return republishMedia('images', gameId, image)
+}
+
+export function deleteImage(gameId: string, id: string): Promise<void> {
+  return deleteMedia('images', gameId, id)
 }

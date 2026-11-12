@@ -1,9 +1,9 @@
 import { computed, type ComputedRef } from 'vue'
 import { useTable } from '@/composables/useTable'
-import { withScene, withSound, withoutScene, withoutSound } from '@/domain/stage'
+import { withImage, withScene, withSound, withoutImage, withoutScene, withoutSound } from '@/domain/stage'
 import { useStageStore } from '@/stores/stage'
 import { publishStage } from '@/transport/stage'
-import type { Scene, Sound } from '@/types/stage'
+import type { Scene, Sound, TableImage } from '@/types/stage'
 
 /** The master's switches for what the open game's table shows. Failures are thrown for the caller to show. */
 export function useStageControl(): {
@@ -13,6 +13,9 @@ export function useStageControl(): {
   playingSoundId: ComputedRef<string | null>
   playSound: (sound: Sound) => Promise<void>
   stopSound: () => Promise<void>
+  shownImageId: ComputedRef<string | null>
+  showImage: (image: TableImage, withCaption: boolean) => Promise<void>
+  hideImage: () => Promise<void>
 } {
   const { gameId } = useTable()
   const stages = useStageStore()
@@ -20,6 +23,8 @@ export function useStageControl(): {
   const activeSceneId = computed(() => (gameId.value ? stages.stageOf(gameId.value).scene?.id ?? null : null))
 
   const playingSoundId = computed(() => (gameId.value ? stages.stageOf(gameId.value).sound?.id ?? null : null))
+
+  const shownImageId = computed(() => (gameId.value ? stages.stageOf(gameId.value).image?.id ?? null : null))
 
   function openGame(): string {
     if (!gameId.value) throw new Error('no game table is open')
@@ -29,6 +34,7 @@ export function useStageControl(): {
   return {
     activeSceneId,
     playingSoundId,
+    shownImageId,
     turnOnScene: (scene) => {
       const id = openGame()
       return publishStage(withScene(stages.stageOf(id), scene))
@@ -44,6 +50,14 @@ export function useStageControl(): {
     stopSound: () => {
       const id = openGame()
       return publishStage(withoutSound(stages.stageOf(id)))
+    },
+    showImage: (image, withCaption) => {
+      const id = openGame()
+      return publishStage(withImage(stages.stageOf(id), image, withCaption, new Date().toISOString()))
+    },
+    hideImage: () => {
+      const id = openGame()
+      return publishStage(withoutImage(stages.stageOf(id)))
     },
   }
 }
