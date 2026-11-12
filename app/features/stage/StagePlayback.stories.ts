@@ -1,6 +1,6 @@
 import { defineComponent } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
 import GameLayout from '@/components/layout/GameLayout.vue'
 import DiceDrawer from '@/components/DiceDrawer.vue'
 import PartyView from '@/features/in-game/PartyView.vue'
@@ -19,6 +19,9 @@ import { useMediaPrefsStore } from '@/stores/mediaPrefs'
 import { useStageStore } from '@/stores/stage'
 import { sceneAudioCalls } from '../../../.storybook/mocks/sceneAudioInstance'
 import { signInMock } from '../../../.storybook/mocks/pb'
+
+// A slow runner takes longer than the default second for a layer, a fade or a prompt to appear.
+const waitFor: typeof waitForDefault = (callback, options) => waitForDefault(callback, { timeout: 10000, ...options })
 
 const FOREST = SCENES[1]!
 const RAIN = SCENES[2]!

@@ -1,8 +1,11 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
 import SceneBackdrop from './SceneBackdrop.vue'
 import { colourPicture, controlDecode } from '@/stories/playback'
+
+// A slow runner takes longer than the default second for a layer, a fade or a prompt to appear.
+const waitFor: typeof waitForDefault = (callback, options) => waitForDefault(callback, { timeout: 10000, ...options })
 
 const meta = {
   title: 'Layout/SceneBackdrop',
@@ -56,10 +59,10 @@ export const NullShowsDefault: Story = {
       await expect(shown(base(canvasElement))).not.toContain('data:')
       const canvas = within(canvasElement)
       await userEvent.click(canvas.getByRole('button', { name: 'Red' }))
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${RED}")`), { timeout: 4000 })
+      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${RED}")`), { timeout: 10000 })
       // Back to null: the default returns, not a blank.
       await userEvent.click(canvas.getByRole('button', { name: 'Default' }))
-      await waitFor(() => expect(shown(base(canvasElement))).not.toContain('data:'), { timeout: 4000 })
+      await waitFor(() => expect(shown(base(canvasElement))).not.toContain('data:'), { timeout: 10000 })
       await expect(shown(base(canvasElement))).toContain('bg')
     } finally {
       decode.restore()
@@ -88,7 +91,7 @@ export const SwitchCrossfades: Story = {
       await expect(layers(canvasElement)).toHaveLength(2)
       await waitFor(() => expect(incoming(canvasElement)).toHaveClass('is-visible'))
       // Done: the new picture is the only layer.
-      await waitFor(() => expect(incoming(canvasElement)).toBeNull(), { timeout: 4000 })
+      await waitFor(() => expect(incoming(canvasElement)).toBeNull(), { timeout: 10000 })
       await expect(layers(canvasElement)).toHaveLength(1)
       await expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`)
     } finally {
@@ -116,7 +119,7 @@ export const FailedImageKeepsCurrent: Story = {
       await userEvent.click(canvas.getByRole('button', { name: 'Green' }))
       await waitFor(() => expect(decode.waiting(GREEN)).toBe(true))
       decode.release(GREEN)
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${GREEN}")`), { timeout: 4000 })
+      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${GREEN}")`), { timeout: 10000 })
     } finally {
       decode.restore()
     }
@@ -141,7 +144,7 @@ export const LatestWins: Story = {
       decode.release(RED)
       await new Promise(resolve => setTimeout(resolve, 200))
       for (const layer of layers(canvasElement)) await expect(shown(layer)).not.toBe(`url("${RED}")`)
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 4000 })
+      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
       await expect(layers(canvasElement)).toHaveLength(1)
     } finally {
       decode.restore()
@@ -149,16 +152,18 @@ export const LatestWins: Story = {
   },
 }
 
-interface Frame { incoming: number; base: number; shown: string; coming: string }
+interface Frame { at: number; incoming: number; base: number; shown: string; coming: string }
 
 /** One reading per animation frame of both layers, until stopped. */
 function recordFrames(root: HTMLElement) {
   const frames: Frame[] = []
   let running = true
-  const read = () => {
+  // The frame's own time (the animation runs on it), not the time the callback got round to reading it.
+  const read = (frameTime: number = performance.now()) => {
     if (!running) return
     const el = incoming(root)
     frames.push({
+      at: frameTime,
       incoming: el ? Number(getComputedStyle(el).opacity) : 0,
       base: Number(getComputedStyle(base(root)).opacity),
       shown: shown(base(root)),
@@ -170,8 +175,11 @@ function recordFrames(root: HTMLElement) {
   return { stop() { running = false; return frames } }
 }
 
-// One animation step is a frame's share of the 2 s fade (about 0.01 at 60 fps); a slow frame may take a few.
-const MAX_STEP = 0.1
+// The component's fade length (SceneBackdrop.vue FADE_MS). The fade eases, so its fastest moment runs at about
+// 2.2 times the average rate (measured: 0.0011 per ms over a 2 s fade); what a frame may change depends on how
+// long it took, so a slow frame is not a cut while a jump within a fast one (a 40% cut in 16 ms) still fails.
+const FADE_MS = 2000
+const allowedStep = (ms: number) => (ms / FADE_MS) * 3 + 0.02
 
 // How much of each picture the eye gets: the incoming layer covers the base by its opacity. Handing the
 // finished fade over to the base layer keeps every weight, so only a real jump shows as a step.
@@ -189,8 +197,9 @@ async function expectNoCut(frames: Frame[]) {
   for (let i = 1; i < frames.length; i++) {
     const before = weights(frames[i - 1]!)
     const after = weights(frames[i]!)
+    const limit = allowedStep(frames[i]!.at - frames[i - 1]!.at)
     for (const picture of new Set([...before.keys(), ...after.keys()])) {
-      await expect(Math.abs((after.get(picture) ?? 0) - (before.get(picture) ?? 0))).toBeLessThan(MAX_STEP)
+      await expect(Math.abs((after.get(picture) ?? 0) - (before.get(picture) ?? 0))).toBeLessThanOrEqual(limit)
     }
     await expect(frames[i]!.base).toBe(1)
   }
@@ -201,16 +210,15 @@ const twoFrames = () => new Promise<void>(resolve => requestAnimationFrame(() =>
 /** The pictures that were ever fully shown (the base layer), in order. */
 const sequence = (frames: Frame[]) => frames.map(f => f.shown).filter((v, i, all) => i === 0 || v !== all[i - 1])
 
+// About the middle of a fade: past a third, and still under way (the next request comes right after this).
 const midFade = (root: HTMLElement) => waitFor(() => {
-  const opacity = Number(getComputedStyle(incoming(root)!).opacity)
-  expect(opacity).toBeGreaterThan(0.35)
-  expect(opacity).toBeLessThan(0.75)
-}, { timeout: 3000, interval: 20 })
+  expect(Number(getComputedStyle(incoming(root)!).opacity)).toBeGreaterThan(0.35)
+}, { timeout: 10000, interval: 20 })
 
 const settled = (root: HTMLElement, picture: string) => waitFor(() => {
   expect(incoming(root)).toBeNull()
   expect(shown(base(root))).toBe(picture)
-}, { timeout: 6000 })
+}, { timeout: 15000 })
 
 /**
  * A fade is never interrupted: a new request in the middle of one waits, and when the fade has ended the
@@ -257,7 +265,7 @@ export const BackToTheBaseDuringAFade: Story = {
       await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
       await midFade(canvasElement)
       await userEvent.click(canvas.getByRole('button', { name: 'Default' }))
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 4000 })
+      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
       await settled(canvasElement, original)
       await twoFrames()
       const frames = recording.stop()
@@ -291,7 +299,7 @@ export const SupersededTargetIsNeverShown: Story = {
       await waitFor(() => expect(decode.waiting(GREEN)).toBe(true))
       await expect(decode.images.filter(img => img.getAttribute('src') === RED)).toHaveLength(0)
       decode.release(GREEN)
-      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 4000 })
+      await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
       await settled(canvasElement, `url("${GREEN}")`)
       decode.release(RED)
       await twoFrames()

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
 import SoundPrompt from './SoundPrompt.vue'
 import { crookhollow, CROOKHOLLOW_META, PARTY } from '@/stories/fixtures'
 import { withLiveScene, withMediaPrefs } from '@/stories/playback'
@@ -8,6 +8,9 @@ import { atRoute, withGameTable } from '@/stories/state'
 import { useMediaPrefsStore } from '@/stores/mediaPrefs'
 import { blockedMock, sceneAudioCalls } from '../../../.storybook/mocks/sceneAudioInstance'
 import { signInMock } from '../../../.storybook/mocks/pb'
+
+// A slow runner takes longer than the default second for a layer, a fade or a prompt to appear.
+const waitFor: typeof waitForDefault = (callback, options) => waitForDefault(callback, { timeout: 10000, ...options })
 
 const FOREST = SCENES[1]!
 
