@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, waitFor as waitForDefault, within } from 'storybook/test'
 import SceneBackdrop from './SceneBackdrop.vue'
@@ -193,7 +193,9 @@ function weights(f: Frame): Map<string, number> {
 }
 
 async function expectNoCut(frames: Frame[]) {
-  await expect(frames.length).toBeGreaterThan(20)
+  // The recording must cover the fades in time, however many frames the machine managed in it.
+  await expect(frames.length).toBeGreaterThan(5)
+  await expect(frames.at(-1)!.at - frames[0]!.at).toBeGreaterThanOrEqual(FADE_MS - 300)
   for (let i = 1; i < frames.length; i++) {
     const before = weights(frames[i - 1]!)
     const after = weights(frames[i]!)
@@ -210,10 +212,33 @@ const twoFrames = () => new Promise<void>(resolve => requestAnimationFrame(() =>
 /** The pictures that were ever fully shown (the base layer), in order. */
 const sequence = (frames: Frame[]) => frames.map(f => f.shown).filter((v, i, all) => i === 0 || v !== all[i - 1])
 
-// About the middle of a fade: past a third, and still under way (the next request comes right after this).
-const midFade = (root: HTMLElement) => waitFor(() => {
-  expect(Number(getComputedStyle(incoming(root)!).opacity)).toBeGreaterThan(0.35)
-}, { timeout: 10000, interval: 20 })
+/**
+ * Stops the running fade in its middle (it is a CSS transition, so its animation can be paused), runs `act`
+ * synchronously-ish, and lets it go on. Pausing is how a story holds "the middle of a fade" without racing a 2 s
+ * transition against its own polling; the interruption itself takes microtasks, so the component's end-of-fade
+ * timer (FADE_MS + 50 after the fade began) cannot fire before the animation has really finished.
+ */
+async function atMidFade(root: HTMLElement, act: () => void | Promise<void>) {
+  const caught = await new Promise<Animation | null>((resolve) => {
+    const look = () => {
+      const el = incoming(root)
+      // The fade is gone: it ended before this story looked (a stalled machine).
+      if (!el) return resolve(null)
+      const opacity = Number(getComputedStyle(el).opacity)
+      if (opacity < 0.3) return void requestAnimationFrame(look)
+      const animation = el.getAnimations().find(a => a instanceof CSSTransition) ?? null
+      if (animation) animation.pause()
+      resolve(opacity > 0.95 ? null : animation)
+    }
+    look()
+  })
+  if (!caught) throw new Error('could not catch the fade in the middle: the machine was too busy for this story')
+  try {
+    await act()
+  } finally {
+    caught.play()
+  }
+}
 
 const settled = (root: HTMLElement, picture: string) => waitFor(() => {
   expect(incoming(root)).toBeNull()
@@ -236,8 +261,7 @@ export const NewRequestWaitsForTheFade: Story = {
       const recording = recordFrames(canvasElement)
       await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
       await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
-      await midFade(canvasElement)
-      await userEvent.click(canvas.getByRole('button', { name: 'Green' }))
+      await atMidFade(canvasElement, () => canvas.getByRole('button', { name: 'Green' }).click())
       // The fade to Blue goes on: Green is not on screen yet.
       await expect(shown(incoming(canvasElement)!)).toBe(`url("${BLUE}")`)
       await settled(canvasElement, `url("${GREEN}")`)
@@ -263,8 +287,7 @@ export const BackToTheBaseDuringAFade: Story = {
       const recording = recordFrames(canvasElement)
       await userEvent.click(canvas.getByRole('button', { name: 'Blue' }))
       await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
-      await midFade(canvasElement)
-      await userEvent.click(canvas.getByRole('button', { name: 'Default' }))
+      await atMidFade(canvasElement, () => canvas.getByRole('button', { name: 'Default' }).click())
       await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
       await settled(canvasElement, original)
       await twoFrames()
@@ -291,12 +314,16 @@ export const SupersededTargetIsNeverShown: Story = {
       await waitFor(() => expect(decode.waiting(BLUE)).toBe(true))
       decode.release(BLUE)
       await waitFor(() => expect(incoming(canvasElement)).not.toBeNull())
-      await midFade(canvasElement)
       // Red is asked for mid-fade and is still loading when Green replaces it.
-      await userEvent.click(canvas.getByRole('button', { name: 'Red' }))
-      await waitFor(() => expect(decode.waiting(RED)).toBe(true))
-      await userEvent.click(canvas.getByRole('button', { name: 'Green' }))
+      await atMidFade(canvasElement, async () => {
+        canvas.getByRole('button', { name: 'Red' }).click()
+        await nextTick()
+        canvas.getByRole('button', { name: 'Green' }).click()
+        await nextTick()
+      })
       await waitFor(() => expect(decode.waiting(GREEN)).toBe(true))
+      // Blue, Red and Green were each asked to decode; Red's download is the one that was stopped.
+      await expect(decode.images).toHaveLength(3)
       await expect(decode.images.filter(img => img.getAttribute('src') === RED)).toHaveLength(0)
       decode.release(GREEN)
       await waitFor(() => expect(shown(base(canvasElement))).toBe(`url("${BLUE}")`), { timeout: 10000 })
